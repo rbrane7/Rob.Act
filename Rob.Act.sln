@@ -1,0 +1,122 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27428.2027
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rob.Act.Merge", "Rob.Act.Merge\Rob.Act.Merge.csproj", "{1BD71B0F-2F19-4190-B8CA-3E00899DCBED}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "0 Framework", "0 Framework", "{16932241-D222-4952-BBB3-B98BE375759E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rob.Act.Access", "Rob.Act.Access\Rob.Act.Access.csproj", "{CFD71F07-8204-4569-9846-F11467BD8D2E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Format", "Format", "{859EB7ED-DC37-4E85-A9E9-9E57025BBE6E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "9 Application", "9 Application", "{8C6E8F4D-425C-496F-A3F8-C29EE2D188E3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rob.Act.Base", "Rob.Act.Basis\Rob.Act.Base.csproj", "{22C68E61-0D96-4D04-92DE-E63B6E392447}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rob.Act.Combi", "Rob.Act.Combi\Rob.Act.Combi.csproj", "{EFB4FC7E-7CE1-4E29-88AF-227B4FA14279}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rob.Act.Relat", "Rob.Act.Relat\Rob.Act.Relat.csproj", "{48C7FE6C-0101-4D2E-A4AB-DEA4578BA4F0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rob.Act.Smooth", "Rob.Act.Smooth\Rob.Act.Smooth.csproj", "{16AD77F9-5941-4B4F-BF62-CEEB3E7B8A8B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rob.Act.Trim", "Rob.Act.Trim\Rob.Act.Trim.csproj", "{B49DB0C1-3BC0-46D3-AC52-C8C212A67C4F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rob.Act.Graph", "Rob.Act.Graph\Rob.Act.Graph.csproj", "{1E3D5688-B89A-4FA6-AA7A-FA38544173EA}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1BD71B0F-2F19-4190-B8CA-3E00899DCBED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1BD71B0F-2F19-4190-B8CA-3E00899DCBED}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1BD71B0F-2F19-4190-B8CA-3E00899DCBED}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1BD71B0F-2F19-4190-B8CA-3E00899DCBED}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CFD71F07-8204-4569-9846-F11467BD8D2E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CFD71F07-8204-4569-9846-F11467BD8D2E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CFD71F07-8204-4569-9846-F11467BD8D2E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CFD71F07-8204-4569-9846-F11467BD8D2E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{22C68E61-0D96-4D04-92DE-E63B6E392447}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{22C68E61-0D96-4D04-92DE-E63B6E392447}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{22C68E61-0D96-4D04-92DE-E63B6E392447}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{22C68E61-0D96-4D04-92DE-E63B6E392447}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EFB4FC7E-7CE1-4E29-88AF-227B4FA14279}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EFB4FC7E-7CE1-4E29-88AF-227B4FA14279}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EFB4FC7E-7CE1-4E29-88AF-227B4FA14279}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EFB4FC7E-7CE1-4E29-88AF-227B4FA14279}.Release|Any CPU.Build.0 = Release|Any CPU
+		{48C7FE6C-0101-4D2E-A4AB-DEA4578BA4F0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{48C7FE6C-0101-4D2E-A4AB-DEA4578BA4F0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{48C7FE6C-0101-4D2E-A4AB-DEA4578BA4F0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{48C7FE6C-0101-4D2E-A4AB-DEA4578BA4F0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{16AD77F9-5941-4B4F-BF62-CEEB3E7B8A8B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{16AD77F9-5941-4B4F-BF62-CEEB3E7B8A8B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{16AD77F9-5941-4B4F-BF62-CEEB3E7B8A8B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{16AD77F9-5941-4B4F-BF62-CEEB3E7B8A8B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B49DB0C1-3BC0-46D3-AC52-C8C212A67C4F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B49DB0C1-3BC0-46D3-AC52-C8C212A67C4F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B49DB0C1-3BC0-46D3-AC52-C8C212A67C4F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B49DB0C1-3BC0-46D3-AC52-C8C212A67C4F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1E3D5688-B89A-4FA6-AA7A-FA38544173EA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1E3D5688-B89A-4FA6-AA7A-FA38544173EA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1E3D5688-B89A-4FA6-AA7A-FA38544173EA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1E3D5688-B89A-4FA6-AA7A-FA38544173EA}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{1BD71B0F-2F19-4190-B8CA-3E00899DCBED} = {8C6E8F4D-425C-496F-A3F8-C29EE2D188E3}
+		{CFD71F07-8204-4569-9846-F11467BD8D2E} = {859EB7ED-DC37-4E85-A9E9-9E57025BBE6E}
+		{859EB7ED-DC37-4E85-A9E9-9E57025BBE6E} = {16932241-D222-4952-BBB3-B98BE375759E}
+		{22C68E61-0D96-4D04-92DE-E63B6E392447} = {16932241-D222-4952-BBB3-B98BE375759E}
+		{EFB4FC7E-7CE1-4E29-88AF-227B4FA14279} = {8C6E8F4D-425C-496F-A3F8-C29EE2D188E3}
+		{48C7FE6C-0101-4D2E-A4AB-DEA4578BA4F0} = {8C6E8F4D-425C-496F-A3F8-C29EE2D188E3}
+		{16AD77F9-5941-4B4F-BF62-CEEB3E7B8A8B} = {8C6E8F4D-425C-496F-A3F8-C29EE2D188E3}
+		{B49DB0C1-3BC0-46D3-AC52-C8C212A67C4F} = {8C6E8F4D-425C-496F-A3F8-C29EE2D188E3}
+		{1E3D5688-B89A-4FA6-AA7A-FA38544173EA} = {8C6E8F4D-425C-496F-A3F8-C29EE2D188E3}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {80503FA8-4BC6-486B-8C7B-C421119D7C14}
+	EndGlobalSection
+	GlobalSection(TeamFoundationVersionControl) = preSolution
+		SccNumberOfProjects = 9
+		SccEnterpriseProvider = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
+		SccTeamFoundationServer = http://prgtfs002:8080/tfs/defaultcollection
+		SccLocalPath0 = .
+		SccProjectUniqueName1 = Rob.Act.Access\\Rob.Act.Access.csproj
+		SccProjectTopLevelParentUniqueName1 = Rob.Act.sln
+		SccProjectName1 = Rob.Act.Access
+		SccLocalPath1 = Rob.Act.Access
+		SccProjectUniqueName2 = Rob.Act.Merge\\Rob.Act.Merge.csproj
+		SccProjectTopLevelParentUniqueName2 = Rob.Act.sln
+		SccProjectName2 = Rob.Act.Merge
+		SccLocalPath2 = Rob.Act.Merge
+		SccProjectUniqueName3 = Rob.Act.Combi\\Rob.Act.Combi.csproj
+		SccProjectTopLevelParentUniqueName3 = Rob.Act.sln
+		SccProjectName3 = Rob.Act.Combi
+		SccLocalPath3 = Rob.Act.Combi
+		SccProjectUniqueName4 = Rob.Act.Relat\\Rob.Act.Relat.csproj
+		SccProjectTopLevelParentUniqueName4 = Rob.Act.sln
+		SccProjectName4 = Rob.Act.Relat
+		SccLocalPath4 = Rob.Act.Relat
+		SccProjectUniqueName5 = Rob.Act.Smooth\\Rob.Act.Smooth.csproj
+		SccProjectTopLevelParentUniqueName5 = Rob.Act.sln
+		SccProjectName5 = Rob.Act.Smooth
+		SccLocalPath5 = Rob.Act.Smooth
+		SccProjectUniqueName6 = Rob.Act.Trim\\Rob.Act.Trim.csproj
+		SccProjectTopLevelParentUniqueName6 = Rob.Act.sln
+		SccProjectName6 = Rob.Act.Trim
+		SccLocalPath6 = Rob.Act.Trim
+		SccProjectUniqueName7 = Rob.Act.Basis\\Rob.Act.Base.csproj
+		SccProjectTopLevelParentUniqueName7 = Rob.Act.sln
+		SccProjectName7 = Rob.Act.Basis
+		SccLocalPath7 = Rob.Act.Basis
+		SccProjectUniqueName8 = Rob.Act.Graph\\Rob.Act.Graph.csproj
+		SccProjectTopLevelParentUniqueName8 = Rob.Act.sln
+		SccProjectName8 = Rob.Act.Graph
+		SccLocalPath8 = Rob.Act.Graph
+	EndGlobalSection
+EndGlobal
