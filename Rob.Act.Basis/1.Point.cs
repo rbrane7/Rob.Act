@@ -33,7 +33,7 @@ namespace Rob.Act
 		/// <summary>
 		/// Assotiative text .
 		/// </summary>
-		public string Spec { get => spec ?? Sign ; set => spec = value ; } string spec ;
+		public virtual string Spec { get => spec ?? Sign ; set => spec = value ; } string spec ;
 		/// <summary>
 		/// Signature of the point .
 		/// </summary>
@@ -61,6 +61,7 @@ namespace Rob.Act
 		public Quant? Ergy { get => this[Axis.Ergy] ; set => this[Axis.Ergy] = value ; }
 		public Quant? Heart { get => this[Axis.Heart] ; set => this[Axis.Heart] = value ; }
 		public Quant? Cycle { get => this[Axis.Cycle] ; set => this[Axis.Cycle] = value ; }
+		public Quant? Effort { get => this[Axis.Effort] ; set => this[Axis.Effort] = value ; }
 		#endregion
 
 		#region Quotient
@@ -89,7 +90,7 @@ namespace Rob.Act
 		#endregion
 
 		#region Info
-		public override string ToString() => $"{spec} {Sign} {((int)Dimension).Steps().Select(i=>Quantity[i].Get(q=>$"{(Axis)i}={q}")).Stringy(' ')} {Mark.nil(m=>m==Mark.No)} {Action}" ;
+		public override string ToString() => $"{spec} {Sign} {"{0}={1}".Comb("{0}W/{1}H".Comb(Power.use(p=>Math.Round(p)),Heartrate.use(h=>Math.Round(h))),Heartage.use(h=>Math.Round(h)))} {((int)Dimension).Steps().Select(i=>Quantity[i].Get(q=>$"{(Axis)i}={q}")).Stringy(' ')} {Mark.nil(m=>m==Mark.No)} {Action}" ;
 		#endregion
 	}
 }

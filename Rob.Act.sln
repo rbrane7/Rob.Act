@@ -23,7 +23,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rob.Act.Smooth", "Rob.Act.S
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rob.Act.Trim", "Rob.Act.Trim\Rob.Act.Trim.csproj", "{B49DB0C1-3BC0-46D3-AC52-C8C212A67C4F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rob.Act.Graph", "Rob.Act.Graph\Rob.Act.Graph.csproj", "{1E3D5688-B89A-4FA6-AA7A-FA38544173EA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rob.Act.Analyze", "Rob.Act.Graph\Rob.Act.Analyze.csproj", "{1E3D5688-B89A-4FA6-AA7A-FA38544173EA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -80,43 +80,5 @@ Global
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {80503FA8-4BC6-486B-8C7B-C421119D7C14}
-	EndGlobalSection
-	GlobalSection(TeamFoundationVersionControl) = preSolution
-		SccNumberOfProjects = 9
-		SccEnterpriseProvider = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
-		SccTeamFoundationServer = http://prgtfs002:8080/tfs/defaultcollection
-		SccLocalPath0 = .
-		SccProjectUniqueName1 = Rob.Act.Access\\Rob.Act.Access.csproj
-		SccProjectTopLevelParentUniqueName1 = Rob.Act.sln
-		SccProjectName1 = Rob.Act.Access
-		SccLocalPath1 = Rob.Act.Access
-		SccProjectUniqueName2 = Rob.Act.Merge\\Rob.Act.Merge.csproj
-		SccProjectTopLevelParentUniqueName2 = Rob.Act.sln
-		SccProjectName2 = Rob.Act.Merge
-		SccLocalPath2 = Rob.Act.Merge
-		SccProjectUniqueName3 = Rob.Act.Combi\\Rob.Act.Combi.csproj
-		SccProjectTopLevelParentUniqueName3 = Rob.Act.sln
-		SccProjectName3 = Rob.Act.Combi
-		SccLocalPath3 = Rob.Act.Combi
-		SccProjectUniqueName4 = Rob.Act.Relat\\Rob.Act.Relat.csproj
-		SccProjectTopLevelParentUniqueName4 = Rob.Act.sln
-		SccProjectName4 = Rob.Act.Relat
-		SccLocalPath4 = Rob.Act.Relat
-		SccProjectUniqueName5 = Rob.Act.Smooth\\Rob.Act.Smooth.csproj
-		SccProjectTopLevelParentUniqueName5 = Rob.Act.sln
-		SccProjectName5 = Rob.Act.Smooth
-		SccLocalPath5 = Rob.Act.Smooth
-		SccProjectUniqueName6 = Rob.Act.Trim\\Rob.Act.Trim.csproj
-		SccProjectTopLevelParentUniqueName6 = Rob.Act.sln
-		SccProjectName6 = Rob.Act.Trim
-		SccLocalPath6 = Rob.Act.Trim
-		SccProjectUniqueName7 = Rob.Act.Basis\\Rob.Act.Base.csproj
-		SccProjectTopLevelParentUniqueName7 = Rob.Act.sln
-		SccProjectName7 = Rob.Act.Basis
-		SccLocalPath7 = Rob.Act.Basis
-		SccProjectUniqueName8 = Rob.Act.Graph\\Rob.Act.Graph.csproj
-		SccProjectTopLevelParentUniqueName8 = Rob.Act.sln
-		SccProjectName8 = Rob.Act.Graph
-		SccLocalPath8 = Rob.Act.Graph
 	EndGlobalSection
 EndGlobal

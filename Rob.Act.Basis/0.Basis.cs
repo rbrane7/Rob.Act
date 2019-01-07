@@ -14,7 +14,7 @@ namespace Rob.Act
 	/// </summary>
 	[Flags] public enum Mark { No = 0 , Stop = 1 , Lap = 2 , Act = 4 }
 	[Flags] public enum Oper { Merge = 0 , Combi = 1 , Trim = 2 , Smooth = 4 , Relat = 8 }
-	public enum Axis { Lon , Longitude = Lon , Lat , Latitude = Lat , Alt , Altitude = Alt , Dist , Distance = Dist , Crud , Flow , Heart , Cycle , Ergy , Energy = Ergy , Time }
+	public enum Axis { Lon , Longitude = Lon , Lat , Latitude = Lat , Alt , Altitude = Alt , Dist , Distance = Dist , Crud , Flow , Heart , Cycle , Ergy , Energy = Ergy , Effort , Time }
 	static class Basis
 	{
 		#region Axis specifics
@@ -32,7 +32,7 @@ namespace Rob.Act
 		/// <returns> Interpolation point at given time of given points . </returns>
 		internal static Point Give( this DateTime date , IEnumerable<Point> points ) { Point bot = null ; foreach( var point in points ) if( point.Date<date ) bot = point ; else if( point.Date==date ) return point ; else if( bot==null ) return new Point(date)|point ; else return new Point(date)|date.Give(bot,point) ; return new Point(date)|bot ; }
 		internal static Quant?[] Give( this DateTime date , Point bot , Point top ) { var quo = (Quant)( (date-bot.Date).TotalSeconds/(top.Date-bot.Date).TotalSeconds ) ; var cuo = 1-quo ; return ((int)Math.Max(bot.Dimension,top.Dimension)).Steps().Select(i=>(bot[(uint)i]*cuo+top[(uint)i]*quo)).ToArray() ; }
-		internal static Quant? Quotient( this Quant? x , Quant? y , Quant dflt = 0 ) => x.use( d => d / y.Nil(t=>t==0) ?? dflt ) ;
+		internal static Quant? Quotient( this Quant? x , Quant? y ) => x / y.Nil() ;
 		#endregion
 
 		#region Euclid metrics

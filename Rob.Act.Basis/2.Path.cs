@@ -27,6 +27,7 @@ namespace Rob.Act
 		/// Tags for path recognition among the others in a book .
 		/// </summary>
 		public IList<string> Tag => tag ?? System.Threading.Interlocked.CompareExchange(ref tag,new List<string>(),null) ?? tag ; IList<string> tag ;
+		public override string Spec { get => base.Spec ; set => Spectrum.Spec = base.Spec = value ; }
 		#endregion
 
 		#region Access
