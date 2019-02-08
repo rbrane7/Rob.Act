@@ -5,11 +5,13 @@ using System.Collections.Specialized;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Text.RegularExpressions;
+using System.ComponentModel;
 using Aid.Extension;
 
 namespace Rob.Act
 {
-	public class Book : Aid.Collections.ObservableList<Path> , Aid.Gettable<int,Path>
+	public class Book : Aid.Collections.ObservableList<Path>.Filtered.Texted , Aid.Gettable<int,Path>
 	{
 		public Book( string subject = null ) => Subject = subject ;
 		public string Subject { get ; protected set ; }

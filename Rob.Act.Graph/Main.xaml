@@ -6,52 +6,89 @@
         xmlns:converters="clr-namespace:Aid.Converters;assembly=Aid.Presentation"
         xmlns:local="clr-namespace:Rob.Act.Analyze"
         mc:Ignorable="d"
-        Title="Analyze" Height="450" Width="800">
-    <Grid>
+        Title="Analyze" Height="450" Width="800"
+        Name="MainWindow"
+        >
+    <Window.Resources>
+        <converters:LambdaConverter x:Key="MinConvert" Forward="the(double)*60"/>
+        <converters:LambdaConverter x:Key="StringsConcatConvert" Forward="Stringy(' ')"/>
+        <local:QuantileSubversion x:Key="QuantitieConversion"/>
+    </Window.Resources>
+    <Grid Name="MainFrame">
         <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="7*"/><ColumnDefinition Width="2*"/></Grid.ColumnDefinitions>
         <Grid.RowDefinitions><RowDefinition Height="1*"/><RowDefinition Height="7*"/><RowDefinition Height="1*"/></Grid.RowDefinitions>
-        <GridSplitter Grid.ColumnSpan="3" Grid.Row="0" VerticalAlignment="Bottom" Height="2" HorizontalAlignment="Stretch"/>
-        <GridSplitter Grid.ColumnSpan="3" Grid.Row="1" VerticalAlignment="Bottom" Height="2" HorizontalAlignment="Stretch"/>
-        <GridSplitter Grid.RowSpan="3" Grid.Column="0" VerticalAlignment="Stretch" Width="2" HorizontalAlignment="Right"/>
-        <GridSplitter Grid.RowSpan="3" Grid.Column="1" VerticalAlignment="Stretch" Width="2" HorizontalAlignment="Right"/>
-        <DataGrid Name="AspectAxisGrid" Grid.Column="1" ItemsSource="{Binding Aspect}" AutoGenerateColumns="False" Margin="2">
-            <DataGrid.Columns>
-                <DataGridTextColumn Header="Spec" Binding="{Binding Spec}"/>
-                <DataGridTextColumn Header="Aspect" Binding="{Binding Aspectlet}"/>
-                <DataGridTextColumn Header="Resolver" Binding="{Binding Resolvelet}"/>
-                <DataGridTextColumn Header="Counter" Binding="{Binding Countlet}"/>
-                <DataGridTextColumn Header="Selector" Binding="{Binding Selectlet}"/>
-            </DataGrid.Columns>
-            <DataGrid.CommandBindings>
-                <CommandBinding Command="Delete" Executed="AspectAxisGridCommandBinding_Executed"/>
-            </DataGrid.CommandBindings>
-        </DataGrid>
-        <Button Content="Add" Name="AddAspectAxeButton" Grid.Column="2" Click="AddAspectAxeButton_Click" Margin="2"/>
-        <DataGrid Name="AspectsGrid" Grid.Row="1" ItemsSource="{Binding Aspects}" Margin="2" AutoGenerateColumns="False" SelectionChanged="AspectTabs_Selected">
-            <DataGrid.Columns>
-                <DataGridTextColumn Header="Spec" Binding="{Binding Spec}"/>
-            </DataGrid.Columns>
-            <DataGrid.CommandBindings>
-                <CommandBinding Command="Delete" Executed="AspectsGridCommandBinding_Executed"/>
-            </DataGrid.CommandBindings>
-        </DataGrid>
-        <Button Content="Add" Name="AddAspectButton" Grid.Row="0" Click="AddAspectButton_Click" Margin="2"/>
+        <GridSplitter Grid.ColumnSpan="3" Grid.Row="0" VerticalAlignment="Bottom" Height="3" HorizontalAlignment="Stretch"/>
+        <GridSplitter Grid.ColumnSpan="3" Grid.Row="1" VerticalAlignment="Bottom" Height="3" HorizontalAlignment="Stretch"/>
+        <GridSplitter Grid.RowSpan="3" Grid.Column="0" VerticalAlignment="Stretch" Width="3" HorizontalAlignment="Right"/>
+        <GridSplitter Grid.RowSpan="3" Grid.Column="1" VerticalAlignment="Stretch" Width="3" HorizontalAlignment="Right"/>
+        <Grid Name="AspectFrame" Grid.Column="1">
+            <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
+            <GridSplitter Grid.Column="0" VerticalAlignment="Stretch" Width="3" HorizontalAlignment="Right"/>
+            <DataGrid Name="AspectAxisGrid" ItemsSource="{Binding Aspect}" AutoGenerateColumns="False" Margin="2" SelectionChanged="AspectAxisGrid_SelectionChanged">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Spec" Binding="{Binding Spec}"/>
+                    <DataGridTextColumn Header="Aspect" Binding="{Binding Aspectlet}"/>
+                    <DataGridCheckBoxColumn Header="s" Binding="{Binding Multi}"/>
+                    <DataGridTextColumn Header="Resolver" Binding="{Binding Resolvelet}"/>
+                    <DataGridTextColumn Header="Counter" Binding="{Binding Countlet}"/>
+                    <DataGridTextColumn Header="Selector" Binding="{Binding Selectlet}"/>
+                    <DataGridTextColumn Header="Distributor" Binding="{Binding Distribulet}"/>
+                    <DataGridTextColumn Header="Quantizer" Binding="{Binding Quantlet}"/>
+                </DataGrid.Columns>
+                <DataGrid.CommandBindings>
+                    <CommandBinding Command="Delete" Executed="DataGridCommandBinding_Executed"/>
+                </DataGrid.CommandBindings>
+            </DataGrid>
+            <DataGrid Name="AspectTraitsGrid" Grid.Column="1" ItemsSource="{Binding Aspect.Trait}" AutoGenerateColumns="False" Margin="2">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Name" Binding="{Binding Name}"/>
+                    <DataGridTextColumn Header="Resolver" Binding="{Binding Lex}"/>
+                    <DataGridTextColumn Header="Unit" Binding="{Binding Unit}"/>
+                </DataGrid.Columns>
+                <DataGrid.CommandBindings>
+                    <CommandBinding Command="Delete" Executed="DataGridCommandBinding_Executed"/>
+                </DataGrid.CommandBindings>
+            </DataGrid>
+        </Grid>
+        <Grid Grid.Column="2">
+            <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
+            <Button Content="Add Axe" Name="AddAspectAxeButton" Click="AddAspectAxeButton_Click" Margin="2"/>
+            <Button Content="Add Trait" Name="AddAspectTraitButton" Grid.Column="1" Click="AddAspectTraitButton_Click" Margin="2"/>
+        </Grid>
+        <Button Content="Add Aspect" Name="AddAspectButton" Click="AddAspectButton_Click" Margin="2"/>
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="6*"/><ColumnDefinition Width="1*"/></Grid.ColumnDefinitions>
+            <Grid>
+                <Grid.RowDefinitions><RowDefinition/><RowDefinition Height="22"/></Grid.RowDefinitions>
+                <DataGrid Name="AspectsGrid" ItemsSource="{Binding Aspects}" Margin="2" AutoGenerateColumns="False" SelectionChanged="AspectTabs_Selected">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Spec" Binding="{Binding Spec}"/>
+                    </DataGrid.Columns>
+                    <DataGrid.CommandBindings>
+                        <CommandBinding Command="Delete" Executed="DataGridCommandBinding_Executed"/>
+                    </DataGrid.CommandBindings>
+                </DataGrid>
+                <TextBox Name="AspectMultiCount" Grid.Row="1" HorizontalContentAlignment="Right" LostFocus="AspectMultiToggle_Changed" Margin="2"/>
+            </Grid>
+            <ToggleButton Name="AspectMultiToggle" Content="*" Grid.Column="1" Margin="2" Checked="AspectMultiToggle_Changed" Unchecked="AspectMultiToggle_Changed"/>
+        </Grid>
         <DataGrid Name="AxesGrid" Grid.Row="2" Grid.Column="1" ItemsSource="{Binding Axes}" Margin="2" AutoGenerateColumns="False">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Spec" Binding="{Binding Spec}"/>
                 <DataGridTextColumn Header="Aspect" Binding="{Binding Aspectlet}"/>
+                <DataGridCheckBoxColumn Header="s" Binding="{Binding Multi}"/>
                 <DataGridTextColumn Header="Resolver" Binding="{Binding Resolvelet}"/>
                 <DataGridTextColumn Header="Counter" Binding="{Binding Countlet}"/>
                 <DataGridTextColumn Header="Selector" Binding="{Binding Selectlet}"/>
             </DataGrid.Columns>
             <DataGrid.CommandBindings>
-                <CommandBinding Command="Delete" Executed="AxisGridCommandBinding_Executed"/>
+                <CommandBinding Command="Delete" Executed="DataGridCommandBinding_Executed"/>
             </DataGrid.CommandBindings>
         </DataGrid>
-        <Button Content="Add" Name="AddAxeButton" Grid.Row="2" Click="AddAxeButton_Click" Margin="2"/>
+        <Button Content="Add Axe" Name="AddAxeButton" Grid.Row="2" Click="AddAxeButton_Click" Margin="2"/>
         <TabControl Name="DisplayTable" Grid.Row="1" Grid.Column="1" Margin="2" SelectionChanged="DisplayTable_SelectionChanged">
             <TabItem Header="Aspect">
-                <TabControl Name="AspectTabs" ItemsSource="{Binding Sources}" TabStripPlacement="Bottom" DisplayMemberPath="Spec">
+                <TabControl Name="AspectTabs" ItemsSource="{Binding Sources}" DisplayMemberPath="Score" TabStripPlacement="Bottom"><!---->
                     <TabControl.ContentTemplate>
                         <DataTemplate>
                             <DataGrid ItemsSource="{Binding Points}" AutoGeneratedColumns="AspectGrid_AutoGeneratedColumns"/>
@@ -59,13 +96,22 @@
                     </TabControl.ContentTemplate>
                 </TabControl>
             </TabItem>
-            <TabItem Header="Graph">
-                <Canvas Name="GraphPanel" Grid.Row="1" Grid.Column="1">
-                    <Path Stroke="Black" Data="M 10,10 S 100,10 200,20 S 300,100 200,150 S 150,90 50,40 S 40+40 10+10"/>
-                </Canvas>
+            <TabItem Header="Quantile">
+                <TabControl Name="QuantileTabs" ItemsSource="{Binding Aspect}" DisplayMemberPath="Spec" TabStripPlacement="Bottom"><!---->
+                    <TabControl.ContentTemplate>
+                        <DataTemplate>
+                            <DataGrid AutoGeneratedColumns="QuantileGrid_AutoGeneratedColumns">
+                                <DataGrid.ItemsSource><MultiBinding Converter="{StaticResource ResourceKey=QuantitieConversion}"><Binding/><Binding Path="Sources" ElementName="MainWindow"/></MultiBinding></DataGrid.ItemsSource>
+                            </DataGrid>
+                        </DataTemplate>
+                    </TabControl.ContentTemplate>
+                </TabControl>
+            </TabItem>
+            <TabItem Name="GraphTab" Header="Graph" Selector.Selected="Graph_Draw">
+                <Canvas Name="GraphPanel"/>
             </TabItem>
             <TabItem Header="Spectrum">
-                <TabControl Name="SpectrumTabs" ItemsSource="{Binding SelectedItems,ElementName=BookGrid}" TabStripPlacement="Bottom" SelectionChanged="AspectTabs_Selected">
+                <TabControl Name="SpectrumTabs" ItemsSource="{Binding SelectedItems,ElementName=BookGrid}" DisplayMemberPath="Spectrum.Score" TabStripPlacement="Bottom" SelectionChanged="AspectTabs_Selected">
                     <TabControl.ContentTemplate>
                         <DataTemplate>
                             <DataGrid ItemsSource="{Binding Spectrum.Points}" AutoGeneratedColumns="AspectGrid_AutoGeneratedColumns"/>
@@ -81,11 +127,12 @@
                                 <DataGrid.Columns>
                                     <DataGridTextColumn Header="Date" Binding="{Binding Date,StringFormat='yyyy-MM-dd HH:mm:ss'}"/>
                                     <DataGridTextColumn Header="Time" Binding="{Binding Time}"/>
-                                    <DataGridTextColumn Header="Dist [m]" Binding="{Binding Dist}"/>
+                                    <DataGridTextColumn Header="Distance [m]" Binding="{Binding Distance}"/>
                                     <DataGridTextColumn Header="Energy [J]" Binding="{Binding Ergy}"/>
                                     <DataGridTextColumn Header="Effort [J]" Binding="{Binding Effort}"/>
                                     <DataGridTextColumn Header="Heart" Binding="{Binding Heart}"/>
                                     <DataGridTextColumn Header="Cycle" Binding="{Binding Cycle}"/>
+                                    <DataGridTextColumn Header="Drag" Binding="{Binding Draglet}"/>
                                     <DataGridTextColumn Header="Speed [m/s]" Binding="{Binding Speed}"/>
                                     <DataGridTextColumn Header="Power [W]" Binding="{Binding Power}"/>
                                     <DataGridTextColumn Header="Force [N]" Binding="{Binding Force}"/>
@@ -102,9 +149,37 @@
         </TabControl>
         <DataGrid Name="BookGrid" Grid.Row="1" Grid.Column="2" ItemsSource="{Binding Book}" AutoGenerateColumns="False" SelectionChanged="BookGrid_SelectionChanged" Margin="2">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="Spec" Binding="{Binding Spec}"/>
+                <DataGridTextColumn Header="Action" Binding="{Binding Action}"/>
+                <DataGridTextColumn Header="Date" Binding="{Binding Date,StringFormat='yyyy-MM-dd HH:mm:ss'}"/>
+                <DataGridTextColumn Header="Time" Binding="{Binding Time}"/>
+                <DataGridTextColumn Header="Drag" Binding="{Binding Draglet}"/>
+                <DataGridTextColumn Header="Expo" Binding="{Binding Power,StringFormat=#W}"/>
+                <DataGridTextColumn Header="Expo" Binding="{Binding Heartrate,StringFormat=#H}"/>
+                <DataGridTextColumn Header="Expo" Binding="{Binding Heartage,StringFormat=#J/H}"/>
+                <DataGridTextColumn Header="Peak" Binding="{Binding MaxEffort,StringFormat=#W}"/>
+                <DataGridTextColumn Header="Peak" Binding="{Binding MaxHeart,StringFormat=#H,Converter={StaticResource MinConvert}}"/>
+                <DataGridTextColumn Header="Peak" Binding="{Binding MaxExposure,StringFormat=#J/H}"/>
+                <DataGridTextColumn Header="Crux" Binding="{Binding MinMaxEffort,StringFormat=#W}"/>
+                <DataGridTextColumn Header="Dip" Binding="{Binding MinEffort,StringFormat=#W}"/>
+                <DataGridTextColumn Header="Aero" Binding="{Binding AeroEffort,StringFormat=#W}"/>
+                <DataGridTextColumn Header="Tag" Binding="{Binding Tag}"/>
             </DataGrid.Columns>
+            <DataGrid.CommandBindings>
+                <CommandBinding Command="Delete" Executed="DataGridCommandBinding_Executed"/>
+            </DataGrid.CommandBindings>
         </DataGrid>
-        <Button Name="ActionFileButton" Content="Add" Grid.Row="2" Grid.Column="2" Click="AddActionButton_Click" Margin="2"/>
+        <StackPanel Grid.Row="2" Grid.Column="2">
+            <Button Name="ActionFileButton" Content="Add" Grid.Row="2" Grid.Column="2" Click="AddActionButton_Click" Margin="2"/>
+            <TextBox Name="ActionRexFilterText" Text="{Binding Book.Rex}" Margin="2">
+                <TextBox.InputBindings>
+                    <KeyBinding Key="Return" Command="EditingCommands.TabForward"/>
+                </TextBox.InputBindings>
+            </TextBox>
+            <TextBox Name="ActionLexFilterText" Text="{Binding Book.Lex}" Margin="2">
+                <TextBox.InputBindings>
+                    <KeyBinding Key="Return" Command="EditingCommands.TabForward"/>
+                </TextBox.InputBindings>
+            </TextBox>
+        </StackPanel>
     </Grid>
 </Window>

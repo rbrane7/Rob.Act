@@ -14,7 +14,7 @@ namespace Rob.Act
 	/// </summary>
 	[Flags] public enum Mark { No = 0 , Stop = 1 , Lap = 2 , Act = 4 }
 	[Flags] public enum Oper { Merge = 0 , Combi = 1 , Trim = 2 , Smooth = 4 , Relat = 8 }
-	public enum Axis { Lon , Longitude = Lon , Lat , Latitude = Lat , Alt , Altitude = Alt , Dist , Distance = Dist , Crud , Flow , Heart , Cycle , Ergy , Energy = Ergy , Effort , Time }
+	public enum Axis { Lon , Longitude = Lon , Lat , Latitude = Lat , Alt , Altitude = Alt , Dist , Distance = Dist , Drag , Flow , Heart , Cycle , Ergy , Energy = Ergy , Effort , Time }
 	static class Basis
 	{
 		#region Axis specifics

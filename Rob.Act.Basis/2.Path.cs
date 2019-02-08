@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -15,6 +16,7 @@ namespace Rob.Act
 	{
 		public static bool Dominancy = Configer.AppSettings["Path.Dominancy"]!=null ;
 		public static double Margin = Configer.AppSettings["Path.Margin"].Parse<double>()??0 ;
+		public static Dictionary<string,Quant?[]> Meta = new Dictionary<string,Quant?[]>{ ["Tabata"]=new Quant?[]{1,2} } ;
 		#region Construct
 		public Path( DateTime time , IEnumerable<Point> points = null ) : base(time) { points.Set(p=>Content.AddRange(p.OrderBy(t=>t.Date))) ; /*var date = DateTime.Now ; for( var i=0 ; i<Count ; ++i ) { if( i<=0 || this[i-1].Mark.HasFlag(Mark.Stop) ) date = this[i].Date ; this[i].Time = this[i].Date-date ; }*/ }
 		public Path( DateTime time , bool close , IEnumerable<Point> points = null ) : this(time,points) { if( close && this[0]?.Mark.HasFlag(Mark.Stop)==false ) Content.Insert(0,new Point(Content[0]){Mark=Mark.Stop}) ; }
@@ -26,14 +28,26 @@ namespace Rob.Act
 		/// <summary>
 		/// Tags for path recognition among the others in a book .
 		/// </summary>
-		public IList<string> Tag => tag ?? System.Threading.Interlocked.CompareExchange(ref tag,new List<string>(),null) ?? tag ; IList<string> tag ;
-		public override string Spec { get => base.Spec ; set => Spectrum.Spec = base.Spec = value ; }
+		public List<string> Tags => tags ?? System.Threading.Interlocked.CompareExchange(ref tags,new List<string>(),null) ?? tags ; List<string> tags ;
+		public string Tag { get => tag ?? ( tag = tags.Null(t=>t.Count<=0).Stringy(' ') ) ; set { if( value==tag ) return ; tags?.Clear() ; tag = null ; Tags.AddRange(value.SeparateTrim(' ')) ; propertyChanged.On(this,"Tag,Spec") ; } } string tag ;
+		public override string Spec { get => Tag is string t ? $"{base.Spec} {t}" : base.Spec ; set { if( value==base.Spec ) return ; base.Spec = value ; aspect.Set(a=>a.Spec=value) ; } }
+		#endregion
+
+		#region Trait
+		public Quant? MaxEffort => (Count-1).Steps().Max(i=>Content[i+1].Effort-Content[i].Effort) ;
+		public Quant? MinEffort => (Count-1).Steps().Select(i=>Content[i+1].Effort-Content[i].Effort).Skip(5).ToArray().Get(a=>(a.Length-2).Steps(1).Min(i=>9.Steps(1).All(j=>i-j>=0&&a[i-j]>=a[i]&&i+j<a.Length&&a[i]<=a[i+j])?a[i]:Quant.MaxValue)) ;
+		public Quant? MinMaxEffort => (Count-1).Steps().Select(i=>Content[i+1].Effort-Content[i].Effort).Skip(5).ToArray().Get(a=>(a.Length-2).Steps(1).Min(i=>9.Steps(1).All(j=>i-j>=0&&a[i-j]<=a[i]&&i+j<a.Length&&a[i]>=a[i+j])?a[i]:Quant.MaxValue)) ;
+		public Quant? AeroEffort { get { var min = MinEffort ; var max = MinMaxEffort ; var mav = (Count-1).Steps().Count(i=>Content[i+1].Effort-Content[i].Effort>=max*0.9) ; var miv = (Count-1).Steps().Count(i=>Content[i+1].Effort-Content[i].Effort<=min*1.2) ; return (min*miv+max*mav)/(miv+mav)*Durability ; } } // => (Meta.By(Action).At(0)*MinEffort+Meta.By(Action).At(1)*MinMaxEffort)/(Meta.By(Action).At(0)+Meta.By(Action).At(1)) ;
+		public Quant? MaxHeart => (Count-1).Steps().Max(i=>(Content[i+1].Heart-Content[i].Heart).Quotient((Content[i+1].Time-Content[i].Time).TotalSeconds)) ;
+		public Quant? MaxExposure => MaxEffort/MaxHeart ;
+		public string MaxExposion => $"{MaxEffort}W/{MaxHeart.use(v=>Math.Round(v*60))}H={MaxExposure.use(Math.Round)}J/H" ;
+		public Quant Durability => Math.Max(0,1.1-20/Time.TotalSeconds) ;
 		#endregion
 
 		#region Access
 		public void Add( Point item ) { var idx = IndexOf(item.Date) ; if( this[idx]?.Date==item.Date ) Content[idx] |= item ; else Content.Insert( idx , item.Set(i=>{if(idx<Count&&i.Date>Date)i.Mark=0;} ) | Vicinity(idx) ) ; while( idx>0 && !this[idx-1].Mark.HasFlag(Mark.Stop) ) --idx ; item.Time = item.Date-this[idx].Date ; }
 		public Point this[ DateTime time ] => time.Give( Vicinity(time) ) ;
-		public int IndexOf( DateTime time ) => this.IndexWhere(p=>p.Date>=time).nil(i=>i<0) ?? Content.Count ;
+		public int IndexOf( DateTime time ) => this.IndexWhere(p=>p.Date>=time).nil(i=>i<0) ?? Count ;
 		public IEnumerable<Point> Vicinity( DateTime time ) => Vicinity(IndexOf(time)) ;
 		public IEnumerable<Point> Vicinity( int index ) => this.Skip(index-Depth).Take(Depth<<1) ; //todo: solve stops
 		#endregion
@@ -61,6 +75,8 @@ namespace Rob.Act
 		public IEnumerable<Point> Diff { get { for( var i=1 ; i<Count ; ++i ) if( !this[i-1].Mark.HasFlag(Mark.Stop) ) yield return (this[i]-this[i-1]).Set(d=>d.Mark=this[i].Mark.HasFlag(Mark.Stop)?Mark.Stop:Mark.No) ; } }
 		public IEnumerable<Point> Inte { get { Point point = null ; for( var i=0 ; i<Count ; ++i ) yield return point = new Point(this[i]) + point ; } }
 		#endregion
+
+		public override string ToString() => $"{Action} {Sign} {Exposion} \\ {MaxExposion} / {MinEffort}W\\{MinMaxEffort}W={AeroEffort:#}W {Trace} {Tag}" ;
 
 		#region Implementation
 		public void Rely( Path lead )

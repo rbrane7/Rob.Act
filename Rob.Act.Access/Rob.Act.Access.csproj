@@ -70,6 +70,7 @@
       <SubType>code</SubType>
       <DependentUpon>Tcx.xsd</DependentUpon>
     </Compile>
+    <Compile Include="Serialization.cs" />
     <Compile Include="Translation.cs" />
   </ItemGroup>
   <ItemGroup>

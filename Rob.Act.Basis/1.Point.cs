@@ -6,11 +6,12 @@ using System.Threading.Tasks;
 using System.Dynamic;
 using Aid.Extension;
 using Aid;
+using System.ComponentModel;
 
 namespace Rob.Act
 {
 	using Quant = Double ;
-	public class Point : DynamicObject , Accessible<uint,Quant?> , Accessible<Axis,Quant?> , Accessible<Quant?>
+	public class Point : DynamicObject , Accessible<uint,Quant?> , Accessible<Axis,Quant?> , Accessible<Quant?> , INotifyPropertyChanged
 	{
 		#region Construction
 		public Point( DateTime date ) => Date = date ;
@@ -21,62 +22,70 @@ namespace Rob.Act
 		public void From( Point point ) { Time = point.Time ; for( uint i=0 ; i<point.Dimension ; ++i ) this[i] = point[i] ; }
 		#endregion
 
-		#region Trait
+		#region State
 		/// <summary>
 		/// Referential date of object .
 		/// </summary>
-		public DateTime Date { get; set; }
+		public DateTime Date { get => date ; set { if( date==value ) return ; date = value ; sign = null ; } } DateTime date ;
 		/// <summary>
-		/// Kind of demarkaition .
+		/// Quanitity data vector .
 		/// </summary>
-		public Mark Mark { get; set; }
+		Quant?[] Quantity = new Quant?[(int)Axis.Time] ;
 		/// <summary>
-		/// Assotiative text .
+		/// Relative time of object .
 		/// </summary>
-		public virtual string Spec { get => spec ?? Sign ; set => spec = value ; } string spec ;
+		public TimeSpan Time { get => time ; set { if( time==value ) return ; time = value ; sign = null ; } } TimeSpan time ;
 		/// <summary>
 		/// Signature of the point .
 		/// </summary>
 		public string Sign => sign ?? ( sign = $"{Date}{Time.nil(t=>t==TimeSpan.Zero).Get(t=>$"+{t}")}" ) ; string sign ;
 		/// <summary>
+		/// Assotiative text .
+		/// </summary>
+		public virtual string Spec { get => spec ?? ( spec = $"{Action} {Sign}" ) ; set { if( value==spec ) return ; spec = value ; propertyChanged.On(this,"Spec") ; } } string spec ;
+		/// <summary>
 		/// Action specification .
 		/// </summary>
-		public string Action { get; set; }
+		public string Action { get => action ; set { if( action==value ) return ; var a = action ; action = value ; if( spec==$"{a} {Sign}" ) Spec = null ; } } string action ;
 		/// <summary>
-		/// Quanitity data vector .
+		/// Kind of demarkaition .
 		/// </summary>
-		Quant?[] Quantity = new Quant?[(int)Axis.Time] ;
+		public Mark Mark { get; set; }
+		#endregion
+
+		#region Trait
 		public static Point Zero( DateTime date ) => new Point(date){ Time = TimeSpan.Zero }.Set( p=>{ for( var i=0 ; i<p.Dimension ; ++i ) p.Quantity[i] = 0 ; } ) ;
 		public uint Dimension => (uint) Quantity.Length ;
 		public Quant? this[ uint axis ] { get => Quantity.At((int)axis) ; set { if( axis>=Quantity.Length && value!=null ) Quantity.Set(q=>q.CopyTo(Quantity=new Quant?[axis+1],0)) ; if( axis<Quantity.Length ) Quantity[axis] = value ; } }
-		public virtual Quant? this[ Axis axis ] { get => axis==Axis.Time ? Time.TotalSeconds : this[(uint)axis] ; set { if( axis!=Axis.Time ) this[(uint)axis] = value ; else if( value is Quant q ) Time = TimeSpan.FromSeconds(q) ; }  }
+		public virtual Quant? this[ Axis axis ] { get => axis==Axis.Time ? Time.TotalSeconds : this[(uint)axis] ; set { if( axis!=Axis.Time ) this[(uint)axis] = value ; else if( value is Quant q ) Time = TimeSpan.FromSeconds(q) ; } }
 		public Quant? this[ string axis ] { get => this[axis.Axis()] ; set => this[axis.Axis()] = value ; }
 		public override bool TrySetMember( SetMemberBinder binder , object value ) { this[binder.Name] = (Quant?)value ; return base.TrySetMember( binder, value ) ; }
 		public override bool TryGetMember( GetMemberBinder binder , out object result ) { result = this[binder.Name] ; return base.TryGetMember( binder, out result ) ; }
-		/// <summary>
-		/// Relative time of object .
-		/// </summary>
-		public TimeSpan Time { get; set; }
 		public Quant? Dist { get => this[Axis.Dist] ; set => this[Axis.Dist] = value ; }
 		public Quant? Ergy { get => this[Axis.Ergy] ; set => this[Axis.Ergy] = value ; }
 		public Quant? Heart { get => this[Axis.Heart] ; set => this[Axis.Heart] = value ; }
 		public Quant? Cycle { get => this[Axis.Cycle] ; set => this[Axis.Cycle] = value ; }
 		public Quant? Effort { get => this[Axis.Effort] ; set => this[Axis.Effort] = value ; }
+		public Quant? Drag { get => this[Axis.Drag] ; set => this[Axis.Drag] = value ; }
 		#endregion
 
 		#region Quotient
-		public Quant? Speed => Dist.Quotient(Time.TotalSeconds) ;
-		public Quant? Pace => Time.TotalSeconds / Dist ;
+		public Quant? Distance => Dist / Resist ;
+		public Quant? Speed => Distance.Quotient(Time.TotalSeconds) ;
+		public Quant? Pace => Time.TotalSeconds / Distance ;
 		public Quant? Power => Ergy.Quotient(Time.TotalSeconds) ;
-		public Quant? Force => Ergy.Quotient(Dist) ;
+		public Quant? Force => Ergy.Quotient(Distance) ;
 		public Quant? Heartage => Ergy.Quotient(Heart) ;
 		public Quant? Cycleage => Ergy.Quotient(Cycle) ;
 		public Quant? Heartrate => Heart.Quotient(Time.TotalMinutes) ;
 		public Quant? Cyclerate => Cycle.Quotient(Time.TotalMinutes) ;
+		public Quant? Draglet => Drag.Quotient(Cycle) ;
 		#endregion
 
 		#region Query
 		public bool IsGeo => this[Axis.Longitude]!=null || this[Axis.Lat]!=null ;
+		public Quant Resist => Math.Pow( Draglet/100 ?? 1 , 1D/3D ) ;
+		public string Exposion => "{0}={1}J/H".Comb("{0}W/{1}H".Comb(Power.use(Math.Round),Heartrate.use(Math.Round)),Heartage.use(Math.Round)) ;
 		#endregion
 
 		#region Operation
@@ -90,7 +99,11 @@ namespace Rob.Act
 		#endregion
 
 		#region Info
-		public override string ToString() => $"{spec} {Sign} {"{0}={1}".Comb("{0}W/{1}H".Comb(Power.use(p=>Math.Round(p)),Heartrate.use(h=>Math.Round(h))),Heartage.use(h=>Math.Round(h)))} {((int)Dimension).Steps().Select(i=>Quantity[i].Get(q=>$"{(Axis)i}={q}")).Stringy(' ')} {Mark.nil(m=>m==Mark.No)} {Action}" ;
+		public override string ToString() => $"{Action} {Sign} {Exposion} {Trace}" ;
+		public virtual string Quantities => $"{((int)Dimension).Steps().Select(i=>Quantity[i].Get(q=>$"{(Axis)i}={q}")).Stringy(' ')}" ;
+		public virtual string Trace => $"{Quantities} {Mark.nil(m=>m==Mark.No)}" ;
 		#endregion
+
+		public event PropertyChangedEventHandler PropertyChanged { add => propertyChanged += value.DispatchResolve() ; remove => propertyChanged -= value.DispatchResolve() ; } protected PropertyChangedEventHandler propertyChanged ;
 	}
 }
