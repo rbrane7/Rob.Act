@@ -71,7 +71,12 @@ namespace Rob.Act.Analyze
 				(var xMin,var xMax) = rng[xaxe.Spec] ;
 				for( var m=0 ; m<=width ; m+=100 ) GraphPanel.Children.Add( new Label{ Content=$"{xMin+m*(xMax-xMin)/width:#.##}" , Foreground=Brushes.Gray }.Set(l=>{Canvas.SetLeft(l,m-5);Canvas.SetTop(l,height-20);}) ) ;
 				for( var m=50 ; m<=width ; m+=100 ) GraphPanel.Children.Add( new Label{ Content=$"{xMin+m*(xMax-xMin)/width:#.##}" , Foreground=Brushes.Gray }.Set(l=>{Canvas.SetLeft(l,m-5);Canvas.SetTop(l,-10);}) ) ;
-				var n=0 ; foreach( var ax in rng.Keys.Except(xaxes) ) { (var yMin,var yMax) = rng[ax] ; for( var m=height-50 ; m>=0 ; m-=50 ) GraphPanel.Children.Add( new Label{ Content=$"{yMin+(height-m)*(yMax-yMin)/height:#.##}" , Foreground=Brushes.Gray }.Set(l=>{Canvas.SetTop(l,m-20);Canvas.SetLeft(l,n*50-4);}) ) ; ++n ; }
+				if( xMin<0 && xMax>0 ) GraphPanel.Children.Add( new Line{ X1 = -xMin/(xMax-xMin)*width , Y1 = 0 , X2 = -xMin/(xMax-xMin)*width , Y2 = height , Stroke = Brushes.Gray } ) ;
+				var n=0 ; foreach( var ax in rng.Keys.Except(xaxes) )
+				{
+					(var yMin,var yMax) = rng[ax] ; for( var m=height-50 ; m>=0 ; m-=50 ) GraphPanel.Children.Add( new Label{ Content=$"{yMin+(height-m)*(yMax-yMin)/height:#.##}" , Foreground=Brushes.Gray }.Set(l=>{Canvas.SetTop(l,m-20);Canvas.SetLeft(l,n*50-4);}) ) ; ++n ;
+					if( yMin<0 && yMax>0 ) GraphPanel.Children.Add( new Line{ X1 = 0 , Y1 = yMax/(yMax-yMin)*height , X2 = width , Y2 = yMax/(yMax-yMin)*height , Stroke = Brushes.Gray } ) ;
+				}
 			}
 			var k = 0 ; foreach( var asp in Sources )
 			{
@@ -93,13 +98,15 @@ namespace Rob.Act.Analyze
 				for( var m=0 ; m<=width ; m+=10 ) GraphPanel.Children.Add( new Line{ X1 = m , Y1 = 0 , X2 = m , Y2 = height , Stroke = brush , StrokeDashArray = dash } ) ;
 				for( var m=height ; m>=0 ; m-=10 ) GraphPanel.Children.Add( new Line{ X1 = 0 , Y1 = m , X2 = width , Y2 = m , Stroke = brush , StrokeDashArray = dash } ) ;
 			}
-			var k = 0 ; if( Aspect!=null ) foreach( var axe in Aspect ) if( QuantileData.At(axe.Spec) is AxedEnumerable ax && ax.Count()>0 && !xaxes.Contains(axe.Spec) )
+			var k = 0 ; if( Aspect!=null ) foreach( var axe in Aspect ) if( axe.Spec!=null && QuantileData.At(axe.Spec) is AxedEnumerable ax && ax.Count()>0 && !xaxes.Contains(axe.Spec) )
 			{
 				var val = ax.SelectMany(v=>v.Skip(1)) ; ((double Max,double Min) x,(double Max,double Min) y) = ((ax.Max(a=>a[0]),ax.Min(a=>a[0])),(val.Max(),val.Min())) ;
 				{
 					for( var m=0 ; m<=width ; m+=100 ) GraphPanel.Children.Add( new Label{ Content=$"{x.Min+m*(x.Max-x.Min)/width:#.##}" , Foreground=Brushes.Gray }.Set(l=>{Canvas.SetLeft(l,m-5);Canvas.SetTop(l,height-20-10*k);}) ) ;
 					for( var m=50 ; m<=width ; m+=100 ) GraphPanel.Children.Add( new Label{ Content=$"{x.Min+m*(x.Max-x.Min)/width:#.##}" , Foreground=Brushes.Gray }.Set(l=>{Canvas.SetLeft(l,m-5);Canvas.SetTop(l,-10+10*k);}) ) ;
 					for( var m=height-50 ; m>=0 ; m-=50 ) GraphPanel.Children.Add( new Label{ Content=$"{y.Min+(height-m)*(y.Max-y.Min)/height:#.##}" , Foreground=Brushes.Gray }.Set(l=>{Canvas.SetTop(l,m-20);Canvas.SetLeft(l,-4);}) ) ;
+					if( x.Min<0 && x.Max>0 ) GraphPanel.Children.Add( new Line{ X1 = -x.Min/(x.Max-x.Min)*width , Y1 = 0 , X2 = -x.Min/(x.Max-x.Min)*width , Y2 = height , Stroke = Brushes.Gray } ) ;
+					if( y.Min<0 && y.Max>0 ) GraphPanel.Children.Add( new Line{ X1 = 0 , Y1 = y.Max/(y.Max-y.Min)*height , X2 = width , Y2 = y.Max/(y.Max-y.Min)*height , Stroke = Brushes.Gray } ) ;
 				}
 				for( int j = 1 , cnt = ax.FirstOrDefault()?.Length??0 ; j<cnt ; ++j ) GraphPanel.Children.Add( new Polyline{
 					Stroke = new SolidColorBrush(Colos[(j-1)%Colos.Length]) , StrokeDashArray = k==0?null:new DoubleCollection{k} ,
@@ -114,7 +121,7 @@ namespace Rob.Act.Analyze
 	}
 	public class QuantileSubversion : IMultiValueConverter
 	{
-		public object Convert( object[] values , Type targetType , object parameter , CultureInfo culture ) { if(!( values.At(0) is Axe ax && values.At(1) is IEnumerable<Aspect> src )) return null ; var dis = ax.Distribution.ToArray() ; var res = src.Select(a=>a[ax.Spec].Quantile[dis].ToArray()).ToArray() ; return new AxedEnumerable{ Ax = ax , Content = res.Length>0 && res[0].Length>0 ? res[0].Length.Steps().Select(i=>res.Length.Steps().Select(j=>res[j][i]).Prepend(dis[i+(dis.Length>res[0].Length?1:0)]).ToArray()) : Enumerable.Empty<double[]>() } ; }
+		public object Convert( object[] values , Type targetType , object parameter , CultureInfo culture ) { if(!( values.At(0) is Axe ax && values.At(1) is IEnumerable<Aspect> src )) return null ; var dis = ax.Distribution.ToArray() ; var res = src.Where(a=>a[ax.Spec]!=null).Select(a=>a[ax.Spec].Quantile[dis].ToArray()).ToArray() ; return new AxedEnumerable{ Ax = ax , Content = res.Length>0 && res[0].Length>0 ? res[0].Length.Steps().Select(i=>res.Length.Steps().Select(j=>res[j][i]).Prepend(dis[i+(dis.Length>res[0].Length?1:0)]).ToArray()) : Enumerable.Empty<double[]>() } ; }
 		public object[] ConvertBack( object value , Type[] targetTypes , object parameter , CultureInfo culture ) => null ;
 	}
 	struct AxedEnumerable : IEnumerable<double[]> { public Axe Ax ; internal IEnumerable<double[]> Content ; public IEnumerator<double[]> GetEnumerator() => Content?.GetEnumerator()??Enumerable.Empty<double[]>().GetEnumerator() ; IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ; }
