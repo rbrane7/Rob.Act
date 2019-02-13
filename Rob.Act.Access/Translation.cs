@@ -16,7 +16,7 @@ namespace Rob.Act
 		{
 			string cofile = null ; if( file.EndsWith(".tcx") && file.Contains("concept2-logbook-workout-") ) { cofile = file ; file = file.Replace("logbook-workout","result").Replace(".tcx",".csv") ; }
 			var data = file.ReadAllText() ; if( cofile==null ) cofile = file.Replace("result","logbook-workout").Replace(".csv",".tcx") ;
-			if( System.IO.File.Exists(cofile) )
+			if( cofile!=file && System.IO.File.Exists(cofile) )
 			{
 				var text = cofile.ReadAllText().LeftFrom("<Track>") ; var date = text.RightFromFirst("<Lap StartTime=\"").LeftFrom("\"") ; var spec = text.RightFromFirst("<Id>").LeftFrom("</Id>") ;
 				var time = text.RightFromFirst("<TotalTimeSeconds>").LeftFrom("</TotalTimeSeconds>") ; var dist = text.RightFrom("<DistanceMeters>").LeftFrom("</DistanceMeters>") ;

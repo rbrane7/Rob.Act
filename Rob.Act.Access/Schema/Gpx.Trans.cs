@@ -41,7 +41,7 @@ namespace Rob.Act.Gpx
 		XmlElement Element( string name ) => extensions?.Any?.SelectMany(a=>a.ChildNodes.OfType<XmlElement>()).FirstOrDefault(e=>e.LocalName==name) ;
 		public Quant? this[ string quant ]
 		{
-			get { return Element(quant)?.FirstChild?.Value.Parse<Quant>() ; }
+			get => Element(quant)?.FirstChild?.Value.Parse<Quant>() ;
 			set
 			{
 				var ele = Element(quant) ;
@@ -58,7 +58,7 @@ namespace Rob.Act.Gpx
 	static class Extension
 	{
 		public const string Sign = "<gpx " ;
-		static readonly string[] Axes = new[] { "lon" , "lat" , "alt" , "dist" , "crud" , "flow" , "hr" , "cad" , "top" } ;
+		static readonly string[] Axes = new[] { "lon" , "lat" , "alt" , "dist" , "drag" , "flow" , "hr" , "cad" , "top" } ;
 		internal static string Axis( this Axis axe ) => Axes.At((int)axe) ;
 	}
 }

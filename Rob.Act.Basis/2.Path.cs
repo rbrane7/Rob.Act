@@ -17,9 +17,27 @@ namespace Rob.Act
 		public static bool Dominancy = Configer.AppSettings["Path.Dominancy"]!=null ;
 		public static double Margin = Configer.AppSettings["Path.Margin"].Parse<double>()??0 ;
 		public static Dictionary<string,Quant?[]> Meta = new Dictionary<string,Quant?[]>{ ["Tabata"]=new Quant?[]{1,2} } ;
+
 		#region Construct
-		public Path( DateTime time , IEnumerable<Point> points = null ) : base(time) { points.Set(p=>Content.AddRange(p.OrderBy(t=>t.Date))) ; /*var date = DateTime.Now ; for( var i=0 ; i<Count ; ++i ) { if( i<=0 || this[i-1].Mark.HasFlag(Mark.Stop) ) date = this[i].Date ; this[i].Time = this[i].Date-date ; }*/ }
-		public Path( DateTime time , bool close , IEnumerable<Point> points = null ) : this(time,points) { if( close && this[0]?.Mark.HasFlag(Mark.Stop)==false ) Content.Insert(0,new Point(Content[0]){Mark=Mark.Stop}) ; }
+		public Path( DateTime date , IEnumerable<Point> points = null ) : base(date)
+		{
+			points.Set(p=>Content.AddRange(p.OrderBy(t=>t.Date))) ;
+			date = DateTime.Now ; for( var i=0 ; i<Count ; ++i )
+			{
+				if( i<=0 || this[i-1].Mark.HasFlag(Mark.Stop) ) { date = this[i].Date ; if( this[i].Dist==null ) this[i].Dist = 0 ; }
+				if( this[i].Time==TimeSpan.Zero ) this[i].Time = this[i].Date-date ;
+				if( this[i].Dist==null && this[i].IsGeo ) this[i].Dist = this[i-1].Dist + (this[i]-this[i-1]).Euclid(this[i-1]) ;
+			}
+			this.At(Count-1).Set(p=>{Time=p.Time;Dist=p.Dist;}) ;
+		}
+		public Path( DateTime time , bool close , IEnumerable<Point> points = null ) : this(time,points)
+		{
+			if( close )
+			{
+				if( this[0]?.Mark.HasFlag(Mark.Stop)==false ) Content.Insert(0,new Point(Content[0]){Mark=Mark.Stop}) ;
+				if( Heart==null ) { this[0].Heart = 0 ; for( var i=1 ; i<Count ; ++i ) this[i].Heart = this[i-1].Heart+this[i].Heart/60*(this[i].Time-this[i-1].Time).TotalSeconds ; Heart = this[Count-1].Heart ; }
+			}
+		}
 		#endregion
 
 		#region State
@@ -92,12 +110,12 @@ namespace Rob.Act
 			var dif = this>>1 ;
 			var on = true ; Quant? dst = 0 ; for( int i=0,j=0 ; j<dif.Count-1 ; ++i,++j )
 			{
-				var po = this[i] ; if( on ) if( !this[i].Mark.HasFlag(Mark.Stop) && dst<Margin && dif[j].Speed.use(s=>s<dif.Speed)==true ) { RemoveAt(i--) ; dst += dif[j][Axis.Dist] ; dif.RemoveAt(j--) ; } else { on = false ; dst = 0 ; }
+				var po = this[i] ; if( on ) if( !this[i].Mark.HasFlag(Mark.Stop) && dst<Margin && dif[j].Speed.use(s=>s<dif.Speed)==true ) { RemoveAt(i--) ; dst += dif[j].Dist ; dif.RemoveAt(j--) ; } else { on = false ; dst = 0 ; }
 				if( !on && ( on = po.Mark.HasFlag(Mark.Stop) ) ) --j ;
 			}
 			on = true ; dst = 0 ; for( int i=Count-1,j=dif.Count-1 ; j>1 ; --i,--j )
 			{
-				if( on ) if( !this[i-1].Mark.HasFlag(Mark.Stop) && dst<Margin && dif[j].Speed.use( s=> s<dif.Speed )==true ) { this[i-1].Mark |= this[i].Mark ; RemoveAt(i) ; dst += dif[j][Axis.Dist] ; dif.RemoveAt(j) ; } else { on = false ; dst = 0 ; }
+				if( on ) if( !this[i-1].Mark.HasFlag(Mark.Stop) && dst<Margin && dif[j].Speed.use(s=>s<dif.Speed)==true ) { this[i-1].Mark |= this[i].Mark ; RemoveAt(i) ; dst += dif[j].Dist ; dif.RemoveAt(j) ; } else { on = false ; dst = 0 ; }
 				if( !on && ( on = this[i-1].Mark.HasFlag(Mark.Stop) ) ) ++j ;
 			}
 		}
@@ -111,7 +129,7 @@ namespace Rob.Act
 			for( int i=1,j=0 ; j<dif.Count ; ++i,++j ) { if( this[i-1].Mark.HasFlag(Mark.Stop) ) ++i ; if( this[i].Mark.HasFlag(Mark.Stop) ) continue ; vibre[j].Use( q =>{ var t = dif[j].Time ; dif[j].Time = new TimeSpan((long)(dif[j].Time.Ticks*q)) ; /*if( j+1<dif.Count ) dif[j+1].Time += t-dif[j].Time ;*/ } ) ; }
 #else		// double run througd
 			var veloa = dif.Count.Steps().Select(j=>dif.Veloa(j)).ToArray() ;
-			for( int i=1,j=0 ; j<dif.Count ; ++i,++j ) { if( this[i-1].Mark.HasFlag(Mark.Stop) ) ++i ; if( this[i].Mark.HasFlag(Mark.Stop) ) continue ; veloa[j].Use( v =>(dif[j][Axis.Dist]/v).Use( s=> dif[j].Time = TimeSpan.FromSeconds(s) ) ) ; }
+			for( int i=1,j=0 ; j<dif.Count ; ++i,++j ) { if( this[i-1].Mark.HasFlag(Mark.Stop) ) ++i ; if( this[i].Mark.HasFlag(Mark.Stop) ) continue ; veloa[j].Use( v =>(dif[j].Dist/v).Use( s=> dif[j].Time = TimeSpan.FromSeconds(s) ) ) ; }
 #endif
 			for( int i=1,j=0 ; j<dif.Count ; ++i,++j ) { if( this[i-1].Mark.HasFlag(Mark.Stop) ) ++i ; if( this[i].Mark.HasFlag(Mark.Stop) ) continue ; this[i].Time = this[i-1].Time+dif[j].Time ; this[i].Date = this[i-1].Date+dif[j].Time ; }
 		}

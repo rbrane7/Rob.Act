@@ -53,7 +53,7 @@ namespace Rob.Act.Tcx
 		[XmlIgnore] public Trackpoint_t First => Track.At(0) ; [XmlIgnore] public Trackpoint_t Last => Track.At(Track.Count-1) ;
 		internal IEnumerable<Point> Iterator { get { if( Track==null ) yield break ; foreach( var point in Track ) yield return ((Point)point).Set(p=>p.Mark|=Last==point?Mark.Stop:Mark.No) ; } }
 		public static implicit operator Path( ActivityLap_t lap ) => lap.Get( t => new Path(t.StartTime,true,t.Iterator) { Action = t.Notes , Time = TimeSpan.FromSeconds(t.TotalTimeSeconds) } ) ;
-		public static implicit operator ActivityLap_t( Path path ) => path++.Get( w => new ActivityLap_t { StartTime = path.Date , TotalTimeSeconds = w.Time.TotalSeconds , DistanceMeters = w[Axis.Dist]??0 , Track = w.Select(p=>(Trackpoint_t)p).ToList() } ) ;
+		public static implicit operator ActivityLap_t( Path path ) => path++.Get( w => new ActivityLap_t { StartTime = path.Date , TotalTimeSeconds = w.Time.TotalSeconds , DistanceMeters = w.Dist??0 , Track = w.Select(p=>(Trackpoint_t)p).ToList() } ) ;
 	}
 #endif
 	public partial class Trackpoint_t : Aid.Accessible<Axis,Quant?>

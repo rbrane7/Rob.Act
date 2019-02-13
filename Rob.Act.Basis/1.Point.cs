@@ -94,7 +94,7 @@ namespace Rob.Act
 		public static implicit operator Quant?[]( Point point ) => point?.Quantity ;
 		public static Point operator/( Point point , Axis axis ) => point.Set(p=>p[axis]=null) ;
 		public static Point operator/( Point point , string axis ) => point / axis.Axis() ;
-		public static Point operator-( Point point , Point offset ) => new Point(new DateTime(point.Date.Ticks+offset.Date.Ticks>>1)){ Time = point.Date-offset.Date }.Set( p=>{ for( uint i=0 ; i<p.Dimension ; ++i ) p[i] = point[i]-offset[i] ; if( p.IsGeo ) p[Axis.Dist] = p.Euclid(offset) ; } ) ;
+		public static Point operator-( Point point , Point offset ) => new Point(new DateTime(point.Date.Ticks+offset.Date.Ticks>>1)){ Time = point.Date-offset.Date }.Set( p=>{ for( uint i=0 ; i<p.Dimension ; ++i ) p[i] = point[i]-offset[i] ; if( p.IsGeo ) p.Dist = p.Euclid(offset) ; } ) ;
 		public static Point operator+( Point accu , Point diff ) => accu.Set( p => diff.Set( d => { p.Time += d.Time ; for( uint i=0 ; i<p.Dimension ; ++i ) p[i] += d[i] ; } ) ) ;
 		#endregion
 

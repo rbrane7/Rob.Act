@@ -57,7 +57,7 @@ namespace Rob.Act
 		{
 			public Aspectable Context { get; set; }
 			public int Count => Context?.Count>0 ? Context.Max(a=>a.Count) : 0 ;
-			public IEnumerator<Quant?[]> GetEnumerator() { for( int i=0 , count=Count ; i<count ; ++i ) yield return Context.Select(a=>a[i]).ToArray() ; } IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
+			public IEnumerator<Quant?[]> GetEnumerator() { for( int i=0 , count=Count ; i<count ; ++i ) { Quant?[] val = null ; try { val = Context.Select(a=>a[i]).ToArray() ; } catch( System.Exception ex ) { System.Diagnostics.Trace.TraceWarning(ex.Stringy()) ; yield break ; } yield return val ; } } IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
 		}
 		public event NotifyCollectionChangedEventHandler CollectionChanged { add => collectionChanged += value.DispatchResolve() ; remove => collectionChanged -= value.DispatchResolve() ; } NotifyCollectionChangedEventHandler collectionChanged ;
 		internal void OnChanged( NotifyCollectionChangedAction act , Axable item ) => collectionChanged?.Invoke(this,new NotifyCollectionChangedEventArgs(act,item)) ;
