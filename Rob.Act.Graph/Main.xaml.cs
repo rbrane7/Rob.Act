@@ -118,6 +118,8 @@ namespace Rob.Act.Analyze
 		static readonly Color[] Colos = new[]{ new Color{A=255,R=255,G=0,B=0} , new Color{A=255,R=0,G=255,B=0} , new Color{A=255,R=0,G=0,B=255} , new Color{A=255,R=191,G=191,B=0} , new Color{A=255,R=0,G=191,B=191} , new Color{A=255,R=191,G=0,B=191} , new Color{A=255,R=223,G=0,B=159} , new Color{A=255,R=159,G=223,B=0} , new Color{A=255,R=0,G=159,B=223} , new Color{A=255,R=159,G=191,B=223} , new Color{A=255,R=223,G=159,B=0} , new Color{A=255,R=0,G=223,B=159} } ;
 		void AspectAxisGrid_SelectionChanged( object sender, SelectionChangedEventArgs e ) { if( GraphTab.IsSelected ) Graph_Draw(this,null) ; }
 		void AspectMultiToggle_Changed( object sender, RoutedEventArgs e ) { if( sender==AspectMultiToggle || AspectMultiToggle.IsChecked==true ) Sources = null ; }
+		void GraphPanel_MouseMove( object sender, MouseEventArgs e ) => Coordinates = Mouse.GetPosition(GraphPanel) ;
+		System.Windows.Point Coordinates { get => coordinates ; set => PropertyChanged.On(this,"Coordinates",coordinates=value) ; } System.Windows.Point coordinates ;
 	}
 	public class QuantileSubversion : IMultiValueConverter
 	{

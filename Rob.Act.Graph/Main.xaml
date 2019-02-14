@@ -8,6 +8,7 @@
         mc:Ignorable="d"
         Title="Analyze" Height="450" Width="800"
         Name="MainWindow"
+        MouseMove="GraphPanel_MouseMove"
         >
     <Window.Resources>
         <converters:LambdaConverter x:Key="MinConvert" Forward="the(double)*60"/>
@@ -107,9 +108,7 @@
                     </TabControl.ContentTemplate>
                 </TabControl>
             </TabItem>
-            <TabItem Name="GraphTab" Header="Graph" Selector.Selected="Graph_Draw">
-                <Canvas Name="GraphPanel"/>
-            </TabItem>
+            <TabItem Name="GraphTab" Header="Graph" Selector.Selected="Graph_Draw"><Canvas Name="GraphPanel"/></TabItem>
             <TabItem Header="Spectrum">
                 <TabControl Name="SpectrumTabs" ItemsSource="{Binding SelectedItems,ElementName=BookGrid}" DisplayMemberPath="Spectrum.Score" TabStripPlacement="Bottom" SelectionChanged="AspectTabs_Selected">
                     <TabControl.ContentTemplate>
