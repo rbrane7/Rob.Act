@@ -14,6 +14,7 @@ namespace Rob.Act
 	public interface Axable : Aid.Gettable<int,Quant?> , Aid.Gettable<Quant,Quant> , Aid.Countable<Quant?> { Func<int,Quant?> Resolver { get; set; } Func<Aspectable,int> Counter { get; set; } Func<Axe,IEnumerable<Quant>> Distributor { get; set; } string Spec { get; } }
 	public class Axe : Axable , INotifyPropertyChanged
 	{
+		public readonly static Axe No = new Axe() ;
 		public static Func<IEnumerable<Aspectable>> Aspecter ;
 		public event PropertyChangedEventHandler PropertyChanged { add => propertyChanged += value.DispatchResolve() ; remove => propertyChanged -= value.DispatchResolve() ; } PropertyChangedEventHandler propertyChanged ;
 		public Axe() : this(null,null) {} // Default constructor must be present to enable DataGrid implicit Add .
@@ -53,33 +54,47 @@ namespace Rob.Act
 		void ICollection.CopyTo( Array array , int index ) => throw new NotImplementedException() ;
 		#endregion
 		#region Operations
-		public static Axe operator-( Axe x ) => new Axe( i=>-x.Resolve(i) , a=>x.Count ) ;
-		public static Axe operator+( Axe x , Axe y ) => new Axe( i=>x.Resolve(i)+y.Resolve(i) , a=>Math.Max(x.Count,y.Count) ) ;
-		public static Axe operator-( Axe x , Axe y ) => new Axe( i=>x.Resolve(i)-y.Resolve(i) , a=>Math.Max(x.Count,y.Count) ) ;
-		public static Axe operator*( Axe x , Axe y ) => new Axe( i=>x.Resolve(i)*y.Resolve(i) , a=>Math.Max(x.Count,y.Count) ) ;
-		public static Axe operator/( Axe x , Axe y ) => new Axe( i=>x.Resolve(i)/y.Resolve(i).Nil() , a=>Math.Max(x.Count,y.Count) ) ;
-		public static Axe operator^( Axe x , Axe y ) => new Axe( i => x.Resolve(i) is Quant a && y.Resolve(i) is Quant b ? Math.Pow(a,b) : null as Quant? , a=>Math.Max(x.Count,y.Count) ) ;
-		public static Axe operator+( Axe x , Quant y ) => new Axe( i=>x.Resolve(i)+y , a=>x.Count ) ;
-		public static Axe operator-( Axe x , Quant y ) => new Axe( i=>x.Resolve(i)-y , a=>x.Count ) ;
-		public static Axe operator*( Axe x , Quant y ) => new Axe( i=>x.Resolve(i)*y , a=>x.Count ) ;
-		public static Axe operator/( Axe x , Quant y ) => new Axe( i=>x.Resolve(i)/y , a=>x.Count ) ;
-		public static Axe operator+( Quant x , Axe y ) => new Axe( i=>x+y.Resolve(i) , a=>y.Count ) ;
-		public static Axe operator-( Quant x , Axe y ) => new Axe( i=>x-y.Resolve(i) , a=>y.Count ) ;
-		public static Axe operator*( Quant x , Axe y ) => new Axe( i=>x*y.Resolve(i) , a=>y.Count ) ;
-		public static Axe operator/( Quant x , Axe y ) => new Axe( i=>x/y.Resolve(i) , a=>y.Count ) ;
-		public static Axe operator^( Axe x , Quant y ) => new Axe( i => x.Resolve(i) is Quant a ? Math.Pow(a,y) : null as Quant? , a=>x.Count ) ;
-		public static Axe operator^( Quant x , Axe y ) => new Axe( i => y.Resolve(i) is Quant a ? Math.Pow(x,a) : null as Quant? , a=>y.Count ) ;
-		public static Axe operator|( Axe x , Axe y ) => new Axe( i => i<x.Count ? x.Resolve(i) : y.Resolve(i-x.Count) , a=>x.Count+y.Count ) ;
-		public static Axe operator++( Axe x ) => new Axe( i=>x.Resolve(i+1) , a=>x.Count ) ;
-		public static Axe operator--( Axe x ) => new Axe( i=>x.Resolve(i-1) , a=>x.Count ) ;
-		public static Axe operator>>( Axe x , int lev ) => lev<0 ? x<<-lev : lev==0 ? x : new Axe( i=>x.Resolve(i)-x.Resolve(i-1) , a=>x.Count )>>lev-1 ;
-		public static Axe operator<<( Axe x , int lev ) => lev<0 ? x>>-lev : lev==0 ? x : new Axe( i=>i.Steps().Sum(x.Resolve) , a=>x.Count )>>lev-1 ;
+		public static Axe operator-( Axe x ) => x==null ? No : new Axe( i=>-x.Resolve(i) , a=>x.Count ) ;
+		public static Axe operator+( Axe x , Axe y ) => x==null||y==null ? No : new Axe( i=>x.Resolve(i)+y.Resolve(i) , a=>Math.Max(x.Count,y.Count) ) ;
+		public static Axe operator-( Axe x , Axe y ) => x==null||y==null ? No : new Axe( i=>x.Resolve(i)-y.Resolve(i) , a=>Math.Max(x.Count,y.Count) ) ;
+		public static Axe operator*( Axe x , Axe y ) => x==null||y==null ? No : new Axe( i=>x.Resolve(i)*y.Resolve(i) , a=>Math.Max(x.Count,y.Count) ) ;
+		public static Axe operator/( Axe x , Axe y ) => x==null||y==null ? No : new Axe( i=>x.Resolve(i)/y.Resolve(i).Nil() , a=>Math.Max(x.Count,y.Count) ) ;
+		public static Axe operator^( Axe x , Axe y ) => x==null||y==null ? No : new Axe( i => x.Resolve(i) is Quant a && y.Resolve(i) is Quant b ? Math.Pow(a,b) : null as Quant? , a=>Math.Max(x.Count,y.Count) ) ;
+		public static Axe operator+( Axe x , Quant y ) => x==null ? No : new Axe( i=>x.Resolve(i)+y , a=>x.Count ) ;
+		public static Axe operator-( Axe x , Quant y ) => x==null ? No : new Axe( i=>x.Resolve(i)-y , a=>x.Count ) ;
+		public static Axe operator*( Axe x , Quant y ) => x==null ? No : new Axe( i=>x.Resolve(i)*y , a=>x.Count ) ;
+		public static Axe operator/( Axe x , Quant y ) => x==null ? No : new Axe( i=>x.Resolve(i)/y.nil() , a=>x.Count ) ;
+		public static Axe operator+( Quant x , Axe y ) => y==null ? No : new Axe( i=>x+y.Resolve(i) , a=>y.Count ) ;
+		public static Axe operator-( Quant x , Axe y ) => y==null ? No : new Axe( i=>x-y.Resolve(i) , a=>y.Count ) ;
+		public static Axe operator*( Quant x , Axe y ) => y==null ? No : new Axe( i=>x*y.Resolve(i) , a=>y.Count ) ;
+		public static Axe operator/( Quant x , Axe y ) => y==null ? No : new Axe( i=>x/y.Resolve(i).Nil() , a=>y.Count ) ;
+		public static Axe operator^( Axe x , Quant y ) => x==null ? No : new Axe( i => x.Resolve(i) is Quant a ? Math.Pow(a,y) : null as Quant? , a=>x.Count ) ;
+		public static Axe operator^( Quant x , Axe y ) => y==null ? No : new Axe( i => y.Resolve(i) is Quant a ? Math.Pow(x,a) : null as Quant? , a=>y.Count ) ;
+		public static Axe operator|( Axe x , Axe y ) => x==null ? y : y==null ? x : new Axe( i => i<x.Count ? x.Resolve(i) : y.Resolve(i-x.Count) , a=>x.Count+y.Count ) ;
+		public static Axe operator++( Axe x ) => x==null ? No : new Axe( i=>x.Resolve(i+1) , a=>x.Count ) ;
+		public static Axe operator--( Axe x ) =>x==null ? No :  new Axe( i=>x.Resolve(i-1) , a=>x.Count ) ;
+		public static Axe operator>>( Axe x , int lev ) => x==null ? No : lev<0 ? x<<-lev : lev==0 ? x : new Axe( i=>x.Resolve(i)-x.Resolve(i-1) , a=>x.Count )>>lev-1 ;
+		public static Axe operator<<( Axe x , int lev ) => x==null ? No : lev<0 ? x>>-lev : lev==0 ? x : new Axe( i=>i.Steps().Sum(x.Resolve) , a=>x.Count )>>lev-1 ;
+		public static IEnumerable<int> operator>( Axe x , Quant val ) => x?.Count.Steps().Where(i=>x[i]>val) ;
+		public static IEnumerable<int> operator<( Axe x , Quant val ) => x?.Count.Steps().Where(i=>x[i]<val) ;
+		public static IEnumerable<int> operator>=( Axe x , Quant val ) => x?.Count.Steps().Where(i=>x[i]>=val) ;
+		public static IEnumerable<int> operator<=( Axe x , Quant val ) => x?.Count.Steps().Where(i=>x[i]<=val) ;
+		public static IEnumerable<int> operator>( Quant val , Axe x ) => x<val ;
+		public static IEnumerable<int> operator<( Quant val , Axe x ) => x>val ;
+		public static IEnumerable<int> operator>=( Quant val , Axe x ) => x<=val ;
+		public static IEnumerable<int> operator<=( Quant val , Axe x ) => x>=val ;
+		public static IEnumerable<int> operator>( Axe x , Axe y ) => Math.Min(x?.Count??0,y?.Count??0).Steps().Where(i=>x[i]>y[i]) ;
+		public static IEnumerable<int> operator<( Axe x , Axe y ) => Math.Min(x?.Count??0,y?.Count??0).Steps().Where(i=>x[i]<y[i]) ;
+		public static IEnumerable<int> operator>=( Axe x , Axe y ) => Math.Min(x?.Count??0,y?.Count??0).Steps().Where(i=>x[i]>=y[i]) ;
+		public static IEnumerable<int> operator<=( Axe x , Axe y ) => Math.Min(x?.Count??0,y?.Count??0).Steps().Where(i=>x[i]<=y[i]) ;
 		public static implicit operator Axe( Func<int,Quant?> resolver ) => resolver.Get(r=>new Axe(r)) ;
 		public static implicit operator Axe( Quant q ) => new Axe( i=>q ) ;
 		public static implicit operator Axe( int q ) => new Axe( i=>q ) ;
 		public Axe Round => new Axe( i=>Resolve(i).use(Math.Round) , a=>Count) ;
 		public Axe Skip( int count ) => new Axe( i=>Resolve(count+i) , a=>Math.Max(0,Count-count) ) ;
 		public Axe Take( int count ) => new Axe( Resolve , a=>Math.Min(count,Count) ) ;
+		public Axe For( IEnumerable<int> fragment ) => fragment?.ToArray().Get(f=>new Axe(i=>Resolve(f[i]),a=>f?.Length??0)) ?? No ;
+		public Axe this[ IEnumerable<int> fragment ] => For(fragment) ;
 		#endregion
 	}
 	public class Quantile : Aid.Gettable<int,Quant> , Aid.Countable<Quant> , Aid.Gettable<IEnumerable<Quant>,Quantile>

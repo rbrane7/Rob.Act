@@ -66,7 +66,7 @@ namespace Rob.Act.Analyze
 				for( var m=0 ; m<=width ; m+=10 ) GraphPanel.Children.Add( new Line{ X1 = m , Y1 = 0 , X2 = m , Y2 = height , Stroke = brush , StrokeDashArray = dash } ) ;
 				for( var m=height ; m>=0 ; m-=10 ) GraphPanel.Children.Add( new Line{ X1 = 0 , Y1 = m , X2 = width , Y2 = m , Stroke = brush , StrokeDashArray = dash } ) ;
 			}
-			var rng = new Dictionary<string,(double Min,double Max)>() ; Sources.SelectMany(s=>s).Each(a=>{if(!rng.ContainsKey(a.Spec))rng[a.Spec]=(a.Min().Value,a.Max().Value);else{rng[a.Spec]=(Math.Min(rng[a.Spec].Min,a.Min().Value),Math.Max(rng[a.Spec].Max,a.Max().Value));}}) ; if( !rng.ContainsKey(xaxe.Spec) ) return ;
+			var rng = new Dictionary<string,(double Min,double Max)>() ; Sources.SelectMany(s=>s).Each(a=>{if(a.Any(q=>q!=null))if(!rng.ContainsKey(a.Spec))rng[a.Spec]=(a.Min().Value,a.Max().Value);else{rng[a.Spec]=(Math.Min(rng[a.Spec].Min,a.Min().Value),Math.Max(rng[a.Spec].Max,a.Max().Value));}}) ; if( !rng.ContainsKey(xaxe.Spec) ) return ;
 			{
 				(var xMin,var xMax) = rng[xaxe.Spec] ;
 				for( var m=0 ; m<=width ; m+=100 ) GraphPanel.Children.Add( new Label{ Content=$"{xMin+m*(xMax-xMin)/width:#.##}" , Foreground=Brushes.Gray }.Set(l=>{Canvas.SetLeft(l,m-5);Canvas.SetTop(l,height-20);}) ) ;

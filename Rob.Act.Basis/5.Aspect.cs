@@ -19,7 +19,7 @@ namespace Rob.Act
 		Aspectable[] Content ;
 		public Aspectables( params Aspectable[] content ) => Content = content ;
 		public Aspectable this[ int key ] => Content.At(key) ;
-		public Aspectable this[ string key ] { get { var reg = new Regex(key) ; return Content.SingleOrNo(a=>reg.Match(a.Spec).Success) ; } }
+		[LambdaContext.Dominant] public Aspectable this[ string key ] { get { var reg = new Regex(key) ; return Content.SingleOrNo(a=>reg.Match(a.Spec).Success) ; } }
 		public int Count => Content?.Length ?? 0 ;
 		public Aspectable Source { set => this.Each(a=>a.Source=value) ; }
 		public Aspectable[] Sources { set => this.Each(a=>a.Sources=value) ; }
@@ -45,7 +45,7 @@ namespace Rob.Act
 		public Aspect( Aspect source , bool multi = false ) : this(source?.Where(a=>a.Multi==multi).Select(a=>new Axe(a))) { spec = source?.Spec ; source.Trait.Each(t=>Trait.Add(new Traitlet(t))) ; }
 		public Aspect( IEnumerable<Axe> axes = null ) : base(axes??Enumerable.Empty<Axe>()) => Trait = new Traits{ Context = this } ;
 		public Aspect() : this(axes:null) {} // Default constructor must be present to enable DataGrid implicit Add .
-		public Axe this[ string key ] => this.FirstOrDefault(a=>a.Spec==key) ;
+		[LambdaContext.Dominant] public Axe this[ string key ] => this.FirstOrDefault(a=>a.Spec==key) ;
 		public virtual string Spec { get => spec ; set { if( value==spec ) return ; spec = value ; propertyChanged.On(this,"Spec") ; } } string spec ;
 		public string Score { get => $"{Spec} {Trait}" ; set => propertyChanged.On(this,"Score") ; }
 		public Traits Trait { get; }
