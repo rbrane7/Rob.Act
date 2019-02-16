@@ -56,7 +56,8 @@
             <Button Content="Add Axe" Name="AddAspectAxeButton" Click="AddAspectAxeButton_Click" Margin="2"/>
             <Button Content="Add Trait" Name="AddAspectTraitButton" Grid.Column="1" Click="AddAspectTraitButton_Click" Margin="2"/>
         </Grid>
-        <Button Content="Add Aspect" Name="AddAspectButton" Click="AddAspectButton_Click" Margin="2"/>
+        <TextBox Text="{Binding Coordinates}" Panel.ZIndex="1" Margin="2"/>
+        <Button Content="Add Aspect" Name="AddAspectButton" Click="AddAspectButton_Click" Margin="2" Panel.ZIndex="2"/>
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions><ColumnDefinition Width="6*"/><ColumnDefinition Width="1*"/></Grid.ColumnDefinitions>
             <Grid>
@@ -87,7 +88,7 @@
             </DataGrid.CommandBindings>
         </DataGrid>
         <Button Content="Add Axe" Name="AddAxeButton" Grid.Row="2" Click="AddAxeButton_Click" Margin="2"/>
-        <TabControl Name="DisplayTable" Grid.Row="1" Grid.Column="1" Margin="2" SelectionChanged="DisplayTable_SelectionChanged">
+        <TabControl Name="DisplayTable" Grid.Row="1" Grid.Column="1" Margin="2" SelectionChanged="DisplayTable_SelectionChanged" MouseEnter="GraphPanel_MouseEnter" MouseLeave="GraphPanel_MouseLeave">
             <TabItem Header="Aspect">
                 <TabControl Name="AspectTabs" ItemsSource="{Binding Sources}" DisplayMemberPath="Score" TabStripPlacement="Bottom"><!---->
                     <TabControl.ContentTemplate>
@@ -108,7 +109,12 @@
                     </TabControl.ContentTemplate>
                 </TabControl>
             </TabItem>
-            <TabItem Name="GraphTab" Header="Graph" Selector.Selected="Graph_Draw"><Canvas Name="GraphPanel"/></TabItem>
+            <TabItem Name="GraphTab" Header="Graph" Selector.Selected="Graph_Draw">
+                <Canvas Name="GraphPanel">
+                    <!--<Line Name="MouseXLine" Stroke="Gray" X1="0" X2="{Binding ColumnDefinitions[1].ActualWidth,ElementName=MainFrame}" Y1="{Binding MousePoint?.Y}" Y2="{Binding MousePoint?.Y}"/>
+                    <Line Name="MouseYLine" Stroke="Gray" Y1="0" Y2="{Binding RowDefinitions[1].ActualHeight,ElementName=MainFrame}" X1="{Binding MousePoint.X}" X2="{Binding MousePoint.X}"/>-->
+                </Canvas>
+            </TabItem>
             <TabItem Header="Spectrum">
                 <TabControl Name="SpectrumTabs" ItemsSource="{Binding SelectedItems,ElementName=BookGrid}" DisplayMemberPath="Spectrum.Score" TabStripPlacement="Bottom" SelectionChanged="AspectTabs_Selected">
                     <TabControl.ContentTemplate>

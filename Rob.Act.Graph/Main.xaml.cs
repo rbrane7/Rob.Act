@@ -85,6 +85,7 @@ namespace Rob.Act.Analyze
 					Points = new PointCollection(ax.Count.Steps().Where(i=>xax[i]!=null&&ax[i]!=null).Select(i=>new System.Windows.Point((xax[i].Value-rng[xax.Spec].Min)/(rng[xax.Spec].Max-rng[xax.Spec].Min)*width,height-(ax[i].Value-rng[ax.Spec].Min)/(rng[ax.Spec].Max-rng[ax.Spec].Min)*height)))
 				} ) ; } catch( System.Exception ex ) { Trace.TraceWarning(ex.Stringy()) ; }
 			}
+			Hypercube = rng.Where(a=>xaxe.Spec==a.Key||!xaxes.Contains(a.Key)).ToArray() ; GraphFrame = (width,height) ;
 		}
 		void GraphDrawQuantile()
 		{
@@ -98,9 +99,11 @@ namespace Rob.Act.Analyze
 				for( var m=0 ; m<=width ; m+=10 ) GraphPanel.Children.Add( new Line{ X1 = m , Y1 = 0 , X2 = m , Y2 = height , Stroke = brush , StrokeDashArray = dash } ) ;
 				for( var m=height ; m>=0 ; m-=10 ) GraphPanel.Children.Add( new Line{ X1 = 0 , Y1 = m , X2 = width , Y2 = m , Stroke = brush , StrokeDashArray = dash } ) ;
 			}
+			var rng = new List<KeyValuePair<string,(double Min,double Max)>>() ;
 			var k = 0 ; if( Aspect!=null ) foreach( var axe in Aspect ) if( axe.Spec!=null && QuantileData.At(axe.Spec) is AxedEnumerable ax && ax.Count()>0 && !xaxes.Contains(axe.Spec) )
 			{
-				var val = ax.SelectMany(v=>v.Skip(1)) ; ((double Max,double Min) x,(double Max,double Min) y) = ((ax.Max(a=>a[0]),ax.Min(a=>a[0])),(val.Max(),val.Min())) ;
+				var val = ax.SelectMany(v=>v.Skip(1)) ; ((double Min,double Max) x,(double Min,double Max) y) = ((ax.Min(a=>a[0]),ax.Max(a=>a[0])),(val.Min(),val.Max())) ;
+				rng.Add(new KeyValuePair<string,(double Min,double Max)>(ax.Ax.Spec,x)) ; rng.Add(new KeyValuePair<string,(double Min,double Max)>($"Q({ax.Ax.Spec})",y)) ;
 				{
 					for( var m=0 ; m<=width ; m+=100 ) GraphPanel.Children.Add( new Label{ Content=$"{x.Min+m*(x.Max-x.Min)/width:#.##}" , Foreground=Brushes.Gray }.Set(l=>{Canvas.SetLeft(l,m-5);Canvas.SetTop(l,height-20-10*k);}) ) ;
 					for( var m=50 ; m<=width ; m+=100 ) GraphPanel.Children.Add( new Label{ Content=$"{x.Min+m*(x.Max-x.Min)/width:#.##}" , Foreground=Brushes.Gray }.Set(l=>{Canvas.SetLeft(l,m-5);Canvas.SetTop(l,-10+10*k);}) ) ;
@@ -113,13 +116,27 @@ namespace Rob.Act.Analyze
 					Points = new PointCollection(ax.Select(a=>new System.Windows.Point((a[0]-x.Min)/(x.Max-x.Min)*width,height-(a[j]-y.Min)/(y.Max-y.Min)*height)))
 				} ) ; ++k ;
 			}
+			Hypercube = rng ; GraphFrame = (width,height) ;
 		}
-		(double Width,double Height) GraphScreenBorder => (DisplayTable.Margin.Left-DisplayTable.Margin.Right-4,30) ;
+		IEnumerable<KeyValuePair<string,(double Min,double Max)>> Hypercube ; (double Width,double Height) GraphFrame ; (Line X,Line Y) MouseCross ;
+		(double Width,double Height) GraphScreenBorder => (DisplayTable.Margin.Left+DisplayTable.Margin.Right+4,30) ;
 		static readonly Color[] Colos = new[]{ new Color{A=255,R=255,G=0,B=0} , new Color{A=255,R=0,G=255,B=0} , new Color{A=255,R=0,G=0,B=255} , new Color{A=255,R=191,G=191,B=0} , new Color{A=255,R=0,G=191,B=191} , new Color{A=255,R=191,G=0,B=191} , new Color{A=255,R=223,G=0,B=159} , new Color{A=255,R=159,G=223,B=0} , new Color{A=255,R=0,G=159,B=223} , new Color{A=255,R=159,G=191,B=223} , new Color{A=255,R=223,G=159,B=0} , new Color{A=255,R=0,G=223,B=159} } ;
 		void AspectAxisGrid_SelectionChanged( object sender, SelectionChangedEventArgs e ) { if( GraphTab.IsSelected ) Graph_Draw(this,null) ; }
 		void AspectMultiToggle_Changed( object sender, RoutedEventArgs e ) { if( sender==AspectMultiToggle || AspectMultiToggle.IsChecked==true ) Sources = null ; }
-		void GraphPanel_MouseMove( object sender, MouseEventArgs e ) => Coordinates = Mouse.GetPosition(GraphPanel) ;
-		System.Windows.Point Coordinates { get => coordinates ; set => PropertyChanged.On(this,"Coordinates",coordinates=value) ; } System.Windows.Point coordinates ;
+		void GraphPanel_MouseMove( object sender, MouseEventArgs e ) => MousePoint = Mouse.GetPosition(GraphPanel).nil() ;
+		public string Coordinates { get => coordinates ; set => PropertyChanged.On(this,"Coordinates",coordinates=value); } string coordinates ;
+		public System.Windows.Point? MousePoint {
+			get => mousePoint ;
+			set
+			{
+				MouseCross.X.Set(l=>GraphPanel.Children.Remove(l)) ; MouseCross.Y.Set(l=>GraphPanel.Children.Remove(l)) ; var qtl = Hypercube is IList ;
+				PropertyChanged.On( this, "MousePoint", Coordinates = (mousePoint=value).Get(m=>Hypercube?.Select(a=>$"{a.Key}={( ( qtl ? !a.Key.StartsBy("Q(") : AspectAxisGrid.SelectedItem is Axe x && a.Key==x.Spec ) ? m.X/GraphFrame.Width*(a.Value.Max-a.Value.Min)+a.Value.Min : (GraphFrame.Height-m.Y)/GraphFrame.Height*(a.Value.Max-a.Value.Min)+a.Value.Min )}")).Stringy('\n') ) ;
+				if( value==null || value?.X<0 || value?.Y<0 || value?.X>GraphFrame.Width || value?.Y>GraphFrame.Height ) return ;
+				GraphPanel.Children.Add( MouseCross.X = new Line{ Stroke=Brushes.Gray , X1=0 , X2=GraphFrame.Width , Y1=value.Value.Y , Y2=value.Value.Y } ) ; GraphPanel.Children.Add( MouseCross.Y = new Line{ Stroke=Brushes.Gray , Y1=0 , Y2=GraphFrame.Height , X1=value.Value.X , X2=value.Value.X } ) ;
+			}
+		} System.Windows.Point? mousePoint ;
+		void GraphPanel_MouseEnter( object sender, MouseEventArgs e ) => Panel.SetZIndex(AddAspectButton,Coordinates!=null?0:2) ;
+		void GraphPanel_MouseLeave( object sender, MouseEventArgs e ) => Panel.SetZIndex(AddAspectButton,2) ;
 	}
 	public class QuantileSubversion : IMultiValueConverter
 	{
