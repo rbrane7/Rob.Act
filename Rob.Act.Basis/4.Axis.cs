@@ -34,7 +34,7 @@ namespace Rob.Act
 		public Quant this[ Quant at ] => this.Count(q=>q>=at) ;
 		public Quant? this[ int at ] => (uint)at<Count ? Resolve(at) : null as Quant? ;
 		protected internal virtual Quant? Resolve( int at ) => Resolver?.Invoke(at) ;
-		public Func<int,Quant?> Resolver { get => resolver ?? ( resolver = (Multi?Resolvelet.Compile<Func<Aspectables,Axe>>().Of(Aspects):Resolvelet.Compile<Func<Aspectable,Axe>>().Of(Aspect)) is Axe a ? i=>a[i] : new Func<int,Quant?>(i=>null as Quant?) ) ; set { if( resolver==value ) return ; resolver = value ; propertyChanged.On(this,"Resolver") ; } } Func<int,Quant?> resolver ;
+		public Func<int,Quant?> Resolver { get => resolver ?? ( resolver = (Multi?Resolvelet.Compile<Func<Aspectables,Axe>>().Of(Aspects):Resolvelet.Compile<Func<Aspectable,Axe>>().Of(Aspect)) is Axe a ? i=>a.Set(x=>{if(counter==null)counter=a.counter;})[i] : new Func<int,Quant?>(i=>null as Quant?) ) ; set { if( resolver==value ) return ; resolver = value ; propertyChanged.On(this,"Resolver") ; } } Func<int,Quant?> resolver ;
 		public string Resolvelet { get => resolvelet ; set { if( value==resolvelet ) return ; resolvelet = value ; Resolver = null ; propertyChanged.On(this,"Resolvelet") ; } } string resolvelet ;
 		public virtual int Count => Counter is Func<Aspectable,int> c ? c(Aspect) : DefaultCount ;
 		protected virtual int DefaultCount => Resource?.Points.Count ?? 0 ;
@@ -54,6 +54,7 @@ namespace Rob.Act
 		void ICollection.CopyTo( Array array , int index ) => throw new NotImplementedException() ;
 		#endregion
 		#region Operations
+		public static Quant? operator+( Axe x ) => x?.Sum ;
 		public static Axe operator-( Axe x ) => x==null ? No : new Axe( i=>-x.Resolve(i) , a=>x.Count ) ;
 		public static Axe operator+( Axe x , Axe y ) => x==null||y==null ? No : new Axe( i=>x.Resolve(i)+y.Resolve(i) , a=>Math.Max(x.Count,y.Count) ) ;
 		public static Axe operator-( Axe x , Axe y ) => x==null||y==null ? No : new Axe( i=>x.Resolve(i)-y.Resolve(i) , a=>Math.Max(x.Count,y.Count) ) ;
@@ -90,7 +91,8 @@ namespace Rob.Act
 		public static implicit operator Axe( Func<int,Quant?> resolver ) => resolver.Get(r=>new Axe(r)) ;
 		public static implicit operator Axe( Quant q ) => new Axe( i=>q ) ;
 		public static implicit operator Axe( int q ) => new Axe( i=>q ) ;
-		public Axe Round => new Axe( i=>Resolve(i).use(Math.Round) , a=>Count) ;
+		public Axe Round => new Axe( i=>Resolve(i).use(Math.Round) , a=>Count ) ;
+		public Quant? Sum => this.Sum() ;
 		public Axe Skip( int count ) => new Axe( i=>Resolve(count+i) , a=>Math.Max(0,Count-count) ) ;
 		public Axe Take( int count ) => new Axe( Resolve , a=>Math.Min(count,Count) ) ;
 		public Axe For( IEnumerable<int> fragment ) => fragment?.ToArray().Get(f=>new Axe(i=>Resolve(f[i]),a=>f?.Length??0)) ?? No ;

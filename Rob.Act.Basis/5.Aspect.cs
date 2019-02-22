@@ -70,19 +70,20 @@ namespace Rob.Act
 		public class Traitlet : INotifyPropertyChanged
 		{
 			internal Aspect Context ;
-			public string Name { get => name ; set => propertyChanged.On(this,"Name",name=value) ; } string name ;
-			public string Unit { get => unit ; set => propertyChanged.On(this,"Unit",unit=value) ; } string unit ;
-			public string Lex { get => lex ; set => propertyChanged.On(this,"Lex,Value",Resolver=(lex=value).Compile<Func<Aspect,Quant?>>()) ; } Func<Aspect,Quant?> Resolver ; string lex ;
+			public string Spec { get => name ; set => propertyChanged.On(this,"Spec",name=value) ; } string name ;
+			public string Unit { get => unit ; set => propertyChanged.On(this,"Unit,Valunit",unit=value) ; } string unit ;
+			public string Lex { get => lex ; set => propertyChanged.On(this,"Lex,Value,Valunit",Resolver=(lex=value).Compile<Func<Aspect,Quant?>>()) ; } Func<Aspect,Quant?> Resolver ; string lex ;
 			public Quant? Value => Resolver?.Invoke(Context) ;
-			public override string ToString() => $"{Name.Null(n=>n.No())}{Value}{Unit.Null(v=>v.No())}" ;
+			public string Valunit => Value+Unit ;
+			public override string ToString() => $"{Spec.Null(n=>n.No()).Get(s=>s+'=')}{Value}{Unit.Null(v=>v.No())}" ;
 			public Traitlet() {} // Default constructor must be present to enable DataGrid implicit Add .
-			public Traitlet( Traitlet source ) { name = source?.Name ; unit = source?.Unit ; lex = source?.Lex ; Resolver = source?.Resolver ; }
+			public Traitlet( Traitlet source ) { name = source?.Spec ; unit = source?.Unit ; lex = source?.Lex ; Resolver = source?.Resolver ; }
 			public event PropertyChangedEventHandler PropertyChanged { add => propertyChanged += value.DispatchResolve() ; remove => propertyChanged -= value.DispatchResolve() ; } protected PropertyChangedEventHandler propertyChanged ;
 		}
 		public class Traits : Aid.Collections.ObservableList<Traitlet> , Aid.Gettable<Traitlet> , ICollection<Traitlet> , IList , INotifyPropertyChanged
 		{
 			internal Aspect Context ;
-			public Traitlet this[ string key ] => key.Get(k=>new Regex(k).Get(r=>this.SingleOrNo(t=>r.Match(t.Name).Success))) ;
+			public Traitlet this[ string key ] => key.Get(k=>new Regex(k).Get(r=>this.SingleOrNo(t=>r.Match(t.Spec).Success))) ;
 			public override void Add( Traitlet trait ) => base.Add(trait.Set(t=>{t.Context=Context;t.PropertyChanged+=ChangedItem;Spec=null;})) ;
 			public override bool Remove( Traitlet item ) => base.Remove(item).Set(r=>{item.PropertyChanged-=ChangedItem;Spec=null;}) ;
 			void ICollection<Traitlet>.Add( Traitlet trait ) => Add(trait) ;
@@ -90,7 +91,7 @@ namespace Rob.Act
 			void IList.Remove( object value ) => Remove( value as Traitlet ) ;
 			public override string ToString() => Spec ;
 			public string Spec { get => this.Stringy(',').Null(v=>v.No()) ; protected set => propertyChanged.On(this,"Spec",Context.Score=value) ; }
-			void ChangedItem( object subject , PropertyChangedEventArgs prop ) => Spec = null ;
+			void ChangedItem( object subject , PropertyChangedEventArgs prop ) { Spec = null ; Context?.propertyChanged.On(Context,"Trait") ; }
 			public event PropertyChangedEventHandler PropertyChanged { add => propertyChanged += value.DispatchResolve() ; remove => propertyChanged -= value.DispatchResolve() ; } protected PropertyChangedEventHandler propertyChanged ;
 		}
 	}
