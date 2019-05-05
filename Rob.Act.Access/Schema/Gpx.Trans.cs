@@ -35,8 +35,8 @@ namespace Rob.Act.Gpx
 	}
 	public partial class wptType : Aid.Accessible<Quant?> , Aid.Accessible<Axis,Quant?>
 	{
-		public static implicit operator Point( wptType point ) => point.Get( p => new Point(p.time) { Spec = p.name , [Axis.Lon] = p[Axis.Lon] , [Axis.Lat] = p[Axis.Lat] , [Axis.Alt] = p[Axis.Alt] , [Axis.Heart] = p[Axis.Heart] , [Axis.Cycle] = p[Axis.Cycle] } ) ;
-		public static implicit operator wptType( Point point ) => point.Get( p => new wptType { time = p.Date , timeSpecified = p.Date!=null , [Axis.Lat] = p[Axis.Lat] , [Axis.Lon] = p[Axis.Lon] , [Axis.Alt] = p[Axis.Alt] , [Axis.Heart] = p[Axis.Heart] , [Axis.Cycle] = p[Axis.Cycle] } ) ;
+		public static implicit operator Point( wptType point ) => point.Get( p => new Point(p.time) { Spec = p.name , [Axis.Lon] = p[Axis.Lon] , [Axis.Lat] = p[Axis.Lat] , [Axis.Alt] = p[Axis.Alt] , [Axis.Beat] = p[Axis.Beat] , [Axis.Bit] = p[Axis.Bit] } ) ;
+		public static implicit operator wptType( Point point ) => point.Get( p => new wptType { time = p.Date , timeSpecified = p.Date!=null , [Axis.Lat] = p[Axis.Lat] , [Axis.Lon] = p[Axis.Lon] , [Axis.Alt] = p[Axis.Alt] , [Axis.Beat] = p[Axis.Beat] , [Axis.Bit] = p[Axis.Bit] } ) ;
 		XmlElement Extension => ( extensions ?? ( extensions = new extensionsType{ Any = new XmlElement[]{ "<gpxtpx:TrackPointExtension xmlns:gpxtpx=\"http://www.garmin.com/xmlschemas/TrackPointExtension/v1\"/>".ToXmlElement() } }) ).Any.At(0) ;
 		XmlElement Element( string name ) => extensions?.Any?.SelectMany(a=>a.ChildNodes.OfType<XmlElement>()).FirstOrDefault(e=>e.LocalName==name) ;
 		public Quant? this[ string quant ]

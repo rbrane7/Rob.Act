@@ -38,7 +38,7 @@ namespace Rob.Act
 		/// <summary>
 		/// Signature of the point .
 		/// </summary>
-		public string Sign => sign ?? ( sign = $"{Date}{Time.nil(t=>t==TimeSpan.Zero).Get(t=>$"+{t}")}" ) ; string sign ;
+		public string Sign => sign ?? ( sign = $"{Date}{Time.nil(t=>t==TimeSpan.Zero).Get(t=>$"+{t:hh\\:mm\\:ss}")}" ) ; string sign ;
 		/// <summary>
 		/// Assotiative text .
 		/// </summary>
@@ -63,8 +63,8 @@ namespace Rob.Act
 		public override bool TryGetMember( GetMemberBinder binder , out object result ) { result = this[binder.Name] ; return base.TryGetMember( binder, out result ) ; }
 		public Quant? Dist { get => this[Axis.Dist] ; set => this[Axis.Dist] = value ; }
 		public Quant? Ergy { get => this[Axis.Ergy] ; set => this[Axis.Ergy] = value ; }
-		public Quant? Heart { get => this[Axis.Heart] ; set => this[Axis.Heart] = value ; }
-		public Quant? Cycle { get => this[Axis.Cycle] ; set => this[Axis.Cycle] = value ; }
+		public Quant? Beat { get => this[Axis.Beat] ; set => this[Axis.Beat] = value ; }
+		public Quant? Bit { get => this[Axis.Bit] ; set => this[Axis.Bit] = value ; }
 		public Quant? Effort { get => this[Axis.Effort] ; set => this[Axis.Effort] = value ; }
 		public Quant? Drag { get => this[Axis.Drag] ; set => this[Axis.Drag] = value ; }
 		#endregion
@@ -75,17 +75,17 @@ namespace Rob.Act
 		public Quant? Pace => Time.TotalSeconds / Distance ;
 		public Quant? Power => Ergy.Quotient(Time.TotalSeconds) ;
 		public Quant? Force => Ergy.Quotient(Distance) ;
-		public Quant? Heartage => Ergy.Quotient(Heart) ;
-		public Quant? Cycleage => Ergy.Quotient(Cycle) ;
-		public Quant? Heartrate => Heart.Quotient(Time.TotalMinutes) ;
-		public Quant? Cyclerate => Cycle.Quotient(Time.TotalMinutes) ;
-		public Quant? Draglet => Drag.Quotient(Cycle) ;
+		public Quant? Beatage => Ergy.Quotient(Beat) ;
+		public Quant? Bitage => Ergy.Quotient(Bit) ;
+		public Quant? Beatrate => Beat.Quotient(Time.TotalMinutes) ;
+		public Quant? Bitrate => Bit.Quotient(Time.TotalMinutes) ;
+		public Quant? Draglet => Drag.Quotient(Bit) ;
 		#endregion
 
 		#region Query
 		public bool IsGeo => this[Axis.Longitude]!=null || this[Axis.Lat]!=null ;
 		public Quant Resist => Math.Pow( Draglet/100 ?? 1 , 1D/3D ) ;
-		public string Exposion => "{0}={1}J/H".Comb("{0}W/{1}H".Comb(Power.use(Math.Round),Heartrate.use(Math.Round)),Heartage.use(Math.Round)) ;
+		public string Exposion => "{0}={1}bW".Comb("{0}W/{1}`b".Comb(Power.use(Math.Round),Beatrate.use(Math.Round)),Beatage.use(Math.Round)) ;
 		#endregion
 
 		#region Operation

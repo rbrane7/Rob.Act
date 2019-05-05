@@ -35,7 +35,7 @@ namespace Rob.Act
 			if( close )
 			{
 				if( this[0]?.Mark.HasFlag(Mark.Stop)==false ) Content.Insert(0,new Point(Content[0]){Mark=Mark.Stop}) ;
-				if( Heart==null ) { this[0].Heart = 0 ; for( var i=1 ; i<Count ; ++i ) this[i].Heart = this[i-1].Heart+this[i].Heart/60*(this[i].Time-this[i-1].Time).TotalSeconds ; Heart = this[Count-1].Heart ; }
+				if( Beat==null ) { this[0].Beat = 0 ; for( var i=1 ; i<Count ; ++i ) this[i].Beat = this[i-1].Beat+this[i].Beat/60*(this[i].Time-this[i-1].Time).TotalSeconds ; Beat = this[Count-1].Beat ; }
 			}
 		}
 		#endregion
@@ -56,9 +56,9 @@ namespace Rob.Act
 		public Quant? MinEffort => (Count-1).Steps().Select(i=>Content[i+1].Effort-Content[i].Effort).Skip(5).ToArray().Get(a=>(a.Length-2).Steps(1).Min(i=>9.Steps(1).All(j=>i-j>=0&&a[i-j]>=a[i]&&i+j<a.Length&&a[i]<=a[i+j])?a[i]:null)) ;
 		public Quant? MinMaxEffort => (Count-1).Steps().Select(i=>Content[i+1].Effort-Content[i].Effort).Skip(5).ToArray().Get(a=>(a.Length-2).Steps(1).Min(i=>9.Steps(1).All(j=>i-j>=0&&a[i-j]<=a[i]&&i+j<a.Length&&a[i]>=a[i+j])?a[i]:null)) ;
 		public Quant? AeroEffort { get { var min = MinEffort ; var max = MinMaxEffort ; var mav = (Count-1).Steps().Count(i=>Content[i+1].Effort-Content[i].Effort>=max*0.9) ; var miv = (Count-1).Steps().Count(i=>Content[i+1].Effort-Content[i].Effort<=min*1.2) ; return (min*miv+max*mav)/(miv+mav)*Durability ; } } // => (Meta.By(Action).At(0)*MinEffort+Meta.By(Action).At(1)*MinMaxEffort)/(Meta.By(Action).At(0)+Meta.By(Action).At(1)) ;
-		public Quant? MaxHeart => (Count-1).Steps().Max(i=>(Content[i+1].Heart-Content[i].Heart).Quotient((Content[i+1].Time-Content[i].Time).TotalSeconds)) ;
-		public Quant? MaxExposure => MaxEffort/MaxHeart ;
-		public string MaxExposion => $"{MaxEffort}W/{MaxHeart.use(v=>Math.Round(v*60))}H={MaxExposure.use(Math.Round)}J/H" ;
+		public Quant? MaxBeat => (Count-1).Steps().Max(i=>(Content[i+1].Beat-Content[i].Beat).Quotient((Content[i+1].Time-Content[i].Time).TotalSeconds)) ;
+		public Quant? MaxExposure => MaxEffort/MaxBeat ;
+		public string MaxExposion => $"{MaxEffort}W/{MaxBeat.use(v=>Math.Round(v*60))}`b={MaxExposure.use(Math.Round)}bW" ;
 		public Quant Durability => Math.Max(0,1.1-20/Time.TotalSeconds) ;
 		#endregion
 

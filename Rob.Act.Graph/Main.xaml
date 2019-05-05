@@ -89,7 +89,7 @@
             </DataGrid.CommandBindings>
         </DataGrid>
         <Button Content="Add Axe" Name="AddAxeButton" Grid.Row="2" Click="AddAxeButton_Click" Margin="2" Visibility="Collapsed"/>
-        <TabControl Name="DisplayTable" Grid.Row="1" Grid.Column="1" Margin="2" SelectionChanged="DisplayTable_SelectionChanged" MouseEnter="GraphPanel_MouseEnter" MouseLeave="GraphPanel_MouseLeave">
+        <TabControl Name="DisplayTable" Grid.Row="1" Grid.Column="1" Margin="2" SelectionChanged="DisplayTable_SelectionChanged" MouseEnter="GraphPanel_MouseEnter" MouseLeave="GraphPanel_MouseLeave" MouseDoubleClick="DisplayTable_MouseDoubleClick">
             <TabItem Header="Aspect">
                 <TabControl Name="AspectTabs" ItemsSource="{Binding Sources}" DisplayMemberPath="Score" TabStripPlacement="Bottom"><!---->
                     <TabControl.ContentTemplate>
@@ -111,9 +111,9 @@
                 </TabControl>
             </TabItem>
             <TabItem Name="GraphTab" Header="Graph" Selector.Selected="Graph_Draw">
-                <Canvas Name="GraphPanel">
-                    <!--<Line Name="MouseXLine" Stroke="Gray" X1="0" X2="{Binding ColumnDefinitions[1].ActualWidth,ElementName=MainFrame}" Y1="{Binding MousePoint?.Y}" Y2="{Binding MousePoint?.Y}"/>
-                    <Line Name="MouseYLine" Stroke="Gray" Y1="0" Y2="{Binding RowDefinitions[1].ActualHeight,ElementName=MainFrame}" X1="{Binding MousePoint.X}" X2="{Binding MousePoint.X}"/>-->
+                <Canvas>
+                <Canvas Panel.ZIndex="0" Name="GraphPanel"/>
+                <Canvas Width="1000" Height="1000" Panel.ZIndex="1" Background="Transparent" PreviewMouseDown="GraphPanel_MouseDown" PreviewMouseUp="DisplayTable_MouseUp"/>
                 </Canvas>
             </TabItem>
             <TabItem Header="Spectrum">
@@ -136,16 +136,16 @@
                                     <DataGridTextColumn Header="Distance [m]" Binding="{Binding Distance}"/>
                                     <DataGridTextColumn Header="Energy [J]" Binding="{Binding Ergy}"/>
                                     <DataGridTextColumn Header="Effort [J]" Binding="{Binding Effort}"/>
-                                    <DataGridTextColumn Header="Heart" Binding="{Binding Heart}"/>
-                                    <DataGridTextColumn Header="Cycle" Binding="{Binding Cycle}"/>
+                                    <DataGridTextColumn Header="Beat" Binding="{Binding Beat}"/>
+                                    <DataGridTextColumn Header="Bit" Binding="{Binding Bit}"/>
                                     <DataGridTextColumn Header="Drag" Binding="{Binding Draglet}"/>
                                     <DataGridTextColumn Header="Speed [m/s]" Binding="{Binding Speed}"/>
                                     <DataGridTextColumn Header="Power [W]" Binding="{Binding Power}"/>
                                     <DataGridTextColumn Header="Force [N]" Binding="{Binding Force}"/>
-                                    <DataGridTextColumn Header="Work/Heart [J/Hrt]" Binding="{Binding Heartage}"/>
-                                    <DataGridTextColumn Header="Work/Cycle [J/Ccl]" Binding="{Binding Cycleage}"/>
-                                    <DataGridTextColumn Header="Heart/min [Hrt/min]" Binding="{Binding Heartrate}"/>
-                                    <DataGridTextColumn Header="Cycle/min [Ccl/min]" Binding="{Binding Cyclerate}"/>
+                                    <DataGridTextColumn Header="Work/Beat [J/Beat]" Binding="{Binding Heartage}"/>
+                                    <DataGridTextColumn Header="Work/Bit [J/Bit]" Binding="{Binding Bitage}"/>
+                                    <DataGridTextColumn Header="Beat/min [Beat/min]" Binding="{Binding Heartrate}"/>
+                                    <DataGridTextColumn Header="Bit/min [Bit/min]" Binding="{Binding Bitrate}"/>
                                 </DataGrid.Columns>
                             </DataGrid>
                         </DataTemplate>
@@ -157,14 +157,14 @@
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Action" Binding="{Binding Action}"/>
                 <DataGridTextColumn Header="Date" Binding="{Binding Date,StringFormat='yyyy-MM-dd HH:mm:ss'}"/>
-                <DataGridTextColumn Header="Time" Binding="{Binding Time}"/>
+                <DataGridTextColumn Header="Time" Binding="{Binding Time,StringFormat='hh\\:mm\\:ss'}"/>
                 <DataGridTextColumn Header="Drag" Binding="{Binding Draglet}"/>
                 <DataGridTextColumn Header="Expo" Binding="{Binding Power,StringFormat=#W}"/>
-                <DataGridTextColumn Header="Expo" Binding="{Binding Heartrate,StringFormat=#H}"/>
-                <DataGridTextColumn Header="Expo" Binding="{Binding Heartage,StringFormat=#J/H}"/>
+                <DataGridTextColumn Header="Expo" Binding="{Binding Beatrate,StringFormat=#`b}"/>
+                <DataGridTextColumn Header="Expo" Binding="{Binding Beatage,StringFormat=#bW}"/>
                 <DataGridTextColumn Header="Peak" Binding="{Binding MaxEffort,StringFormat=#W}"/>
-                <DataGridTextColumn Header="Peak" Binding="{Binding MaxHeart,StringFormat=#H,Converter={StaticResource MinConvert}}"/>
-                <DataGridTextColumn Header="Peak" Binding="{Binding MaxExposure,StringFormat=#J/H}"/>
+                <DataGridTextColumn Header="Peak" Binding="{Binding MaxBeat,StringFormat=#`b,Converter={StaticResource MinConvert}}"/>
+                <DataGridTextColumn Header="Peak" Binding="{Binding MaxExposure,StringFormat=#bW}"/>
                 <DataGridTextColumn Header="Crux" Binding="{Binding MinMaxEffort,StringFormat=#W}"/>
                 <DataGridTextColumn Header="Dip" Binding="{Binding MinEffort,StringFormat=#W}"/>
                 <DataGridTextColumn Header="Aero" Binding="{Binding AeroEffort,StringFormat=#W}"/>

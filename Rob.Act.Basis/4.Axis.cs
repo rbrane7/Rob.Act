@@ -34,7 +34,7 @@ namespace Rob.Act
 		public Quant this[ Quant at ] => this.Count(q=>q>=at) ;
 		public Quant? this[ int at ] => (uint)at<Count ? Resolve(at) : null as Quant? ;
 		protected internal virtual Quant? Resolve( int at ) => Resolver?.Invoke(at) ;
-		public Func<int,Quant?> Resolver { get => resolver ?? ( resolver = (Multi?Resolvelet.Compile<Func<Aspectables,Axe>>().Of(Aspects):Resolvelet.Compile<Func<Aspectable,Axe>>().Of(Aspect)) is Axe a ? i=>a.Set(x=>{if(counter==null)counter=a.counter;})[i] : new Func<int,Quant?>(i=>null as Quant?) ) ; set { if( resolver==value ) return ; resolver = value ; propertyChanged.On(this,"Resolver") ; } } Func<int,Quant?> resolver ;
+		public Func<int,Quant?> Resolver { get => resolver ?? ( resolver = (Multi?Resolvelet.Compile<Func<Aspectables,Axe>>(use:"Rob.Act").Of(Aspects):Resolvelet.Compile<Func<Aspectable,Axe>>(use:"Rob.Act").Of(Aspect)) is Axe a ? i=>a.Set(x=>{if(counter==null)counter=a.counter;})[i] : new Func<int,Quant?>(i=>null as Quant?) ) ; set { if( resolver==value ) return ; resolver = value ; propertyChanged.On(this,"Resolver") ; } } Func<int,Quant?> resolver ;
 		public string Resolvelet { get => resolvelet ; set { if( value==resolvelet ) return ; resolvelet = value ; Resolver = null ; propertyChanged.On(this,"Resolvelet") ; } } string resolvelet ;
 		public virtual int Count => Counter is Func<Aspectable,int> c ? c(Aspect) : DefaultCount ;
 		protected virtual int DefaultCount => Resource?.Points.Count ?? 0 ;
@@ -60,7 +60,7 @@ namespace Rob.Act
 		public static Axe operator-( Axe x , Axe y ) => x==null||y==null ? No : new Axe( i=>x.Resolve(i)-y.Resolve(i) , a=>Math.Max(x.Count,y.Count) ) ;
 		public static Axe operator*( Axe x , Axe y ) => x==null||y==null ? No : new Axe( i=>x.Resolve(i)*y.Resolve(i) , a=>Math.Max(x.Count,y.Count) ) ;
 		public static Axe operator/( Axe x , Axe y ) => x==null||y==null ? No : new Axe( i=>x.Resolve(i)/y.Resolve(i).Nil() , a=>Math.Max(x.Count,y.Count) ) ;
-		public static Axe operator^( Axe x , Axe y ) => x==null||y==null ? No : new Axe( i => x.Resolve(i) is Quant a && y.Resolve(i) is Quant b ? Math.Pow(a,b) : null as Quant? , a=>Math.Max(x.Count,y.Count) ) ;
+		//public static Axe operator^( Axe x , Axe y ) => x==null||y==null ? No : new Axe( i => x.Resolve(i) is Quant a && y.Resolve(i) is Quant b ? Math.Pow(a,b) : null as Quant? , a=>Math.Max(x.Count,y.Count) ) ;
 		public static Axe operator+( Axe x , Quant y ) => x==null ? No : new Axe( i=>x.Resolve(i)+y , a=>x.Count ) ;
 		public static Axe operator-( Axe x , Quant y ) => x==null ? No : new Axe( i=>x.Resolve(i)-y , a=>x.Count ) ;
 		public static Axe operator*( Axe x , Quant y ) => x==null ? No : new Axe( i=>x.Resolve(i)*y , a=>x.Count ) ;
@@ -69,13 +69,19 @@ namespace Rob.Act
 		public static Axe operator-( Quant x , Axe y ) => y==null ? No : new Axe( i=>x-y.Resolve(i) , a=>y.Count ) ;
 		public static Axe operator*( Quant x , Axe y ) => y==null ? No : new Axe( i=>x*y.Resolve(i) , a=>y.Count ) ;
 		public static Axe operator/( Quant x , Axe y ) => y==null ? No : new Axe( i=>x/y.Resolve(i).Nil() , a=>y.Count ) ;
+		public static Axe operator/( bool x , Axe y ) => y==null ? No : new Axe( i=>1D/y.Resolve(i).Nil() , a=>y.Count ) ;
 		public static Axe operator^( Axe x , Quant y ) => x==null ? No : new Axe( i => x.Resolve(i) is Quant a ? Math.Pow(a,y) : null as Quant? , a=>x.Count ) ;
 		public static Axe operator^( Quant x , Axe y ) => y==null ? No : new Axe( i => y.Resolve(i) is Quant a ? Math.Pow(x,a) : null as Quant? , a=>y.Count ) ;
+		public static Axe operator^( Axe x , bool y ) => x==null ? No : new Axe( i => x.Resolve(i) is Quant a ? a>0?Math.Log(a):null as Quant? : null as Quant? , a=>x.Count ) ;
+		public static Axe operator^( bool x , Axe y ) => y==null ? No : new Axe( i => y.Resolve(i) is Quant a ? Math.Exp(a) : null as Quant? , a=>y.Count ) ;
 		public static Axe operator|( Axe x , Axe y ) => x==null ? y : y==null ? x : new Axe( i => i<x.Count ? x.Resolve(i) : y.Resolve(i-x.Count) , a=>x.Count+y.Count ) ;
 		public static Axe operator++( Axe x ) => x==null ? No : new Axe( i=>x.Resolve(i+1) , a=>x.Count ) ;
 		public static Axe operator--( Axe x ) =>x==null ? No :  new Axe( i=>x.Resolve(i-1) , a=>x.Count ) ;
 		public static Axe operator>>( Axe x , int lev ) => x==null ? No : lev<0 ? x<<-lev : lev==0 ? x : new Axe( i=>x.Resolve(i)-x.Resolve(i-1) , a=>x.Count )>>lev-1 ;
 		public static Axe operator<<( Axe x , int lev ) => x==null ? No : lev<0 ? x>>-lev : lev==0 ? x : new Axe( i=>i.Steps().Sum(x.Resolve) , a=>x.Count )>>lev-1 ;
+		public static Axe operator^( Axe x , Axe y ) => x==null ? No : x.Shift(y) ;
+		public static Axe operator%( Axe x , int dif ) => x==null ? No : new Axe( i=>x.Diff(i,dif) , a=>x.Count-dif ) ;
+		public static Axe operator%( Axe x , Axe y ) => x==null ? No : x.Rift(y) ;
 		public static IEnumerable<int> operator>( Axe x , Quant val ) => x?.Count.Steps().Where(i=>x[i]>val) ;
 		public static IEnumerable<int> operator<( Axe x , Quant val ) => x?.Count.Steps().Where(i=>x[i]<val) ;
 		public static IEnumerable<int> operator>=( Axe x , Quant val ) => x?.Count.Steps().Where(i=>x[i]>=val) ;
@@ -97,6 +103,12 @@ namespace Rob.Act
 		public Axe Take( int count ) => new Axe( Resolve , a=>Math.Min(count,Count) ) ;
 		public Axe For( IEnumerable<int> fragment ) => fragment?.ToArray().Get(f=>new Axe(i=>Resolve(f[i]),a=>f?.Length??0)) ?? No ;
 		public Axe this[ IEnumerable<int> fragment ] => For(fragment) ;
+		public Axe Shift( Axe upon , Quant quo = 0 ) => upon==null ? No : new Axe( i=>(quo*i).Get(at=>Shift(upon,(int)at,(int)((i-at)/2))) , a=>Count ) ;
+		public Axe Drift( Axe upon , Quant quo = 0 ) => upon.Shift(this,quo) ;
+		Quant? Diff( int at , int dif ) => Resolve(at+dif)-Resolve(at) ;
+		Quant? Quot( Axe upon , int at , int dif ) => Diff(at,dif)/upon.Diff(at,dif).Nil() ;
+		Quant? Shift( Axe upon , int at , int dis ) => Quot(upon,at+dis,dis)/Quot(upon,at,dis).Nil() ;
+		public Axe Rift( Axe upon , uint quo = 9 ) => upon==null ? No : new Axe( i=>Shift(upon,i,((Count-i)>>1)-1) , a=>(int)(Count*quo/(1D+quo)) ) ;
 		#endregion
 	}
 	public class Quantile : Aid.Gettable<int,Quant> , Aid.Countable<Quant> , Aid.Gettable<IEnumerable<Quant>,Quantile>
@@ -143,5 +155,11 @@ namespace Rob.Act
 		}
 		public static Axable operator&( Path path , string name ) => path.Spectrum[name] ;
 		public static Axable operator&( Path path , Axis name ) => path.Spectrum[name] ;
+	}
+	public static class AxeOperations
+	{
+		public static Axe Shift( this int dis , Axe x , Axe y , int? dif = null ) => (dif??dis).Get(d=>d.Quo(x,y)).Get(a=>a.Skip(dis)/a) ;
+		public static Axe Drift( this int dis , Axe x , Axe y , int? dif = null ) => Shift(dis,y,x,dif) ;
+		public static Axe Quo( this int dif , Axe x , Axe y ) => (x%dif)/(y%dif) ;
 	}
 }

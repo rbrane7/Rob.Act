@@ -58,14 +58,14 @@ namespace Rob.Act.Tcx
 #endif
 	public partial class Trackpoint_t : Aid.Accessible<Axis,Quant?>
 	{
-		public static implicit operator Point( Trackpoint_t point ) => point.Get( p => new Point(p.Time) { [Axis.Lon] = p[Axis.Lon] , [Axis.Lat] = p[Axis.Lat] , [Axis.Alt] = p[Axis.Alt] , [Axis.Heart] = p[Axis.Heart] , [Axis.Cycle] = p[Axis.Cycle] } ) ;
-		public static implicit operator Trackpoint_t( Point point ) => point.Get( p => new Trackpoint_t { Time = p.Date , [Axis.Lat] = p[Axis.Lat] , [Axis.Lon] = p[Axis.Lon] , [Axis.Alt] = p[Axis.Alt] , [Axis.Heart] = p[Axis.Heart] , [Axis.Cycle] = p[Axis.Cycle] } ) ;
+		public static implicit operator Point( Trackpoint_t point ) => point.Get( p => new Point(p.Time) { [Axis.Lon] = p[Axis.Lon] , [Axis.Lat] = p[Axis.Lat] , [Axis.Alt] = p[Axis.Alt] , [Axis.Beat] = p[Axis.Beat] , [Axis.Bit] = p[Axis.Bit] } ) ;
+		public static implicit operator Trackpoint_t( Point point ) => point.Get( p => new Trackpoint_t { Time = p.Date , [Axis.Lat] = p[Axis.Lat] , [Axis.Lon] = p[Axis.Lon] , [Axis.Alt] = p[Axis.Alt] , [Axis.Beat] = p[Axis.Beat] , [Axis.Bit] = p[Axis.Bit] } ) ;
 		Position_t Sphere => Position ?? ( Position = new Position_t() ) ;
 		HeartRateInBeatsPerMinute_t Heart => HeartRateBpm ?? ( HeartRateBpm = new HeartRateInBeatsPerMinute_t() ) ;
 		public Quant? this[ Axis axis ]
 		{
-			get { switch( axis ) { case Axis.Lon : return (Quant?)Position?.LongitudeDegrees ; case Axis.Lat : return (Quant?)Position?.LatitudeDegrees ; case Axis.Alt : return AltitudeMetersSpecified ? (Quant)AltitudeMeters : null as Quant? ; case Axis.Heart : return HeartRateBpm?.Value ; default : return null ; } }
-			set { switch( axis ) { case Axis.Lon : value.Use(v=>Sphere.LongitudeDegrees=(double)v) ; break ; case Axis.Lat : value.Use(v=>Sphere.LatitudeDegrees=(double)v) ; break ; case Axis.Alt : AltitudeMetersSpecified = null!=value.Use(v=>altitudeMetersField=(double)v) ; break ; case Axis.Heart : value.Use(v=>Heart.Value=(byte)v) ; break ; } }
+			get { switch( axis ) { case Axis.Lon : return (Quant?)Position?.LongitudeDegrees ; case Axis.Lat : return (Quant?)Position?.LatitudeDegrees ; case Axis.Alt : return AltitudeMetersSpecified ? (Quant)AltitudeMeters : null as Quant? ; case Axis.Beat : return HeartRateBpm?.Value ; default : return null ; } }
+			set { switch( axis ) { case Axis.Lon : value.Use(v=>Sphere.LongitudeDegrees=(double)v) ; break ; case Axis.Lat : value.Use(v=>Sphere.LatitudeDegrees=(double)v) ; break ; case Axis.Alt : AltitudeMetersSpecified = null!=value.Use(v=>altitudeMetersField=(double)v) ; break ; case Axis.Beat : value.Use(v=>Heart.Value=(byte)v) ; break ; } }
 		}
 	}
 	static class Extension
