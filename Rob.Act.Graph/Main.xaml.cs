@@ -19,6 +19,7 @@ using Microsoft.Win32;
 using Aid.Extension;
 using System.Collections.Specialized;
 using System.Globalization;
+using Aid.IO;
 
 namespace Rob.Act.Analyze
 {
@@ -28,20 +29,27 @@ namespace Rob.Act.Analyze
 	public partial class Main : Window , INotifyPropertyChanged
 	{
 		Aid.Prog.Doct Doct = (System.Configuration.ConfigurationManager.AppSettings["Doct.Uri"].Uri(),e=>Trace.TraceError(e.ToString())) ;
+		public Settings Setup => setup.Result ; Aid.Prog.Setup<Settings> setup = new Aid.Prog.Setup<Settings>(e=>Trace.TraceError(e.ToString())).Done ;
 		public event PropertyChangedEventHandler PropertyChanged ;
 		void PropertyChangedOn<Value>( string properties , Value value ) { PropertyChanged.On(this,properties,value) ; if( properties.Consists("Sources") && GraphTab.IsSelected ) Graph_Draw(this,null) ; }
-		public Main() { InitializeComponent() ; DataContext = this ; Doct += (this,"Main") ; Axe.Aspecter = ()=>Book.Select(p=>p.Spectrum).Union(Aspects) ; SourcesGrid.ItemContainerGenerator.ItemsChanged += SourcesGrid_ItemsChanged; }
+		public Main() { InitializeComponent() ; DataContext = this ; Doct += (this,"Main") ; Axe.Aspecter = ()=>Book.Select(p=>p.Spectrum).Union(Aspects) ; SourcesGrid.ItemContainerGenerator.ItemsChanged += SourcesGrid_ItemsChanged ; Load() ; }
+		void Load()
+		{
+			Setup.WorkoutsPaths.MatchingFiles().EachGuard(f=>NewAction(f,Setup?.WorkoutsFilter),(f,e)=>Trace.TraceError($"{f} faulted by {e}")) ;
+			Setup.AspectsPaths.MatchingFiles().EachGuard(f=>NewAspect(f,Setup?.AspectsFilter),(f,e)=>Trace.TraceError($"{f} faulted by {e}")) ;
+		}
 		protected override void OnClosing( CancelEventArgs e ) { Doct?.Dispose() ; base.OnClosing(e) ; }
 		protected override void OnClosed( EventArgs e ) { base.OnClosed(e) ; Process.GetCurrentProcess().Kill() ; }
-		void NewAction( string file ) => Book += file.Reconcile().Internalize() ;
+		void NewAction( string file , Predicate<Path> filter = null ) => file.Reconcile().Internalize().Set(p=> Book += filter is Predicate<Path> f ? f(p)?p:null : p ) ;
+		void NewAspect( string file , Predicate<Aspect> filter = null ) => ((Aspect)file.ReadAllText()).Set(a=> Aspects += filter is Predicate<Aspect> f ? f(a)?a:null : a ) ;
 		public Book Book { get ; private set ; } = new Book("Main") ;
-		public Aid.Collections.ObservableList<Aspect> Aspects { get ; private set ; } = new Aid.Collections.ObservableList<Aspect>() ;
+		public Aid.Collections.ObservableList<Aspect> Aspects { get ; private set ; } = new Aid.Collections.ObservableList<Aspect>{Sensible=true} ;
 		public Aid.Collections.ObservableList<Axe> Axes { get ; private set ; } = new Aid.Collections.ObservableList<Axe>() ;
 		public Aspect Aspect { get => Respect ; protected set { if( value==Aspect ) return ; Aspect.Set(a=>{a.CollectionChanged-=OnAspectChanged;a.PropertyChanged-=OnAspectChanged;}) ; (Respect=value).Set(a=>{a.CollectionChanged+=OnAspectChanged;a.PropertyChanged+=OnAspectChanged;}) ; Sources = null ; } } Aspect Respect ;
 		public IEnumerable<Aspect> Sources { get => sources ?? ( sources = Aspect==null ? Enumerable.Empty<Aspect>() : Aspect is Path.Aspect ? BookGrid.SelectedItems.OfType<Path>().Select(s=>s.Spectrum) : BookGrid.SelectedItems.OfType<Path>().Get(p=>AspectMultiToggle.IsChecked==true?p.Select(s=>s.Spectrum).ToArray().Get(s=>Math.Min(AspectMultiCount.Text.Parse(0),s.Length).Get(c=>c>0?c.Steps().Select(i=>new Aspect(Aspect,true){Sources=s.Skip(i).Concat(s.Take(i)).ToArray()}):new Aspect(Aspect,true){Sources=s}.Times())):p.Select(s=>new Aspect(Aspect,false){Source=s.Spectrum})) ) ; set => PropertyChangedOn("Aspect,Sources",sources=value) ; } IEnumerable<Aspect> sources ;
 		void OnAspectChanged( object subject , NotifyCollectionChangedEventArgs arg=null ) { var sub = Aspect is Path.Aspect ? SpectrumTabs : AspectTabs ; Revoke : var six = sub.SelectedIndex ; if( sub==AspectTabs || sub==QuantileTabs ) Sources = null ; sub.SelectedIndex = -1 ; sub.SelectedIndex = six ; if( sub==AspectTabs ) { sub = QuantileTabs ; goto Revoke ; } }
 		void OnAspectChanged( object subject , PropertyChangedEventArgs arg ) => OnAspectChanged(subject) ;
-		void AddActionButton_Click( object sender , RoutedEventArgs e ) { var dlg = new OpenFileDialog{Multiselect=true} ; if( dlg.ShowDialog(this)==true ) dlg.FileNames.Each(NewAction) ; }
+		void AddActionButton_Click( object sender , RoutedEventArgs e ) { var dlg = new OpenFileDialog{Multiselect=true} ; if( dlg.ShowDialog(this)==true ) dlg.FileNames.Each(f=>NewAction(f)) ; }
 		void BookGrid_SelectionChanged( object sender , SelectionChangedEventArgs e ) { Sources = null ; if(!( sender is DataGrid bg )) return ; var sel = bg.SelectedItems.Cast<Path>() ; var i=0 ; foreach( var item in sel ) { if( bg.ItemContainerGenerator.ContainerFromItem(item) is DataGridRow row && row.Cell(0) is DataGridCell cell && cell.Foreground is SolidColorBrush b && b.Color!=Colos[i%Colos.Length] ) cell.Foreground = new SolidColorBrush(Colos[i%Colos.Length]) ; ++i ; } foreach( Path item in bg.Items.Cast<Path>().Except(sel) ) if( bg.ItemContainerGenerator.ContainerFromItem(item) is DataGridRow row ) if( row.Cell(0).Foreground is SolidColorBrush b && b.Color!=Colors.Black ) row.Cell(0).Foreground = Brushes.Black ; }
 		void AspectGrid_AutoGeneratedColumns( object sender , EventArgs e ) { var grid = sender as DataGrid ; var asp = grid.ItemsSource is Aspect.Iterable a ? a.Context : null ; grid.Columns.Clear() ; uint i=0 ; foreach( var ax in asp ) grid.Columns.Add(new DataGridTextColumn{Header=ax.Spec,Binding=new Binding($"[{i++}]")}) ; }
 		void QuantileGrid_AutoGeneratedColumns( object sender , EventArgs e ) { var grid = sender as DataGrid ; var src = Sources ; grid.Columns.Clear() ; if( grid.ItemsSource is AxedEnumerable axe ) { QuantileData[axe.Ax.Spec] = axe ; grid.Columns.Add(new DataGridTextColumn{Header=axe.Ax.Distribution?.FirstOrDefault(),Binding=new Binding("[0]")}) ; uint i=1 ; foreach( var asp in src ) grid.Columns.Add(new DataGridTextColumn{Header=asp.Spec,Binding=new Binding($"[{i++}]")}) ; }  }
@@ -52,8 +60,10 @@ namespace Rob.Act.Analyze
 		void AddAspectTraitButton_Click( object sender , RoutedEventArgs e ) => Aspect.Trait.Add(new Aspect.Traitlet()) ;
 		void AddAspectButton_Click( object sender , RoutedEventArgs e ) => Aspects.Add(new Aspect()) ;
 		void AddAxeButton_Click( object sender , RoutedEventArgs e ) => Axes.Add(new Axe()) ;
+		void SaveAspectsButton_Click( object sender , RoutedEventArgs e ) => Setup.AspectsPath.Set(p=>Aspects.Each(a=>p.LeftFromLast('*',true).Path(a.Spec+p.RightFrom('*')).WriteAll((string)a))) ;
 		void DisplayTable_SelectionChanged( object sender , SelectionChangedEventArgs e ) { var tab = e.AddedItems.Count>0 ? e.AddedItems[0] as TabItem : null ; switch( tab?.Header as string ) { case "Aspect" : Aspect = AspectsGrid.SelectedItem as Aspect ; GraphType = "Aspect" ; break ; case "Spectrum" : Aspect = (((SpectrumTabs.SelectedItem as TabItem)?.Content as DataGrid)?.ItemsSource as Path ?? SpectrumTabs.ItemsSource.OfType<Path>().One())?.Spectrum ; GraphType = "Spectrum" ; break ; case "Quantile" : GraphType = "Quantile" ; break ; } }
 		void DataGridCommandBinding_Executed( object sender , ExecutedRoutedEventArgs e ) => ((sender as DataGrid)?.ItemsSource as IList).Remove((sender as DataGrid)?.SelectedItem) ;
+		#region Graphing
 		void Graph_Draw( object sender , RoutedEventArgs e ) { GraphPanel.Children.Clear() ; switch( GraphType ) { case "Aspect" : case "Spectrum" : GraphDrawAspect() ; return ; case "Quantile" : GraphDrawQuantile() ; return ; } }
 		string GraphType ; Dictionary<string,AxedEnumerable> QuantileData = new Dictionary<string,AxedEnumerable>() ;
 		(double Width,double Height) MainFrameSize => (MainFrame.ColumnDefinitions[1].ActualWidth-GraphScreenBorder.Width,MainFrame.RowDefinitions[1].ActualHeight-GraphScreenBorder.Height) ;
@@ -121,6 +131,7 @@ namespace Rob.Act.Analyze
 			}
 			Hypercube = rng ;
 		}
+		#endregion
 		static int DecDigits( double value ) => value==0 ? 0 : (int)Math.Max(0,3-Math.Log10(Math.Abs(value))) ;
 		static string Format( double value ) => value.ToString("#."+new string('#',DecDigits(value))) ;
 		IEnumerable<KeyValuePair<string,(double Min,double Max)>> Hypercube ; (double Width,double Height) GraphFrame ; (Line X,Line Y) MouseCross , ScreenCross ;
@@ -128,6 +139,7 @@ namespace Rob.Act.Analyze
 		static readonly Color[] Colos = new[]{ new Color{A=255,R=255,G=0,B=0} , new Color{A=255,R=0,G=255,B=0} , new Color{A=255,R=0,G=0,B=255} , new Color{A=255,R=191,G=191,B=0} , new Color{A=255,R=0,G=191,B=191} , new Color{A=255,R=191,G=0,B=191} , new Color{A=255,R=223,G=0,B=159} , new Color{A=255,R=159,G=223,B=0} , new Color{A=255,R=0,G=159,B=223} , new Color{A=255,R=159,G=191,B=223} , new Color{A=255,R=223,G=159,B=0} , new Color{A=255,R=0,G=223,B=159} } ;
 		void AspectAxisGrid_SelectionChanged( object sender, SelectionChangedEventArgs e ) { if( GraphTab.IsSelected ) Graph_Draw(this,null) ; }
 		void AspectMultiToggle_Changed( object sender, RoutedEventArgs e ) { if( sender==AspectMultiToggle || AspectMultiToggle.IsChecked==true ) Sources = null ; }
+		#region Coordinates
 		void GraphPanel_MouseMove( object sender, MouseEventArgs e ) => MousePoint = Mouse.GetPosition(GraphPanel).nil() ;
 		public string Coordinates { get => coordinates ; set => PropertyChanged.On(this,"Coordinates",coordinates=value); } string coordinates ;
 		public System.Windows.Point? MousePoint
@@ -140,6 +152,8 @@ namespace Rob.Act.Analyze
 				GraphPanel.Children.Add( MouseCross.Y = new Line{ Stroke=Brushes.Gray , Y1=0 , Y2=GraphFrame.Height , X1=value.Value.X , X2=value.Value.X } ) ;
 			}
 		}
+		#endregion
+		#region Focusing
 		System.Windows.Point? mousePoint , screenPoint ; System.Windows.Rect? ScreenRect ;
 		System.Windows.Point? ScreenOrigin
 		{ get => screenPoint ; set
@@ -162,6 +176,7 @@ namespace Rob.Act.Analyze
 		double ScreenY( double y ) { if( ScreenRect==null ) return y ; var r = ScreenRect.Value ; return (y-r.Location.Y)*GraphFrame.Height/r.Size.Height ; }
 		double ScreenX( double x , (double Min,double Max) e ) { if( ScreenRect==null ) return x ; var r = ScreenRect.Value ; var q = (e.Max-e.Min)/GraphFrame.Width ; var fx = (x-e.Min)/q ; return e.Min+r.Location.X*q+fx*r.Width/GraphFrame.Width*q ; }
 		double ScreenY( double y , (double Min,double Max) e ) { if( ScreenRect==null ) return y ; var r = ScreenRect.Value ; var q = (e.Max-e.Min)/GraphFrame.Height ; var fy = (e.Max-y)/q ; return e.Max-r.Location.Y*q-fy*r.Height/GraphFrame.Height*q ; }
+		#endregion
 	}
 	public class QuantileSubversion : IMultiValueConverter
 	{

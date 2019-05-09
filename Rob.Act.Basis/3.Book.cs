@@ -16,6 +16,6 @@ namespace Rob.Act
 		public Book( string subject = null ) => Subject = subject ;
 		public string Subject { get ; protected set ; }
 		public Path this[ DateTime date ] => this.FirstOrDefault(p=>p.Date==date) ;
-		public static Book operator+( Book book , Path path ) => book.Set(b=>b.Add(path)) ;
+		public static Book operator+( Book book , Path path ) => book.Set(b=>path.Set(p=>b.Add(p))) ;
 	}
 }

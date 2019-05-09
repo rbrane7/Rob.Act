@@ -110,6 +110,17 @@ namespace Rob.Act
 		Quant? Shift( Axe upon , int at , int dis ) => Quot(upon,at+dis,dis)/Quot(upon,at,dis).Nil() ;
 		public Axe Rift( Axe upon , uint quo = 9 ) => upon==null ? No : new Axe( i=>Shift(upon,i,((Count-i)>>1)-1) , a=>(int)(Count*quo/(1D+quo)) ) ;
 		#endregion
+		#region De/Serialization
+		/// <summary>
+		/// Deserializes aspect from string .
+		/// </summary>
+		public static explicit operator Axe( string text ) => text.Get(t=>new Axe()) ;
+		/// <summary>
+		/// Serializes aspect from string .
+		/// </summary>
+		public static explicit operator string( Axe aspect ) => aspect.Get(a=>string.Join(Serialization.Separator,a.spec,a.multi?"*":string.Empty,a.resolvelet,a.countlet,a.selectlet,a.distribulet,a.quantlet)) ;
+		static class Serialization { public const string Separator = " \x1 Axlet \x2 " ; }
+		#endregion
 	}
 	public class Quantile : Aid.Gettable<int,Quant> , Aid.Countable<Quant> , Aid.Gettable<IEnumerable<Quant>,Quantile>
 	{

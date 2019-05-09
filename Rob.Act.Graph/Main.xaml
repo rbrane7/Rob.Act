@@ -58,6 +58,7 @@
         </Grid>
         <TextBox Text="{Binding Coordinates}" Panel.ZIndex="1" Margin="2"/>
         <Button Content="Add Aspect" Name="AddAspectButton" Click="AddAspectButton_Click" Margin="2" Panel.ZIndex="2"/>
+        <Button Content="Save Aspects" Name="SaveAspectsButton" Click="SaveAspectsButton_Click" Margin="2" Grid.Row="2"/>
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions><ColumnDefinition Width="6*"/><ColumnDefinition Width="1*"/></Grid.ColumnDefinitions>
             <Grid>
@@ -112,8 +113,8 @@
             </TabItem>
             <TabItem Name="GraphTab" Header="Graph" Selector.Selected="Graph_Draw">
                 <Canvas>
-                <Canvas Panel.ZIndex="0" Name="GraphPanel"/>
-                <Canvas Width="1000" Height="1000" Panel.ZIndex="1" Background="Transparent" PreviewMouseDown="GraphPanel_MouseDown" PreviewMouseUp="DisplayTable_MouseUp"/>
+                    <Canvas Panel.ZIndex="0" Name="GraphPanel"/>
+                    <Canvas Width="2000" Height="2000" Panel.ZIndex="1" Background="Transparent" PreviewMouseDown="GraphPanel_MouseDown" PreviewMouseUp="DisplayTable_MouseUp"/>
                 </Canvas>
             </TabItem>
             <TabItem Header="Spectrum">
@@ -142,9 +143,9 @@
                                     <DataGridTextColumn Header="Speed [m/s]" Binding="{Binding Speed}"/>
                                     <DataGridTextColumn Header="Power [W]" Binding="{Binding Power}"/>
                                     <DataGridTextColumn Header="Force [N]" Binding="{Binding Force}"/>
-                                    <DataGridTextColumn Header="Work/Beat [J/Beat]" Binding="{Binding Heartage}"/>
+                                    <DataGridTextColumn Header="Work/Beat [J/Beat]" Binding="{Binding Beatage}"/>
                                     <DataGridTextColumn Header="Work/Bit [J/Bit]" Binding="{Binding Bitage}"/>
-                                    <DataGridTextColumn Header="Beat/min [Beat/min]" Binding="{Binding Heartrate}"/>
+                                    <DataGridTextColumn Header="Beat/min [Beat/min]" Binding="{Binding Beatrate}"/>
                                     <DataGridTextColumn Header="Bit/min [Bit/min]" Binding="{Binding Bitrate}"/>
                                 </DataGrid.Columns>
                             </DataGrid>

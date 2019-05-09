@@ -1,0 +1,7 @@
+﻿/*@ Rob.Act.Analyze.Settings @*/ type
+{
+	WorkoutsPaths = @'C:\Users\teplyr\Downloads\*.tcx' ,
+	WorkoutsFilter = p=>p.Action=='AeT' ,
+	AspectsPath = @'C:\Users\teplyr\Downloads\*.asp' ,
+}
+;

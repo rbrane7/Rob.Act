@@ -67,6 +67,17 @@ namespace Rob.Act
 		void IList.Remove( object value ) => Remove( value as Axe ) ;
 		int IList.Add( object value ) { Add( value as Axe ) ; return Count-1 ; }
 		public override string ToString() => Score ;
+		#region De/Serialization
+		/// <summary>
+		/// Deserializes aspect from string .
+		/// </summary>
+		public static explicit operator Aspect( string text ) => text.Get(t=>new Aspect()) ;
+		/// <summary>
+		/// Serializes aspect from string .
+		/// </summary>
+		public static explicit operator string( Aspect aspect ) => aspect.Get(a=>string.Join(Serialization.Separator,a.Select(x=>(string)x))+(a.Count>0?Serialization.Separator:null)+(string)a.Trait) ;
+		static class Serialization { public const string Separator = " \x1 Axe \x2\n" ; }
+		#endregion
 		public class Traitlet : INotifyPropertyChanged
 		{
 			internal Aspect Context ;
@@ -79,6 +90,17 @@ namespace Rob.Act
 			public Traitlet() {} // Default constructor must be present to enable DataGrid implicit Add .
 			public Traitlet( Traitlet source ) { name = source?.Spec ; unit = source?.Unit ; lex = source?.Lex ; Resolver = source?.Resolver ; }
 			public event PropertyChangedEventHandler PropertyChanged { add => propertyChanged += value.DispatchResolve() ; remove => propertyChanged -= value.DispatchResolve() ; } protected PropertyChangedEventHandler propertyChanged ;
+			#region De/Serialization
+			/// <summary>
+			/// Deserializes aspect from string .
+			/// </summary>
+			public static explicit operator Traitlet( string text ) => text.Separate(Serialization.Separator).Get(t=>new Traitlet{name=t.At(0),lex=t.At(1),unit=t.At(2)} ) ;
+			/// <summary>
+			/// Serializes aspect from string .
+			/// </summary>
+			public static explicit operator string( Traitlet trait ) => trait.Get(t=>string.Join(Serialization.Separator,t.name,t.lex,t.unit)) ;
+			static class Serialization { public const string Separator = " \x1 Traitlet \x2 " ; }
+			#endregion
 		}
 		public class Traits : Aid.Collections.ObservableList<Traitlet> , Aid.Gettable<Traitlet> , ICollection<Traitlet> , IList , INotifyPropertyChanged
 		{
@@ -93,6 +115,17 @@ namespace Rob.Act
 			public string Spec { get => this.Stringy(',').Null(v=>v.No()) ; protected set => propertyChanged.On(this,"Spec",Context.Score=value) ; }
 			void ChangedItem( object subject , PropertyChangedEventArgs prop ) { Spec = null ; Context?.propertyChanged.On(Context,"Trait") ; }
 			public event PropertyChangedEventHandler PropertyChanged { add => propertyChanged += value.DispatchResolve() ; remove => propertyChanged -= value.DispatchResolve() ; } protected PropertyChangedEventHandler propertyChanged ;
+			#region De/Serialization
+			/// <summary>
+			/// Deserializes aspect from string .
+			/// </summary>
+			public static explicit operator Traits( string text ) => text.Get(t=>new Traits()) ;
+			/// <summary>
+			/// Serializes aspect from string .
+			/// </summary>
+			public static explicit operator string( Traits traits ) => traits.Null(t=>t.Count<=0).Get(a=>string.Join(Serialization.Separator,a.Select(x=>(string)x)+Serialization.Separator)) ;
+			static class Serialization { public const string Separator = " \x1 Trait \x2\n" ; }
+			#endregion
 		}
 	}
 	public partial class Path
