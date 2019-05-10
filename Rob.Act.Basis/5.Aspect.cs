@@ -43,10 +43,11 @@ namespace Rob.Act
 	{
 		public event PropertyChangedEventHandler PropertyChanged { add => propertyChanged += value.DispatchResolve() ; remove => propertyChanged -= value.DispatchResolve() ; } protected PropertyChangedEventHandler propertyChanged ;
 		public Aspect( Aspect source , bool multi = false ) : this(source?.Where(a=>a.Multi==multi).Select(a=>new Axe(a))) { spec = source?.Spec ; source.Trait.Each(t=>Trait.Add(new Traitlet(t))) ; }
-		public Aspect( IEnumerable<Axe> axes = null ) : base(axes??Enumerable.Empty<Axe>()) => Trait = new Traits{ Context = this } ;
+		public Aspect( IEnumerable<Axe> axes = null , Traits trait = null ) : base(axes??Enumerable.Empty<Axe>()) => Trait = (trait??new Traits()).Set(t=>t.Context=this) ;
 		public Aspect() : this(axes:null) {} // Default constructor must be present to enable DataGrid implicit Add .
 		[LambdaContext.Dominant] public Axe this[ string key ] => this.FirstOrDefault(a=>a.Spec==key) ;
 		public virtual string Spec { get => spec ; set { if( value==spec ) return ; spec = value ; propertyChanged.On(this,"Spec") ; } } string spec ;
+		public string Origin { get => origin ; set => origin = value.Set(v=>Spec=System.IO.Path.GetFileNameWithoutExtension(v)) ; } string origin ;
 		public string Score { get => $"{Spec} {Trait}" ; set => propertyChanged.On(this,"Score") ; }
 		public Traits Trait { get; }
 		public virtual Aspectable Source { set { this.Each(a=>a.Source=value) ; Spec += $" {value?.Spec}" ; } }
@@ -71,7 +72,7 @@ namespace Rob.Act
 		/// <summary>
 		/// Deserializes aspect from string .
 		/// </summary>
-		public static explicit operator Aspect( string text ) => text.Get(t=>new Aspect()) ;
+		public static explicit operator Aspect( string text ) => text.Get(t=>new Aspect(t.LeftFromLast(Serialization.Separator).Separate(Serialization.Separator,braces:null).Select(a=>(Axe)a),(Traits)t.RightFrom(Serialization.Separator))) ;
 		/// <summary>
 		/// Serializes aspect from string .
 		/// </summary>
@@ -94,7 +95,7 @@ namespace Rob.Act
 			/// <summary>
 			/// Deserializes aspect from string .
 			/// </summary>
-			public static explicit operator Traitlet( string text ) => text.Separate(Serialization.Separator).Get(t=>new Traitlet{name=t.At(0),lex=t.At(1),unit=t.At(2)} ) ;
+			public static explicit operator Traitlet( string text ) => text.Separate(Serialization.Separator,braces:null).Get(t=>new Traitlet{name=t.At(0),lex=t.At(1),unit=t.At(2)} ) ;
 			/// <summary>
 			/// Serializes aspect from string .
 			/// </summary>
@@ -104,9 +105,10 @@ namespace Rob.Act
 		}
 		public class Traits : Aid.Collections.ObservableList<Traitlet> , Aid.Gettable<Traitlet> , ICollection<Traitlet> , IList , INotifyPropertyChanged
 		{
-			internal Aspect Context ;
+			internal Aspect Context { get => context ; set { context = value ; this.Each(t=>t.Context=value) ; } } Aspect context ;
 			public Traitlet this[ string key ] => key.Get(k=>new Regex(k).Get(r=>this.SingleOrNo(t=>r.Match(t.Spec).Success))) ;
 			public override void Add( Traitlet trait ) => base.Add(trait.Set(t=>{t.Context=Context;t.PropertyChanged+=ChangedItem;Spec=null;})) ;
+			public static Traits operator+( Traits traits , Traitlet trait ) => traits.Set(t=>t.Add(trait)) ;
 			public override bool Remove( Traitlet item ) => base.Remove(item).Set(r=>{item.PropertyChanged-=ChangedItem;Spec=null;}) ;
 			void ICollection<Traitlet>.Add( Traitlet trait ) => Add(trait) ;
 			int IList.Add( object item ) { Add((Traitlet)item) ; return Count-1 ; }
@@ -119,7 +121,7 @@ namespace Rob.Act
 			/// <summary>
 			/// Deserializes aspect from string .
 			/// </summary>
-			public static explicit operator Traits( string text ) => text.Get(t=>new Traits()) ;
+			public static explicit operator Traits( string text ) => text.Get(t=>t.LeftFromLast(Serialization.Separator).Separate(Serialization.Separator,braces:null)?.Select(e=>(Traitlet)e).Aggregate(new Traits(),(a,e)=>a+=e)) ;
 			/// <summary>
 			/// Serializes aspect from string .
 			/// </summary>

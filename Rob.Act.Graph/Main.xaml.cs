@@ -28,8 +28,8 @@ namespace Rob.Act.Analyze
 	/// </summary>
 	public partial class Main : Window , INotifyPropertyChanged
 	{
+		public Settings Setup => setup.Result ; Aid.Prog.Setup<Settings> setup = (null,e=>Trace.TraceError(e.ToString())) ;
 		Aid.Prog.Doct Doct = (System.Configuration.ConfigurationManager.AppSettings["Doct.Uri"].Uri(),e=>Trace.TraceError(e.ToString())) ;
-		public Settings Setup => setup.Result ; Aid.Prog.Setup<Settings> setup = new Aid.Prog.Setup<Settings>(e=>Trace.TraceError(e.ToString())).Done ;
 		public event PropertyChangedEventHandler PropertyChanged ;
 		void PropertyChangedOn<Value>( string properties , Value value ) { PropertyChanged.On(this,properties,value) ; if( properties.Consists("Sources") && GraphTab.IsSelected ) Graph_Draw(this,null) ; }
 		public Main() { InitializeComponent() ; DataContext = this ; Doct += (this,"Main") ; Axe.Aspecter = ()=>Book.Select(p=>p.Spectrum).Union(Aspects) ; SourcesGrid.ItemContainerGenerator.ItemsChanged += SourcesGrid_ItemsChanged ; Load() ; }
@@ -41,7 +41,7 @@ namespace Rob.Act.Analyze
 		protected override void OnClosing( CancelEventArgs e ) { Doct?.Dispose() ; base.OnClosing(e) ; }
 		protected override void OnClosed( EventArgs e ) { base.OnClosed(e) ; Process.GetCurrentProcess().Kill() ; }
 		void NewAction( string file , Predicate<Path> filter = null ) => file.Reconcile().Internalize().Set(p=> Book += filter is Predicate<Path> f ? f(p)?p:null : p ) ;
-		void NewAspect( string file , Predicate<Aspect> filter = null ) => ((Aspect)file.ReadAllText()).Set(a=> Aspects += filter is Predicate<Aspect> f ? f(a)?a:null : a ) ;
+		void NewAspect( string file , Predicate<Aspect> filter = null ) => ((Aspect)file.ReadAllText()).Set(a=>a.Origin=file).Set(a=> Aspects += filter is Predicate<Aspect> f ? f(a)?a:null : a ) ;
 		public Book Book { get ; private set ; } = new Book("Main") ;
 		public Aid.Collections.ObservableList<Aspect> Aspects { get ; private set ; } = new Aid.Collections.ObservableList<Aspect>{Sensible=true} ;
 		public Aid.Collections.ObservableList<Axe> Axes { get ; private set ; } = new Aid.Collections.ObservableList<Axe>() ;

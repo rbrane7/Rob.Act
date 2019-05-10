@@ -2,6 +2,7 @@
 {
 	WorkoutsPaths = @'C:\Users\teplyr\Downloads\*.tcx' ,
 	WorkoutsFilter = p=>p.Action=='AeT' ,
+	AspectsPaths = @'C:\Users\teplyr\Downloads\*.asp' ,
 	AspectsPath = @'C:\Users\teplyr\Downloads\*.asp' ,
 }
 ;
