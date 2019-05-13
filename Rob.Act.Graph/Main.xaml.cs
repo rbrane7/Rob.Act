@@ -28,8 +28,8 @@ namespace Rob.Act.Analyze
 	/// </summary>
 	public partial class Main : Window , INotifyPropertyChanged
 	{
-		public Settings Setup => setup.Result ; Aid.Prog.Setup<Settings> setup = (null,e=>Trace.TraceError(e.ToString())) ;
-		Aid.Prog.Doct Doct = (System.Configuration.ConfigurationManager.AppSettings["Doct.Uri"].Uri(),e=>Trace.TraceError(e.ToString())) ;
+		public static Settings Setup => setup.Result ; static readonly Aid.Prog.Setup<Settings> setup = (null,e=>Trace.TraceError(e.ToString())) ;
+		public State State { get => state ; private set { state = (value??new State()).Set(s=>s.Context=this) ; } } State state ; Aid.Prog.Doct Doct = (Setup.Doctee.Uri(),e=>Trace.TraceError(e.ToString())) ;
 		public event PropertyChangedEventHandler PropertyChanged ;
 		void PropertyChangedOn<Value>( string properties , Value value ) { PropertyChanged.On(this,properties,value) ; if( properties.Consists("Sources") && GraphTab.IsSelected ) Graph_Draw(this,null) ; }
 		public Main() { InitializeComponent() ; DataContext = this ; Doct += (this,"Main") ; Axe.Aspecter = ()=>Book.Select(p=>p.Spectrum).Union(Aspects) ; SourcesGrid.ItemContainerGenerator.ItemsChanged += SourcesGrid_ItemsChanged ; Load() ; }
@@ -37,6 +37,7 @@ namespace Rob.Act.Analyze
 		{
 			Setup.WorkoutsPaths.MatchingFiles().EachGuard(f=>NewAction(f,Setup?.WorkoutsFilter),(f,e)=>Trace.TraceError($"{f} faulted by {e}")) ;
 			Setup.AspectsPaths.MatchingFiles().EachGuard(f=>NewAspect(f,Setup?.AspectsFilter),(f,e)=>Trace.TraceError($"{f} faulted by {e}")) ;
+			State = Setup.StateFile?.ReadAllText() ;
 		}
 		protected override void OnClosing( CancelEventArgs e ) { Doct?.Dispose() ; base.OnClosing(e) ; }
 		protected override void OnClosed( EventArgs e ) { base.OnClosed(e) ; Process.GetCurrentProcess().Kill() ; }
