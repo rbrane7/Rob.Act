@@ -157,7 +157,7 @@ namespace Rob.Act
 	{
 		public class Axe : Act.Axe
 		{
-			readonly Path Context ;
+			internal Path Context ;
 			public virtual Axis Axis { get => axis ; set { base.Spec = ( axis = value ).Stringy() ; Resolver = at=>Context.At(at)?[Axis] ; } } Axis axis ;
 			public override string Spec { get => base.Spec ; set { if( value!=null ) Axis = value.Axis() ; base.Spec = value ; } }
 			public Axe( Path context ) => Context = context ;

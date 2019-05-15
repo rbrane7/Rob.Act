@@ -1,11 +1,9 @@
 ﻿/*@ Rob.Act.Analyze.Settings @*/ type
 {
 	Doctee = 'doctee://localhost:43202/Action/Analyze?Name=Rana' ,
-	WorkoutsPaths = @'C:\Users\teplyr\Downloads\*.tcx' ,
-	WorkoutsFilter = p=>p.Action=='AeT' ,
-	AspectsPaths = @'C:\Users\teplyr\Downloads\*.asp' ,
-	AspectsFilter = a=>a.Spec!='Test' ,
+	WorkoutsPaths = @'C:\Users\teplyr\Downloads\*.tcx' , WorkoutsFilter = p=>p.Action=='AeT' ,
+	AspectsPaths = @'C:\Users\teplyr\Downloads\*.asp' , AspectsFilter = a=>a.Spec!='Test' ,
 	AspectsPath = @'C:\Users\teplyr\Downloads\*.asp' ,
-	StateFile = @'C:\Users\teplyr\Downloads\Rob.stt' ,
+	StatePath = @'Run\' ,
 }
 ;
