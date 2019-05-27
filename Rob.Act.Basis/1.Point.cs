@@ -20,6 +20,7 @@ namespace Rob.Act
 
 		#region Setup
 		public void From( Point point ) { Time = point.Time ; for( uint i=0 ; i<point.Dimension ; ++i ) this[i] = point[i] ; }
+		public void Adopt( Point point ) { From(point) ; Date = point.Date ; Action = point.Action ; Mark = point.Mark ; }
 		#endregion
 
 		#region State
@@ -84,7 +85,7 @@ namespace Rob.Act
 
 		#region Query
 		public bool IsGeo => this[Axis.Longitude]!=null || this[Axis.Lat]!=null ;
-		public Quant Resist => Math.Pow( Draglet/100 ?? 1 , 1D/3D ) ;
+		public Quant Resist => Math.Pow( Draglet ?? 1 , 1D/3D ) ;
 		public string Exposion => "{0}={1}bW".Comb("{0}W/{1}`b".Comb(Power.use(Math.Round),Beatrate.use(Math.Round)),Beatage.use(Math.Round)) ;
 		#endregion
 

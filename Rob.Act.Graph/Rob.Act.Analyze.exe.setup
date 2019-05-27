@@ -5,5 +5,6 @@
 	AspectsPaths = @'C:\Users\teplyr\Downloads\*.asp' , AspectsFilter = a=>a.Spec!='Test' ,
 	AspectsPath = @'C:\Users\teplyr\Downloads\*.asp' ,
 	StatePath = @'Run\' ,
+	ActionTraits = []{ 'Action' , 'Date:yyyy-MM-dd HH:mm:ss' , 'Time:hh\\:mm\\:ss' , 'Draglet/Drag:0.00' , 'Power/Ent:#W' , 'Beatrate/Beat:#`v' , 'Beatage/bEnt:#bW' , 'Shift:.000' } ,
 }
 ;

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
 using System.Text;
@@ -12,8 +13,9 @@ namespace Rob.Act
 {
 	using Configer = System.Configuration.ConfigurationManager ;
 	using Quant = Double ;
-	public partial class Path : Point , IList<Point> , Gettable<DateTime,Point>
+	public partial class Path : Point , IList<Point> , Gettable<DateTime,Point> , INotifyCollectionChanged
 	{
+		enum Taglet { Object , Drag , Subject , Locus }
 		public static bool Dominancy = Configer.AppSettings["Path.Dominancy"]!=null ;
 		public static double Margin = Configer.AppSettings["Path.Margin"].Parse<double>()??0 ;
 		public static Dictionary<string,Quant?[]> Meta = new Dictionary<string,Quant?[]>{ ["Tabata"]=new Quant?[]{1,2} } ;
@@ -38,6 +40,7 @@ namespace Rob.Act
 				if( Beat==null ) { this[0].Beat = 0 ; for( var i=1 ; i<Count ; ++i ) this[i].Beat = this[i-1].Beat+this[i].Beat/60*(this[i].Time-this[i-1].Time).TotalSeconds ; Beat = this[Count-1].Beat ; }
 			}
 		}
+		public void Adopt( Path path ) { base.Adopt(path) ; Tag = path.Tag ; for( var i=0 ; i<Content.Count ; ++i ) Content[i].Adopt(path.Content[i]) ; propertyChanged.On(this,"Spec,Spectrum") ; CollectionChanged?.Invoke(this,new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset)) ; }
 		#endregion
 
 		#region State
@@ -47,8 +50,12 @@ namespace Rob.Act
 		/// Tags for path recognition among the others in a book .
 		/// </summary>
 		public List<string> Tags => tags ?? System.Threading.Interlocked.CompareExchange(ref tags,new List<string>(),null) ?? tags ; List<string> tags ;
-		public string Tag { get => tag ?? ( tag = tags.Null(t=>t.Count<=0).Stringy(' ') ) ; set { if( value==tag ) return ; tags?.Clear() ; tag = null ; Tags.AddRange(value.SeparateTrim(' ')) ; propertyChanged.On(this,"Tag,Spec") ; } } string tag ;
+		public string Tag { get => tag ?? ( tag = tags.Null(t=>t.Count<=0).Stringy(' ') ) ; set { if( value==tag ) return ; tags?.Clear() ; tag = null ; Tags.AddRange(value.SeparateTrim(' ')) ; propertyChanged.On(this,"Tag,Spec,Subject,Object,Locus") ; } } string tag ;
 		public override string Spec { get => Tag is string t ? $"{base.Spec} {t}" : base.Spec ; set { if( value==base.Spec ) return ; base.Spec = value ; aspect.Set(a=>a.Spec=value) ; } }
+		public string Subject => tags.At((int)Taglet.Subject) ;
+		public string Object => tags.At((int)Taglet.Object) ;
+		public string Locus => tags.At((int)Taglet.Locus) ;
+		public event NotifyCollectionChangedEventHandler CollectionChanged ;
 		#endregion
 
 		#region Trait
@@ -60,6 +67,8 @@ namespace Rob.Act
 		public Quant? MaxExposure => MaxEffort/MaxBeat ;
 		public string MaxExposion => $"{MaxEffort}W/{MaxBeat.use(v=>Math.Round(v*60))}`b={MaxExposure.use(Math.Round)}bW" ;
 		public Quant Durability => Math.Max(0,1.1-20/Time.TotalSeconds) ;
+		public Quant? Shift => ((Spectrum[Axis.Energy] as Axe)^(Spectrum[Axis.Beat] as Axe))?.LastOrDefault() is Quant v ? Math.Log(v) : null as Quant? ;
+		public Quant? MaxShift => ((Spectrum[Axis.Energy] as Axe)^(Spectrum[Axis.Beat] as Axe)).Skip(150)?.Max() is Quant v ? Math.Log(v) : null as Quant? ;
 		#endregion
 
 		#region Access

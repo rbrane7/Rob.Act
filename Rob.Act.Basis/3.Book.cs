@@ -19,10 +19,10 @@ namespace Rob.Act
 		public static Book operator+( Book book , Path path ) => book.Set(b=>path.Set(b.Add)) ;
 		public static Book operator-( Book book , Path path ) => book.Set(b=>path.Set(b.Remove)) ;
 		public static Book operator-( Book book , Predicate<Path> path ) => book.Set(b=>path.Set(b.Remove)) ;
-		public static Book operator|( Book book , Path path ) => book.Set(b=>path.Set(p=>{ var i = b.IndexWhere(p.Match) ; if( i<0 ) b.Add(p) ; else if( b[i]!=p ) b[i] = p.Set(n=>n.Spectrum=b[i].Spectrum) ; })) ;
+		public static Book operator|( Book book , Path path ) => book.Set(b=>path.Set(p=>{ var i = b.IndexWhere(p.Match) ; if( i<0 ) b.Add(p) ; else if( b[i]!=p ) b[i].Adopt(p) ; })) ;
 	}
 	static class PathExtension
 	{
-		internal static bool Match( this Path x , Path y ) => x?.Spectrum.Origin!=null && y?.Spectrum.Origin!=null && x.Spectrum.Origin==y.Spectrum.Origin ;
+		internal static bool Match( this Path x , Path y ) => x?.Origin!=null && y?.Origin!=null && x.Origin==y.Origin ;
 	}
 }

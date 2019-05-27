@@ -76,12 +76,12 @@ namespace Rob.Act
 		/// <summary>
 		/// Deserializes aspect from string .
 		/// </summary>
-		public static explicit operator Aspect( string text ) => text.Get(t=>new Aspect(t.LeftFromLast(Serialization.Separator).Separate(Serialization.Separator,braces:null).Select(a=>(Axe)a),(Traits)t.RightFrom(Serialization.Separator))) ;
+		public static explicit operator Aspect( string text ) => text.Get(t=>new Aspect(t.LeftFromLast(Serialization.Separator).Separate(Serialization.Separator,braces:null)?.Select(a=>(Axe)a),(Traits)t.RightFrom(Serialization.Separator))) ;
 		/// <summary>
 		/// Serializes aspect from string .
 		/// </summary>
 		public static explicit operator string( Aspect aspect ) => aspect.Get(a=>string.Join(Serialization.Separator,a.Select(x=>(string)x))+(a.Count>0?Serialization.Separator:null)+(string)a.Trait) ;
-		static class Serialization { public const string Separator = " \x1 Axe \x2\n" ; }
+		protected static class Serialization { public const string Separator = " \x1 Axe \x2\n" ; }
 		#endregion
 		public class Traitlet : INotifyPropertyChanged
 		{
@@ -146,8 +146,8 @@ namespace Rob.Act
 			public override string Spec { get => Context.Spec ; set => base.Spec = value ; }
 			public override Aspectable Source { set {} }
 			public Axable this[ Axis ax ] => this.OfType<Axe>().FirstOrDefault(a=>a.Axis==ax) ?? new Axe(Context){Axis=ax}.Set(Add) ;
-			public override void Add( Act.Axe ax ) => base.Add(ax.Set(a=>{if(!(a is Axe))a.Aspect=this;} )) ;
-			public override void Remove( Act.Axe ax ) => base.Remove(ax.Set(a=>{if(!(a is Axe))a.Aspect=null;} )) ;
+			public override void Add( Act.Axe ax ) => base.Add(ax.Set(a=>{if(!(a is Axe))a.Aspect=this;})) ;
+			public override void Remove( Act.Axe ax ) => base.Remove(ax.Set(a=>{if(!(a is Axe))a.Aspect=null;})) ;
 			public override Iterable Points => new Iterator{ Context = this } ;
 			public new class Iterator : Iterable
 			{
@@ -155,7 +155,11 @@ namespace Rob.Act
 				public int Count => (Context as Aspect)?.Context.Count ?? 0 ;
 				public IEnumerator<Quant?[]> GetEnumerator() { for( int i=0 , count=Count ; i<count ; ++i ) yield return Context.Select(a=>a[i]).ToArray() ; } IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
 			}
+			#region De/Serialization
+			public static explicit operator string( Aspect aspect ) => aspect.Get(a=>string.Join(Serialization.Separator,a.Where(x=>!(x is Axe)).Select(x=>(string)x))+(a.Count(x=>!(x is Axe))>0?Serialization.Separator:null)+(string)a.Trait) ;
+			#endregion
 		}
 		public Aspect Spectrum { get => aspect ?? ( aspect = new Aspect(this) ) ; internal set => aspect = value.Set(s=>s.Context=this) ; } Aspect aspect ;
+		public string Origin { get => Spectrum.Origin ; set { Spectrum.Origin = value ; var asp = (Act.Aspect)System.IO.Path.ChangeExtension(value,"spt").ReadAllText() ; if( asp==null ) return ; foreach( var ax in asp ) if( Spectrum[ax.Spec]==null ) Spectrum.Add(ax) ; foreach( var trait in asp.Trait ) Spectrum.Trait.Add(trait) ; } }
 	}
 }
