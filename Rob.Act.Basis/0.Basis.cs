@@ -24,11 +24,11 @@ namespace Rob.Act
 		public static Quant operator+( Bipole x ) => x.A-x.B ;
 		public static Bipole operator-( Bipole x ) => new Bipole(x.B,x.A) ;
 		public static Bipole operator+( Bipole x , Bipole y ) => new Bipole(x.A+y.A,x.B+y.B) ;
-		public static Bipole operator-( Bipole x , Bipole y ) => (Quant)x-(Quant)y ;
+		public static Bipole operator-( Bipole x , Bipole y ) => x+-y ;
 		public static Bipole operator+( Bipole x , Quant y ) => x+(Bipole)y ;
 		public static Bipole operator-( Bipole x , Quant y ) => x-(Bipole)y ;
-		public static Bipole operator*( Bipole x , Quant y ) => (Quant)x*y ;
-		public static Bipole? operator/( Bipole x , Quant y ) => y!=0 ? (Quant)x/y : null as Bipole? ;
+		public static Bipole operator*( Bipole x , Quant y ) => y>=0 ? new Bipole(x.A*y,x.B*y) : -x*-y ;
+		public static Bipole? operator/( Bipole x , Quant y ) => y>0 ? new Bipole(x.A/y,x.B/y) : y<0 ? -x/-y : null as Bipole? ;
 		public static Bipole operator*( Bipole x , Bipole y ) => x*(Quant)y ;
 		public static Bipole? operator/( Bipole x , Bipole y ) => x/(Quant)y ;
 		public static Bipole? operator+( Bipole? x , Bipole? y ) => x!=null&&y!=null ? x.Value+y.Value : null as Bipole? ;
