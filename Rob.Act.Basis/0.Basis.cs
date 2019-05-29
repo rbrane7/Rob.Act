@@ -15,11 +15,36 @@ namespace Rob.Act
 	[Flags] public enum Mark { No = 0 , Stop = 1 , Lap = 2 , Act = 4 }
 	[Flags] public enum Oper { Merge = 0 , Combi = 1 , Trim = 2 , Smooth = 4 , Relat = 8 }
 	public enum Axis { Lon , Longitude = Lon , Lat , Latitude = Lat , Alt , Altitude = Alt , Dist , Distance = Dist , Drag , Flow , Beat , Bit , Ergy , Energy = Ergy , Effort , Time }
+	public struct Bipole : IFormattable
+	{
+		Bipole( Quant a , Quant b ) { A = Math.Abs(a) ; B = -Math.Abs(b) ; }
+		public Bipole( Quant a ) { A = Math.Max(0,a) ; B = Math.Min(0,a) ; }
+		public Quant A { get; }
+		public Quant B { get; }
+		public static Quant operator+( Bipole x ) => x.A-x.B ;
+		public static Bipole operator-( Bipole x ) => new Bipole(x.B,x.A) ;
+		public static Bipole operator+( Bipole x , Bipole y ) => new Bipole(x.A+y.A,x.B+y.B) ;
+		public static Bipole operator-( Bipole x , Bipole y ) => (Quant)x-(Quant)y ;
+		public static Bipole operator+( Bipole x , Quant y ) => x+(Bipole)y ;
+		public static Bipole operator-( Bipole x , Quant y ) => x-(Bipole)y ;
+		public static Bipole operator*( Bipole x , Quant y ) => new Bipole(x.A*y,x.B*y) ;
+		public static Bipole? operator/( Bipole x , Quant y ) => y!=0 ? new Bipole(x.A/y,x.B/y) : null as Bipole? ;
+		public static Bipole? operator+( Bipole? x , Bipole? y ) => x!=null&&y!=null ? x.Value+y.Value : null as Bipole? ;
+		public static Bipole? operator-( Bipole? x , Bipole? y ) => x!=null&&y!=null ? x.Value-y.Value : null as Bipole? ;
+		public static Bipole? operator+( Bipole? x , Quant? y ) => x!=null&&y!=null ? x.Value+y.Value : null as Bipole? ;
+		public static Bipole? operator-( Bipole? x , Quant? y ) => x!=null&&y!=null ? x.Value-y.Value : null as Bipole? ;
+		public static Bipole? operator*( Bipole? x , Quant? y ) => x!=null&&y!=null ? x.Value*y.Value : null as Bipole? ;
+		public static Bipole? operator/( Bipole? x , Quant? y ) => x!=null&&y!=null ? x.Value/y.Value : null as Bipole? ;
+		public static implicit operator Bipole( Quant v ) => new Bipole(v) ;
+		public static explicit operator Quant( Bipole v ) => v.A+v.B ;
+		public override string ToString() => $"{A}-{-B}" ;
+		public string ToString( string format , IFormatProvider formatProvider ) => $"{A.ToString(format,formatProvider)}-{(-B).ToString(format,formatProvider)}" ;
+	}
 	static class Basis
 	{
 		#region Axis specifics
-		static List<string> axis = Enum.GetNames(typeof(Axis)).ToList() ;
-		internal static Axis Axis( this string name ) => (Axis)( axis.IndexOf(name).nil(i=>i<0) ?? axis.Set(a=>a.Add(name)).Count-1 ) ;
+		static List<string> axis = Enum.GetNames(typeof(Axis)).ToList() ; static List<int> vaxi = Enum.GetValues(typeof(Axis)).Cast<int>().ToList() ;
+		internal static Axis Axis( this string name ) => (Axis)( vaxi.At(axis.IndexOf(name)).nil(i=>i<0) ?? axis.Set(a=>{a.Add(name);vaxi.Add(vaxi.Count);}).Count-1 ) ;
 		internal static Quant ActLim( this Axis axis , string activity ) => 50 ;
 		#endregion
 

@@ -51,23 +51,31 @@ namespace Rob.Act
 		/// <summary>
 		/// Kind of demarkaition .
 		/// </summary>
-		public Mark Mark { get; set; }
+		public Mark Mark { get; set; } public Mark? Marklet => Mark.nil() ;
+		/// <summary>
+		/// Ascent of the path .
+		/// </summary>
+		public Bipole? Asc { get; set; }
 		#endregion
 
-		#region Trait
+		#region Vector
 		public static Point Zero( DateTime date ) => new Point(date){ Time = TimeSpan.Zero }.Set( p=>{ for( var i=0 ; i<p.Dimension ; ++i ) p.Quantity[i] = 0 ; } ) ;
 		public uint Dimension => (uint) Quantity.Length ;
 		public Quant? this[ uint axis ] { get => Quantity.At((int)axis) ; set { if( axis>=Quantity.Length && value!=null ) Quantity.Set(q=>q.CopyTo(Quantity=new Quant?[axis+1],0)) ; if( axis<Quantity.Length ) Quantity[axis] = value ; } }
 		public virtual Quant? this[ Axis axis ] { get => axis==Axis.Time ? Time.TotalSeconds : this[(uint)axis] ; set { if( axis!=Axis.Time ) this[(uint)axis] = value ; else if( value is Quant q ) Time = TimeSpan.FromSeconds(q) ; } }
 		public Quant? this[ string axis ] { get => this[axis.Axis()] ; set => this[axis.Axis()] = value ; }
 		public override bool TrySetMember( SetMemberBinder binder , object value ) { this[binder.Name] = (Quant?)value ; return base.TrySetMember( binder, value ) ; }
-		public override bool TryGetMember( GetMemberBinder binder , out object result ) { result = this[binder.Name] ; return base.TryGetMember( binder, out result ) ; }
+		public override bool TryGetMember( GetMemberBinder binder , out object result ) { result = this[binder.Name] ; return true ; }
+		#endregion
+
+		#region Trait
 		public Quant? Dist { get => this[Axis.Dist] ; set => this[Axis.Dist] = value ; }
 		public Quant? Ergy { get => this[Axis.Ergy] ; set => this[Axis.Ergy] = value ; }
 		public Quant? Beat { get => this[Axis.Beat] ; set => this[Axis.Beat] = value ; }
 		public Quant? Bit { get => this[Axis.Bit] ; set => this[Axis.Bit] = value ; }
 		public Quant? Effort { get => this[Axis.Effort] ; set => this[Axis.Effort] = value ; }
 		public Quant? Drag { get => this[Axis.Drag] ; set => this[Axis.Drag] = value ; }
+		public Quant? Alt { get => this[Axis.Alt] ; set => this[Axis.Alt] = value ; }
 		#endregion
 
 		#region Quotient
@@ -81,11 +89,12 @@ namespace Rob.Act
 		public Quant? Beatrate => Beat.Quotient(Time.TotalMinutes) ;
 		public Quant? Bitrate => Bit.Quotient(Time.TotalMinutes) ;
 		public Quant? Draglet => Drag.Quotient(Bit) ;
+		public Bipole? Gradelet => Asc / Dist ;
 		#endregion
 
 		#region Query
-		public bool IsGeo => this[Axis.Longitude]!=null || this[Axis.Lat]!=null ;
-		public Quant Resist => Math.Pow( Draglet ?? 1 , 1D/3D ) ;
+		public bool IsGeo => this[Axis.Lon]!=null || this[Axis.Lat]!=null ;
+		public Quant Resist => Math.Pow( Draglet??1 , 1D/3D ) ;
 		public string Exposion => "{0}={1}bW".Comb("{0}W/{1}`b".Comb(Power.use(Math.Round),Beatrate.use(Math.Round)),Beatage.use(Math.Round)) ;
 		#endregion
 
@@ -102,7 +111,7 @@ namespace Rob.Act
 		#region Info
 		public override string ToString() => $"{Action} {Sign} {Exposion} {Trace}" ;
 		public virtual string Quantities => $"{((int)Dimension).Steps().Select(i=>Quantity[i].Get(q=>$"{(Axis)i}={q}")).Stringy(' ')}" ;
-		public virtual string Trace => $"{Quantities} {Mark.nil(m=>m==Mark.No)}" ;
+		public virtual string Trace => $"{Quantities} {Asc.Get(v=>$"Ascent={v:0}")} {Gradelet.Get(v=>$"Grade={v:.000}")} {Mark.nil(m=>m==Mark.No)}" ;
 		#endregion
 
 		public event PropertyChangedEventHandler PropertyChanged { add => propertyChanged += value.DispatchResolve() ; remove => propertyChanged -= value.DispatchResolve() ; } protected PropertyChangedEventHandler propertyChanged ;

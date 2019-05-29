@@ -19,6 +19,7 @@ namespace Rob.Act
 		public static bool Dominancy = Configer.AppSettings["Path.Dominancy"]!=null ;
 		public static double Margin = Configer.AppSettings["Path.Margin"].Parse<double>()??0 ;
 		public static Dictionary<string,Quant?[]> Meta = new Dictionary<string,Quant?[]>{ ["Tabata"]=new Quant?[]{1,2} } ;
+		public static IDictionary<string,Quant> GradeTolerancy = new Dictionary<string,Quant>{ ["Polling"]=.25 , ["Other"]=.27 } ;
 
 		#region Construct
 		public Path( DateTime date , IEnumerable<Point> points = null ) : base(date)
@@ -27,16 +28,18 @@ namespace Rob.Act
 			date = DateTime.Now ; for( var i=0 ; i<Count ; ++i )
 			{
 				if( i<=0 || this[i-1].Mark.HasFlag(Mark.Stop) ) { date = this[i].Date ; if( this[i].Dist==null ) this[i].Dist = 0 ; }
-				if( this[i].Time==TimeSpan.Zero ) this[i].Time = this[i].Date-date ;
-				if( this[i].Dist==null && this[i].IsGeo ) this[i].Dist = this[i-1].Dist + (this[i]-this[i-1]).Euclid(this[i-1]) ;
+				if( this[i].Time==TimeSpan.Zero ) this[i].Time = this[i].Date-date ; if( this[i].Bit==null ) this[i].Bit = i ;
+				if( !this[i].IsGeo ) continue ;
+				if( this[i].Dist==null ) this[i].Dist = this[i-1].Dist + (this[i]-this[i-1]).Euclid(this[i-1]) ;
+				if( this[i].Asc==null ) if( i<=0 || this[i-1].Mark.HasFlag(Mark.Stop) ) this[i].Asc = 0 ; else this[i].Asc = this[i-1].Asc + ( this[i].Alt-this[i-1].Alt is Quant v && Math.Abs(v)/(this[i].Dist-this[i-1].Dist)<(GradeTolerancy.On(Action)??.3) ? v : 0 ) ;
 			}
-			this.At(Count-1).Set(p=>{Time=p.Time;Dist=p.Dist;}) ;
+			this.At(Count-1).Set(p=>{Time=p.Time;Dist=p.Dist;Asc=p.Asc;}) ;
 		}
 		public Path( DateTime time , bool close , IEnumerable<Point> points = null ) : this(time,points)
 		{
 			if( close )
 			{
-				if( this[0]?.Mark.HasFlag(Mark.Stop)==false ) Content.Insert(0,new Point(Content[0]){Mark=Mark.Stop}) ;
+				//if( this[0]?.Mark.HasFlag(Mark.Stop)==false ) Content.Insert(0,new Point(Content[0]){Mark=Mark.Stop}) ; //Not good solution .
 				if( Beat==null ) { this[0].Beat = 0 ; for( var i=1 ; i<Count ; ++i ) this[i].Beat = this[i-1].Beat+this[i].Beat/60*(this[i].Time-this[i-1].Time).TotalSeconds ; Beat = this[Count-1].Beat ; }
 			}
 		}

@@ -16,6 +16,7 @@ namespace Rob.Act.Analyze
 		public string StatePath ;
 		public TimeSpan SavePeriod = new TimeSpan(0,0,10) ;
 		public string[] ActionTraits ;
+		public string[] MatrixTraits ;
 	}
 	public class State
 	{
