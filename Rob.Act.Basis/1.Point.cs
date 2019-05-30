@@ -56,6 +56,10 @@ namespace Rob.Act
 		/// Ascent of the path .
 		/// </summary>
 		public Bipole? Asc { get; set; }
+		/// <summary>
+		/// Deviation of the path .
+		/// </summary>
+		public Bipole? Dev { get; set; }
 		#endregion
 
 		#region Vector
@@ -90,12 +94,13 @@ namespace Rob.Act
 		public Quant? Bitrate => Bit.Quotient(Time.TotalMinutes) ;
 		public Quant? Draglet => Drag.Quotient(Bit) ;
 		public Bipole? Gradelet => Asc / Dist ;
+		public Bipole? Bendlet => Dev / Dist ;
 		#endregion
 
 		#region Query
 		public bool IsGeo => this[Axis.Lon]!=null || this[Axis.Lat]!=null ;
 		public Quant Resist => Math.Pow( Draglet??1 , 1D/3D ) ;
-		public string Exposion => "{0}={1}bW".Comb("{0}W/{1}`b".Comb(Power.use(Math.Round),Beatrate.use(Math.Round)),Beatage.use(Math.Round)) ;
+		public string Exposion => "{0}={1}bW".Comb("{0}/{1}".Comb(Power.Get(p=>$"{Math.Round(p)}W"),Beatrate.Get(b=>$"{Math.Round(b)}`b")),Beatage.use(Math.Round))+$" {Speed*3.6:0.00}km/h" ;
 		#endregion
 
 		#region Operation
@@ -106,12 +111,13 @@ namespace Rob.Act
 		public static Point operator/( Point point , string axis ) => point / axis.Axis() ;
 		public static Point operator-( Point point , Point offset ) => new Point(new DateTime(point.Date.Ticks+offset.Date.Ticks>>1)){ Time = point.Date-offset.Date }.Set( p=>{ for( uint i=0 ; i<p.Dimension ; ++i ) p[i] = point[i]-offset[i] ; if( p.IsGeo ) p.Dist = p.Euclid(offset) ; } ) ;
 		public static Point operator+( Point accu , Point diff ) => accu.Set( p => diff.Set( d => { p.Time += d.Time ; for( uint i=0 ; i<p.Dimension ; ++i ) p[i] += d[i] ; } ) ) ;
+		public Geos? Geos => this ;
 		#endregion
 
 		#region Info
 		public override string ToString() => $"{Action} {Sign} {Exposion} {Trace}" ;
 		public virtual string Quantities => $"{((int)Dimension).Steps().Select(i=>Quantity[i].Get(q=>$"{(Axis)i}={q}")).Stringy(' ')}" ;
-		public virtual string Trace => $"{Quantities} {Asc.Get(v=>$"Ascent={v:0}")} {Gradelet.Get(v=>$"Grade={v:.000}")} {Mark.nil(m=>m==Mark.No)}" ;
+		public virtual string Trace => $"{Draglet.Get(v=>$"Drag={v:0.00}")} {Asc.Get(v=>$"Ascent={v:0}m")} {Gradelet.Get(v=>$"Grade={v:.000}")} {Dev.Get(v=>$"Devia={v:0}m")} {Bendlet.Get(v=>$"Bend={v:.000}")} {Quantities} {Mark.nil(m=>m==Mark.No)}" ;
 		#endregion
 
 		public event PropertyChangedEventHandler PropertyChanged { add => propertyChanged += value.DispatchResolve() ; remove => propertyChanged -= value.DispatchResolve() ; } protected PropertyChangedEventHandler propertyChanged ;

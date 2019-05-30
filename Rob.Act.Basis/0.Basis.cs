@@ -44,6 +44,21 @@ namespace Rob.Act
 		public override string ToString() => $"{A}-{-B}" ;
 		public string ToString( string format , IFormatProvider formatProvider ) => $"{A.ToString(format,formatProvider)}-{(-B).ToString(format,formatProvider)}" ;
 	}
+	public struct Geos
+	{
+		public Quant Lon , Lat ;
+		public static Geos operator~( Geos a ) => new Geos{Lon=a.Lat,Lat=-a.Lon} ;
+		public static Quant operator+( Geos a ) => Math.Sqrt(a|a) ;
+		public static Geos? operator~( Geos? a ) => a.use(x=>~x) ;
+		public static Quant? operator+( Geos? a ) => a.use(x=>+x) ;
+		public static Geos operator+( Geos a , Geos b ) => new Geos{Lon=a.Lon+b.Lon,Lat=a.Lat+b.Lat} ;
+		public static Geos operator-( Geos a , Geos b ) => new Geos{Lon=a.Lon-b.Lon,Lat=a.Lat-b.Lat} ;
+		public static Geos? operator+( Geos? a , Geos? b ) => a is Geos x && b is Geos y ? x+y : null as Geos? ;
+		public static Geos? operator-( Geos? a , Geos? b ) => a is Geos x && b is Geos y ? x-y : null as Geos? ;
+		public static Quant operator|( Geos a , Geos b ) => a.Lon*b.Lon+a.Lat*b.Lat ;
+		public static Quant? operator|( Geos? a , Geos? b ) => a is Geos x && b is Geos y ? x|y : null as Quant? ;
+		public static implicit operator Geos?( Point point ) => point?.IsGeo==true ? new Geos{Lon=point[Axis.Lon].Value,Lat=point[Axis.Lat].Value} : null as Geos? ;
+	}
 	static class Basis
 	{
 		#region Axis specifics
@@ -65,12 +80,12 @@ namespace Rob.Act
 		#endregion
 
 		#region Euclid metrics
-		public static int GradeAccu = Configer.AppSettings["Grade.Accumulation"].Parse<int>() ?? 7 , VeloAccu = Configer.AppSettings["Speed.Accumulation"].Parse<int>() ?? 1 ;
+		public static int GradeAccu = Configer.AppSettings["Grade.Accumulation"].Parse(7) , VeloAccu = Configer.AppSettings["Speed.Accumulation"].Parse(1) ;
 		static Quant? Sqrm( this Point point , Axis axis , Point at ) { Quant? value = point[axis]??0 ; if( axis==Act.Axis.Lat ) value *= Degmet ; if( axis==Act.Axis.Lon ) value *= Londeg(at[Act.Axis.Lat]) ; return value*value ; }
 		static readonly Quant Degmet = 111321.5 ;
 		internal const Quant Gravity = 10 ;
-		static Quant? Londeg( Quant? latdeg ) => latdeg.use(l=>Math.Cos(l.Rad())) * Degmet ;
-		static Quant Rad( this Quant deg ) => deg/180*Math.PI ;
+		static Quant? Londeg( Quant? latdeg ) => latdeg.Rad().use(Math.Cos) * Degmet ;
+		static Quant? Rad( this Quant? deg ) => deg/180*Math.PI ;
 		static Quant? Polar( this Point point , Point offset ) => point.Sqrm(Act.Axis.Lon,offset)+point.Sqrm(Act.Axis.Lat,offset) ;
 		internal static Quant? Euclid( this Point point , Point offset ) => (point.Polar(offset)+point.Sqrm(Act.Axis.Alt,offset)).use(Math.Sqrt) ;
 		internal static Quant? Sphere( this Point point , Point offset ) => point.Polar(offset).use(Math.Sqrt) ;
@@ -80,6 +95,7 @@ namespace Rob.Act
 #else	// grade average by distance
 		internal static Quant? Grade( this Path path , int at , Point offset ) { Quant vol = 0 ; Quant? val = 0 ; for( var i=Math.Max(at-GradeAccu,0) ; i<Math.Min(path.Count,at+GradeAccu+1) ; ++i ) if( path[i].Grade(offset).Set(v=>val+=v*path[i].Sphere(offset))!=null ) vol+=path[i].Sphere(offset).Value ; return vol>0 ? val/vol : null ; }
 #endif
+		internal static Quant? Devia( this Geos? x , Geos? y ) => (~(x+y)|x-y)/+(x+y) * Degmet ;
 		internal static Quant? Veloa( this Path path , int at ) { Quant vol = 0 ; Quant? val = 0 ; for( var i=Math.Max(at-VeloAccu,0) ; i<Math.Min(path.Count,at+VeloAccu+1) ; ++i ) if( path[i].Speed.Set(v=>val+=v*path[i].Time.TotalSeconds)!=null ) vol+=path[i].Time.TotalSeconds ; return (vol>0?val/vol:null) ; }
 		internal static Quant? Vibre( this Path path , int at ) => path[at].Speed / path.Veloa(at) ;
 		#endregion
