@@ -8,7 +8,7 @@
         mc:Ignorable="d"
         Title="Analyze" Height="450" Width="800"
         Name="MainWindow"
-        MouseMove="GraphPanel_MouseMove"
+        MouseMove="Main_MouseMove"
         >
     <Window.Resources>
         <converters:LambdaConverter x:Key="MinConvert" Forward="the(double)*60"/>
@@ -112,7 +112,13 @@
             <TabItem Name="GraphTab" Header="Graph" Selector.Selected="Graph_Draw">
                 <Canvas>
                     <Canvas Panel.ZIndex="0" Name="GraphPanel"/>
-                    <Canvas Width="2000" Height="2000" Panel.ZIndex="1" Background="Transparent" PreviewMouseDown="GraphPanel_MouseDown" PreviewMouseUp="DisplayTable_MouseUp"/>
+                    <Canvas Width="2000" Height="2000" Panel.ZIndex="1" Background="Transparent" PreviewMouseDown="ViewPanel_MouseDown" PreviewMouseUp="DisplayTable_MouseUp"/>
+                </Canvas>
+            </TabItem>
+            <TabItem Name="MapTab" Header="Map" Selector.Selected="Map_Draw">
+                <Canvas>
+                    <Canvas Panel.ZIndex="0" Name="MapPanel"/>
+                    <Canvas Width="2000" Height="2000" Panel.ZIndex="1" Background="Transparent" PreviewMouseDown="ViewPanel_MouseDown" PreviewMouseUp="DisplayTable_MouseUp"/>
                 </Canvas>
             </TabItem>
             <TabItem Header="Spectrum">

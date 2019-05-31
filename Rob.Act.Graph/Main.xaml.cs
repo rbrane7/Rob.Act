@@ -34,8 +34,8 @@ namespace Rob.Act.Analyze
 		public State State { get => state ; private set { state = (value??new State()).Set(s=>s.Context=this) ; } } State state ;
 		FileSystemWatcher[] WorkoutsWatchers ;
 		public event PropertyChangedEventHandler PropertyChanged ;
-		void PropertyChangedOn<Value>( string properties , Value value ) { PropertyChanged.On(this,properties,value) ; if( properties.Consists("Sources") && GraphTab.IsSelected ) Graph_Draw(this,null) ; }
-		public Main() { InitializeComponent() ; DataContext = this ; Doct += (this,"Main") ; Axe.Aspecter = ()=>Book.Select(p=>p.Spectrum).Union(Aspects) ; SourcesGrid.ItemContainerGenerator.ItemsChanged += SourcesGrid_ItemsChanged ; Load() ; }
+		void PropertyChangedOn<Value>( string properties , Value value ) { PropertyChanged.On(this,properties,value) ; if( properties.Consists("Sources") ) if( GraphTab.IsSelected ) Graph_Draw(this,null) ; else if( MapTab.IsSelected ) Map_Draw(this,null) ; }
+		public Main() { InitializeComponent() ; ViewPanel = GraphPanel ; DataContext = this ; Doct += (this,"Main") ; Axe.Aspecter = ()=>Book.Select(p=>p.Spectrum).Union(Aspects) ; SourcesGrid.ItemContainerGenerator.ItemsChanged += SourcesGrid_ItemsChanged ; Load() ; }
 		void Load()
 		{
 			Setup.WorkoutsPaths.SeparateTrim(',').SelectMany(l=>l.MatchingFiles()).EachGuard(f=>NewAction(f,Setup?.WorkoutsFilter),(f,e)=>Trace.TraceError($"{f} faulted by {e}")) ;
@@ -78,16 +78,27 @@ namespace Rob.Act.Analyze
 		void AddAspectButton_Click( object sender , RoutedEventArgs e ) => Aspects.Add(new Aspect()) ;
 		void AddAxeButton_Click( object sender , RoutedEventArgs e ) => Axes.Add(new Axe()) ;
 		void SaveAspectsButton_Click( object sender , RoutedEventArgs e ) => Setup.AspectsPath.Set(p=>Aspects.Each(a=>p.LeftFromLast('*',true).Path(a.Spec+p.RightFrom('*')).WriteAll((string)a))) ;
-		void DisplayTable_SelectionChanged( object sender , SelectionChangedEventArgs e ) { var tab = e.AddedItems.Count>0 ? e.AddedItems[0] as TabItem : null ; switch( tab?.Header as string ) { case "Aspect" : Aspect = AspectsGrid.SelectedItem as Aspect ; GraphType = "Aspect" ; break ; case "Spectrum" : Aspect = (((SpectrumTabs.SelectedItem as TabItem)?.Content as DataGrid)?.ItemsSource as Path ?? SpectrumTabs.ItemsSource.OfType<Path>().One())?.Spectrum ; GraphType = "Spectrum" ; break ; case "Quantile" : GraphType = "Quantile" ; break ; } }
+		void DisplayTable_SelectionChanged( object sender , SelectionChangedEventArgs e )
+		{
+			var tab = e.AddedItems.Count>0 ? e.AddedItems[0] as TabItem : null ; switch( tab?.Header as string )
+			{
+				case "Aspect" : Aspect = AspectsGrid.SelectedItem as Aspect ; ViewType = "Aspect" ; break ;
+				case "Spectrum" : Aspect = (((SpectrumTabs.SelectedItem as TabItem)?.Content as DataGrid)?.ItemsSource as Path ?? SpectrumTabs.ItemsSource.OfType<Path>().One())?.Spectrum ; ViewType = "Spectrum" ; break ;
+				case "Quantile" : ViewType = "Quantile" ; break ;
+				case "Graph" : ViewPanel = GraphPanel ; break ;
+				case "Map" : ViewPanel = MapPanel ; break ;
+			}
+		}
 		void DataGridDeleteCommandBinding_Executed( object sender , ExecutedRoutedEventArgs e ) => ((sender as DataGrid)?.ItemsSource as IList).Remove((sender as DataGrid)?.SelectedItem) ;
 		#region Graphing
-		void Graph_Draw( object sender , RoutedEventArgs e ) { GraphPanel.Children.Clear() ; switch( GraphType ) { case "Aspect" : case "Spectrum" : GraphDrawAspect() ; return ; case "Quantile" : GraphDrawQuantile() ; return ; } }
-		string GraphType ; Dictionary<string,AxedEnumerable> QuantileData = new Dictionary<string,AxedEnumerable>() ;
-		(double Width,double Height) MainFrameSize => (MainFrame.ColumnDefinitions[1].ActualWidth-GraphScreenBorder.Width,MainFrame.RowDefinitions[1].ActualHeight-GraphScreenBorder.Height) ;
+		void Graph_Draw( object sender , RoutedEventArgs e ) { ViewPanel = GraphPanel ; GraphPanel.Children.Clear() ; switch( ViewType ) { case "Aspect" : case "Spectrum" : GraphDrawAspect() ; return ; case "Quantile" : GraphDrawQuantile() ; return ; } }
+		void Map_Draw( object sender , RoutedEventArgs e ) { ViewPanel = MapPanel ; MapPanel.Children.Clear() ; switch( ViewType ) { case "Aspect" : case "Spectrum" : MapDrawAspect() ; return ; case "Quantile" : GraphDrawQuantile() ; return ; } }
+		string ViewType ; Canvas ViewPanel ; Dictionary<string,AxedEnumerable> QuantileData = new Dictionary<string,AxedEnumerable>() ;
+		(double Width,double Height) MainFrameSize => (MainFrame.ColumnDefinitions[1].ActualWidth-ViewScreenBorder.Width,MainFrame.RowDefinitions[1].ActualHeight-ViewScreenBorder.Height) ;
 		void GraphDrawAspect()
 		{
-			var xaxes = AspectAxisGrid.SelectedItems.OfType<Axe>().Select(a=>a.Spec).ToArray() ; if(!( AspectAxisGrid.SelectedItem is Axe xaxe )) return ;
-			(var width,var height) = GraphFrame = MainFrameSize ;
+			var yaxes = AspectAxisGrid.SelectedItems.OfType<Axe>().Skip(1).Select(a=>a.Spec).ToArray() ; if( yaxes.Length<=0 || !( AspectAxisGrid.SelectedItem is Axe xaxe ) ) return ;
+			(var width,var height) = ViewFrame = MainFrameSize ;
 			{
 				var brush = new SolidColorBrush(new Color{A=127,R=200,G=200,B=200}) ; var dash = new DoubleCollection{4} ;
 				for( var m=0 ; m<=width ; m+=50 ) GraphPanel.Children.Add( new Line{ X1 = m , Y1 = 0 , X2 = m , Y2 = height , Stroke = brush , StrokeDashArray = dash } ) ;
@@ -103,7 +114,7 @@ namespace Rob.Act.Analyze
 				for( var m=0 ; m<=width ; m+=100 ) GraphPanel.Children.Add( new Label{ Content=Format(ScreenX(x.Min+m*(x.Max-x.Min)/width,x)) , Foreground=Brushes.Gray }.Set(l=>{Canvas.SetLeft(l,m-5);Canvas.SetTop(l,height-20);}) ) ;
 				for( var m=50 ; m<=width ; m+=100 ) GraphPanel.Children.Add( new Label{ Content=Format(ScreenX(x.Min+m*(x.Max-x.Min)/width,x)) , Foreground=Brushes.Gray }.Set(l=>{Canvas.SetLeft(l,m-5);Canvas.SetTop(l,-10);}) ) ;
 				if( x.Min<0 && x.Max>0 ) { var xZero = ScreenX(-x.Min/(x.Max-x.Min)*width) ; GraphPanel.Children.Add( new Line{ X1 = xZero , Y1 = 0 , X2 = xZero , Y2 = height , Stroke = Brushes.Gray } ) ; }
-				var n=0 ; foreach( var ax in rng.Keys.Except(xaxes) )
+				var n=0 ; foreach( var ax in rng.Keys.Intersect(yaxes) )
 				{
 					var y = rng[ax] ; for( var m=height-50 ; m>=0 ; m-=50 ) GraphPanel.Children.Add( new Label{ Content=Format(ScreenY(y.Min+(height-m)*(y.Max-y.Min)/height,y)) , Foreground=Brushes.Gray }.Set(l=>{Canvas.SetTop(l,m-20);Canvas.SetLeft(l,n*50-4);}) ) ; ++n ;
 					if( y.Min<0 && y.Max>0 ) { var yZero = ScreenY(y.Max/(y.Max-y.Min)*height) ; GraphPanel.Children.Add( new Line{ X1 = 0 , Y1 = yZero , X2 = width , Y2 = yZero , Stroke = Brushes.Gray } ) ; }
@@ -111,17 +122,62 @@ namespace Rob.Act.Analyze
 			}
 			foreach( var asp in sources )
 			{
-				var xax = asp[xaxe.Spec] ; var j = 0 ; foreach( var ax in asp ) if( !xaxes.Contains(ax.Spec) ) try { GraphPanel.Children.Add( new Polyline{
-					Stroke = new SolidColorBrush(Colos[BookGrid.SelectedItems.IndexOf((asp as Path.Aspect ?? asp.Source as Path.Aspect)?.Context)%Colos.Length]) , StrokeDashArray = j++==0?null:new DoubleCollection{j-1} ,
+				var xax = asp[xaxe.Spec] ; var color = new SolidColorBrush(Colos[BookGrid.SelectedItems.IndexOf((asp as Path.Aspect??asp.Source as Path.Aspect)?.Context)%Colos.Length]) ;
+				foreach( var ax in asp ) if( yaxes.Contains(ax.Spec) ) try { GraphPanel.Children.Add( new Polyline{
+					Stroke = color , StrokeDashArray = Array.IndexOf(yaxes,ax.Spec).Get(j=>j<1?null:new DoubleCollection{j}) ,
 					Points = new PointCollection(ax.Count.Steps().Where(i=>xax[i]!=null&&ax[i]!=null).Select(i=>ScreenPoint((xax[i].Value-rng[xax.Spec].Min)/(rng[xax.Spec].Max-rng[xax.Spec].Min)*width,height-(ax[i].Value-rng[ax.Spec].Min)/(rng[ax.Spec].Max-rng[ax.Spec].Min)*height)))
 				} ) ; } catch( System.Exception ex ) { Trace.TraceWarning(ex.Stringy()) ; }
 			}
-			Hypercube = rng.Where(a=>xaxe.Spec==a.Key||!xaxes.Contains(a.Key)).ToArray() ;
+			Hypercube = rng.Where(a=>xaxe.Spec==a.Key||yaxes.Contains(a.Key)).ToArray() ;
+		}
+		void MapDrawAspect()
+		{
+			var yaxes = AspectAxisGrid.SelectedItems.OfType<Axe>().Skip(1).Select(a=>a.Spec).ToArray() ; if( yaxes.Length<=0 || !( AspectAxisGrid.SelectedItem is Axe xaxe ) ) return ;
+			(var width,var height) = ViewFrame = MainFrameSize ;
+			{
+				var brush = new SolidColorBrush(new Color{A=127,R=200,G=200,B=200}) ; var dash = new DoubleCollection{4} ;
+				for( var m=0 ; m<=width ; m+=50 ) MapPanel.Children.Add( new Line{ X1 = m , Y1 = 0 , X2 = m , Y2 = height , Stroke = brush , StrokeDashArray = dash } ) ;
+				for( var m=height ; m>=0 ; m-=50 ) MapPanel.Children.Add( new Line{ X1 = 0 , Y1 = m , X2 = width , Y2 = m , Stroke = brush , StrokeDashArray = dash } ) ;
+				brush = new SolidColorBrush(new Color{A=63,R=191,G=191,B=191}) ; dash = new DoubleCollection{8} ;
+				for( var m=0 ; m<=width ; m+=10 ) MapPanel.Children.Add( new Line{ X1 = m , Y1 = 0 , X2 = m , Y2 = height , Stroke = brush , StrokeDashArray = dash } ) ;
+				for( var m=height ; m>=0 ; m-=10 ) MapPanel.Children.Add( new Line{ X1 = 0 , Y1 = m , X2 = width , Y2 = m , Stroke = brush , StrokeDashArray = dash } ) ;
+			}
+			var rng = new Dictionary<string,(double Min,double Max)>() ; var sources = SourcesGrid.SelectedItems.Count>0 ? SourcesGrid.SelectedItems.OfType<Aspect>() : Sources ;
+			sources.SelectMany(s=>s).Each(a=>{if(a.Any(q=>q!=null))if(!rng.ContainsKey(a.Spec))rng[a.Spec]=(a.Min().Value,a.Max().Value);else{rng[a.Spec]=(Math.Min(rng[a.Spec].Min,a.Min().Value),Math.Max(rng[a.Spec].Max,a.Max().Value));}}) ; if( !rng.ContainsKey(xaxe.Spec) ) return ;
+			{
+				var x = rng[xaxe.Spec] ;
+				for( var m=0 ; m<=width ; m+=100 ) MapPanel.Children.Add( new Label{ Content=Format(ScreenX(x.Min+m*(x.Max-x.Min)/width,x),5) , Foreground=Brushes.Gray }.Set(l=>{Canvas.SetLeft(l,m-5);Canvas.SetTop(l,height-20);}) ) ;
+				for( var m=50 ; m<=width ; m+=100 ) MapPanel.Children.Add( new Label{ Content=Format(ScreenX(x.Min+m*(x.Max-x.Min)/width,x),5) , Foreground=Brushes.Gray }.Set(l=>{Canvas.SetLeft(l,m-5);Canvas.SetTop(l,-10);}) ) ;
+				if( x.Min<0 && x.Max>0 ) { var xZero = ScreenX(-x.Min/(x.Max-x.Min)*width) ; MapPanel.Children.Add( new Line{ X1 = xZero , Y1 = 0 , X2 = xZero , Y2 = height , Stroke = Brushes.Gray } ) ; }
+				var n=0 ; foreach( var ax in rng.Keys.Intersect(yaxes.Take(1)) )
+				{
+					var y = rng[ax] ; for( var m=height-50 ; m>=0 ; m-=50 ) MapPanel.Children.Add( new Label{ Content=Format(ScreenY(y.Min+(height-m)*(y.Max-y.Min)/height,y),5) , Foreground=Brushes.Gray }.Set(l=>{Canvas.SetTop(l,m-20);Canvas.SetLeft(l,n*50-4);}) ) ; ++n ;
+					if( y.Min<0 && y.Max>0 ) { var yZero = ScreenY(y.Max/(y.Max-y.Min)*height) ; MapPanel.Children.Add( new Line{ X1 = 0 , Y1 = yZero , X2 = width , Y2 = yZero , Stroke = Brushes.Gray } ) ; }
+				}
+			}
+			double zis = Math.Pow(Math.Sqrt(width*height),1D/3D) , zof = .5 ; foreach( var asp in sources )
+			{
+				var xax = asp[xaxe.Spec] ; var yax = asp[yaxes[0]] ;
+				var pts = new List<(System.Windows.Point A,System.Windows.Point B,(string Spec,double? Val)[] Z)>() ; for( int i=0 , c = asp.Points.Count-1 ; i<c ; ++i ) if( xax[i]!=null && yaxes.All(y=>asp[y][i]!=null) ) try
+				{
+					var spt0 = ScreenPoint((xax[i].Value-rng[xax.Spec].Min)/(rng[xax.Spec].Max-rng[xax.Spec].Min)*width,height-(yax[i].Value-rng[yax.Spec].Min)/(rng[yax.Spec].Max-rng[yax.Spec].Min)*height) ;
+					var spt1 = ScreenPoint((xax[i+1].Value-rng[xax.Spec].Min)/(rng[xax.Spec].Max-rng[xax.Spec].Min)*width,height-(yax[i+1].Value-rng[yax.Spec].Min)/(rng[yax.Spec].Max-rng[yax.Spec].Min)*height) ;
+					if( spt0.X>=0 && spt0.Y>=0 && spt1.X<=width && spt1.Y<=height ) pts.Add((spt0,spt1,yaxes.Skip(1).Select(z=>(z,asp[z][i])).ToArray())) ;
+				}
+				catch( System.Exception ex ) { Trace.TraceWarning(ex.Stringy()) ; }
+				for( var i=1 ; i<yaxes.Length ; ++i ) rng[yaxes[i]]=(pts.Min(p=>p.Z[i-1].Val).Value,pts.Max(p=>p.Z[i-1].Val).Value) ;
+				var color = Colos[BookGrid.SelectedItems.IndexOf((asp as Path.Aspect??asp.Source as Path.Aspect)?.Context)%Colos.Length] ;
+				foreach( var (A,B,Z) in pts ) MapPanel.Children.Add( new Line{ X1 = A.X , Y1 = A.Y , X2 = B.X , Y2 = B.Y ,
+					Stroke = Z.At(1).nil(z=>z.Spec==null).Get(z=>(z.Val-rng[z.Spec].Min)/(rng[z.Spec].Max-rng[z.Spec].Min).nil()).Get(z=>new LinearGradientBrush(color,Colors.Black,0))??new SolidColorBrush(color) as Brush ,
+					StrokeThickness = Z.At(0).nil(z=>z.Spec==null).Get(z=>(z.Val-rng[z.Spec].Min)/(rng[z.Spec].Max-rng[z.Spec].Min).nil())*zis+zof??1 ,
+				} ) ;
+			}
+			Hypercube = rng.Where(a=>xaxe.Spec==a.Key||yaxes.Contains(a.Key)).ToArray() ;
 		}
 		void GraphDrawQuantile()
 		{
-			var xaxes = AspectAxisGrid.SelectedItems.OfType<Axe>().Select(a=>a.Spec).ToArray() ;
-			(var width,var height) = GraphFrame = MainFrameSize ;
+			var yaxes = AspectAxisGrid.SelectedItems.OfType<Axe>().Skip(1).Select(a=>a.Spec).ToArray() ;
+			(var width,var height) = ViewFrame = MainFrameSize ;
 			{
 				var brush = new SolidColorBrush(new Color{A=127,R=127,G=127,B=127}) ; var dash = new DoubleCollection{4} ;
 				for( var m=0 ; m<=width ; m+=50 ) GraphPanel.Children.Add( new Line{ X1 = m , Y1 = 0 , X2 = m , Y2 = height , Stroke = brush , StrokeDashArray = dash } ) ;
@@ -131,7 +187,7 @@ namespace Rob.Act.Analyze
 				for( var m=height ; m>=0 ; m-=10 ) GraphPanel.Children.Add( new Line{ X1 = 0 , Y1 = m , X2 = width , Y2 = m , Stroke = brush , StrokeDashArray = dash } ) ;
 			}
 			var rng = new List<KeyValuePair<string,(double Min,double Max)>>() ;
-			var k = 0 ; if( Aspect!=null ) foreach( var axe in Aspect ) if( axe.Spec!=null && QuantileData.At(axe.Spec) is AxedEnumerable ax && ax.Count()>0 && !xaxes.Contains(axe.Spec) )
+			var k = 0 ; if( Aspect!=null ) foreach( var axe in Aspect ) if( axe.Spec!=null && QuantileData.At(axe.Spec) is AxedEnumerable ax && ax.Count()>0 && yaxes.Contains(axe.Spec) )
 			{
 				var val = ax.SelectMany(v=>v.Skip(1)) ; ((double Min,double Max) x,(double Min,double Max) y) = ((ax.Min(a=>a[0]),ax.Max(a=>a[0])),(val.Min(),val.Max())) ;
 				rng.Add(new KeyValuePair<string,(double Min,double Max)>(ax.Ax.Spec,x)) ; rng.Add(new KeyValuePair<string,(double Min,double Max)>($"Q({ax.Ax.Spec})",y)) ;
@@ -150,24 +206,24 @@ namespace Rob.Act.Analyze
 			Hypercube = rng ;
 		}
 		#endregion
-		static int DecDigits( double value ) => value==0 ? 0 : (int)Math.Max(0,3-Math.Log10(Math.Abs(value))) ;
-		static string Format( double value ) => value.ToString("#."+new string('#',DecDigits(value))) ;
-		IEnumerable<KeyValuePair<string,(double Min,double Max)>> Hypercube ; (double Width,double Height) GraphFrame ; (Line X,Line Y) MouseCross , ScreenCross ;
-		(double Width,double Height) GraphScreenBorder => (DisplayTable.Margin.Left+DisplayTable.Margin.Right+4,30) ;
+		static int DecDigits( double value , int prec = 3 ) => value==0 ? 0 : (int)Math.Max(0,prec-Math.Log10(Math.Abs(value))) ;
+		static string Format( double value , int prec = 3 ) => value.ToString("#."+new string('#',DecDigits(value,prec))) ;
+		IEnumerable<KeyValuePair<string,(double Min,double Max)>> Hypercube ; (double Width,double Height) ViewFrame ; (Line X,Line Y) MouseCross , ScreenCross ;
+		(double Width,double Height) ViewScreenBorder => (DisplayTable.Margin.Left+DisplayTable.Margin.Right+4,30) ;
 		static readonly Color[] Colos = new[]{ new Color{A=255,R=255,G=0,B=0} , new Color{A=255,R=0,G=255,B=0} , new Color{A=255,R=0,G=0,B=255} , new Color{A=255,R=191,G=191,B=0} , new Color{A=255,R=0,G=191,B=191} , new Color{A=255,R=191,G=0,B=191} , new Color{A=255,R=223,G=0,B=159} , new Color{A=255,R=159,G=223,B=0} , new Color{A=255,R=0,G=159,B=223} , new Color{A=255,R=159,G=191,B=223} , new Color{A=255,R=223,G=159,B=0} , new Color{A=255,R=0,G=223,B=159} } ;
-		void AspectAxisGrid_SelectionChanged( object sender, SelectionChangedEventArgs e ) { if( GraphTab.IsSelected ) Graph_Draw(this,null) ; }
+		void AspectAxisGrid_SelectionChanged( object sender, SelectionChangedEventArgs e ) { if( GraphTab.IsSelected ) Graph_Draw(this,null) ; if( MapTab.IsSelected ) Map_Draw(this,null) ; }
 		void AspectMultiToggle_Changed( object sender, RoutedEventArgs e ) { if( sender==AspectMultiToggle || AspectMultiToggle.IsChecked==true ) Sources = null ; }
 		#region Coordinates
-		void GraphPanel_MouseMove( object sender, MouseEventArgs e ) => MousePoint = Mouse.GetPosition(GraphPanel).nil() ;
+		void Main_MouseMove( object sender, MouseEventArgs e ) => MousePoint = Mouse.GetPosition(ViewPanel).nil() ;
 		public string Coordinates { get => coordinates ; set => PropertyChanged.On(this,"Coordinates",coordinates=value); } string coordinates ;
 		public System.Windows.Point? MousePoint
 		{ get => mousePoint ; set
 			{
-				MouseCross.X.Set(GraphPanel.Children.Remove) ; MouseCross.Y.Set(GraphPanel.Children.Remove) ; var asp = Hypercube is Array ;
-				PropertyChanged.On( this, "MousePoint", Coordinates = (mousePoint=value).Get(m=>Hypercube?.Select(a=>$"{a.Key}={( ( asp ? AspectAxisGrid.SelectedItem is Axe x && a.Key==x.Spec : !a.Key.StartsBy("Q(") ) ? ScreenX(m.X/GraphFrame.Width*(a.Value.Max-a.Value.Min)+a.Value.Min,a.Value) : ScreenY((GraphFrame.Height-m.Y)/GraphFrame.Height*(a.Value.Max-a.Value.Min)+a.Value.Min,a.Value) )}").Stringy('\n')) ) ;
-				if( value==null || value?.X<0 || value?.Y<0 || value?.X>GraphFrame.Width || value?.Y>GraphFrame.Height ) return ;
-				GraphPanel.Children.Add( MouseCross.X = new Line{ Stroke=Brushes.Gray , X1=0 , X2=GraphFrame.Width , Y1=value.Value.Y , Y2=value.Value.Y } ) ;
-				GraphPanel.Children.Add( MouseCross.Y = new Line{ Stroke=Brushes.Gray , Y1=0 , Y2=GraphFrame.Height , X1=value.Value.X , X2=value.Value.X } ) ;
+				MouseCross.X.Set(ViewPanel.Children.Remove) ; MouseCross.Y.Set(ViewPanel.Children.Remove) ; var asp = Hypercube is Array ;
+				PropertyChanged.On( this, "MousePoint", Coordinates = (mousePoint=value).Get(m=>Hypercube?.Select(a=>$"{a.Key}={( ( asp ? AspectAxisGrid.SelectedItem is Axe x && a.Key==x.Spec : !a.Key.StartsBy("Q(") ) ? ScreenX(m.X/ViewFrame.Width*(a.Value.Max-a.Value.Min)+a.Value.Min,a.Value) : ScreenY((ViewFrame.Height-m.Y)/ViewFrame.Height*(a.Value.Max-a.Value.Min)+a.Value.Min,a.Value) )}").Stringy('\n')) ) ;
+				if( value==null || value?.X<0 || value?.Y<0 || value?.X>ViewFrame.Width || value?.Y>ViewFrame.Height ) return ;
+				ViewPanel.Children.Add( MouseCross.X = new Line{ Stroke=Brushes.Gray , X1=0 , X2=ViewFrame.Width , Y1=value.Value.Y , Y2=value.Value.Y } ) ;
+				ViewPanel.Children.Add( MouseCross.Y = new Line{ Stroke=Brushes.Gray , Y1=0 , Y2=ViewFrame.Height , X1=value.Value.X , X2=value.Value.X } ) ;
 			}
 		}
 		#endregion
@@ -177,21 +233,21 @@ namespace Rob.Act.Analyze
 		{ get => screenPoint ; set
 			{
 				
-				ScreenCross.X.Set(GraphPanel.Children.Remove) ; ScreenCross.Y.Set(GraphPanel.Children.Remove) ;
+				ScreenCross.X.Set(ViewPanel.Children.Remove) ; ScreenCross.Y.Set(ViewPanel.Children.Remove) ;
 				var p = ScreenMouse ; screenPoint = value.Get(v=>p) ; if( value==null ) return ;
-				GraphPanel.Children.Add( ScreenCross.X = new Line{ Stroke=Brushes.Orange , X1=0 , X2=GraphFrame.Width , Y1=value.Value.Y , Y2=value.Value.Y } ) ;
-				GraphPanel.Children.Add( ScreenCross.Y = new Line{ Stroke=Brushes.Orange , Y1=0 , Y2=GraphFrame.Height , X1=value.Value.X , X2=value.Value.X } ) ;
+				ViewPanel.Children.Add( ScreenCross.X = new Line{ Stroke=Brushes.Orange , X1=0 , X2=ViewFrame.Width , Y1=value.Value.Y , Y2=value.Value.Y } ) ;
+				ViewPanel.Children.Add( ScreenCross.Y = new Line{ Stroke=Brushes.Orange , Y1=0 , Y2=ViewFrame.Height , X1=value.Value.X , X2=value.Value.X } ) ;
 			}
 		}
 		System.Windows.Point? ScreenMouse { get { if( ScreenRect==null || MousePoint==null ) return MousePoint ; (var width,var height) = MainFrameSize ; var p = MousePoint.Value ; var r = ScreenRect.Value ; return new System.Windows.Point(p.X*r.Size.Width/width+r.Location.X,p.Y*r.Size.Height/height+r.Location.Y) ; } }
-		void GraphPanel_MouseDown( object sender, MouseButtonEventArgs e ) => ScreenOrigin = MousePoint ;
-		void DisplayTable_MouseUp( object sender, MouseButtonEventArgs e ) { if( ScreenMouse==ScreenOrigin ) return ; var scr = ScreenOrigin.Get(s=>ScreenMouse.use(p=>new Rect(s,p))) ; if( scr==ScreenRect ) return ; ScreenRect = scr ; Graph_Draw(sender,null) ; }
-		void DisplayTable_MouseDoubleClick( object sender, MouseButtonEventArgs e ) { var draw = ScreenRect!=null ; ScreenOrigin = null ; ScreenRect = null ; if( draw ) Graph_Draw(sender,e) ; }
+		void ViewPanel_MouseDown( object sender, MouseButtonEventArgs e ) => ScreenOrigin = MousePoint ;
+		void DisplayTable_MouseUp( object sender, MouseButtonEventArgs e ) { if( ScreenMouse==ScreenOrigin ) return ; var scr = ScreenOrigin.Get(s=>ScreenMouse.use(p=>new Rect(s,p))) ; if( scr==ScreenRect ) return ; ScreenRect = scr ; if( GraphTab.IsSelected ) Graph_Draw(sender,null) ; if( MapTab.IsSelected ) Map_Draw(sender,null) ; }
+		void DisplayTable_MouseDoubleClick( object sender, MouseButtonEventArgs e ) { var draw = ScreenRect!=null ; ScreenOrigin = null ; ScreenRect = null ; if( draw ) if( GraphTab.IsSelected ) Graph_Draw(sender,e) ; else if( MapTab.IsSelected ) Map_Draw(sender,e) ; }
 		System.Windows.Point ScreenPoint( double x , double y ) => new System.Windows.Point(ScreenX(x),ScreenY(y)) ;
-		double ScreenX( double x ) { if( ScreenRect==null ) return x ; var r = ScreenRect.Value ; return (x-r.Location.X)*GraphFrame.Width/r.Size.Width ; }
-		double ScreenY( double y ) { if( ScreenRect==null ) return y ; var r = ScreenRect.Value ; return (y-r.Location.Y)*GraphFrame.Height/r.Size.Height ; }
-		double ScreenX( double x , (double Min,double Max) e ) { if( ScreenRect==null ) return x ; var r = ScreenRect.Value ; var q = (e.Max-e.Min)/GraphFrame.Width ; var fx = (x-e.Min)/q ; return e.Min+r.Location.X*q+fx*r.Width/GraphFrame.Width*q ; }
-		double ScreenY( double y , (double Min,double Max) e ) { if( ScreenRect==null ) return y ; var r = ScreenRect.Value ; var q = (e.Max-e.Min)/GraphFrame.Height ; var fy = (e.Max-y)/q ; return e.Max-r.Location.Y*q-fy*r.Height/GraphFrame.Height*q ; }
+		double ScreenX( double x ) { if( ScreenRect==null ) return x ; var r = ScreenRect.Value ; return (x-r.Location.X)*ViewFrame.Width/r.Size.Width ; }
+		double ScreenY( double y ) { if( ScreenRect==null ) return y ; var r = ScreenRect.Value ; return (y-r.Location.Y)*ViewFrame.Height/r.Size.Height ; }
+		double ScreenX( double x , (double Min,double Max) e ) { if( ScreenRect==null ) return x ; var r = ScreenRect.Value ; var q = (e.Max-e.Min)/ViewFrame.Width ; var fx = (x-e.Min)/q ; return e.Min+r.Location.X*q+fx*r.Width/ViewFrame.Width*q ; }
+		double ScreenY( double y , (double Min,double Max) e ) { if( ScreenRect==null ) return y ; var r = ScreenRect.Value ; var q = (e.Max-e.Min)/ViewFrame.Height ; var fy = (e.Max-y)/q ; return e.Max-r.Location.Y*q-fy*r.Height/ViewFrame.Height*q ; }
 		#endregion
 	}
 	public class QuantileSubversion : IMultiValueConverter

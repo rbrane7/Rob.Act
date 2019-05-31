@@ -35,13 +35,15 @@ namespace Rob.Act
 					if( this[i].Dist==null ) this[i].Dist = this.At(i-1)?.Dist??0 ;
 					if( this[i].Asc==null && Alt!=null ) this[i].Asc = this.At(i-1)?.Asc??0 ;
 					if( this[i].Dev==null && IsGeo ) this[i].Dev = this.At(i-1)?.Dev??0 ;
+					if( this[i].Alt==null && Alt!=null ) this[i].Alt = ((Count-i).Steps(i).FirstOrDefault(j=>this[j].Alt!=null).nil()??i-1).Get(j=>this[j].Alt) ;
 				}
 				if( this[i].Time==TimeSpan.Zero ) this[i].Time = this[i].Date-date ;
 				if( this[i].Bit==null ) this[i].Bit = i ;
 				if( !this[i].IsGeo ) continue ;
 				if( this[i].Dist==null ) this[i].Dist = this[i-1].Dist + (this[i]-this[i-1]).Euclid(this[i-1]) ;
+				if( this[i].Alt==null && Alt!=null ) this[i].Alt = this[i-1].Alt + ((Count-i).Steps(i).FirstOrDefault(j=>this[j].Alt!=null).nil()??i-1).Get(j=>(this[j].Alt-this[i-1].Alt)/j) ;
 				if( this[i].Asc==null && Alt!=null ) this[i].Asc = this[i-1].Asc + ( this[i].Alt-this[i-1].Alt is Quant v && Math.Abs(v)/(this[i].Dist-this[i-1].Dist)<(GradeTolerancy.On(Action)??.3) ? v : 0 ) ;
-				if( this[i].Dev==null ) this[i].Dev = this[i-1].Dev + ( i<Count-1 && !this[i].Mark.HasFlag(Mark.Stop) && (this[i].Geos-this[i-1].Geos).Devia(this[i+1].Geos-this[i].Geos) is Quant v /*&& Math.Abs(v)/(this[i].Dist-this[i-1].Dist)<(DeviaTolerancy.On(Action)??3)*/ ? v : 0 ) ;
+				if( this[i].Dev==null ) this[i].Dev = this[i-1].Dev + ( i<Count-1 && !this[i].Mark.HasFlag(Mark.Stop) && (this[i].Geo-this[i-1].Geo).Devia(this[i+1].Geo-this[i].Geo) is Quant v /*&& Math.Abs(v)/(this[i].Dist-this[i-1].Dist)<(DeviaTolerancy.On(Action)??3)*/ ? v : 0 ) ;
 			}
 			this.At(Count-1).Set(p=>{Bit=p.Bit;Time=p.Time;Dist=p.Dist;Asc=p.Asc;Dev=p.Dev;}) ;
 		}
