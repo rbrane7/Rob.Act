@@ -17,15 +17,20 @@ namespace Rob.Act.Analyze
 		public TimeSpan SavePeriod = new TimeSpan(0,0,10) ;
 		public string[] ActionTraits ;
 		public string[] MatrixTraits ;
+		public int PrimaryShape = 1 ;
 	}
 	public class State
 	{
 		System.Threading.Timer Saver ;
+		IDictionary<string,string> Coordinater ; bool Recoordinate ;
+		public string this[ string key ] { get => Coordinater.By(key) ; set { if( Coordinater.By(key)==value ) return ; Coordinater[key] = value ; Recoordinate = true ; } }
+		public (double? Byte,bool Reverse)? Coordination( string axe ) => this[axe].ParseCoinfo() ;
 		void Load()
 		{
 			Context.ActionFilter = Main.Setup.StatePath.Path("ActionFilter.stt").ReadAllText() ?? string.Empty ;
 			Context.SourceFilter = Main.Setup.StatePath.Path("SourceFilter.stt").ReadAllText() ?? string.Empty ;
 			Context.AspectFilter = Main.Setup.StatePath.Path("AspectFilter.stt").ReadAllText() ?? string.Empty ;
+			Coordinater = Main.Setup.StatePath.Path("Coordinater.stt").ReadAllLines()?.Where(l=>l.Contains(':')).ToDictionary(c=>c.LeftFrom(':'),c=>c.RightFrom(':')) ?? new Dictionary<string,string>() ;
 		}
 		void Save( object arg )
 		{
@@ -34,7 +39,13 @@ namespace Rob.Act.Analyze
 			if( Context.ActionFilter.Any(f=>f.Dirty) ) { Context.ActionFilter.Each(f=>f.Dirty=false) ; Main.Setup.StatePath.Set(p=>System.IO.Directory.CreateDirectory(p)).Path("ActionFilter.stt").WriteAll((string)Context.ActionFilter) ; }
 			if( Context.SourceFilter.Any(f=>f.Dirty) ) { Context.SourceFilter.Each(f=>f.Dirty=false) ; Main.Setup.StatePath.Set(p=>System.IO.Directory.CreateDirectory(p)).Path("SourceFilter.stt").WriteAll((string)Context.SourceFilter) ; }
 			if( Context.AspectFilter.Any(f=>f.Dirty) ) { Context.AspectFilter.Each(f=>f.Dirty=false) ; Main.Setup.StatePath.Set(p=>System.IO.Directory.CreateDirectory(p)).Path("AspectFilter.stt").WriteAll((string)Context.AspectFilter) ; }
+			if( Recoordinate ) { Recoordinate = false ; Main.Setup.StatePath.Set(p=>System.IO.Directory.CreateDirectory(p)).Path("Coordinater.stt").WriteAll(Coordinater?.Select(e=>$"{e.Key}:{e.Value}").Stringy(Environment.NewLine)) ; }
 		}
 		internal Main Context { get => context ; set { context = value ; Saver?.Dispose() ; Saver = new System.Threading.Timer(Save,null,Main.Setup.SavePeriod,Main.Setup.SavePeriod) ; Load() ; } } Main context ;
+	}
+	internal static class Extension
+	{
+		public static double? Evaluate( this (double? Byte,bool Reverse)? v ) => (v?.Reverse==true?-1:1)*v?.Byte ;
+		public static (double? Byte,bool Reverse)? ParseCoinfo( this string v ) => v.get(value=>(value.Parse<double>().use(Math.Abs),value.StartsBy("-"))) ;
 	}
 }

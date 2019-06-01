@@ -95,8 +95,8 @@ namespace Rob.Act
 		public static IEnumerable<int> operator>=( Axe x , Axe y ) => Math.Min(x?.Count??0,y?.Count??0).Steps().Where(i=>x[i]>=y[i]) ;
 		public static IEnumerable<int> operator<=( Axe x , Axe y ) => Math.Min(x?.Count??0,y?.Count??0).Steps().Where(i=>x[i]<=y[i]) ;
 		public static implicit operator Axe( Func<int,Quant?> resolver ) => resolver.Get(r=>new Axe(r)) ;
-		public static implicit operator Axe( Quant q ) => new Axe( i=>q ) ;
-		public static implicit operator Axe( int q ) => new Axe( i=>q ) ;
+		public static implicit operator Axe( Quant q ) => new Axe( i=>q , a=>a?.Points.Count??1 ) ;
+		public static implicit operator Axe( int q ) => new Axe( i=>q , a=>a?.Points.Count??1 ) ;
 		public Axe Round => new Axe( i=>Resolve(i).use(Math.Round) , a=>Count ) ;
 		public Quant? Sum => this.Sum() ;
 		public Axe Skip( int count ) => new Axe( i=>Resolve(count+i) , a=>Math.Max(0,Count-count) ) ;
