@@ -45,7 +45,8 @@ namespace Rob.Act.Analyze
 	}
 	internal static class Extension
 	{
-		public static double? Evaluate( this (double? Byte,bool Reverse)? v ) => (v?.Reverse==true?-1:1)*v?.Byte ;
-		public static (double? Byte,bool Reverse)? ParseCoinfo( this string v ) => v.get(value=>(value.Parse<double>().use(Math.Abs),value.StartsBy("-"))) ;
+		public static double? Evaluate( this (double? Byte,bool Reverse)? v ) => v?.Byte ;
+		public static double? Signate( this double? value , double? reverse ) => reverse==null ? value : reverse-value ;
+		public static (double? Byte,bool Reverse)? ParseCoinfo( this string v ) => v.get(value=>(value.LeftFromLast('-',true).Parse<double>(),value.EndsWith("-"))) ;
 	}
 }

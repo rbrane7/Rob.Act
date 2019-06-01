@@ -176,9 +176,14 @@ namespace Rob.Act.Analyze
 				foreach( var (A,B,Z) in pts ) try
 				{
 					var zb = Z.Select(z=>Coordinates.FirstOrDefault(c=>c.Axe==z.Spec)?.Info??State.Coordination(z.Spec)).ToArray() ;
+					var zicol = Z.At((zi+1)%2).nil(z=>z.Spec==null) ; var ziaro = Z.At(zi%2).nil(z=>z.Spec==null) ;
+					var axcol = zicol.Get(z=>(z.Val-(zb.At((zi+1)%2)?.Byte<0?rng[z.Spec].Max:rng[z.Spec].Min))/(zb.At((zi+1)%2)?.Byte??rng[z.Spec].Max-rng[z.Spec].Min).nil()) ;
+					var axaro = ziaro.Get(z=>(z.Val-(zb.At(zi%2)?.Byte<0?rng[z.Spec].Max:rng[z.Spec].Min))/(zb.At(zi%2)?.Byte??rng[z.Spec].Max-rng[z.Spec].Min).nil()) ;
+					var zisc = axcol==null && zicol?.Spec is string sp ? rng[sp].Min : zis ;
+					var axarow = ziaro.use(z=>(axaro*zisc%zisc).Signate(zb.At(zi%2)?.Reverse==false?zisc:null as double?)+zof??rng[z.Spec].Min) ;
 					MapPanel.Children.Add( new Line{ X1 = A.X+shift*sha.X , Y1 = A.Y+shift*sha.Y , X2 = B.X+shift*sha.X , Y2 = B.Y+shift*sha.Y ,
-						Stroke = Z.At((zi+1)%2).nil(z=>z.Spec==null).Get(z=>(zb.At((zi+1)%2)?.Reverse==true?rng[z.Spec].Max-z.Val:z.Val-rng[z.Spec].Min)/(zb.At((zi+1)%2)?.Byte??rng[z.Spec].Max-rng[z.Spec].Min).nil()).Get(z=>new SolidColorBrush(color*(1-(float)(z%.9+.1))))??new SolidColorBrush(color) ,
-						StrokeThickness = Z.At(zi%2).nil(z=>z.Spec==null).use(z=>(zb.At(zi%2)?.Reverse==true?rng[z.Spec].Max-z.Val:z.Val-rng[z.Spec].Min)/(zb.At(zi%2)?.Byte??rng[z.Spec].Max-rng[z.Spec].Min).nil()*zis%zis+zof??rng[z.Spec].Min)??1 ,
+						Stroke = axcol.Get(z=>new SolidColorBrush(color*(float)(z%.9+.1).Signate(zb.At((zi+1)%2)?.Reverse==false?1:null as double?))) ?? new SolidColorBrush(color) ,
+						StrokeThickness = axarow ?? ( axcol==null && (zicol?.Spec??ziaro?.Spec) is string spec ? rng[spec].Min : 1 ) ,
 					} ) ;
 				}
 				catch( System.Exception ex ) { Trace.TraceWarning(ex.Stringy()) ; }
