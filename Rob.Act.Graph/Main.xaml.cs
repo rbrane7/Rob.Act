@@ -157,7 +157,7 @@ namespace Rob.Act.Analyze
 					if( y.Min<0 && y.Max>0 ) { var yZero = ScreenY(y.Max/(y.Max-y.Min)*height) ; MapPanel.Children.Add( new Line{ X1 = 0 , Y1 = yZero , X2 = width , Y2 = yZero , Stroke = Brushes.Gray } ) ; }
 				}
 			}
-			double zis = Math.Pow(Math.Sqrt(width*height),1D/3D) , zof = .5 ; var shift = 0 ;
+			double zis = Math.Pow(Math.Sqrt(width*height),1D/3D) ; var shift = 0 ;
 			(double X,double Y) sha = ((Coordinates.FirstOrDefault(c=>c.Axe==xaxe.Spec)?.Info??State.Coordination(xaxe.Spec)).Evaluate()??0,(Coordinates.FirstOrDefault(c=>c.Axe==yaxes[0])?.Info??State.Coordination(yaxes[0])).Evaluate()??0) ;
 			var zi = Setup.PrimaryShape ;
 			foreach( var asp in sources )
@@ -175,12 +175,13 @@ namespace Rob.Act.Analyze
 				var color = Colos[BookGrid.SelectedItems.IndexOf((asp as Path.Aspect??asp.Source as Path.Aspect)?.Context)%Colos.Length] ;
 				foreach( var (A,B,Z) in pts ) try
 				{
-					var zb = Z.Select(z=>Coordinates.FirstOrDefault(c=>c.Axe==z.Spec)?.Info??State.Coordination(z.Spec)).ToArray() ;
+					var za = Z.Select(z=>Coordinates.FirstOrDefault(c=>c.Axe==z.Spec)).ToArray() ; var zb = Z.Select(z=>Coordinates.FirstOrDefault(c=>c.Axe==z.Spec)?.Info??State.Coordination(z.Spec)).ToArray() ;
 					var zicol = Z.At((zi+1)%2).nil(z=>z.Spec==null) ; var ziaro = Z.At(zi%2).nil(z=>z.Spec==null) ;
 					var axcol = zicol.Get(z=>(z.Val-(zb.At((zi+1)%2)?.Byte<0?rng[z.Spec].Max:rng[z.Spec].Min))/(zb.At((zi+1)%2)?.Byte??rng[z.Spec].Max-rng[z.Spec].Min).nil()) ;
 					var axaro = ziaro.Get(z=>(z.Val-(zb.At(zi%2)?.Byte<0?rng[z.Spec].Max:rng[z.Spec].Min))/(zb.At(zi%2)?.Byte??rng[z.Spec].Max-rng[z.Spec].Min).nil()) ;
+					if( axcol<zb.At((zi+1)%2)?.Count-za.At((zi+1)%2)?.Size || axaro<zb.At(zi%2)?.Count-za.At(zi%2)?.Size ) continue ;
 					var zisc = axcol==null && zicol?.Spec is string sp ? rng[sp].Min : zis ;
-					var axarow = ziaro.use(z=>(axaro*zisc%zisc).Signate(zb.At(zi%2)?.Reverse==false?zisc:null as double?)+zof??rng[z.Spec].Min) ;
+					var axarow = ziaro.use(z=>(axaro*zisc%zisc).Signate(zb.At(zi%2)?.Reverse==false?zisc:null as double?)??rng[z.Spec].Min) ;
 					MapPanel.Children.Add( new Line{ X1 = A.X+shift*sha.X , Y1 = A.Y+shift*sha.Y , X2 = B.X+shift*sha.X , Y2 = B.Y+shift*sha.Y ,
 						Stroke = axcol.Get(z=>new SolidColorBrush(color*(float)(z%1).Signate(zb.At((zi+1)%2)?.Reverse==false?1:null as double?))) ?? new SolidColorBrush(color) ,
 						StrokeThickness = axarow ?? ( axcol==null && (zicol?.Spec??ziaro?.Spec) is string spec ? rng[spec].Min : 1 ) ,
@@ -244,6 +245,8 @@ namespace Rob.Act.Analyze
 			public string Byte { get => _byte ; set { if( Byte==value ) return ; Context.State[Axe] = _byte = value ; Info = value.ParseCoinfo() ; PropertyChanged.On(this,"Byte") ; if( Context.MapTab.IsSelected ) Context.Map_Draw(Context) ; } } string _byte ;
 			public (double? Byte,uint? Count,bool Reverse)? Info { get => info ?? Context.State.Coordination(Axe) ; set { if( info.Equals(value) ) return ; info = value ; Byte = value.StringCoinfo() ; } } (double? Byte,uint? Count,bool Reverse)? info ;
 			public (double Min,double Max) Range ;
+			public string At { get => at; set { if( value==at ) return ;  Size = (at=value).Parse<uint>() ; PropertyChanged.On(this,"At") ; } } string at ;
+			public uint? Size { get =>size ; set { if( value==size ) return ; size = value ; PropertyChanged.On(this,"Size") ; if( Context.MapTab.IsSelected ) Context.Map_Draw(Context) ; At = value.Stringy() ; } } uint? size ;
 		}
 		public Aid.Collections.ObservableList<Coordinate> Coordinates { get; private set; } = new Aid.Collections.ObservableList<Coordinate>() ;
 		public System.Windows.Point? MousePoint
@@ -295,10 +298,16 @@ namespace Rob.Act.Analyze
 		void Coordinates_CountPageDown_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => CoordinatesCountMove(+100) ;
 		void Coordinates_CountHome_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => CoordinatesCountSet(0) ;
 		void Coordinates_CountEnd_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => CoordinatesCountSet(null) ;
+		void Coordinates_AtLeft_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => CoordinatesSizeMove(-1) ;
+		void Coordinates_AtRight_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => CoordinatesSizeMove(+1) ;
+		void Coordinates_AtUp_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => CoordinatesSizeSet(0) ;
+		void Coordinates_AtDown_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => CoordinatesSizeSet(null) ;
 		async void CoordinatesMove( double step ) { var sel = CoordinatesGrid.SelectedItems.Cast<Coordinate>().ToArray() ; sel.Each(c=>c.Info=c.Info.use(i=>((i.Byte+step*(c.Range.Max-c.Range.Min))??c.Range.Max-c.Range.Min,i.Count,i.Reverse))) ; await Task.Delay(10) ; sel.Each(s=>CoordinatesGrid.SelectedItems.Add(s)) ; CoordinatesGrid.Focus() ; }
 		async void CoordinatesSet( double? state ) { var sel = CoordinatesGrid.SelectedItems.Cast<Coordinate>().ToArray() ; sel.Each(c=>c.Info=c.Info.use(i=>(state,i.Count,i.Reverse))) ; await Task.Delay(10) ; sel.Each(s=>CoordinatesGrid.SelectedItems.Add(s)) ; CoordinatesGrid.Focus() ; }
 		async void CoordinatesCountMove( int step ) { var sel = CoordinatesGrid.SelectedItems.Cast<Coordinate>().ToArray() ; sel.Each(c=>c.Info=c.Info.use(i=>(i.Byte,i.Count.use(v=>(uint)((int)v+step)),i.Reverse))) ; await Task.Delay(10) ; sel.Each(s=>CoordinatesGrid.SelectedItems.Add(s)) ; CoordinatesGrid.Focus() ; }
 		async void CoordinatesCountSet( uint? state ) { var sel = CoordinatesGrid.SelectedItems.Cast<Coordinate>().ToArray() ; sel.Each(c=>c.Info=c.Info.use(i=>(i.Byte,state,i.Reverse))) ; await Task.Delay(10) ; sel.Each(s=>CoordinatesGrid.SelectedItems.Add(s)) ; CoordinatesGrid.Focus() ; }
+		async void CoordinatesSizeMove( int step ) { var sel = CoordinatesGrid.SelectedItems.Cast<Coordinate>().ToArray() ; sel.Each(c=>c.Size=c.Size.use(a=>(uint)((int)a+step))) ; await Task.Delay(10) ; sel.Each(s=>CoordinatesGrid.SelectedItems.Add(s)) ; CoordinatesGrid.Focus() ; }
+		async void CoordinatesSizeSet( uint? state ) { var sel = CoordinatesGrid.SelectedItems.Cast<Coordinate>().ToArray() ; sel.Each(c=>c.Size=state) ; await Task.Delay(10) ; sel.Each(s=>CoordinatesGrid.SelectedItems.Add(s)) ; CoordinatesGrid.Focus() ; }
 	}
 	public class QuantileSubversion : IMultiValueConverter
 	{
