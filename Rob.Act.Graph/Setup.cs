@@ -24,7 +24,7 @@ namespace Rob.Act.Analyze
 		System.Threading.Timer Saver ;
 		IDictionary<string,string> Coordinater ; bool Recoordinate ;
 		public string this[ string key ] { get => Coordinater.By(key) ; set { if( Coordinater.By(key)==value ) return ; Coordinater[key] = value ; Recoordinate = true ; } }
-		public (double? Byte,bool Reverse)? Coordination( string axe ) => this[axe].ParseCoinfo() ;
+		public (double? Byte,uint? Count,bool Reverse)? Coordination( string axe ) => this[axe].ParseCoinfo() ;
 		void Load()
 		{
 			Context.ActionFilter = Main.Setup.StatePath.Path("ActionFilter.stt").ReadAllText() ?? string.Empty ;
@@ -45,8 +45,9 @@ namespace Rob.Act.Analyze
 	}
 	internal static class Extension
 	{
-		public static double? Evaluate( this (double? Byte,bool Reverse)? v ) => v?.Byte ;
+		public static double? Evaluate( this (double? Byte,uint? Count,bool Reverse)? v ) => v?.Byte ;
 		public static double? Signate( this double? value , double? reverse ) => reverse==null ? value : reverse-value ;
-		public static (double? Byte,bool Reverse)? ParseCoinfo( this string v ) => v.get(value=>(value.LeftFromLast('-',true).Parse<double>(),value.EndsWith("-"))) ;
+		public static (double? Byte,uint? Count,bool Reverse)? ParseCoinfo( this string v ) => v.get(i=>(i.LeftFrom('*',true).TrimEnd('-').Parse<double>(),i.RightFrom('*')?.TrimEnd('-').Parse<uint>(),i.EndsWith("-"))) ;
+		public static string StringCoinfo( this (double? Byte,uint? Count,bool Reverse)? v ) => v.Get(i=>$"{i.Byte}*{i.Count}{(i.Reverse?"-":null)}") ;
 	}
 }

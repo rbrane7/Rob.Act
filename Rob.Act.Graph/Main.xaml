@@ -66,6 +66,24 @@
                 <DataGridTextColumn Header="Value" Binding="{Binding Value}" Width="*"/>
                 <DataGridTextColumn Header="Byte" Binding="{Binding Byte}"/>
             </DataGrid.Columns>
+            <DataGrid.CommandBindings>
+                <CommandBinding Command="MoveLeft" PreviewCanExecute="Coordinates_Left_CommandBinding_Executed"/>
+                <CommandBinding Command="MoveRight" PreviewCanExecute="Coordinates_Right_CommandBinding_Executed"/>
+                <CommandBinding Command="MoveUp" PreviewCanExecute="Coordinates_Up_CommandBinding_Executed"/>
+                <CommandBinding Command="MoveDown" PreviewCanExecute="Coordinates_Down_CommandBinding_Executed"/>
+                <CommandBinding Command="MoveToPageUp" PreviewCanExecute="Coordinates_PageUp_CommandBinding_Executed"/>
+                <CommandBinding Command="MoveToPageDown" PreviewCanExecute="Coordinates_PageDown_CommandBinding_Executed"/>
+                <CommandBinding Command="MoveToHome" PreviewCanExecute="Coordinates_Home_CommandBinding_Executed"/>
+                <CommandBinding Command="MoveToEnd" PreviewCanExecute="Coordinates_End_CommandBinding_Executed"/>
+                <CommandBinding Command="ExtendSelectionLeft" PreviewCanExecute="Coordinates_CountLeft_CommandBinding_Executed"/>
+                <CommandBinding Command="ExtendSelectionRight" PreviewCanExecute="Coordinates_CountRight_CommandBinding_Executed"/>
+                <CommandBinding Command="ExtendSelectionUp" PreviewCanExecute="Coordinates_CountUp_CommandBinding_Executed"/>
+                <CommandBinding Command="ExtendSelectionDown" PreviewCanExecute="Coordinates_CountDown_CommandBinding_Executed"/>
+                <CommandBinding Command="SelectToPageUp" PreviewCanExecute="Coordinates_CountPageUp_CommandBinding_Executed"/>
+                <CommandBinding Command="SelectToPageDown" PreviewCanExecute="Coordinates_CountPageDown_CommandBinding_Executed"/>
+                <CommandBinding Command="SelectToHome" PreviewCanExecute="Coordinates_CountHome_CommandBinding_Executed"/>
+                <CommandBinding Command="SelectToEnd" PreviewCanExecute="Coordinates_CountEnd_CommandBinding_Executed"/>
+            </DataGrid.CommandBindings>
         </DataGrid>
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions><ColumnDefinition Width="6*"/><ColumnDefinition Width="1*"/></Grid.ColumnDefinitions>

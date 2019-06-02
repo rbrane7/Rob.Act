@@ -130,7 +130,7 @@ namespace Rob.Act.Analyze
 				} ) ; } catch( System.Exception ex ) { Trace.TraceWarning(ex.Stringy()) ; }
 			}
 			Hypercube = rng.Where(a=>xaxe.Spec==a.Key||yaxes.Contains(a.Key)).OrderBy(e=>e.Key==xaxe.Spec?0:Array.IndexOf(yaxes,e.Key)).ToArray() ;
-			var co = Coordinates.ToDictionary(c=>c.Axe) ; Coordinates.Clear() ; Hypercube.Each(e=>Coordinates+=co.By(e.Key)??new Coordinate(this,e.Key){Range=e.Value}) ;
+			var co = Coordinates.ToDictionary(c=>c.Axe) ; Coordinates.Clear() ; Hypercube.Each(e=>Coordinates+=co.By(e.Key).Set(c=>c.Range=e.Value)??new Coordinate(this,e.Key){Range=e.Value}) ;
 		}
 		void MapDrawAspect()
 		{
@@ -182,15 +182,16 @@ namespace Rob.Act.Analyze
 					var zisc = axcol==null && zicol?.Spec is string sp ? rng[sp].Min : zis ;
 					var axarow = ziaro.use(z=>(axaro*zisc%zisc).Signate(zb.At(zi%2)?.Reverse==false?zisc:null as double?)+zof??rng[z.Spec].Min) ;
 					MapPanel.Children.Add( new Line{ X1 = A.X+shift*sha.X , Y1 = A.Y+shift*sha.Y , X2 = B.X+shift*sha.X , Y2 = B.Y+shift*sha.Y ,
-						Stroke = axcol.Get(z=>new SolidColorBrush(color*(float)(z%.9+.1).Signate(zb.At((zi+1)%2)?.Reverse==false?1:null as double?))) ?? new SolidColorBrush(color) ,
+						Stroke = axcol.Get(z=>new SolidColorBrush(color*(float)(z%1).Signate(zb.At((zi+1)%2)?.Reverse==false?1:null as double?))) ?? new SolidColorBrush(color) ,
 						StrokeThickness = axarow ?? ( axcol==null && (zicol?.Spec??ziaro?.Spec) is string spec ? rng[spec].Min : 1 ) ,
 					} ) ;
+					if( axcol>zb.At((zi+1)%2)?.Count || axaro>zb.At(zi%2)?.Count ) break ;
 				}
 				catch( System.Exception ex ) { Trace.TraceWarning(ex.Stringy()) ; }
 				++shift ;
 			}
 			Hypercube = rng.Where(a=>xaxe.Spec==a.Key||yaxes.Contains(a.Key)).OrderBy(e=>e.Key==xaxe.Spec?0:Array.IndexOf(yaxes,e.Key)).ToArray() ;
-			var co = Coordinates.ToDictionary(c=>c.Axe) ; Coordinates.Clear() ; Hypercube.Each(e=>Coordinates+=co.By(e.Key)??new Coordinate(this,e.Key){Range=e.Value}) ;
+			var co = Coordinates.ToDictionary(c=>c.Axe) ; Coordinates.Clear() ; Hypercube.Each(e=>Coordinates+=co.By(e.Key).Set(c=>c.Range=e.Value)??new Coordinate(this,e.Key){Range=e.Value}) ;
 		}
 		void GraphDrawQuantile()
 		{
@@ -221,7 +222,7 @@ namespace Rob.Act.Analyze
 					Points = new PointCollection(ax.Select(a=>ScreenPoint((a[0]-x.Min)/(x.Max-x.Min)*width,height-(a[j]-y.Min)/(y.Max-y.Min)*height)))
 				} ) ; ++k ;
 			}
-			Hypercube = rng ; var co = Coordinates.ToDictionary(c=>c.Axe) ; Coordinates.Clear() ; rng.Each(e=>Coordinates+=co.By(e.Key)??new Coordinate(this,e.Key){Range=e.Value}) ;
+			Hypercube = rng ; var co = Coordinates.ToDictionary(c=>c.Axe) ; Coordinates.Clear() ; rng.Each(e=>Coordinates+=co.By(e.Key).Set(c=>c.Range=e.Value)??new Coordinate(this,e.Key){Range=e.Value}) ;
 		}
 		#endregion
 		static int DecDigits( double value , int prec = 3 ) => value==0 ? 0 : (int)Math.Max(0,prec-Math.Log10(Math.Abs(value))) ;
@@ -241,7 +242,7 @@ namespace Rob.Act.Analyze
 			public string Axe { get; }
 			public double? Value { get => value ; internal set { this.value = value ; PropertyChanged.On(this,"Value") ; } } double? value ;
 			public string Byte { get => _byte ; set { if( Byte==value ) return ; Context.State[Axe] = _byte = value ; Info = value.ParseCoinfo() ; PropertyChanged.On(this,"Byte") ; if( Context.MapTab.IsSelected ) Context.Map_Draw(Context) ; } } string _byte ;
-			public (double? Byte,bool Reverse)? Info { get => info ?? Context.State.Coordination(Axe) ; private set => info = value ; } (double? Byte,bool Reverse)? info ;
+			public (double? Byte,uint? Count,bool Reverse)? Info { get => info ?? Context.State.Coordination(Axe) ; set { if( info.Equals(value) ) return ; info = value ; Byte = value.StringCoinfo() ; } } (double? Byte,uint? Count,bool Reverse)? info ;
 			public (double Min,double Max) Range ;
 		}
 		public Aid.Collections.ObservableList<Coordinate> Coordinates { get; private set; } = new Aid.Collections.ObservableList<Coordinate>() ;
@@ -278,6 +279,26 @@ namespace Rob.Act.Analyze
 		double ScreenX( double x , (double Min,double Max) e ) { if( ScreenRect==null ) return x ; var r = ScreenRect.Value ; var q = (e.Max-e.Min)/ViewFrame.Width ; var fx = (x-e.Min)/q ; return e.Min+r.Location.X*q+fx*r.Width/ViewFrame.Width*q ; }
 		double ScreenY( double y , (double Min,double Max) e ) { if( ScreenRect==null ) return y ; var r = ScreenRect.Value ; var q = (e.Max-e.Min)/ViewFrame.Height ; var fy = (e.Max-y)/q ; return e.Max-r.Location.Y*q-fy*r.Height/ViewFrame.Height*q ; }
 		#endregion
+		void Coordinates_Left_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => CoordinatesMove(-.001) ;
+		void Coordinates_Right_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => CoordinatesMove(+.001) ;
+		void Coordinates_Up_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => CoordinatesMove(-.01) ;
+		void Coordinates_Down_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => CoordinatesMove(+.01) ;
+		void Coordinates_PageUp_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => CoordinatesMove(-.1) ;
+		void Coordinates_PageDown_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => CoordinatesMove(+.1) ;
+		void Coordinates_Home_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => CoordinatesSet(0) ;
+		void Coordinates_End_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => CoordinatesSet(null) ;
+		void Coordinates_CountLeft_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => CoordinatesCountMove(-1) ;
+		void Coordinates_CountRight_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => CoordinatesCountMove(+1) ;
+		void Coordinates_CountUp_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => CoordinatesCountMove(-10) ;
+		void Coordinates_CountDown_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => CoordinatesCountMove(+10) ;
+		void Coordinates_CountPageUp_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => CoordinatesCountMove(-100) ;
+		void Coordinates_CountPageDown_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => CoordinatesCountMove(+100) ;
+		void Coordinates_CountHome_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => CoordinatesCountSet(0) ;
+		void Coordinates_CountEnd_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => CoordinatesCountSet(null) ;
+		async void CoordinatesMove( double step ) { var sel = CoordinatesGrid.SelectedItems.Cast<Coordinate>().ToArray() ; sel.Each(c=>c.Info=c.Info.use(i=>((i.Byte+step*(c.Range.Max-c.Range.Min))??c.Range.Max-c.Range.Min,i.Count,i.Reverse))) ; await Task.Delay(10) ; sel.Each(s=>CoordinatesGrid.SelectedItems.Add(s)) ; CoordinatesGrid.Focus() ; }
+		async void CoordinatesSet( double? state ) { var sel = CoordinatesGrid.SelectedItems.Cast<Coordinate>().ToArray() ; sel.Each(c=>c.Info=c.Info.use(i=>(state,i.Count,i.Reverse))) ; await Task.Delay(10) ; sel.Each(s=>CoordinatesGrid.SelectedItems.Add(s)) ; CoordinatesGrid.Focus() ; }
+		async void CoordinatesCountMove( int step ) { var sel = CoordinatesGrid.SelectedItems.Cast<Coordinate>().ToArray() ; sel.Each(c=>c.Info=c.Info.use(i=>(i.Byte,i.Count.use(v=>(uint)((int)v+step)),i.Reverse))) ; await Task.Delay(10) ; sel.Each(s=>CoordinatesGrid.SelectedItems.Add(s)) ; CoordinatesGrid.Focus() ; }
+		async void CoordinatesCountSet( uint? state ) { var sel = CoordinatesGrid.SelectedItems.Cast<Coordinate>().ToArray() ; sel.Each(c=>c.Info=c.Info.use(i=>(i.Byte,state,i.Reverse))) ; await Task.Delay(10) ; sel.Each(s=>CoordinatesGrid.SelectedItems.Add(s)) ; CoordinatesGrid.Focus() ; }
 	}
 	public class QuantileSubversion : IMultiValueConverter
 	{
