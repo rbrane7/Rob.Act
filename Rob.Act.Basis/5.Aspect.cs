@@ -158,10 +158,10 @@ namespace Rob.Act
 			public override void Add( Act.Axe ax ) => base.Add(ax.Set(a=>{if(!(a is Axe))a.Aspect=this;})) ;
 			public override void Remove( Act.Axe ax ) => base.Remove(ax.Set(a=>{if(!(a is Axe))a.Aspect=null;})) ;
 			public override Iterable Points => new Iterator{ Context = this } ;
-			public new class Iterator : Iterable
+			public class Iterator : Iterable
 			{
 				public Aspectable Context { get; set; }
-				public int Count => (Context as Aspect)?.Context.Count ?? 0 ;
+				public int Count => (Context as Aspect)?.Context.Count??0 ; //Math.Max((Context as Aspect)?.Context.Count??0,Context.Where(a=>!(a is Axe)&&a.Counts).Null(e=>e.Count()<=0)?.Max(a=>a.Count)??0) ;
 				public IEnumerator<Point> GetEnumerator() { for( int i=0 , count=Count ; i<count ; ++i ) yield return new Point(Context as Aspect,Context.Select(a=>a[i]).ToArray()) ; } IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
 			}
 			#region De/Serialization

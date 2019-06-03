@@ -98,7 +98,7 @@ namespace Rob.Act.Analyze
 		(double Width,double Height) MainFrameSize => (MainFrame.ColumnDefinitions[1].ActualWidth-ViewScreenBorder.Width,MainFrame.RowDefinitions[1].ActualHeight-ViewScreenBorder.Height) ;
 		void GraphDrawAspect()
 		{
-			var yaxes = AspectAxisGrid.SelectedItems.OfType<Axe>().Skip(1).Select(a=>a.Spec).ToArray() ; if( yaxes.Length<=0 || !( AspectAxisGrid.SelectedItem is Axe xaxe ) ) return ;
+			var yaxes = AspectAxisGrid.SelectedItems.OfType<Axe>().Skip(1).Select(a=>a.Spec).ToArray() ; if( yaxes.Length<1 || !( AspectAxisGrid.SelectedItem is Axe xaxe ) ) return ;
 			(var width,var height) = ViewFrame = MainFrameSize ;
 			{
 				var brush = new SolidColorBrush(new Color{A=127,R=200,G=200,B=200}) ; var dash = new DoubleCollection{4} ;
@@ -129,12 +129,12 @@ namespace Rob.Act.Analyze
 					Points = new PointCollection(ax.Count.Steps().Where(i=>xax[i]!=null&&ax[i]!=null).Select(i=>ScreenPoint((xax[i].Value-rng[xax.Spec].Min)/(rng[xax.Spec].Max-rng[xax.Spec].Min).nil()*width??0,height-(ax[i].Value-rng[ax.Spec].Min)/(rng[ax.Spec].Max-rng[ax.Spec].Min).nil()*height??0)))
 				} ) ; } catch( System.Exception ex ) { Trace.TraceWarning(ex.Stringy()) ; }
 			}
-			Hypercube = rng.Where(a=>xaxe.Spec==a.Key||yaxes.Contains(a.Key)).OrderBy(e=>e.Key==xaxe.Spec?0:Array.IndexOf(yaxes,e.Key)).ToArray() ;
+			Hypercube = rng.Where(a=>xaxe.Spec==a.Key||yaxes.Contains(a.Key)).OrderBy(e=>e.Key==xaxe.Spec?0:Array.IndexOf(yaxes,e.Key)+1).ToArray() ;
 			var co = Coordinates.ToDictionary(c=>c.Axe) ; Coordinates.Clear() ; Hypercube.Each(e=>Coordinates+=co.By(e.Key).Set(c=>c.Range=e.Value)??new Coordinate(this,e.Key){Range=e.Value}) ;
 		}
 		void MapDrawAspect()
 		{
-			var yaxes = AspectAxisGrid.SelectedItems.OfType<Axe>().Skip(1).Select(a=>a.Spec).ToArray() ; if( yaxes.Length<=0 || !( AspectAxisGrid.SelectedItem is Axe xaxe ) ) return ;
+			var yaxes = AspectAxisGrid.SelectedItems.OfType<Axe>().Skip(1).Select(a=>a.Spec).ToArray() ; if( yaxes.Length<1 || !( AspectAxisGrid.SelectedItem is Axe xaxe ) ) return ;
 			(var width,var height) = ViewFrame = MainFrameSize ;
 			{
 				var brush = new SolidColorBrush(new Color{A=127,R=200,G=200,B=200}) ; var dash = new DoubleCollection{4} ;
@@ -163,17 +163,17 @@ namespace Rob.Act.Analyze
 			foreach( var asp in sources )
 			{
 				var xax = asp[xaxe.Spec] ; var yax = asp[yaxes[0]] ;
-				var pts = new List<(System.Windows.Point A,System.Windows.Point B,(string Spec,double? Val)[] Z)>() ;
-				for( int i=0 , c = asp.Points.Count-1 ; i<c ; ++i ) if( xax[i]!=null && yax!=null ) try
+				var pts = new List<(System.Windows.Point A,System.Windows.Point B,double? X,double? Y,(string Spec,double? Val)[] Z)>() ;
+				for( int i=0 , c = asp.Points.Count-1 ; i<c ; ++i ) if( xax[i]!=null && yax[i]!=null ) try
 				{
 					var spt0 = ScreenPoint((xax[i].Value-rng[xax.Spec].Min)/(rng[xax.Spec].Max-rng[xax.Spec].Min).nil()*width??0,height-(yax[i].Value-rng[yax.Spec].Min)/(rng[yax.Spec].Max-rng[yax.Spec].Min).nil()*height??0) ;
 					var spt1 = ScreenPoint((xax[i+1].Value-rng[xax.Spec].Min)/(rng[xax.Spec].Max-rng[xax.Spec].Min).nil()*width??0,height-(yax[i+1].Value-rng[yax.Spec].Min)/(rng[yax.Spec].Max-rng[yax.Spec].Min).nil()*height??0) ;
-					if( spt0.X>=0 && spt0.Y>=0 && spt1.X<=width && spt1.Y<=height ) pts.Add((spt0,spt1,yaxes.Skip(1).Select(z=>(z,asp[z][i])).ToArray())) ;
+					if( spt0.X>=0 && spt0.Y>=0 && spt1.X<=width && spt1.Y<=height ) pts.Add((spt0,spt1,xax[i],yax[i],yaxes.Skip(1).Select(z=>(z,asp[z][i])).ToArray())) ;
 				}
 				catch( System.Exception ex ) { Trace.TraceWarning(ex.Stringy()) ; }
 				for( var i=1 ; i<yaxes.Length ; ++i ) rng[yaxes[i]]=(pts.Min(p=>p.Z[i-1].Val).Value,pts.Max(p=>p.Z[i-1].Val).Value) ;
 				var color = Colos[BookGrid.SelectedItems.IndexOf((asp as Path.Aspect??asp.Source as Path.Aspect)?.Context)%Colos.Length] ;
-				foreach( var (A,B,Z) in pts ) try
+				foreach( var (A,B,X,Y,Z) in pts ) try
 				{
 					var za = Z.Select(z=>Coordinates.FirstOrDefault(c=>c.Axe==z.Spec)).ToArray() ; var zb = Z.Select(z=>Coordinates.FirstOrDefault(c=>c.Axe==z.Spec)?.Info??State.Coordination(z.Spec)).ToArray() ;
 					var zicol = Z.At((zi+1)%2).nil(z=>z.Spec==null) ; var ziaro = Z.At(zi%2).nil(z=>z.Spec==null) ;
@@ -186,13 +186,18 @@ namespace Rob.Act.Analyze
 						Stroke = axcol.Get(z=>new SolidColorBrush(color*(float)(z%1).Signate(zb.At((zi+1)%2)?.Reverse==false?1:null as double?))) ?? new SolidColorBrush(color) ,
 						StrokeThickness = axarow ?? ( axcol==null && (zicol?.Spec??ziaro?.Spec) is string spec ? rng[spec].Min : 1 ) ,
 					} ) ;
-					if( axcol>zb.At((zi+1)%2)?.Count || axaro>zb.At(zi%2)?.Count ) break ;
+					if( axcol>zb.At((zi+1)%2)?.Count || axaro>zb.At(zi%2)?.Count )
+					{
+						foreach( var v in Z ) Coordinates.FirstOrDefault(c=>c.Axe==v.Spec).Set(c=>c.Value=v.Val) ;
+						Coordinates.FirstOrDefault(c=>c.Axe==xax.Spec).Set(c=>c.Value=X) ; Coordinates.FirstOrDefault(c=>c.Axe==yax.Spec).Set(c=>c.Value=Y) ;
+						break ;
+					}
 				}
 				catch( System.Exception ex ) { Trace.TraceWarning(ex.Stringy()) ; }
 				++shift ;
 			}
-			Hypercube = rng.Where(a=>xaxe.Spec==a.Key||yaxes.Contains(a.Key)).OrderBy(e=>e.Key==xaxe.Spec?0:Array.IndexOf(yaxes,e.Key)).ToArray() ;
-			var co = Coordinates.ToDictionary(c=>c.Axe) ; Coordinates.Clear() ; Hypercube.Each(e=>Coordinates+=co.By(e.Key).Set(c=>c.Range=e.Value)??new Coordinate(this,e.Key){Range=e.Value}) ;
+			Hypercube = rng.Where(a=>xaxe.Spec==a.Key||yaxes.Contains(a.Key)).OrderBy(e=>e.Key==xaxe.Spec?0:Array.IndexOf(yaxes,e.Key)+1).ToArray() ;
+			var co = Coordinates.ToLookup(c=>c.Axe) ; Coordinates.Clear() ; Hypercube.Each(e=>Coordinates+=co[e.Key].FirstOrDefault().Set(c=>c.Range=e.Value)??new Coordinate(this,e.Key){Range=e.Value}) ;
 		}
 		void GraphDrawQuantile()
 		{
@@ -234,7 +239,7 @@ namespace Rob.Act.Analyze
 		void AspectAxisGrid_SelectionChanged( object sender, SelectionChangedEventArgs e ) { if( GraphTab.IsSelected ) Graph_Draw(this) ; if( MapTab.IsSelected ) Map_Draw(this) ; }
 		void AspectMultiToggle_Changed( object sender, RoutedEventArgs e ) { if( sender==AspectMultiToggle || AspectMultiToggle.IsChecked==true ) Sources = null ; }
 		#region Coordinates
-		void Main_MouseMove( object sender, MouseEventArgs e ) => MousePoint = Mouse.GetPosition(ViewPanel).nil() ;
+		void Main_MouseMove( object sender, MouseEventArgs e ) => Mouse.GetPosition(ViewPanel).nil(p=>p.X<=0||p.Y<=0||p.X>ViewFrame.Width||p.Y>ViewFrame.Height).Use(p=>MousePoint=p) ;
 		public class Coordinate : INotifyPropertyChanged
 		{
 			Main Context ;
@@ -300,7 +305,7 @@ namespace Rob.Act.Analyze
 		void Coordinates_CountEnd_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => CoordinatesCountSet(null) ;
 		void Coordinates_AtLeft_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => CoordinatesSizeMove(-1) ;
 		void Coordinates_AtRight_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => CoordinatesSizeMove(+1) ;
-		void Coordinates_AtUp_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => CoordinatesSizeSet(0) ;
+		void Coordinates_AtUp_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => CoordinatesSizeSet(1) ;
 		void Coordinates_AtDown_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => CoordinatesSizeSet(null) ;
 		async void CoordinatesMove( double step ) { var sel = CoordinatesGrid.SelectedItems.Cast<Coordinate>().ToArray() ; sel.Each(c=>c.Info=c.Info.use(i=>((i.Byte+step*(c.Range.Max-c.Range.Min))??c.Range.Max-c.Range.Min,i.Count,i.Reverse))) ; await Task.Delay(10) ; sel.Each(s=>CoordinatesGrid.SelectedItems.Add(s)) ; CoordinatesGrid.Focus() ; }
 		async void CoordinatesSet( double? state ) { var sel = CoordinatesGrid.SelectedItems.Cast<Coordinate>().ToArray() ; sel.Each(c=>c.Info=c.Info.use(i=>(state,i.Count,i.Reverse))) ; await Task.Delay(10) ; sel.Each(s=>CoordinatesGrid.SelectedItems.Add(s)) ; CoordinatesGrid.Focus() ; }

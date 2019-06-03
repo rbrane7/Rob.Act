@@ -23,8 +23,9 @@
         <GridSplitter Grid.RowSpan="3" Grid.Column="0" VerticalAlignment="Stretch" Width="3" HorizontalAlignment="Right"/>
         <GridSplitter Grid.RowSpan="3" Grid.Column="1" VerticalAlignment="Stretch" Width="3" HorizontalAlignment="Right"/>
         <Grid Name="AspectFrame" Grid.Column="1">
-            <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
+            <Grid.ColumnDefinitions><ColumnDefinition Width="1*"/><ColumnDefinition Width="1*"/><ColumnDefinition Width="1*"/></Grid.ColumnDefinitions>
             <GridSplitter Grid.Column="0" VerticalAlignment="Stretch" Width="3" HorizontalAlignment="Right"/>
+            <GridSplitter Grid.Column="1" VerticalAlignment="Stretch" Width="3" HorizontalAlignment="Right"/>
             <DataGrid Name="AspectAxisGrid" ItemsSource="{Binding Aspect}" AutoGenerateColumns="False" Margin="2" SelectionChanged="AspectAxisGrid_SelectionChanged">
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="Spec" Binding="{Binding Spec}"/>
@@ -50,6 +51,16 @@
                     <CommandBinding Command="Delete" Executed="DataGridDeleteCommandBinding_Executed"/>
                 </DataGrid.CommandBindings>
             </DataGrid>
+            <DataGrid Name="PartitionerGrid" Grid.Column="2" ItemsSource="{Binding Aspect.Trait}" AutoGenerateColumns="False" Margin="2">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Spec" Binding="{Binding Spec}"/>
+                    <DataGridTextColumn Header="Filter" Binding="{Binding Lex}" Width="*"/>
+                    <DataGridTextColumn Header="Selector" Binding="{Binding Unit}"/>
+                </DataGrid.Columns>
+                <DataGrid.CommandBindings>
+                    <CommandBinding Command="Delete" Executed="DataGridDeleteCommandBinding_Executed"/>
+                </DataGrid.CommandBindings>
+            </DataGrid>
         </Grid>
         <!--<Grid Grid.Column="2">
             <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
@@ -60,12 +71,12 @@
             <Button Content="Add Aspect" Name="AddAspectButton" Click="AddAspectButton_Click" Grid.Row="1" Margin="2" Panel.ZIndex="2"/>
             <Button Content="Save Aspects" Name="SaveAspectsButton" Click="SaveAspectsButton_Click" Margin="2" Grid.Row="1" Grid.Column="1"/>
         </Grid>-->
-        <DataGrid Name="CoordinatesGrid" ItemsSource="{Binding Coordinates}" Panel.ZIndex="1" Margin="2" HeadersVisibility="None" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False">
+        <DataGrid Name="CoordinatesGrid" ItemsSource="{Binding Coordinates}" Panel.ZIndex="1" Margin="2" HeadersVisibility="None" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" CanUserResizeColumns="True">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Axe" Binding="{Binding Axe}"/>
-                <DataGridTextColumn Header="Value" Binding="{Binding Value}" Width="*"/>
+                <DataGridTextColumn Header="Value" Binding="{Binding Value}"/>
                 <DataGridTextColumn Header="Byte" Binding="{Binding Byte}"/>
-                <DataGridTextColumn Header="At" Binding="{Binding At}"/>
+                <DataGridTextColumn Header="At" Binding="{Binding At}" Width="*"/>
             </DataGrid.Columns>
             <DataGrid.CommandBindings>
                 <CommandBinding Command="ExtendSelectionLeft" PreviewCanExecute="Coordinates_Left_CommandBinding_Executed"/>
