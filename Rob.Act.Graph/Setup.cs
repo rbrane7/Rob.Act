@@ -49,5 +49,6 @@ namespace Rob.Act.Analyze
 		public static double? Signate( this double? value , double? reverse ) => reverse==null ? value : reverse-value ;
 		public static (double? Byte,uint? Count,bool Reverse)? ParseCoinfo( this string v ) => v.get(i=>(i.LeftFrom('*',true).TrimEnd('-').Parse<double>(),i.RightFrom('*')?.TrimEnd('-').Parse<uint>(),i.EndsWith("-"))) ;
 		public static string StringCoinfo( this (double? Byte,uint? Count,bool Reverse)? v ) => v.Get(i=>$"{i.Byte}*{i.Count}{(i.Reverse?"-":null)}") ;
+		public static double? Sqr( this double? val ) => val*val ;
 	}
 }

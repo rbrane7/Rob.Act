@@ -14,6 +14,7 @@
         <converters:LambdaConverter x:Key="MinConvert" Forward="the(double)*60"/>
         <converters:LambdaConverter x:Key="StringsConcatConvert" Forward="Stringy(' ')"/>
         <local:QuantileSubversion x:Key="QuantitieConversion"/>
+        <converters:LambdaConverter x:Key="PartitionerVisibilityConverter" Forward=".==true?System.Windows.Visibility.Visible:System.Windows.Visibility.Collapsed"/>
     </Window.Resources>
     <Grid Name="MainFrame">
         <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="7*"/><ColumnDefinition Width="2*"/></Grid.ColumnDefinitions>
@@ -23,19 +24,19 @@
         <GridSplitter Grid.RowSpan="3" Grid.Column="0" VerticalAlignment="Stretch" Width="3" HorizontalAlignment="Right"/>
         <GridSplitter Grid.RowSpan="3" Grid.Column="1" VerticalAlignment="Stretch" Width="3" HorizontalAlignment="Right"/>
         <Grid Name="AspectFrame" Grid.Column="1">
-            <Grid.ColumnDefinitions><ColumnDefinition Width="1*"/><ColumnDefinition Width="1*"/><ColumnDefinition Width="1*"/></Grid.ColumnDefinitions>
+            <Grid.ColumnDefinitions><ColumnDefinition Width="1*"/><ColumnDefinition Width="1*"/></Grid.ColumnDefinitions>
             <GridSplitter Grid.Column="0" VerticalAlignment="Stretch" Width="3" HorizontalAlignment="Right"/>
             <GridSplitter Grid.Column="1" VerticalAlignment="Stretch" Width="3" HorizontalAlignment="Right"/>
             <DataGrid Name="AspectAxisGrid" ItemsSource="{Binding Aspect}" AutoGenerateColumns="False" Margin="2" SelectionChanged="AspectAxisGrid_SelectionChanged">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="Spec" Binding="{Binding Spec}"/>
-                    <DataGridTextColumn Header="Aspect" Binding="{Binding Aspectlet}" Width="10"/>
+                    <DataGridTextColumn Header="Spec" Binding="{Binding Spec}" Width="2*"/>
+                    <DataGridTextColumn Header="Aspect" Binding="{Binding Aspectlet}" Width="1*"/>
                     <DataGridCheckBoxColumn Header="s" Binding="{Binding Multi}"/>
-                    <DataGridTextColumn Header="Resolver" Binding="{Binding Resolvelet}" Width="300"/>
-                    <DataGridTextColumn Header="Counter" Binding="{Binding Countlet}"/>
-                    <DataGridTextColumn Header="Selector" Binding="{Binding Selectlet}"/>
-                    <DataGridTextColumn Header="Distributor" Binding="{Binding Distribulet}"/>
-                    <DataGridTextColumn Header="Quantizer" Binding="{Binding Quantlet}"/>
+                    <DataGridTextColumn Header="Resolver" Binding="{Binding Resolvelet}" Width="7*"/>
+                    <DataGridTextColumn Header="Counter" Binding="{Binding Countlet}" Width="1*"/>
+                    <DataGridTextColumn Header="Selector" Binding="{Binding Selectlet}" Width="1*"/>
+                    <DataGridTextColumn Header="Distributor" Binding="{Binding Distribulet}" Width="2*"/>
+                    <DataGridTextColumn Header="Quantizer" Binding="{Binding Quantlet}" Width="2*"/>
                 </DataGrid.Columns>
                 <DataGrid.CommandBindings>
                     <CommandBinding Command="Delete" Executed="DataGridDeleteCommandBinding_Executed"/>
@@ -43,19 +44,19 @@
             </DataGrid>
             <DataGrid Name="AspectTraitsGrid" Grid.Column="1" ItemsSource="{Binding Aspect.Trait}" AutoGenerateColumns="False" Margin="2">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="Spec" Binding="{Binding Spec}"/>
-                    <DataGridTextColumn Header="Resolver" Binding="{Binding Lex}" Width="300"/>
-                    <DataGridTextColumn Header="Unit" Binding="{Binding Unit}"/>
+                    <DataGridTextColumn Header="Spec" Binding="{Binding Spec}" Width="1*"/>
+                    <DataGridTextColumn Header="Resolver" Binding="{Binding Lex}" Width="7*"/>
+                    <DataGridTextColumn Header="Unit" Binding="{Binding Unit}" Width="1*"/>
                 </DataGrid.Columns>
                 <DataGrid.CommandBindings>
                     <CommandBinding Command="Delete" Executed="DataGridDeleteCommandBinding_Executed"/>
                 </DataGrid.CommandBindings>
             </DataGrid>
-            <DataGrid Name="PartitionerGrid" Grid.Column="2" ItemsSource="{Binding Aspect.Trait}" AutoGenerateColumns="False" Margin="2">
+            <DataGrid Name="PartitionerGrid" Grid.ColumnSpan="2" ItemsSource="{Binding Aspect.Trait}" AutoGenerateColumns="False" Margin="2" Visibility="{Binding IsSelected,ElementName=MatrixTab,Converter={StaticResource PartitionerVisibilityConverter}}" Panel.ZIndex="1">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="Spec" Binding="{Binding Spec}"/>
-                    <DataGridTextColumn Header="Filter" Binding="{Binding Lex}" Width="*"/>
-                    <DataGridTextColumn Header="Selector" Binding="{Binding Unit}"/>
+                    <DataGridTextColumn Header="Spec" Binding="{Binding Spec}" Width="1*"/>
+                    <DataGridTextColumn Header="Filter" Binding="{Binding Lex}" Width="7*"/>
+                    <DataGridTextColumn Header="Selector" Binding="{Binding Unit}" Width="7*"/>
                 </DataGrid.Columns>
                 <DataGrid.CommandBindings>
                     <CommandBinding Command="Delete" Executed="DataGridDeleteCommandBinding_Executed"/>
@@ -166,7 +167,7 @@
                     <TabControl.ContentTemplate><DataTemplate><DataGrid ItemsSource="{Binding Spectrum.Points}" AutoGeneratedColumns="AspectGrid_AutoGeneratedColumns"/></DataTemplate></TabControl.ContentTemplate>
                 </TabControl>
             </TabItem>
-            <TabItem Header="Matrix" Name="Matrix">
+            <TabItem Name="MatrixTab" Header="Matrix">
                 <TabControl Name="MatrixTabs" ItemsSource="{Binding SelectedItems,ElementName=BookGrid}" TabStripPlacement="Bottom">
                     <TabControl.ContentTemplate><DataTemplate><DataGrid AutoGeneratedColumns="MatrixGrid_AutoGeneratedColumns" ItemsSource="{Binding}"/></DataTemplate></TabControl.ContentTemplate>
                 </TabControl>

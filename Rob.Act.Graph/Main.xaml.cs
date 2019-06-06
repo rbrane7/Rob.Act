@@ -157,9 +157,8 @@ namespace Rob.Act.Analyze
 					if( y.Min<0 && y.Max>0 ) { var yZero = ScreenY(y.Max/(y.Max-y.Min)*height) ; MapPanel.Children.Add( new Line{ X1 = 0 , Y1 = yZero , X2 = width , Y2 = yZero , Stroke = Brushes.Gray } ) ; }
 				}
 			}
-			double zis = Math.Pow(Math.Sqrt(width*height),1D/3D) ; var shift = 0 ;
 			(double X,double Y) sha = ((Coordinates.FirstOrDefault(c=>c.Axe==xaxe.Spec)?.Info??State.Coordination(xaxe.Spec)).Evaluate()??0,(Coordinates.FirstOrDefault(c=>c.Axe==yaxes[0])?.Info??State.Coordination(yaxes[0])).Evaluate()??0) ;
-			var zi = Setup.PrimaryShape ;
+			double zis = Math.Pow(Math.Sqrt(width*height),1D/3D) ; var shift = 0 ; var zi = Setup.PrimaryShape ;
 			foreach( var asp in sources )
 			{
 				var xax = asp[xaxe.Spec] ; var yax = asp[yaxes[0]] ;
@@ -239,7 +238,7 @@ namespace Rob.Act.Analyze
 		void AspectAxisGrid_SelectionChanged( object sender, SelectionChangedEventArgs e ) { if( GraphTab.IsSelected ) Graph_Draw(this) ; if( MapTab.IsSelected ) Map_Draw(this) ; }
 		void AspectMultiToggle_Changed( object sender, RoutedEventArgs e ) { if( sender==AspectMultiToggle || AspectMultiToggle.IsChecked==true ) Sources = null ; }
 		#region Coordinates
-		void Main_MouseMove( object sender, MouseEventArgs e ) => Mouse.GetPosition(ViewPanel).nil(p=>p.X<=0||p.Y<=0||p.X>ViewFrame.Width||p.Y>ViewFrame.Height).Use(p=>MousePoint=p) ;
+		void Main_MouseMove( object sender, MouseEventArgs e ) => MousePoint = Mouse.GetPosition(ViewPanel) ;
 		public class Coordinate : INotifyPropertyChanged
 		{
 			Main Context ;
@@ -250,29 +249,41 @@ namespace Rob.Act.Analyze
 			public string Byte { get => _byte ; set { if( Byte==value ) return ; Context.State[Axe] = _byte = value ; Info = value.ParseCoinfo() ; PropertyChanged.On(this,"Byte") ; if( Context.MapTab.IsSelected ) Context.Map_Draw(Context) ; } } string _byte ;
 			public (double? Byte,uint? Count,bool Reverse)? Info { get => info ?? Context.State.Coordination(Axe) ; set { if( info.Equals(value) ) return ; info = value ; Byte = value.StringCoinfo() ; } } (double? Byte,uint? Count,bool Reverse)? info ;
 			public (double Min,double Max) Range ;
-			public string At { get => at; set { if( value==at ) return ;  Size = (at=value).Parse<uint>() ; PropertyChanged.On(this,"At") ; } } string at ;
+			public string At { get => at; set { if( value==at ) return ; Size = (at=value).Parse<uint>() ; PropertyChanged.On(this,"At") ; } } string at ;
 			public uint? Size { get =>size ; set { if( value==size ) return ; size = value ; PropertyChanged.On(this,"Size") ; if( Context.MapTab.IsSelected ) Context.Map_Draw(Context) ; At = value.Stringy() ; } } uint? size ;
 		}
 		public Aid.Collections.ObservableList<Coordinate> Coordinates { get; private set; } = new Aid.Collections.ObservableList<Coordinate>() ;
 		public System.Windows.Point? MousePoint
-		{ get => mousePoint ; set
+		{
+			get => mousePoint ; set
 			{
-				MouseCross.X.Set(ViewPanel.Children.Remove) ; MouseCross.Y.Set(ViewPanel.Children.Remove) ; var asp = Hypercube is Array ;
-				PropertyChanged.On( this, "MousePoint", (mousePoint=value).Use(m=>Hypercube.Each(a=> Coordinates.First(c=>c.Axe==a.Key).Value = ( asp ? AspectAxisGrid.SelectedItem is Axe x && a.Key==x.Spec : !a.Key.StartsBy("Q(") ) ? ScreenX(m.X/ViewFrame.Width*(a.Value.Max-a.Value.Min)+a.Value.Min,a.Value) : ScreenY((ViewFrame.Height-m.Y)/ViewFrame.Height*(a.Value.Max-a.Value.Min)+a.Value.Min,a.Value) ) ) ) ;
-				if( value==null || value?.X<0 || value?.Y<0 || value?.X>ViewFrame.Width || value?.Y>ViewFrame.Height ) return ;
+				MouseCross.X.Set(ViewPanel.Children.Remove) ; MouseCross.Y.Set(ViewPanel.Children.Remove) ; if( value==null || value?.X<0 || value?.Y<0 || value?.X>ViewFrame.Width || value?.Y>ViewFrame.Height ) return ;
+				var asp = Hypercube is Array ; PropertyChanged.On( this, "MousePoint", (mousePoint=value).Use(m=>Hypercube.Each(a=>CoordinateSet(m,a,asp))) ) ;
 				ViewPanel.Children.Add( MouseCross.X = new Line{ Stroke=Brushes.Gray , X1=0 , X2=ViewFrame.Width , Y1=value.Value.Y , Y2=value.Value.Y } ) ;
 				ViewPanel.Children.Add( MouseCross.Y = new Line{ Stroke=Brushes.Gray , Y1=0 , Y2=ViewFrame.Height , X1=value.Value.X , X2=value.Value.X } ) ;
 			}
+		}
+		void CoordinateSet( System.Windows.Point m , KeyValuePair<string,(double Min,double Max)> a , bool asp )
+		{
+			var co = Coordinates.First(c=>c.Axe==a.Key) ; co.Value = ( asp ? AspectAxisGrid.SelectedItem is Axe x && a.Key==x.Spec : !a.Key.StartsBy("Q(") ) ?
+			ScreenX(AxeXByMouse(m,a),a.Value) : ViewPanel==GraphPanel || Coordinates.IndexOf(co)<2 ? ScreenY(AxeYByMouse(m,a),a.Value) : AxeZByMouse(a.Key) ;
+		}
+		double AxeXByMouse( System.Windows.Point m , KeyValuePair<string,(double Min,double Max)> a ) => m.X/ViewFrame.Width*(a.Value.Max-a.Value.Min)+a.Value.Min ;
+		double AxeYByMouse( System.Windows.Point m , KeyValuePair<string,(double Min,double Max)> a ) => (ViewFrame.Height-m.Y)/ViewFrame.Height*(a.Value.Max-a.Value.Min)+a.Value.Min ;
+		double? AxeZByMouse( string a )
+		{
+			var x = Coordinates[0]?.Value ; var y = Coordinates[1]?.Value ; var ax = Coordinates[0]?.Axe ; var ay = Coordinates[1]?.Axe ; Aspect.Point? op = null ; double? ov = null , cv = null ;
+			foreach( var src in Sources ) foreach( var pt in src.Points ) if( (cv=(pt[ax]-x).Sqr()+(pt[ay]-y).Sqr())<ov || ov==null ) { op = pt ; ov = cv ; }
+			return op?[a] ;
 		}
 		#endregion
 		#region Focusing
 		System.Windows.Point? mousePoint , screenPoint ; System.Windows.Rect? ScreenRect ;
 		System.Windows.Point? ScreenOrigin
-		{ get => screenPoint ; set
+		{
+			get => screenPoint ; set
 			{
-				
-				ScreenCross.X.Set(ViewPanel.Children.Remove) ; ScreenCross.Y.Set(ViewPanel.Children.Remove) ;
-				var p = ScreenMouse ; screenPoint = value.Get(v=>p) ; if( value==null ) return ;
+				ScreenCross.X.Set(ViewPanel.Children.Remove) ; ScreenCross.Y.Set(ViewPanel.Children.Remove) ; var p = ScreenMouse ; screenPoint = value.Get(v=>p) ; if( value==null ) return ;
 				ViewPanel.Children.Add( ScreenCross.X = new Line{ Stroke=Brushes.Orange , X1=0 , X2=ViewFrame.Width , Y1=value.Value.Y , Y2=value.Value.Y } ) ;
 				ViewPanel.Children.Add( ScreenCross.Y = new Line{ Stroke=Brushes.Orange , Y1=0 , Y2=ViewFrame.Height , X1=value.Value.X , X2=value.Value.X } ) ;
 			}
@@ -287,6 +298,7 @@ namespace Rob.Act.Analyze
 		double ScreenX( double x , (double Min,double Max) e ) { if( ScreenRect==null ) return x ; var r = ScreenRect.Value ; var q = (e.Max-e.Min)/ViewFrame.Width ; var fx = (x-e.Min)/q ; return e.Min+r.Location.X*q+fx*r.Width/ViewFrame.Width*q ; }
 		double ScreenY( double y , (double Min,double Max) e ) { if( ScreenRect==null ) return y ; var r = ScreenRect.Value ; var q = (e.Max-e.Min)/ViewFrame.Height ; var fy = (e.Max-y)/q ; return e.Max-r.Location.Y*q-fy*r.Height/ViewFrame.Height*q ; }
 		#endregion
+		#region Stepping
 		void Coordinates_Left_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => CoordinatesMove(-.001) ;
 		void Coordinates_Right_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => CoordinatesMove(+.001) ;
 		void Coordinates_Up_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => CoordinatesMove(-.01) ;
@@ -313,6 +325,7 @@ namespace Rob.Act.Analyze
 		async void CoordinatesCountSet( uint? state ) { var sel = CoordinatesGrid.SelectedItems.Cast<Coordinate>().ToArray() ; sel.Each(c=>c.Info=c.Info.use(i=>(i.Byte,state,i.Reverse))) ; await Task.Delay(10) ; sel.Each(s=>CoordinatesGrid.SelectedItems.Add(s)) ; CoordinatesGrid.Focus() ; }
 		async void CoordinatesSizeMove( int step ) { var sel = CoordinatesGrid.SelectedItems.Cast<Coordinate>().ToArray() ; sel.Each(c=>c.Size=c.Size.use(a=>(uint)((int)a+step))) ; await Task.Delay(10) ; sel.Each(s=>CoordinatesGrid.SelectedItems.Add(s)) ; CoordinatesGrid.Focus() ; }
 		async void CoordinatesSizeSet( uint? state ) { var sel = CoordinatesGrid.SelectedItems.Cast<Coordinate>().ToArray() ; sel.Each(c=>c.Size=state) ; await Task.Delay(10) ; sel.Each(s=>CoordinatesGrid.SelectedItems.Add(s)) ; CoordinatesGrid.Focus() ; }
+		#endregion
 	}
 	public class QuantileSubversion : IMultiValueConverter
 	{
