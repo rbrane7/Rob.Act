@@ -26,7 +26,6 @@
         <Grid Name="AspectFrame" Grid.Column="1">
             <Grid.ColumnDefinitions><ColumnDefinition Width="1*"/><ColumnDefinition Width="1*"/></Grid.ColumnDefinitions>
             <GridSplitter Grid.Column="0" VerticalAlignment="Stretch" Width="3" HorizontalAlignment="Right"/>
-            <GridSplitter Grid.Column="1" VerticalAlignment="Stretch" Width="3" HorizontalAlignment="Right"/>
             <DataGrid Name="AspectAxisGrid" ItemsSource="{Binding Aspect}" AutoGenerateColumns="False" Margin="2" SelectionChanged="AspectAxisGrid_SelectionChanged">
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="Spec" Binding="{Binding Spec}" Width="2*"/>
@@ -52,7 +51,7 @@
                     <CommandBinding Command="Delete" Executed="DataGridDeleteCommandBinding_Executed"/>
                 </DataGrid.CommandBindings>
             </DataGrid>
-            <DataGrid Name="PartitionerGrid" Grid.ColumnSpan="2" ItemsSource="{Binding Aspect.Trait}" AutoGenerateColumns="False" Margin="2" Visibility="{Binding IsSelected,ElementName=MatrixTab,Converter={StaticResource PartitionerVisibilityConverter}}" Panel.ZIndex="1">
+            <!--<DataGrid Name="PartitionerGrid" Grid.ColumnSpan="2" ItemsSource="{Binding Aspect.Trait}" AutoGenerateColumns="False" Margin="2" Visibility="{Binding IsSelected,ElementName=MatrixTab,Converter={StaticResource PartitionerVisibilityConverter}}" Panel.ZIndex="1">
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="Spec" Binding="{Binding Spec}" Width="1*"/>
                     <DataGridTextColumn Header="Filter" Binding="{Binding Lex}" Width="7*"/>
@@ -61,7 +60,7 @@
                 <DataGrid.CommandBindings>
                     <CommandBinding Command="Delete" Executed="DataGridDeleteCommandBinding_Executed"/>
                 </DataGrid.CommandBindings>
-            </DataGrid>
+            </DataGrid>-->
         </Grid>
         <!--<Grid Grid.Column="2">
             <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>

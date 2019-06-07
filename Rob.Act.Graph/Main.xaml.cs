@@ -45,7 +45,7 @@ namespace Rob.Act.Analyze
 		}
 		protected override void OnClosing( CancelEventArgs e ) { Doct?.Dispose() ; base.OnClosing(e) ; }
 		protected override void OnClosed( EventArgs e ) { base.OnClosed(e) ; Process.GetCurrentProcess().Kill() ; }
-		void NewAction( string file , Predicate<Path> filter = null ) => file.Reconcile().Internalize().Set(p=>p.Origin=file).Set(p=> Book |= filter is Predicate<Path> f ? f(p)?p:null : p ) ;
+		void NewAction( string file , Predicate<Path> filter = null ) => file.Reconcile().Internalize().Set(p=>p.Origin=file).Set(Translation.Partitionate).Set(p=> Book |= filter is Predicate<Path> f ? f(p)?p:null : p ) ;
 		void NewAction( object subject , System.IO.FileSystemEventArgs arg ) => NewAction(arg.FullPath,Setup?.WorkoutsFilter) ;
 		void NewAspect( string file , Predicate<Aspect> filter = null ) => ((Aspect)file.ReadAllText()).Set(a=>a.Origin=file).Set(a=> Aspects += filter is Predicate<Aspect> f ? f(a)?a:null : a ) ;
 		public Book Book { get ; private set ; } = new Book("Main") ;
@@ -305,7 +305,7 @@ namespace Rob.Act.Analyze
 		void Coordinates_Down_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => CoordinatesMove(+.01) ;
 		void Coordinates_PageUp_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => CoordinatesMove(-.1) ;
 		void Coordinates_PageDown_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => CoordinatesMove(+.1) ;
-		void Coordinates_Home_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => CoordinatesSet(0) ;
+		void Coordinates_Home_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => CoordinatesSet(.001) ;
 		void Coordinates_End_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => CoordinatesSet(null) ;
 		void Coordinates_CountLeft_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => CoordinatesCountMove(-1) ;
 		void Coordinates_CountRight_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => CoordinatesCountMove(+1) ;
@@ -319,12 +319,13 @@ namespace Rob.Act.Analyze
 		void Coordinates_AtRight_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => CoordinatesSizeMove(+1) ;
 		void Coordinates_AtUp_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => CoordinatesSizeSet(1) ;
 		void Coordinates_AtDown_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => CoordinatesSizeSet(null) ;
-		async void CoordinatesMove( double step ) { var sel = CoordinatesGrid.SelectedItems.Cast<Coordinate>().ToArray() ; sel.Each(c=>c.Info=c.Info.use(i=>((i.Byte+step*(c.Range.Max-c.Range.Min))??c.Range.Max-c.Range.Min,i.Count,i.Reverse))) ; await Task.Delay(10) ; sel.Each(s=>CoordinatesGrid.SelectedItems.Add(s)) ; CoordinatesGrid.Focus() ; }
-		async void CoordinatesSet( double? state ) { var sel = CoordinatesGrid.SelectedItems.Cast<Coordinate>().ToArray() ; sel.Each(c=>c.Info=c.Info.use(i=>(state,i.Count,i.Reverse))) ; await Task.Delay(10) ; sel.Each(s=>CoordinatesGrid.SelectedItems.Add(s)) ; CoordinatesGrid.Focus() ; }
-		async void CoordinatesCountMove( int step ) { var sel = CoordinatesGrid.SelectedItems.Cast<Coordinate>().ToArray() ; sel.Each(c=>c.Info=c.Info.use(i=>(i.Byte,i.Count.use(v=>(uint)((int)v+step)),i.Reverse))) ; await Task.Delay(10) ; sel.Each(s=>CoordinatesGrid.SelectedItems.Add(s)) ; CoordinatesGrid.Focus() ; }
-		async void CoordinatesCountSet( uint? state ) { var sel = CoordinatesGrid.SelectedItems.Cast<Coordinate>().ToArray() ; sel.Each(c=>c.Info=c.Info.use(i=>(i.Byte,state,i.Reverse))) ; await Task.Delay(10) ; sel.Each(s=>CoordinatesGrid.SelectedItems.Add(s)) ; CoordinatesGrid.Focus() ; }
-		async void CoordinatesSizeMove( int step ) { var sel = CoordinatesGrid.SelectedItems.Cast<Coordinate>().ToArray() ; sel.Each(c=>c.Size=c.Size.use(a=>(uint)((int)a+step))) ; await Task.Delay(10) ; sel.Each(s=>CoordinatesGrid.SelectedItems.Add(s)) ; CoordinatesGrid.Focus() ; }
-		async void CoordinatesSizeSet( uint? state ) { var sel = CoordinatesGrid.SelectedItems.Cast<Coordinate>().ToArray() ; sel.Each(c=>c.Size=state) ; await Task.Delay(10) ; sel.Each(s=>CoordinatesGrid.SelectedItems.Add(s)) ; CoordinatesGrid.Focus() ; }
+		void CoordinatesMove( double step ) { var sel = CoordinatesGrid.SelectedItems.Cast<Coordinate>().ToArray() ; sel.Each(c=>c.Info=c.Info.use(i=>(Math.Max(.001*(c.Range.Max-c.Range.Min),(i.Byte+step*(c.Range.Max-c.Range.Min))??c.Range.Max-c.Range.Min),i.Count,i.Reverse))) ; CoordinateFocusHold(sel) ; }
+		void CoordinatesSet( double? state ) { var sel = CoordinatesGrid.SelectedItems.Cast<Coordinate>().ToArray() ; sel.Each(c=>c.Info=(c.Info??(null,null,false)).get(i=>(state*(c.Range.Max-c.Range.Min),i.Count is uint m?state is double s?s==0?i.Count:Math.Min((uint)((c.Range.Max-c.Range.Min)/s),m):1U:null as uint?,i.Reverse))) ; CoordinateFocusHold(sel) ; }
+		void CoordinatesCountMove( int step ) { var sel = CoordinatesGrid.SelectedItems.Cast<Coordinate>().ToArray() ; sel.Each(c=>c.Info=c.Info.use(i=>(i.Byte,i.Count.use(v=>(uint)Math.Min(i.Byte is double b?(c.Range.Max-c.Range.Min)/b:1,Math.Max(0,(int)v+step))),i.Reverse))) ; CoordinateFocusHold(sel) ; }
+		void CoordinatesCountSet( uint? state ) { var sel = CoordinatesGrid.SelectedItems.Cast<Coordinate>().ToArray() ; sel.Each(c=>c.Info=(c.Info??(null,null,false)).get(i=>(i.Byte,state,i.Reverse))) ; CoordinateFocusHold(sel) ; }
+		void CoordinatesSizeMove( int step ) { var sel = CoordinatesGrid.SelectedItems.Cast<Coordinate>().ToArray() ; sel.Each(c=>c.Size=c.Size.use(a=>(uint)Math.Max(0,(int)a+step))) ; CoordinateFocusHold(sel) ; }
+		void CoordinatesSizeSet( uint? state ) { var sel = CoordinatesGrid.SelectedItems.Cast<Coordinate>().ToArray() ; sel.Each(c=>c.Size=state) ; CoordinateFocusHold(sel) ; }
+		async void CoordinateFocusHold( IEnumerable<Coordinate> sel ) { await Task.Delay(10) ; sel.Each(s=>CoordinatesGrid.SelectedItems.Add(s)) ; CoordinatesGrid.Focus() ; }
 		#endregion
 	}
 	public class QuantileSubversion : IMultiValueConverter

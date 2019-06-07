@@ -53,6 +53,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Schema\Partitioner.cs" />
     <Compile Include="Schema\Skierg,csv.cs" />
     <Compile Include="Schema\Gpx.cs">
       <SubType>code</SubType>
@@ -74,7 +75,6 @@
     <Compile Include="Translation.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="app.config" />
     <None Include="packages.config" />
     <None Include="Schema\Gpx.xsd">
       <SubType>Designer</SubType>

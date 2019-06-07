@@ -23,11 +23,11 @@ namespace Rob.Act
 		public static IDictionary<string,Quant> DeviaTolerancy = new Dictionary<string,Quant>{ ["Polling"]=.25 , ["ROLLER_SKIING"]=3 } ;
 
 		#region Construct
-		public Path( DateTime date , IEnumerable<Point> points = null ) : base(date)
+		public Path( DateTime date , IEnumerable<Point> points = null ) : base(date) { points.Set(p=>Content.AddRange(p.OrderBy(t=>t.Date))) ; Impose() ; }
+		public void Impose()
 		{
-			points.Set(p=>Content.AddRange(p.OrderBy(t=>t.Date))) ; date = DateTime.Now ;
 			Alt = this.Average(p=>p.Alt) ; this[Axis.Lon] = this.Average(p=>p[Axis.Lon]) ; this[Axis.Lat] = this.Average(p=>p[Axis.Lat]) ;
-			for( var i=0 ; i<Count ; ++i )
+			var date = DateTime.Now ; for( var i=0 ; i<Count ; ++i )
 			{
 				if( i<=0 || this[i-1].Mark.HasFlag(Mark.Stop) )
 				{
@@ -47,6 +47,8 @@ namespace Rob.Act
 			}
 			this.At(Count-1).Set(p=>{Bit=p.Bit;Time=p.Time;Dist=p.Dist;Asc=p.Asc;Dev=p.Dev;}) ;
 		}
+		public void Depose() { for( var i=0 ; i<Count ; ++i ) { this[i].Time = TimeSpan.Zero ; this[i].Bit = this[i].Dist = null ; this[i].Asc = this[i].Dev = null ; } }
+		public void Reset() { Depose() ; Impose() ; }
 		public Path( DateTime time , bool close , IEnumerable<Point> points = null ) : this(time,points) { if( close ) { if( Beat==null ) { this[0].Beat = 0 ; for( var i=1 ; i<Count ; ++i ) this[i].Beat = this[i-1].Beat+this[i].Beat/60*(this[i].Time-this[i-1].Time).TotalSeconds ; Beat = this[Count-1].Beat ; } } }
 		public void Adopt( Path path ) { base.Adopt(path) ; Tag = path.Tag ; for( var i=0 ; i<Content.Count ; ++i ) Content[i].Adopt(path.Content[i]) ; propertyChanged.On(this,"Spec,Spectrum") ; CollectionChanged?.Invoke(this,new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset)) ; }
 		#endregion
