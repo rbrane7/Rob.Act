@@ -13,7 +13,7 @@ namespace Rob.Act
 {
 	using Quant = Double ;
 	public interface Aspectable : Aid.Gettable<int,Axe> , Aid.Gettable<Axe> , Aid.Countable<Axe> , Resourcable { string Spec { get; } }
-	public interface Resourcable { Aspectable Source { set; } Aspectable[] Sources { set; } Aspect.Iterable Points { get; } }
+	public interface Resourcable { Aspectable Source { set; } Aspectable[] Sources { set; } Aspect.Point.Iterable Points { get; } }
 	public struct Aspectables : Aid.Gettable<int,Aspectable> , Aid.Gettable<Aspectable> , Aid.Countable<Aspectable> , Resourcable
 	{
 		Aspectable[] Content ;
@@ -23,15 +23,15 @@ namespace Rob.Act
 		public int Count => Content?.Length ?? 0 ;
 		public Aspectable Source { set => this.Each(a=>a.Source=value) ; }
 		public Aspectable[] Sources { set => this.Each(a=>a.Sources=value) ; }
-		public Aspect.Iterable Points => new Iterator{ Context = this } ;
+		public Aspect.Point.Iterable Points => new Iterator{ Context = this } ;
 		public IEnumerator<Aspectable> GetEnumerator() => Content.Cast<Aspectable>().GetEnumerator() ; IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
-		public struct Iterator : Aspect.Iterable
+		public struct Iterator : Aspect.Point.Iterable
 		{
 			public IEnumerable<Aspectable> Context { get; set; }
 			public int Count => Context?.Count()>0 ? Context.Max(s=>s?.Count>0?s.Max(a=>a?.Count>0?a.Count:0):0) : 0 ;
-			Aspectable Aspect.Iterable.Context => throw new NotSupportedException("Single context not supported on multi-context version !") ;
+			Aspectable Aspect.Point.Iterable.Context => throw new NotSupportedException("Single context not supported on multi-context version !") ;
 			public IEnumerator<Aspect.Point> GetEnumerator() => throw new NotSupportedException("Points iterator not supported on multi-context version !") ; IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
-
+			public Aspect.Point this[ int at ] => throw new NotSupportedException("Points not supported on multi-context version !") ;
 		}
 		#region ICollection
 		public object SyncRoot => throw new NotImplementedException() ;
@@ -52,21 +52,24 @@ namespace Rob.Act
 		public Traits Trait { get; }
 		public virtual Aspectable Source { get => source ; set { source = value ; this.Each(a=>a.Source=value) ; Spec += $" {value?.Spec}" ; } } Aspectable source ;
 		public virtual Aspectable[] Sources { get => sources ; set { sources = value ; this.Each(a=>a.Sources=value) ; } } Aspectable[] sources ;
-		public virtual Iterable Points => new Point.Iterator{ Context = this } ;
-		public interface Iterable : IEnumerable<Point> { int Count { get; } Aspectable Context { get; } }
+		public virtual Point.Iterable Points => new Point.Iterator{ Context = this } ;
 		public int Index( string axe ) => IndexOf(this[axe]) ;
 		public struct Point : Aid.Gettable<int,Quant?> , Aid.Gettable<Quant?> , IEnumerable<Quant?>
 		{
+			public interface Iterable : IEnumerable<Point> { int Count { get; } Aspectable Context { get; } Point this[ int at ] { get; } }
 			Aspect Context ; Quant?[] Content ;
-			public Point( Aspect context , params Quant?[] content ) { Context = context ; Content = content ; }
+			public Point( Aspect context , params Quant?[] content ) { Context = context ; Content = content ; Mark = Mark.No ; }
+			public Point( Aspect context , int at ) { Context = context ; Content = context.Select(a=>a[at]).ToArray() ; Mark = Mark.No ; }
 			public Quant? this[ int key ] => Content[key] ;
 			public Quant? this[ string key ] => Content[Context.Index(key)] ;
 			public IEnumerator<double?> GetEnumerator() => Content.Cast<Quant?>().GetEnumerator() ; IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
+			public Mark Mark ;
 			public struct Iterator : Iterable
 			{
 				public Aspectable Context { get; set; }
 				public int Count => Context?.Count>0 ? Context.Max(a=>a.Count) : 0 ;
-				public IEnumerator<Point> GetEnumerator() { for( int i=0 , count=Count ; i<count ; ++i ) { Point val = new Point{Context=Context as Aspect} ; try { val.Content = Context.Select(a=>a[i]).ToArray() ; } catch( System.Exception ex ) { System.Diagnostics.Trace.TraceWarning(ex.Stringy()) ; yield break ; } yield return val ; } } IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
+				public IEnumerator<Point> GetEnumerator() { for( int i=0 , count=Count ; i<count ; ++i ) yield return this[i] ; } IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
+				public Point this[ int at ] => new Point(Context as Aspect,at) ;
 			}
 		}
 		public event NotifyCollectionChangedEventHandler CollectionChanged { add => collectionChanged += value.DispatchResolve() ; remove => collectionChanged -= value.DispatchResolve() ; } NotifyCollectionChangedEventHandler collectionChanged ;
@@ -157,12 +160,13 @@ namespace Rob.Act
 			public Axable this[ Axis ax ] => this.OfType<Axe>().FirstOrDefault(a=>a.Axis==ax) ?? new Axe(Context){Axis=ax}.Set(Add) ;
 			public override void Add( Act.Axe ax ) => base.Add(ax.Set(a=>{if(!(a is Axe))a.Aspect=this;})) ;
 			public override void Remove( Act.Axe ax ) => base.Remove(ax.Set(a=>{if(!(a is Axe))a.Aspect=null;})) ;
-			public override Iterable Points => new Iterator{ Context = this } ;
-			public class Iterator : Iterable
+			public override Point.Iterable Points => new Iterator{ Context = this } ;
+			public class Iterator : Point.Iterable
 			{
 				public Aspectable Context { get; set; }
 				public int Count => (Context as Aspect)?.Context.Count??0 ; //Math.Max((Context as Aspect)?.Context.Count??0,Context.Where(a=>!(a is Axe)&&a.Counts).Null(e=>e.Count()<=0)?.Max(a=>a.Count)??0) ;
-				public IEnumerator<Point> GetEnumerator() { for( int i=0 , count=Count ; i<count ; ++i ) yield return new Point(Context as Aspect,Context.Select(a=>a[i]).ToArray()) ; } IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
+				public IEnumerator<Point> GetEnumerator() { for( int i=0 , count=Count ; i<count ; ++i ) yield return this[i] ; } IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
+				public Point this[ int at ] => new Point(Context as Aspect,at){Mark=(Context as Aspect)?.Context[at]?.Mark??Mark.No} ;
 			}
 			#region De/Serialization
 			public static explicit operator string( Aspect aspect ) => aspect.Get(a=>string.Join(Serialization.Separator,a.Where(x=>!(x is Axe)).Select(x=>(string)x))+(a.Count(x=>!(x is Axe))>0?Serialization.Separator:null)+(string)a.Trait) ;

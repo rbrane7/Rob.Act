@@ -13,16 +13,16 @@ namespace Rob.Act
 		public Partitioner( string data )
 		{
 			Object = (data=data.RightFromFirst(Sign)).LeftFromLast('.') ; Name = (data=data.RightFrom('.')).LeftFrom(Environment.NewLine) ;
-			for( var seq = data.RightFromFirst(Environment.NewLine) ; !seq.No() ; seq = seq.RightFromFirst('-').RightFromFirst(' ',true) )
-				Sequence.Add((seq.LeftFrom('-').RightFromFirst(' ',true).Parse<uint>(),seq.RightFromFirst('-').LeftFrom('-',true).LeftFrom(' ',true).Parse<uint>())) ; 
+			for( var seq = data.RightFromFirst(Environment.NewLine) ; seq?.Contains('-')==true ; seq = seq.RightFromFirst('-') )
+				Sequence.Add((seq.LeftFrom('-').RightFrom(' ',true).Parse<uint>(),seq.RightFromFirst('-').LeftFrom('-',true).LeftFrom(' ',true).Parse<uint>())) ; 
 		}
 		public static implicit operator Path( Partitioner p )
 		{
 			Path path = null ;
 			if( p.Sequence.Count>0 && p.Object.get(System.IO.File.Exists)==true )
 			{
-				path = p.Object.Reconcile().Internalize() ; var o = 0 ;
-				foreach( var (min,max) in p.Sequence ) { if( min is uint m ) path[(int)m-o].Mark |= Mark.Stop ; int a = (int?)min+1-o??o , c = (int?)max-o??path.Count ; for( o=c-a ; c>a ; --c ) path.RemoveAt(a) ; }
+				path = p.Object.Reconcile().Internalize() ; var o = 0U ;
+				foreach( var (min,max) in p.Sequence ) { if( min is uint m ) path[(int)(m-o)].Mark |= Mark.Stop ; var a = (int?)min+1-(int)o??0 ; var c = (max??(uint)path.Count)-(min??0U) ; for( o+=c ; c>0 ; --c ) path.RemoveAt(a) ; }
 			}
 			return path.Set(s=>s.Reset()).Set(s=>s.Tags.Add(p.Name)) ;
 		}
