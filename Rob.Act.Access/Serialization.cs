@@ -9,7 +9,7 @@ namespace Rob.Act
 {
 	public static class Serialization
 	{
-		public class Book : Act.Book
+		public class Book : Gen.Book
 		{
 			public static Book operator+( Book book , string path ) => book.Set(b=>b.Add(path.Reconcile().Internalize())) ;
 		}

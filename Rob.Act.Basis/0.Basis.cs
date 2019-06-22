@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Dynamic;
 using Aid.Extension;
 
 namespace Rob.Act
@@ -59,11 +60,21 @@ namespace Rob.Act
 		public static Quant? operator|( Geos? a , Geos? b ) => a is Geos x && b is Geos y ? x|y : null as Quant? ;
 		public static implicit operator Geos?( Point point ) => point?.IsGeo==true ? new Geos{Lon=point[Axis.Lon].Value,Lat=point[Axis.Lat].Value} : null as Geos? ;
 	}
+	public interface Quantable : Aid.Gettable<uint,Quant?> , Aid.Gettable<Quant?> {}
+	public interface Pointable : Quantable , Aid.Accessible<uint,Quant?> , Aid.Accessible<Quant?>
+	{
+		DateTime Date { get ; } TimeSpan Time { get ; }
+		uint Dimension { get ; }
+		string Action { get ; }
+		Mark Mark { get ; }
+		void Adopt( Pointable path ) ;
+	}
+	public interface Pathable : Pointable /*, Aid.Countable<Pointable> , Aid.Gettable<DateTime,Pointable>*/ { string Origin { get ; } Path.Aspect Spectrum { get ; } }
 	static class Basis
 	{
 		#region Axis specifics
 		static List<string> axis = Enum.GetNames(typeof(Axis)).ToList() ; static List<int> vaxi = Enum.GetValues(typeof(Axis)).Cast<int>().ToList() ;
-		internal static Axis Axis( this string name ) => (Axis)( vaxi.At(axis.IndexOf(name)).nil(i=>i<0) ?? axis.Set(a=>{a.Add(name);vaxi.Add(vaxi.Count);}).Count-1 ) ;
+		internal static uint Axis( this string name ) => (uint)( vaxi.At(axis.IndexOf(name)).nil(i=>i<0) ?? axis.Set(a=>{a.Add(name);vaxi.Add(vaxi.Count);}).Count-1 ) ;
 		internal static Quant ActLim( this Axis axis , string activity ) => 50 ;
 		#endregion
 
@@ -95,9 +106,72 @@ namespace Rob.Act
 #else	// grade average by distance
 		internal static Quant? Grade( this Path path , int at , Point offset ) { Quant vol = 0 ; Quant? val = 0 ; for( var i=Math.Max(at-GradeAccu,0) ; i<Math.Min(path.Count,at+GradeAccu+1) ; ++i ) if( path[i].Grade(offset).Set(v=>val+=v*path[i].Sphere(offset))!=null ) vol+=path[i].Sphere(offset).Value ; return vol>0 ? val/vol : null ; }
 #endif
-		internal static Quant? Devia( this Geos? x , Geos? y ) => (~(x+y)|x-y)/+(x+y) * Degmet ;
+		internal static Quant? Devia( this Geos? x , Geos? y ) => (~(x+y)|x-y).Quotient(+(x+y)) * Degmet ;
 		internal static Quant? Veloa( this Path path , int at ) { Quant vol = 0 ; Quant? val = 0 ; for( var i=Math.Max(at-VeloAccu,0) ; i<Math.Min(path.Count,at+VeloAccu+1) ; ++i ) if( path[i].Speed.Set(v=>val+=v*path[i].Time.TotalSeconds)!=null ) vol+=path[i].Time.TotalSeconds ; return (vol>0?val/vol:null) ; }
 		internal static Quant? Vibre( this Path path , int at ) => path[at].Speed / path.Veloa(at) ;
 		#endregion
+	}
+	namespace Pre
+	{
+		public abstract class Point : DynamicObject , Pointable
+		{
+			#region Construction
+			Point() => Quantity = new Quant?[Dimension] ;
+			public Point( DateTime date ) : this() => Date = date ;
+			public Point( Point point ) : this() { Date = point.Date ; Quantity = point.Quantity.ToArray() ; Mark = point.Mark ; Spec = point.Spec ; Action = point.Action ; }
+			#endregion
+
+			#region Setup
+			protected virtual void From( Pointable point ) { Time = point.Time ; for( uint i=0 ; i<point.Dimension ; ++i ) this[i] = point[i] ; }
+			public virtual void Adopt( Pointable point ) { From(point) ; Date = point.Date ; Action = point.Action ; Mark = point.Mark ; }
+			#endregion
+
+			#region State
+			/// <summary>
+			/// Quanitity data vector .
+			/// </summary>
+			Quant?[] Quantity ;
+			/// <summary>
+			/// Referential date of object .
+			/// </summary>
+			public DateTime Date { get => date ; set { if( date==value ) return ; date = value ; sign = null ; } } DateTime date ;
+			/// <summary>
+			/// Relative time of object .
+			/// </summary>
+			public TimeSpan Time { get => time ; set { if( time==value ) return ; time = value ; sign = null ; } } TimeSpan time ;
+			/// <summary>
+			/// Signature of the point .
+			/// </summary>
+			public string Sign => sign ?? ( sign = $"{Date}{Time.nil(t=>t==TimeSpan.Zero).Get(t=>$"+{t:hh\\:mm\\:ss}")}" ) ; string sign ;
+			/// <summary>
+			/// Assotiative text .
+			/// </summary>
+			public virtual string Spec { get => spec ?? ( spec = $"{Action} {Sign}" ) ; set { if( value!=spec ) spec = value ; } } string spec ;
+			/// <summary>
+			/// Action specification .
+			/// </summary>
+			public string Action { get => action ; set { if( action==value ) return ; var a = action ; action = value ; if( spec==$"{a} {Sign}" ) Spec = null ; } } string action ;
+			/// <summary>
+			/// Kind of demarkaition .
+			/// </summary>
+			public Mark Mark { get; set; } public Mark? Marklet => Mark.nil() ;
+			#endregion
+
+			#region Trait
+			public abstract uint Dimension { get ; }
+			public Quant? this[ uint axis ] { get => Quantity.At((int)axis) ; set { if( axis>=Quantity.Length && value!=null ) Quantity.Set(q=>q.CopyTo(Quantity=new Quant?[axis+1],0)) ; if( axis<Quantity.Length ) Quantity[axis] = value ; } }
+			public Quant? this[ string axis ] { get => this[axis.Axis()] ; set => this[axis.Axis()] = value ; }
+			public override bool TrySetMember( SetMemberBinder binder , object value ) { this[binder.Name] = (Quant?)value ; return base.TrySetMember( binder, value ) ; }
+			public override bool TryGetMember( GetMemberBinder binder , out object result ) { result = this[binder.Name] ; return true ; }
+			public static implicit operator Quant?[]( Point point ) => point?.Quantity ;
+			#endregion
+
+			#region Info
+			public override string ToString() => $"{Action} {Sign} {Exposion} {Trace}" ;
+			public virtual string Quantities => $"{((int)Dimension).Steps().Select(i=>Quantity[i].Get(q=>$"{(Axis)i}={q}")).Stringy(' ')}" ;
+			public virtual string Exposion => null ;
+			public virtual string Trace => null ;
+			#endregion
+		}
 	}
 }

@@ -12,8 +12,8 @@ namespace Rob.Act
 	{
 		public static Path Internalize( this string data )
 		{
-			if( data.Contains(Gpx.Extension.Sign) ) return data.Deserialize<Gpx.gpxType>() ;
-			if( data.Contains(Tcx.Extension.Sign) ) return data.Deserialize<Tcx.TrainingCenterDatabase_t>() ;
+			if( data.Consists(Gpx.Extension.Sign) ) return data.Deserialize<Gpx.gpxType>() ;
+			if( data.Consists(Tcx.Extension.Sign) ) return data.Deserialize<Tcx.TrainingCenterDatabase_t>() ;
 			if( data.StartsBy(Csv.Skierg.Sign) ) return new Csv.Skierg(data) ;
 			if( data.StartsBy(Partitioner.Sign) ) return new Partitioner(data) ;
 			return null ;
@@ -22,9 +22,10 @@ namespace Rob.Act
 		public static string Reconcile( this string file )
 		{
 			string cofile = null ; if( file.EndsWith(".tcx") && file.Contains("concept2-logbook-workout-") ) { cofile = file ; file = file.Replace("logbook-workout","result").Replace(".tcx",".csv") ; }
-			var data = file.ReadAllText() ; if( (cofile??(cofile=file.Replace("result","logbook-workout").Replace(".csv",".tcx")))!=file && System.IO.File.Exists(cofile) )
+			var data = file.ReadAllText(false) ; if( data==null ) return null ;
+			if( (cofile??(cofile=file.Replace("result","logbook-workout").Replace(".csv",".tcx")))!=file && System.IO.File.Exists(cofile) )
 			{
-				var text = cofile.ReadAllText().Get(t=>t.LeftFrom("<Track")??t.LeftFrom("</Lap>")) ; var date = text.RightFromFirst("<Lap StartTime=\"").LeftFrom("\"") ; var spec = text.RightFromFirst("<Id>").LeftFrom("</Id>") ;
+				var text = cofile.ReadAllText(false).Get(t=>t.LeftFrom("<Track")??t.LeftFrom("</Lap>")) ; var date = text.RightFromFirst("<Lap StartTime=\"").LeftFrom("\"") ; var spec = text.RightFromFirst("<Id>").LeftFrom("</Id>") ;
 				var time = text.RightFromFirst("<TotalTimeSeconds>").LeftFrom("</TotalTimeSeconds>") ; var dist = text.RightFrom("<DistanceMeters>").LeftFrom("</DistanceMeters>") ;
 				var drag = text.RightFrom("<DragFactor>").LeftFrom("</DragFactor>")??text.RightFrom("<Drag>").LeftFrom("</Drag>")??"100" ;
 				var action = text.RightFrom("<Action>").LeftFrom("</Action>") ; var subject = text.RightFrom("<Subject>").LeftFrom("</Subject>") ; var locus = text.RightFrom("<Locus>").LeftFrom("</Locus>") ;

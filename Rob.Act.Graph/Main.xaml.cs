@@ -23,6 +23,7 @@ using Aid.IO;
 
 namespace Rob.Act.Analyze
 {
+	using Book = Gen.Book ;
 	/// <summary>
 	/// Interaction logic for MainWindow.xaml
 	/// </summary>
@@ -35,24 +36,24 @@ namespace Rob.Act.Analyze
 		FileSystemWatcher[] WorkoutsWatchers ;
 		public event PropertyChangedEventHandler PropertyChanged ;
 		void PropertyChangedOn<Value>( string properties , Value value ) { PropertyChanged.On(this,properties,value) ; if( properties.Consists("Sources") ) if( GraphTab.IsSelected ) Graph_Draw(this) ; else if( MapTab.IsSelected ) Map_Draw(this) ; }
-		public Main() { InitializeComponent() ; ViewPanel = GraphPanel ; DataContext = this ; Doct += (this,"Main") ; Axe.Aspecter = ()=>Book.Select(p=>p.Spectrum).Union(Aspects) ; SourcesGrid.ItemContainerGenerator.ItemsChanged += SourcesGrid_ItemsChanged ; Load() ; }
+		public Main() { InitializeComponent() ; new Aid.Prog.Setup().Go() ; ViewPanel = GraphPanel ; DataContext = this ; Doct += (this,"Main") ; Axe.Aspecter = ()=>Book.Select(p=>p.Spectrum).Union(Aspects) ; SourcesGrid.ItemContainerGenerator.ItemsChanged += SourcesGrid_ItemsChanged ; Load() ; }
 		void Load()
 		{
 			Setup.WorkoutsPaths.SeparateTrim(',').SelectMany(l=>l.MatchingFiles()).EachGuard(f=>NewAction(f,Setup?.WorkoutsFilter),(f,e)=>Trace.TraceError($"{f} faulted by {e}")) ;
 			Setup.AspectsPaths.SeparateTrim(',').SelectMany(l=>l.MatchingFiles()).EachGuard(f=>NewAspect(f,Setup?.AspectsFilter),(f,e)=>Trace.TraceError($"{f} faulted by {e}")) ;
-			WorkoutsWatchers = Setup.WorkoutsPaths.SeparateTrim(',').Select(l=>new FileSystemWatcher(l){EnableRaisingEvents=true}.Set(w=>{ w.Created += NewAction ; w.Changed += NewAction ; w.Deleted += (s,a)=>Book-=p=>p.Origin==a.FullPath ; })).ToArray() ;
+			WorkoutsWatchers = Setup.WorkoutsPaths.SeparateTrim(',').Select(l=>new FileSystemWatcher(l){EnableRaisingEvents=true}.Set(w=>{ w.Edited += NewAction ; w.Deleted += (s,a)=>Book-=p=>p.Origin==a.FullPath ; })).ToArray() ;
 			State = new State{ Context = this } ;
 		}
 		protected override void OnClosing( CancelEventArgs e ) { Doct?.Dispose() ; base.OnClosing(e) ; }
 		protected override void OnClosed( EventArgs e ) { base.OnClosed(e) ; Process.GetCurrentProcess().Kill() ; }
-		void NewAction( string file , Predicate<Path> filter = null ) => file.Reconcile().Internalize().Set(p=>p.Origin=file).Set(Translation.Partitionate).Set(p=> Book |= filter is Predicate<Path> f ? f(p)?p:null : p ) ;
+		void NewAction( string file , Predicate<Path> filter = null ) => file.Reconcile().Internalize().Set(p=>p.Origin=file).Set(Translation.Partitionate).Set(p=>Book|=(filter as Predicate<Path>)?.Invoke(p)!=false?p:null) ;
 		void NewAction( object subject , System.IO.FileSystemEventArgs arg ) => NewAction(arg.FullPath,Setup?.WorkoutsFilter) ;
-		void NewAspect( string file , Predicate<Aspect> filter = null ) => ((Aspect)file.ReadAllText()).Set(a=>a.Origin=file).Set(a=> Aspects += filter is Predicate<Aspect> f ? f(a)?a:null : a ) ;
+		void NewAspect( string file , Predicate<Aspect> filter = null ) => ((Aspect)file.ReadAllText()).Set(a=>a.Origin=file).Set(a=>Aspects+=(filter as Predicate<Aspect>)?.Invoke(a)!=false?a:null) ;
 		public Book Book { get ; private set ; } = new Book("Main") ;
 		public Filter ActionFilter { get => actionFilter ; internal set { if( value==actionFilter ) return ; actionFilter = value ; PropertyChanged.On(this,"ActionFilter") ; } } Filter actionFilter ;
 		public Filter SourceFilter { get => sourceFilter ; internal set { if( value==sourceFilter ) return ; sourceFilter = value ; PropertyChanged.On(this,"SourceFilter") ; } } Filter sourceFilter ;
 		public Filter AspectFilter { get => aspectFilter ; internal set { if( value==aspectFilter ) return ; aspectFilter = value ; PropertyChanged.On(this,"AspectFilter") ; } } Filter aspectFilter ;
-		void ActionFilterGrid_SelectionChanged( object sender , SelectionChangedEventArgs e ) => FilterGrid_SelectionChanged<Path>(sender,f=>Book.Filter=f) ;
+		void ActionFilterGrid_SelectionChanged( object sender , SelectionChangedEventArgs e ) => FilterGrid_SelectionChanged<Pathable>(sender,f=>Book.Filter=f) ;
 		void SourceFilterGrid_SelectionChanged( object sender , SelectionChangedEventArgs e ) => FilterGrid_SelectionChanged<Aspect>(sender,f=>{SourcesFilter=a=>f(a);Sources=sources;}) ;
 		void AspectFilterGrid_SelectionChanged( object sender , SelectionChangedEventArgs e ) => FilterGrid_SelectionChanged<Aspect>(sender,f=>Aspects.Filter=f) ;
 		void FilterGrid_SelectionChanged<Objective>( object sender , Action<Predicate<Objective>> doing ) => (sender as DataGrid)?.SelectedItems.OfType<Filter.Entry>().Select(f=>f.Rex?new System.Text.RegularExpressions.Regex(f.Filter).Get(r=>new Predicate<Objective>(o=>r.Match(o?.ToString()).Success)):f.Filter.Compile<Predicate<Objective>>()).Where(f=>f!=null).ToArray().Get(f=>new Predicate<Objective>(o=>f.Length<=0||f.Any(i=>i(o)))).Set(doing) ;
@@ -60,7 +61,7 @@ namespace Rob.Act.Analyze
 		public Aid.Collections.ObservableList<Axe> Axes { get ; private set ; } = new Aid.Collections.ObservableList<Axe>() ;
 		public Aspect Aspect { get => Respect ; protected set { if( value==Aspect ) return ; Aspect.Set(a=>{a.CollectionChanged-=OnAspectChanged;a.PropertyChanged-=OnAspectChanged;}) ; (Respect=value).Set(a=>{a.CollectionChanged+=OnAspectChanged;a.PropertyChanged+=OnAspectChanged;}) ; Sources = null ; } } Aspect Respect ;
 		public IEnumerable<Aspect> Sources { get => SourcesFilter is Func<Aspect,bool> f ? Resources.Where(f) : Resources ; set => PropertyChangedOn("Aspect,Sources",sources=value) ; } IEnumerable<Aspect> sources ; Func<Aspect,bool> SourcesFilter ;
-		new IEnumerable<Aspect> Resources => sources ?? ( sources = Aspect==null ? Enumerable.Empty<Aspect>() : Aspect is Path.Aspect ? BookGrid.SelectedItems.OfType<Path>().Select(s=>s.Spectrum) : BookGrid.SelectedItems.OfType<Path>().Get(p=>AspectMultiToggle.IsChecked==true?p.Select(s=>s.Spectrum).ToArray().Get(s=>Math.Min(AspectMultiCount.Text.Parse(0),s.Length).Get(c=>c>0?c.Steps().Select(i=>new Aspect(Aspect,true){Sources=s.Skip(i).Concat(s.Take(i)).ToArray()}):new Aspect(Aspect,true){Sources=s}.Times())):p.Select(s=>new Aspect(Aspect,false){Source=s.Spectrum})) ) ;
+		new IEnumerable<Aspect> Resources => sources ?? ( sources = ( Aspect==null ? Enumerable.Empty<Aspect>() : Aspect is Path.Aspect ? BookGrid.SelectedItems.OfType<Path>().Select(s=>s.Spectrum) : BookGrid.SelectedItems.OfType<Path>().Get(p=>AspectMultiToggle.IsChecked==true?p.Select(s=>s.Spectrum).ToArray().Get(s=>Math.Min(AspectMultiCount.Text.Parse(0),s.Length).Get(c=>c>0?c.Steps().Select(i=>new Aspect(Aspect,true){Sources=s.Skip(i).Concat(s.Take(i)).ToArray()}):new Aspect(Aspect,true){Sources=s}.Times())):p.Select(s=>new Aspect(Aspect,false){Source=s.Spectrum})) ).ToArray() ) ;
 		void SourcesGrid_SelectionChanged( object sender, SelectionChangedEventArgs e ) => Sources = sources ;
 		void CoordinatesGrid_SelectionChanged( object sender, SelectionChangedEventArgs e ) { if( MapTab.IsSelected ) Map_Draw(this) ; }
 		void OnAspectChanged( object subject , NotifyCollectionChangedEventArgs arg=null ) { var sub = Aspect is Path.Aspect ? SpectrumTabs : AspectTabs ; Revoke : var six = sub.SelectedIndex ; if( sub==AspectTabs || sub==QuantileTabs ) Sources = null ; sub.SelectedIndex = -1 ; sub.SelectedIndex = six ; if( sub==AspectTabs ) { sub = QuantileTabs ; goto Revoke ; } }
@@ -126,7 +127,7 @@ namespace Rob.Act.Analyze
 				var xax = asp[xaxe.Spec] ; var color = new SolidColorBrush(Colos[BookGrid.SelectedItems.IndexOf((asp as Path.Aspect??asp.Source as Path.Aspect)?.Context)%Colos.Length]) ;
 				foreach( var ax in asp ) if( yaxes.Contains(ax.Spec) ) try { GraphPanel.Children.Add( new Polyline{
 					Stroke = color , StrokeDashArray = Array.IndexOf(yaxes,ax.Spec).Get(j=>j<1?null:new DoubleCollection{j}) ,
-					Points = new PointCollection(ax.Count.Steps().Where(i=>xax[i]!=null&&ax[i]!=null).Select(i=>ScreenPoint((xax[i].Value-rng[xax.Spec].Min)/(rng[xax.Spec].Max-rng[xax.Spec].Min).nil()*width??0,height-(ax[i].Value-rng[ax.Spec].Min)/(rng[ax.Spec].Max-rng[ax.Spec].Min).nil()*height??0)))
+					Points = new PointCollection(ax.Count.Steps().Where(i=>xax[i]!=null&&ax[i]!=null).Select(i=>ScreenPoint(((xax[i].Value-rng[xax.Spec].Min)/(rng[xax.Spec].Max-rng[xax.Spec].Min).nil()*width??0)+asp.Offset,height-(ax[i].Value-rng[ax.Spec].Min)/(rng[ax.Spec].Max-rng[ax.Spec].Min).nil()*height??0)))
 				} ) ; } catch( System.Exception ex ) { Trace.TraceWarning(ex.Stringy()) ; }
 			}
 			Hypercube = rng.Where(a=>xaxe.Spec==a.Key||yaxes.Contains(a.Key)).OrderBy(e=>e.Key==xaxe.Spec?0:Array.IndexOf(yaxes,e.Key)+1).ToArray() ;
@@ -176,8 +177,8 @@ namespace Rob.Act.Analyze
 				{
 					var za = Z.Select(z=>Coordinates.FirstOrDefault(c=>c.Axe==z.Spec)).ToArray() ; var zb = Z.Select(z=>Coordinates.FirstOrDefault(c=>c.Axe==z.Spec)?.Info??State.Coordination(z.Spec)).ToArray() ;
 					var zicol = Z.At((zi+1)%2).nil(z=>z.Spec==null) ; var ziaro = Z.At(zi%2).nil(z=>z.Spec==null) ;
-					var axcol = zicol.Get(z=>(z.Val-(zb.At((zi+1)%2)?.Byte<0?rng[z.Spec].Max:rng[z.Spec].Min))/(zb.At((zi+1)%2)?.Byte??rng[z.Spec].Max-rng[z.Spec].Min).nil()) ;
-					var axaro = ziaro.Get(z=>(z.Val-(zb.At(zi%2)?.Byte<0?rng[z.Spec].Max:rng[z.Spec].Min))/(zb.At(zi%2)?.Byte??rng[z.Spec].Max-rng[z.Spec].Min).nil()) ;
+					var axcol = zicol.Get(z=>(z.Val-(zb.At((zi+1)%2)?.Byte<0?rng[z.Spec].Max:rng[z.Spec].Min))/(zb.At((zi+1)%2)?.Byte??rng[z.Spec].Max-rng[z.Spec].Min).nil())+asp.Offset ;
+					var axaro = ziaro.Get(z=>(z.Val-(zb.At(zi%2)?.Byte<0?rng[z.Spec].Max:rng[z.Spec].Min))/(zb.At(zi%2)?.Byte??rng[z.Spec].Max-rng[z.Spec].Min).nil())+asp.Offset ;
 					if( axcol<zb.At((zi+1)%2)?.Count-za.At((zi+1)%2)?.Size || axaro<zb.At(zi%2)?.Count-za.At(zi%2)?.Size ) continue ;
 					var zisc = axcol==null && zicol?.Spec is string sp ? rng[sp].Min : zis ;
 					var axarow = ziaro.use(z=>(axaro*zisc%zisc).Signate(zb.At(zi%2)?.Reverse==false?zisc:null as double?)??rng[z.Spec].Min) ;
@@ -324,13 +325,25 @@ namespace Rob.Act.Analyze
 		void Coordinates_AtRight_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => CoordinatesSizeMove(+1) ;
 		void Coordinates_AtUp_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => CoordinatesSizeSet(1) ;
 		void Coordinates_AtDown_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => CoordinatesSizeSet(null) ;
-		void CoordinatesMove( double step ) { var sel = CoordinatesGrid.SelectedItems.Cast<Coordinate>().ToArray() ; sel.Each(c=>c.Info=c.Info.use(i=>(Math.Max(.001*(c.Range.Max-c.Range.Min),(i.Byte+step*(c.Range.Max-c.Range.Min))??c.Range.Max-c.Range.Min),i.Count,i.Reverse))) ; CoordinateFocusHold(sel) ; }
-		void CoordinatesSet( double? state ) { var sel = CoordinatesGrid.SelectedItems.Cast<Coordinate>().ToArray() ; sel.Each(c=>c.Info=(c.Info??(null,null,false)).get(i=>(state*(c.Range.Max-c.Range.Min),i.Count is uint m?state is double s?s==0?i.Count:Math.Min((uint)((c.Range.Max-c.Range.Min)/s),m):1U:null as uint?,i.Reverse))) ; CoordinateFocusHold(sel) ; }
-		void CoordinatesCountMove( int step ) { var sel = CoordinatesGrid.SelectedItems.Cast<Coordinate>().ToArray() ; sel.Each(c=>c.Info=c.Info.use(i=>(i.Byte,i.Count.use(v=>(uint)Math.Min(i.Byte is double b?(c.Range.Max-c.Range.Min)/b:1,Math.Max(0,(int)v+step))),i.Reverse))) ; CoordinateFocusHold(sel) ; }
-		void CoordinatesCountSet( uint? state ) { var sel = CoordinatesGrid.SelectedItems.Cast<Coordinate>().ToArray() ; sel.Each(c=>c.Info=(c.Info??(null,null,false)).get(i=>(i.Byte,state,i.Reverse))) ; CoordinateFocusHold(sel) ; }
-		void CoordinatesSizeMove( int step ) { var sel = CoordinatesGrid.SelectedItems.Cast<Coordinate>().ToArray() ; sel.Each(c=>c.Size=c.Size.use(a=>(uint)Math.Max(0,(int)a+step))) ; CoordinateFocusHold(sel) ; }
-		void CoordinatesSizeSet( uint? state ) { var sel = CoordinatesGrid.SelectedItems.Cast<Coordinate>().ToArray() ; sel.Each(c=>c.Size=state) ; CoordinateFocusHold(sel) ; }
-		async void CoordinateFocusHold( IEnumerable<Coordinate> sel ) { await Task.Delay(10) ; sel.Each(s=>CoordinatesGrid.SelectedItems.Add(s)) ; CoordinatesGrid.Focus() ; }
+		void CoordinatesMove( double step ) { var sel = CoordinatesGrid.SelectedItems.Cast<Coordinate>().ToArray() ; sel.Each(c=>c.Info=c.Info.use(i=>(Math.Max(.001*(c.Range.Max-c.Range.Min),(i.Byte+step*(c.Range.Max-c.Range.Min))??c.Range.Max-c.Range.Min),i.Count,i.Reverse))) ; GridFocusHold(CoordinatesGrid,sel) ; }
+		void CoordinatesSet( double? state ) { var sel = CoordinatesGrid.SelectedItems.Cast<Coordinate>().ToArray() ; sel.Each(c=>c.Info=(c.Info??(null,null,false)).get(i=>(state*(c.Range.Max-c.Range.Min),i.Count is uint m?state is double s?s==0?i.Count:Math.Min((uint)((c.Range.Max-c.Range.Min)/s),m):1U:null as uint?,i.Reverse))) ; GridFocusHold(CoordinatesGrid,sel) ; }
+		void CoordinatesCountMove( int step ) { var sel = CoordinatesGrid.SelectedItems.Cast<Coordinate>().ToArray() ; sel.Each(c=>c.Info=c.Info.use(i=>(i.Byte,i.Count.use(v=>(uint)Math.Min(i.Byte is double b?(c.Range.Max-c.Range.Min)/b:1,Math.Max(0,(int)v+step))),i.Reverse))) ; GridFocusHold(CoordinatesGrid,sel) ; }
+		void CoordinatesCountSet( uint? state ) { var sel = CoordinatesGrid.SelectedItems.Cast<Coordinate>().ToArray() ; sel.Each(c=>c.Info=(c.Info??(null,null,false)).get(i=>(i.Byte,state,i.Reverse))) ; GridFocusHold(CoordinatesGrid,sel) ; }
+		void CoordinatesSizeMove( int step ) { var sel = CoordinatesGrid.SelectedItems.Cast<Coordinate>().ToArray() ; sel.Each(c=>c.Size=c.Size.use(a=>(uint)Math.Max(0,(int)a+step))) ; GridFocusHold(CoordinatesGrid,sel) ; }
+		void CoordinatesSizeSet( uint? state ) { var sel = CoordinatesGrid.SelectedItems.Cast<Coordinate>().ToArray() ; sel.Each(c=>c.Size=state) ; GridFocusHold(CoordinatesGrid,sel) ; }
+		#endregion
+		async void GridFocusHold( DataGrid grid , IEnumerable<object> sel ) { await Task.Delay(10) ; sel.Each(s=>grid.SelectedItems.Add(s)) ; grid.Focus() ; }
+		#region Drifting
+		void Source_Left_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => SourceDriftMove(-1) ;
+		void Source_Right_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => SourceDriftMove(+1) ;
+		void Source_Up_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => SourceDriftMove(-(1<<5)) ;
+		void Source_Down_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => SourceDriftMove(+(1<<5)) ;
+		void Source_PageUp_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => SourceDriftMove(-(1<<10)) ;
+		void Source_PageDown_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => SourceDriftMove(+(1<<10)) ;
+		void Source_Home_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => SourceDriftSet(0) ;
+		void Source_End_CommandBinding_Executed( object sender, CanExecuteRoutedEventArgs e ) => SourceDriftSet(MainFrameSize.Width) ;
+		void SourceDriftMove( double step ) { var sel = SourcesOffset.SelectedItems.Cast<Aspect>().ToArray() ; sel.Each(s=>s.Offset+=step) ; if( GraphTab.IsSelected ) Graph_Draw(this) ; if( MapTab.IsSelected ) Map_Draw(this) ; GridFocusHold(SourcesOffset,sel) ; }
+		void SourceDriftSet( double step ) { var sel = SourcesOffset.SelectedItems.Cast<Aspect>().ToArray() ; sel.Each(s=>s.Offset=step) ; if( GraphTab.IsSelected ) Graph_Draw(this) ; if( MapTab.IsSelected ) Map_Draw(this) ; GridFocusHold(SourcesOffset,sel) ; }
 		#endregion
 	}
 	public class QuantileSubversion : IMultiValueConverter

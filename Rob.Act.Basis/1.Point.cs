@@ -11,47 +11,18 @@ using System.ComponentModel;
 namespace Rob.Act
 {
 	using Quant = Double ;
-	public class Point : DynamicObject , Accessible<uint,Quant?> , Accessible<Axis,Quant?> , Accessible<Quant?> , INotifyPropertyChanged
+	public class Point : Pre.Point , Accessible<Axis,Quant?> , INotifyPropertyChanged
 	{
 		#region Construction
-		public Point( DateTime date ) => Date = date ;
-		public Point( Point point ) { Date = point.Date ; Quantity = point.Quantity.ToArray() ; Mark = point.Mark ; Spec = point.Spec ; Action = point.Action ; }
-		#endregion
-
-		#region Setup
-		public void From( Point point ) { Time = point.Time ; for( uint i=0 ; i<point.Dimension ; ++i ) this[i] = point[i] ; }
-		public void Adopt( Point point ) { From(point) ; Date = point.Date ; Action = point.Action ; Mark = point.Mark ; }
+		public Point( DateTime date ) : base(date) {}
+		public Point( Point point ) : base(point) {}
 		#endregion
 
 		#region State
 		/// <summary>
-		/// Referential date of object .
-		/// </summary>
-		public DateTime Date { get => date ; set { if( date==value ) return ; date = value ; sign = null ; } } DateTime date ;
-		/// <summary>
-		/// Quanitity data vector .
-		/// </summary>
-		Quant?[] Quantity = new Quant?[(int)Axis.Time] ;
-		/// <summary>
-		/// Relative time of object .
-		/// </summary>
-		public TimeSpan Time { get => time ; set { if( time==value ) return ; time = value ; sign = null ; } } TimeSpan time ;
-		/// <summary>
-		/// Signature of the point .
-		/// </summary>
-		public string Sign => sign ?? ( sign = $"{Date}{Time.nil(t=>t==TimeSpan.Zero).Get(t=>$"+{t:hh\\:mm\\:ss}")}" ) ; string sign ;
-		/// <summary>
 		/// Assotiative text .
 		/// </summary>
-		public virtual string Spec { get => spec ?? ( spec = $"{Action} {Sign}" ) ; set { if( value==spec ) return ; spec = value ; propertyChanged.On(this,"Spec") ; } } string spec ;
-		/// <summary>
-		/// Action specification .
-		/// </summary>
-		public string Action { get => action ; set { if( action==value ) return ; var a = action ; action = value ; if( spec==$"{a} {Sign}" ) Spec = null ; } } string action ;
-		/// <summary>
-		/// Kind of demarkaition .
-		/// </summary>
-		public Mark Mark { get; set; } public Mark? Marklet => Mark.nil() ;
+		public override string Spec { set { if( value==base.Spec ) return ; base.Spec = value ; propertyChanged.On(this,"Spec") ; } }
 		/// <summary>
 		/// Ascent of the path .
 		/// </summary>
@@ -63,13 +34,9 @@ namespace Rob.Act
 		#endregion
 
 		#region Vector
-		public static Point Zero( DateTime date ) => new Point(date){ Time = TimeSpan.Zero }.Set( p=>{ for( var i=0 ; i<p.Dimension ; ++i ) p.Quantity[i] = 0 ; } ) ;
-		public uint Dimension => (uint) Quantity.Length ;
-		public Quant? this[ uint axis ] { get => Quantity.At((int)axis) ; set { if( axis>=Quantity.Length && value!=null ) Quantity.Set(q=>q.CopyTo(Quantity=new Quant?[axis+1],0)) ; if( axis<Quantity.Length ) Quantity[axis] = value ; } }
+		public static Point Zero( DateTime date ) => new Point(date){ Time = TimeSpan.Zero }.Set( p=>{ for( uint i=0 ; i<p.Dimension ; ++i ) p[i] = 0 ; } ) ;
+		public override uint Dimension => (uint)( ((Quant?[])this)?.Length ?? (int)Axis.Time ) ;
 		public virtual Quant? this[ Axis axis ] { get => axis==Axis.Time ? Time.TotalSeconds : this[(uint)axis] ; set { if( axis!=Axis.Time ) this[(uint)axis] = value ; else if( value is Quant q ) Time = TimeSpan.FromSeconds(q) ; } }
-		public Quant? this[ string axis ] { get => this[axis.Axis()] ; set => this[axis.Axis()] = value ; }
-		public override bool TrySetMember( SetMemberBinder binder , object value ) { this[binder.Name] = (Quant?)value ; return base.TrySetMember( binder, value ) ; }
-		public override bool TryGetMember( GetMemberBinder binder , out object result ) { result = this[binder.Name] ; return true ; }
 		#endregion
 
 		#region Trait
@@ -100,24 +67,20 @@ namespace Rob.Act
 		#region Query
 		public bool IsGeo => this[Axis.Lon]!=null || this[Axis.Lat]!=null ;
 		public Quant Resist => Math.Pow( Draglet??1 , 1D/3D ) ;
-		public string Exposion => "{0}={1}bW".Comb("{0}/{1}".Comb(Power.Get(p=>$"{Math.Round(p)}W"),Beatrate.Get(b=>$"{Math.Round(b)}`b")),Beatage.use(Math.Round))+$" {Speed*3.6:0.00}km/h" ;
+		public override string Exposion => "{0}={1}bW".Comb("{0}/{1}".Comb(Power.Get(p=>$"{Math.Round(p)}W"),Beatrate.Get(b=>$"{Math.Round(b)}`b")),Beatage.use(Math.Round))+$" {Speed*3.6:0.00}km/h" ;
+		public override string Trace => $"{Draglet.Get(v=>$"Drag={v:0.00}")} {Asc.Get(v=>$"Ascent={v:0}m")} {Gradelet.Get(v=>$"Grade={v:.000}")} {Dev.Get(v=>$"Devia={v:0}m")} {Bendlet.Get(v=>$"Bend={v:.000}")} {Quantities} {Mark.nil(m=>m==Mark.No)}" ;
 		#endregion
 
 		#region Operation
 		public static Point operator|( Point prime , Quant?[] quantities ) => prime.Set(p=>{ for( uint i=0 ; i<quantities?.Length ; ++i ) if( p[i]==null ) p[i] = quantities[i] ; }) ;
 		public static Point operator|( Point point , IEnumerable<Point> points ) => point | point.Date.Give(points) ;
-		public static implicit operator Quant?[]( Point point ) => point?.Quantity ;
-		public static Point operator/( Point point , Axis axis ) => point.Set(p=>p[axis]=null) ;
+		public static implicit operator Quant?[]( Point point ) => point as Pre.Point ;
+		public static Point operator/( Point point , Axis axis ) => point / (uint)(int)axis ;
+		public static Point operator/( Point point , uint axis ) => point.Set(p=>p[axis]=null) ;
 		public static Point operator/( Point point , string axis ) => point / axis.Axis() ;
 		public static Point operator-( Point point , Point offset ) => new Point(new DateTime(point.Date.Ticks+offset.Date.Ticks>>1)){ Time = point.Date-offset.Date }.Set( p=>{ for( uint i=0 ; i<p.Dimension ; ++i ) p[i] = point[i]-offset[i] ; if( p.IsGeo ) p.Dist = p.Euclid(offset) ; } ) ;
 		public static Point operator+( Point accu , Point diff ) => accu.Set( p => diff.Set( d => { p.Time += d.Time ; for( uint i=0 ; i<p.Dimension ; ++i ) p[i] += d[i] ; } ) ) ;
 		public Geos? Geo => this ;
-		#endregion
-
-		#region Info
-		public override string ToString() => $"{Action} {Sign} {Exposion} {Trace}" ;
-		public virtual string Quantities => $"{((int)Dimension).Steps().Select(i=>Quantity[i].Get(q=>$"{(Axis)i}={q}")).Stringy(' ')}" ;
-		public virtual string Trace => $"{Draglet.Get(v=>$"Drag={v:0.00}")} {Asc.Get(v=>$"Ascent={v:0}m")} {Gradelet.Get(v=>$"Grade={v:.000}")} {Dev.Get(v=>$"Devia={v:0}m")} {Bendlet.Get(v=>$"Bend={v:.000}")} {Quantities} {Mark.nil(m=>m==Mark.No)}" ;
 		#endregion
 
 		public event PropertyChangedEventHandler PropertyChanged { add => propertyChanged += value.DispatchResolve() ; remove => propertyChanged -= value.DispatchResolve() ; } protected PropertyChangedEventHandler propertyChanged ;

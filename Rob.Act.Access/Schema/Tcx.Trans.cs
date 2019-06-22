@@ -70,7 +70,7 @@ namespace Rob.Act.Tcx
 	}
 	static class Extension
 	{
-		public const string Sign = "<TrainingCenterDatabase " ;
+		public const string Sign = "<TrainingCenterDatabase" ;
 		internal static Trackpoint_t Last( this Trackpoint_t[] segment ) => segment.At(segment.Length-1) ;
 	}
 }

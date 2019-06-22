@@ -23,7 +23,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rob.Act.Smooth", "Rob.Act.S
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rob.Act.Trim", "Rob.Act.Trim\Rob.Act.Trim.csproj", "{B49DB0C1-3BC0-46D3-AC52-C8C212A67C4F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rob.Act.Analyze", "Rob.Act.Graph\Rob.Act.Analyze.csproj", "{1E3D5688-B89A-4FA6-AA7A-FA38544173EA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rob.Act.Intel", "Rob.Act.Graph\Rob.Act.Intel.csproj", "{1E3D5688-B89A-4FA6-AA7A-FA38544173EA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

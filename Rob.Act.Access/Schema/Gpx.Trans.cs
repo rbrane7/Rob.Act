@@ -57,7 +57,7 @@ namespace Rob.Act.Gpx
 	}
 	static class Extension
 	{
-		public const string Sign = "<gpx " ;
+		public const string Sign = "<gpx" ;
 		static readonly string[] Axes = new[] { "lon" , "lat" , "alt" , "dist" , "drag" , "flow" , "hr" , "cad" , "top" } ;
 		internal static string Axis( this Axis axe ) => Axes.At((int)axe) ;
 	}

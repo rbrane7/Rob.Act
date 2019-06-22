@@ -9,3 +9,4 @@
 	MatrixTraits = []{ 'Date:yyyy-MM-dd HH:mm:ss' , 'Time:hh\\:mm\\:ss\\.ff' , 'Distance/Dist [m]:0.0' , 'Alt/Alt [m]:0.0' , 'Asc/Asc [m]:0.0' , 'Dev/Dev [m]:0.0' , 'Ergy/Energy [J]:0' , 'Effort/Effort [J]' , 'Beat:0' , 'Bit' , 'Draglet/aDrag:0.00' , 'Gradelet/aGrade:.000' , 'Bendlet/aBend:.000' , 'Speed/aSpeed [m/s]:0.00' , 'Power/aPower [W]:0' , 'Force/aForce [N]:0' , 'Beatage/aWork/Beat [J/b]:0' , 'Bitage/aWork/Bit [J/B]:0' , 'Beatrate/aBeat/min:0' , 'Bitrate/aBit/min:0' , 'Marklet/Mark' } ,
 }
 ;
+System.Diagnostics.Trace.Listeners.Add(Aid.Diagnostics.StoreListener(@"Destiny=Run\Local.log")) ;

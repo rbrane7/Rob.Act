@@ -11,9 +11,9 @@ using Aid.Extension;
 
 namespace Rob.Act
 {
-	using Configer = System.Configuration.ConfigurationManager ;
 	using Quant = Double ;
-	public partial class Path : Point , IList<Point> , Gettable<DateTime,Point> , INotifyCollectionChanged
+	using Configer = System.Configuration.ConfigurationManager ;
+	public partial class Path : Point , IList<Point> , Gettable<DateTime,Point> , INotifyCollectionChanged , Pathable
 	{
 		enum Taglet { Object , Drag , Subject , Locus }
 		public static bool Dominancy = Configer.AppSettings["Path.Dominancy"]!=null ;
@@ -41,8 +41,11 @@ namespace Rob.Act
 				if( this[i].Bit==null ) this[i].Bit = i ;
 				if( !this[i].IsGeo ) continue ;
 				if( this[i].Dist==null ) this[i].Dist = this[i-1].Dist + (this[i]-this[i-1]).Euclid(this[i-1]) ;
-				if( this[i].Alt==null && Alt!=null ) this[i].Alt = this[i-1].Alt + ((Count-i).Steps(i).FirstOrDefault(j=>this[j].Alt!=null).nil()??i-1).Get(j=>(this[j].Alt-this[i-1].Alt)/j) ;
-				if( this[i].Asc==null && Alt!=null ) this[i].Asc = this[i-1].Asc + ( this[i].Alt-this[i-1].Alt is Quant v && Math.Abs(v)/(this[i].Dist-this[i-1].Dist)<(GradeTolerancy.On(Action)??.3) ? v : 0 ) ;
+				if( Alt!=null )
+				{
+					if( this[i].Alt==null ) this[i].Alt = this[i-1].Alt + ((Count-i).Steps(i).FirstOrDefault(j=>this[j].Alt!=null).nil()??i-1).Get(j=>(this[j].Alt-this[i-1].Alt)/j) ;
+					if( this[i].Asc==null ) this[i].Asc = this[i-1].Asc + ( this[i].Alt-this[i-1].Alt is Quant u && Math.Abs(u)/(this[i].Dist-this[i-1].Dist)<(GradeTolerancy.On(Action)??.3) ? u : 0 ) ;
+				}
 				if( this[i].Dev==null ) this[i].Dev = this[i-1].Dev + ( i<Count-1 && !this[i].Mark.HasFlag(Mark.Stop) && (this[i].Geo-this[i-1].Geo).Devia(this[i+1].Geo-this[i].Geo) is Quant v /*&& Math.Abs(v)/(this[i].Dist-this[i-1].Dist)<(DeviaTolerancy.On(Action)??3)*/ ? v : 0 ) ;
 			}
 			this.At(Count-1).Set(p=>{Bit=p.Bit;Time=p.Time;Dist=p.Dist;Asc=p.Asc;Dev=p.Dev;}) ;
@@ -50,12 +53,14 @@ namespace Rob.Act
 		public void Depose() { for( var i=0 ; i<Count ; ++i ) { this[i].Time = TimeSpan.Zero ; this[i].Bit = this[i].Dist = null ; this[i].Asc = this[i].Dev = null ; } }
 		public void Reset() { Depose() ; Impose() ; }
 		public Path( DateTime time , bool close , IEnumerable<Point> points = null ) : this(time,points) { if( close ) { if( Beat==null ) { this[0].Beat = 0 ; for( var i=1 ; i<Count ; ++i ) this[i].Beat = this[i-1].Beat+this[i].Beat/60*(this[i].Time-this[i-1].Time).TotalSeconds ; Beat = this[Count-1].Beat ; } } }
-		public void Adopt( Path path ) { base.Adopt(path) ; Tag = path.Tag ; for( var i=0 ; i<Content.Count ; ++i ) Content[i].Adopt(path.Content[i]) ; propertyChanged.On(this,"Spec,Spectrum") ; CollectionChanged?.Invoke(this,new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset)) ; }
+		public virtual void Adopt( Path path ) { base.Adopt(path) ; Tag = path.Tag ; for( var i=0 ; i<Content.Count ; ++i ) Content[i].Adopt(path.Content[i]) ; Reset() ; propertyChanged.On(this,"Spec,Spectrum") ; CollectionChanged?.Invoke(this,new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset)) ; }
+		void Pointable.Adopt( Pointable path ) => (path as Path).Set(Adopt) ;
 		#endregion
 
 		#region State
-		int Depth = 1 ; public bool Dominant = Dominancy ;
+		int Depth = 1 ;
 		List<Point> Content = new List<Point>() ;
+		public bool Dominant = Dominancy ;
 		/// <summary>
 		/// Tags for path recognition among the others in a book .
 		/// </summary>
@@ -95,7 +100,8 @@ namespace Rob.Act
 		public static Path operator|( Path prime , IEnumerable<Point> second ) => prime.Set(pri=>second.Each(pri.Add)) ;
 		public static Path operator|( Path prime , Path second ) => prime.Set( w => { if( w.Dominant ) w.Each(p=>p|=second[p.Date]) ; else w |= second as IEnumerable<Point> ; if( w[0]?.Date<w.Date ) w.Date = w[0].Date ; } ) ?? second ;
 		public static Path operator&( Path path , Path lead ) => path.Set(p=>p.Rely(lead)) ;
-		public static Path operator/( Path path , Axis axis ) => path.Set(p=>p.Each(i=>i/=axis)) ;
+		public static Path operator/( Path path , uint axis ) => path.Set(p=>p.Each(i=>i/=axis)) ;
+		public static Path operator/( Path path , Axis axis ) => path / (uint)(int)axis ;
 		public static Path operator/( Path path , string axis ) => path / axis.Axis() ;
 		public static Path operator>>( Path path , int depth ) { if( path!=null ) while( depth-->0 ) path = new Path( path.Date , path.Diff ) ; return ++path ; }
 		public static Path operator<<( Path path , int depth ) { if( path!=null ) while( depth-->0 ) path = new Path( path.Date , path.Inte ) ; return ++path ; }
@@ -170,8 +176,7 @@ namespace Rob.Act
 		public bool Contains( Point item ) => Content.Contains(item) ;
 		public void CopyTo( Point[] array , int arrayIndex ) => Content.CopyTo(array,arrayIndex) ;
 		public bool Remove( Point item ) => Content.Remove(item) ;
-		public IEnumerator<Point> GetEnumerator() => Content.GetEnumerator() ;
-		IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
+		public IEnumerator<Point> GetEnumerator() => Content.GetEnumerator() ; IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
 		public int Count => Content.Count ;
 		public bool IsReadOnly => false ;
 		public Point this[ int index ] { get => Content.At(index) ; set => throw new NotSupportedException("Path can't be directly inserted or repaced to .") ; }

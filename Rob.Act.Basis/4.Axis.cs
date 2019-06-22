@@ -162,7 +162,7 @@ namespace Rob.Act
 		{
 			internal Path Context ;
 			public virtual Axis Axis { get => axis ; set { base.Spec = ( axis = value ).Stringy() ; Resolver = at=>Context.At(at)?[Axis] ; } } Axis axis ;
-			public override string Spec { get => base.Spec ; set { if( value!=null ) Axis = value.Axis() ; base.Spec = value ; } }
+			public override string Spec { get => base.Spec ; set { if( value!=null ) Axis = (Axis)(int)value.Axis() ; base.Spec = value ; } }
 			public Axe( Path context ) => Context = context ;
 			public override int Count => DefaultCount ;
 			protected override int DefaultCount => Context?.Count ?? 0 ;
