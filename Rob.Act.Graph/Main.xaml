@@ -6,7 +6,7 @@
         xmlns:converters="clr-namespace:Aid.Converters;assembly=Aid.Presentation"
         xmlns:local="clr-namespace:Rob.Act.Analyze"
         mc:Ignorable="d"
-        Title="Analyze" Height="450" Width="800"
+        Title="Intel" Height="450" Width="800"
         Name="MainWindow"
         MouseMove="Main_MouseMove"
         >
@@ -45,7 +45,7 @@
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="Spec" Binding="{Binding Spec}" Width="1*"/>
                     <DataGridTextColumn Header="Resolver" Binding="{Binding Lex}" Width="7*"/>
-                    <DataGridTextColumn Header="Unit" Binding="{Binding Unit}" Width="1*"/>
+                    <DataGridTextColumn Header="Form" Binding="{Binding Form}" Width="1*"/>
                 </DataGrid.Columns>
                 <DataGrid.CommandBindings>
                     <CommandBinding Command="Delete" Executed="DataGridDeleteCommandBinding_Executed"/>
@@ -215,8 +215,10 @@
         </DataGrid>
         <DataGrid Name="ActionFilterGrid" Grid.Row="0" Grid.Column="2" ItemsSource="{Binding ActionFilter}" AutoGenerateColumns="False" SelectionChanged="ActionFilterGrid_SelectionChanged" Margin="2">
             <DataGrid.Columns>
-                <!--<DataGridCheckBoxColumn Header="Rex" Binding="{Binding Lex}"/>-->
-                <DataGridTextColumn Header="Actions" Binding="{Binding Filter}" Width="*"/>
+                <DataGridCheckBoxColumn Header="Rex" Binding="{Binding Rex}"/>
+                <DataGridTextColumn Header="Actions" Binding="{Binding Filter}" Width="2*"/>
+                <DataGridTextColumn Header="Traits" Binding="{Binding Traits}" Width="1*"/>
+                <DataGridTextColumn Header="Matrix" Binding="{Binding Matrix}" Width="1*"/>
             </DataGrid.Columns>
             <DataGrid.CommandBindings>
                 <CommandBinding Command="Delete" Executed="DataGridDeleteCommandBinding_Executed"/>
@@ -224,7 +226,7 @@
         </DataGrid>
         <DataGrid Name="SourceFilterGrid" Grid.Row="2" Grid.Column="2" ItemsSource="{Binding SourceFilter}" AutoGenerateColumns="False" SelectionChanged="SourceFilterGrid_SelectionChanged" Margin="2">
             <DataGrid.Columns>
-                <!--<DataGridCheckBoxColumn Header="Rex" Binding="{Binding Lex}"/>-->
+                <DataGridCheckBoxColumn Header="Rex" Binding="{Binding Rex}"/>
                 <DataGridTextColumn Header="Sources" Binding="{Binding Filter}" Width="*"/>
             </DataGrid.Columns>
             <DataGrid.CommandBindings>
@@ -233,7 +235,7 @@
         </DataGrid>
         <DataGrid Name="AspectFilterGrid" Grid.Row="2" Grid.Column="0" ItemsSource="{Binding AspectFilter}" AutoGenerateColumns="False" SelectionChanged="AspectFilterGrid_SelectionChanged" Margin="2">
             <DataGrid.Columns>
-                <!--<DataGridCheckBoxColumn Header="Rex" Binding="{Binding Lex}"/>-->
+                <DataGridCheckBoxColumn Header="Rex" Binding="{Binding Rex}"/>
                 <DataGridTextColumn Header="Aspects" Binding="{Binding Filter}" Width="*"/>
             </DataGrid.Columns>
             <DataGrid.CommandBindings>

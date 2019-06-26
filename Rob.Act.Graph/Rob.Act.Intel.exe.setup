@@ -1,0 +1,12 @@
+﻿/*@ Rob.Act.Analyze.Settings @*/ type
+{
+	Doctee = 'doctee://localhost:43202/Action/Analyze?Name=Rana' ,
+	WorkoutsPaths = @'C:\Users\teplyr\Downloads\concept2*.tcx,C:\Users\teplyr\Downloads\*.gpx,C:\Users\teplyr\Downloads\*.par' , /*WorkoutsFilter = p=>p.Action=='AeT' ,*/
+	AspectsPaths = @'C:\Users\teplyr\Downloads\*.asp' , AspectsFilter = a=>a.Spec!='Test' ,
+	AspectsPath = @'C:\Users\teplyr\Downloads\*.asp' ,
+	StatePath = @'Run\' ,
+	ActionTraits = []{ 'Action' , 'Date:yyyy-MM-dd HH:mm:ss' , 'Time:hh\\:mm\\:ss' , 'Draglet/Drag:0.00' , 'Power/Ent:0W' , 'Beatrate/Beat:0`b' , 'Beatage/bEnt:0bW' , 'Shift:.000' , 'MaxShift/xShift:.000' , 'Tag' } ,
+	MatrixTraits = []{ 'Date:yyyy-MM-dd HH:mm:ss' , 'Time:hh\\:mm\\:ss\\.ff' , 'Distance/Dist:0.0 m' , 'Alt/Alt:0.0 m' , 'Asc/Asc:0.0 m' , 'Dev/Dev:0.0 m' , 'Ergy/Energy:0 J' , 'Effort/Effort:0 J' , 'Beat:0' , 'Bit' , 'Draglet/aDrag:0.00' , 'Gradelet/aGrade:.000' , 'Bendlet/aBend:.000' , 'Speed/aSpeed:0.00 m/s' , 'Power/aPower:0 W' , 'Force/aForce:0 N' , 'Beatage/aWork/Beat:0 J/b' , 'Bitage/aWork/Bit:0 J/B' , 'Beatrate/aBeat:0/min' , 'Bitrate/aBit:0/min' , 'Marklet/Mark' } ,
+}
+;
+System.Diagnostics.{ Trace.Listeners.Add(Aid.Diagnostics.StoreListener(@"Destiny=Run\Local.log"){TraceOutputOptions=type.DateTime}) ; Trace.AutoFlush = true ; Trace.TraceInformation('Started') } ;

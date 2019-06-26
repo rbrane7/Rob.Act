@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -15,7 +16,7 @@ namespace Rob.Act
 	/// </summary>
 	[Flags] public enum Mark { No = 0 , Stop = 1 , Lap = 2 , Act = 4 }
 	[Flags] public enum Oper { Merge = 0 , Combi = 1 , Trim = 2 , Smooth = 4 , Relat = 8 }
-	public enum Axis { Lon , Longitude = Lon , Lat , Latitude = Lat , Alt , Altitude = Alt , Dist , Distance = Dist , Drag , Flow , Beat , Bit , Ergy , Energy = Ergy , Effort , Time }
+	public enum Axis : uint { Lon , Longitude = Lon , Lat , Latitude = Lat , Alt , Altitude = Alt , Dist , Distance = Dist , Drag , Flow , Beat , Bit , Ergy , Energy = Ergy , Effort , Time }
 	public struct Bipole : IFormattable
 	{
 		Bipole( Quant a , Quant b ) { A = Math.Abs(a) ; B = -Math.Abs(b) ; }
@@ -61,20 +62,13 @@ namespace Rob.Act
 		public static implicit operator Geos?( Point point ) => point?.IsGeo==true ? new Geos{Lon=point[Axis.Lon].Value,Lat=point[Axis.Lat].Value} : null as Geos? ;
 	}
 	public interface Quantable : Aid.Gettable<uint,Quant?> , Aid.Gettable<Quant?> {}
-	public interface Pointable : Quantable , Aid.Accessible<uint,Quant?> , Aid.Accessible<Quant?>
-	{
-		DateTime Date { get ; } TimeSpan Time { get ; }
-		uint Dimension { get ; }
-		string Action { get ; }
-		Mark Mark { get ; }
-		void Adopt( Pointable path ) ;
-	}
-	public interface Pathable : Pointable /*, Aid.Countable<Pointable> , Aid.Gettable<DateTime,Pointable>*/ { string Origin { get ; } Path.Aspect Spectrum { get ; } }
+	public interface Pointable : Quantable , Aid.Accessible<uint,Quant?> , Aid.Accessible<Quant?> { DateTime Date { get; } TimeSpan Time { get; } uint Dimension { get; } string Action { get; } Mark Mark { get; } void Adopt( Pointable path ) ; }
+	public interface Pathable : Pointable , Aid.Countable , Aid.Gettable<DateTime,Pointable> , Aid.Gettable<int,Pointable> { string Origin { get; } Path.Aspect Spectrum { get; } string Object { get; } string Subject { get; } string Locus { get; } }
 	static class Basis
 	{
 		#region Axis specifics
-		static List<string> axis = Enum.GetNames(typeof(Axis)).ToList() ; static List<int> vaxi = Enum.GetValues(typeof(Axis)).Cast<int>().ToList() ;
-		internal static uint Axis( this string name ) => (uint)( vaxi.At(axis.IndexOf(name)).nil(i=>i<0) ?? axis.Set(a=>{a.Add(name);vaxi.Add(vaxi.Count);}).Count-1 ) ;
+		static List<string> axis = Enum.GetNames(typeof(Axis)).ToList() ; static List<uint> vaxi = Enum.GetValues(typeof(Axis)).Cast<uint>().ToList() ;
+		internal static uint Axis( this string name ) => vaxi.At(axis.IndexOf(name)).nil(i=>i<0) ?? (uint)axis.Set(a=>{a.Add(name);vaxi.Add((uint)vaxi.Count);}).Count-1 ;
 		internal static Quant ActLim( this Axis axis , string activity ) => 50 ;
 		#endregion
 

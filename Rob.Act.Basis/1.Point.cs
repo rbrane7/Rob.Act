@@ -35,7 +35,7 @@ namespace Rob.Act
 
 		#region Vector
 		public static Point Zero( DateTime date ) => new Point(date){ Time = TimeSpan.Zero }.Set( p=>{ for( uint i=0 ; i<p.Dimension ; ++i ) p[i] = 0 ; } ) ;
-		public override uint Dimension => (uint)( ((Quant?[])this)?.Length ?? (int)Axis.Time ) ;
+		public override uint Dimension => (uint?)((Quant?[])this)?.Length ?? (uint)Axis.Time ;
 		public virtual Quant? this[ Axis axis ] { get => axis==Axis.Time ? Time.TotalSeconds : this[(uint)axis] ; set { if( axis!=Axis.Time ) this[(uint)axis] = value ; else if( value is Quant q ) Time = TimeSpan.FromSeconds(q) ; } }
 		#endregion
 

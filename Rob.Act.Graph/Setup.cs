@@ -11,7 +11,7 @@ namespace Rob.Act.Analyze
 	{
 		public string Doctee ;
 		public string WorkoutsPaths , AspectsPaths , AspectsPath ;
-		public Predicate<Path> WorkoutsFilter ;
+		public Predicate<Pathable> WorkoutsFilter ;
 		public Predicate<Aspect> AspectsFilter ;
 		public string StatePath ;
 		public TimeSpan SavePeriod = new TimeSpan(0,0,10) ;

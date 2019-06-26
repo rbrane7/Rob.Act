@@ -50,11 +50,6 @@ namespace Rob.Act
 		public Quantile Quantile { get ; private set ; }
 		public Func<Quantile,IEnumerable<Quant>> Quantizer { get => Quantile.Quantizer ; set => propertyChanged.On(this,"Quantizer,Quantile",Quantile=new Quantile(this,value)) ; }
 		public string Quantlet { get => quantlet ; set => propertyChanged.On(this,"Quantlet",Quantizer=(quantlet=value).Compile<Func<Quantile,IEnumerable<Quant>>>()) ; } string quantlet ;
-		#region ICollection
-		object ICollection.SyncRoot => throw new NotImplementedException() ;
-		bool ICollection.IsSynchronized => throw new NotImplementedException() ;
-		void ICollection.CopyTo( Array array , int index ) => throw new NotImplementedException() ;
-		#endregion
 		#region Operations
 		public static Quant? operator+( Axe x ) => x?.Sum ;
 		public static Axe operator-( Axe x ) => x==null ? No : new Axe( i=>-x.Resolve(i) , a=>x.Count ) ;
@@ -83,6 +78,8 @@ namespace Rob.Act
 		public static Axe operator<<( Axe x , int lev ) => x==null ? No : lev<0 ? x>>-lev : lev==0 ? x : new Axe( i=>i.Steps().Sum(x.Resolve) , a=>x.Count )>>lev-1 ;
 		public static Axe operator^( Axe x , Axe y ) => x==null ? No : x.Shift(y) ;
 		public static Axe operator%( Axe x , int dif ) => x==null ? No : new Axe( i=>x.Diff(i,dif) , a=>x.Count-dif ) ;
+		public static Lap operator%( Axe x , Quant dif ) => x.By(dif) ;
+		public static Axe operator/( Axe x , Lap dif ) => x==null ? No : new Axe( i=>x.Diff(i,dif[i]) , a=>x.Count ) ;
 		public static Axe operator%( Axe x , Axe y ) => x==null ? No : x.Rift(y) ;
 		public static IEnumerable<int> operator>( Axe x , Quant val ) => x?.Count.Steps().Where(i=>x[i]>val) ;
 		public static IEnumerable<int> operator<( Axe x , Quant val ) => x?.Count.Steps().Where(i=>x[i]<val) ;
@@ -112,6 +109,8 @@ namespace Rob.Act
 		Quant? Quot( Axe upon , int at , int dif ) => Diff(at,dif)/upon.Diff(at,dif).Nil() ;
 		Quant? Shift( Axe upon , int at , int dis ) => Quot(upon,at+dis,dis)/Quot(upon,at,dis).Nil() ;
 		public Axe Rift( Axe upon , uint quo = 9 ) => upon==null ? No : new Axe( i=>Shift(upon,i,((Count-i)>>1)-1) , a=>(int)(Count*quo/(1D+quo)) ) ;
+		public Lap Lap( Quant dif ) => new Lap(this,dif) ;
+		public Lap By( Quant dif ) => Lap(dif) ;
 		#endregion
 		#region De/Serialization
 		/// <summary>
@@ -156,6 +155,17 @@ namespace Rob.Act
 		public static Quantile operator-( Quant value , Quantile source ) => new Quantile(source,q=>q.Select(v=>value-v)) ;
 		#endregion
 	}
+	public struct Lap : Aid.Gettable<int,int>
+	{
+		int[] Content ;
+		public Lap( Axe context , Quant dif )
+		{
+			var content = new List<int>() ; var dir = Math.Sign(dif) ; dif = Math.Abs(dif) ;
+			if( context!=null ) for( int c=context.Count , i=dir>0?0:c ; dif>0 && (dir>0?i<c:i>=0) ; content.Add(i-content.Count) ) for( var v = context.Resolve(content.Count) ; (dir>0?i<c:i>=0) && (context.Resolve(i)-v).use(Math.Abs)<dif ; i+=dir ) ;
+			Content = content.ToArray() ;
+		}
+		public int this[ int key ] => Content.At(key) ;
+	}
 	public partial class Path
 	{
 		public class Axe : Act.Axe
@@ -176,5 +186,6 @@ namespace Rob.Act
 		public static Axe Shift( this int dis , Axe x , Axe y , int? dif = null ) => (dif??dis).Get(d=>d.Quo(x,y)).Get(a=>a.Skip(dis)/a) ;
 		public static Axe Drift( this int dis , Axe x , Axe y , int? dif = null ) => Shift(dis,y,x,dif) ;
 		public static Axe Quo( this int dif , Axe x , Axe y ) => (x%dif)/(y%dif) ;
+		public static Axe Quo( this Lap dif , Axe x , Axe y ) => (x/dif)/(y/dif) ;
 	}
 }

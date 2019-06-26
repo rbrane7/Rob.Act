@@ -67,9 +67,9 @@ namespace Rob.Act
 		public List<string> Tags => tags ?? System.Threading.Interlocked.CompareExchange(ref tags,new List<string>(),null) ?? tags ; List<string> tags ;
 		public string Tag { get => tag ?? ( tag = tags.Null(t=>t.Count<=0).Stringy(' ') ) ; set { if( value==tag ) return ; tags?.Clear() ; tag = null ; Tags.AddRange(value.SeparateTrim(' ')) ; propertyChanged.On(this,"Tag,Spec,Subject,Object,Locus") ; } } string tag ;
 		public override string Spec { get => Tag is string t ? $"{base.Spec} {t}" : base.Spec ; set { if( value==base.Spec ) return ; base.Spec = value ; aspect.Set(a=>a.Spec=value) ; } }
-		public string Subject => tags.At((int)Taglet.Subject) ;
-		public string Object => tags.At((int)Taglet.Object) ;
-		public string Locus => tags.At((int)Taglet.Locus) ;
+		public string Subject { get => tags.At((int)Taglet.Subject) ; set { if( Subject==value ) return ; while( Tags.Count<=(int)Taglet.Subject ) Tags.Add(null) ; Tags[(int)Taglet.Subject] = value ; propertyChanged.On(this,"Tag,Subject") ; } }
+		public string Object { get => tags.At((int)Taglet.Object) ; set { if( Object==value ) return ; while( Tags.Count<=(int)Taglet.Object ) Tags.Add(null) ; Tags[(int)Taglet.Object] = value ; propertyChanged.On(this,"Tag,Object") ; } }
+		public string Locus { get => tags.At((int)Taglet.Locus) ; set { if( Locus==value ) return ; while( Tags.Count<=(int)Taglet.Locus ) Tags.Add(null) ; Tags[(int)Taglet.Locus] = value ; propertyChanged.On(this,"Tag,Locus") ; } }
 		public event NotifyCollectionChangedEventHandler CollectionChanged ;
 		#endregion
 
@@ -89,6 +89,7 @@ namespace Rob.Act
 		#region Access
 		public void Add( Point item ) { var idx = IndexOf(item.Date) ; if( this[idx]?.Date==item.Date ) Content[idx] |= item ; else Content.Insert( idx , item.Set(i=>{if(idx<Count&&i.Date>Date)i.Mark=0;} ) | Vicinity(idx) ) ; while( idx>0 && !this[idx-1].Mark.HasFlag(Mark.Stop) ) --idx ; item.Time = item.Date-this[idx].Date ; }
 		public Point this[ DateTime time ] => time.Give( Vicinity(time) ) ;
+		Pointable Gettable<DateTime,Pointable>.this[ DateTime date ] => this[date] ;
 		public int IndexOf( DateTime time ) => this.IndexWhere(p=>p.Date>=time).nil(i=>i<0) ?? Count ;
 		public IEnumerable<Point> Vicinity( DateTime time ) => Vicinity(IndexOf(time)) ;
 		public IEnumerable<Point> Vicinity( int index ) => this.Skip(index-Depth).Take(Depth<<1) ; //todo: solve stops
@@ -180,6 +181,7 @@ namespace Rob.Act
 		public int Count => Content.Count ;
 		public bool IsReadOnly => false ;
 		public Point this[ int index ] { get => Content.At(index) ; set => throw new NotSupportedException("Path can't be directly inserted or repaced to .") ; }
+		Pointable Gettable<int,Pointable>.this[ int index ] => this[index] ;
 		#endregion
 	}
 }

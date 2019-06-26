@@ -27,17 +27,12 @@ namespace Rob.Act
 		public IEnumerator<Aspectable> GetEnumerator() => Content.Cast<Aspectable>().GetEnumerator() ; IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
 		public struct Iterator : Aspect.Point.Iterable
 		{
-			public IEnumerable<Aspectable> Context { get; set; }
-			public int Count => Context?.Count()>0 ? Context.Max(s=>s?.Count>0?s.Max(a=>a?.Count>0?a.Count:0):0) : 0 ;
+			public Aid.Countable<Aspectable> Context { get; set; }
+			public int Count => Context?.Count>0 ? Context.Max(s=>s?.Count>0?s.Max(a=>a?.Count>0?a.Count:0):0) : 0 ;
 			Aspectable Aspect.Point.Iterable.Context => throw new NotSupportedException("Single context not supported on multi-context version !") ;
 			public IEnumerator<Aspect.Point> GetEnumerator() => throw new NotSupportedException("Points iterator not supported on multi-context version !") ; IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
 			public Aspect.Point this[ int at ] => throw new NotSupportedException("Points not supported on multi-context version !") ;
 		}
-		#region ICollection
-		public object SyncRoot => throw new NotImplementedException() ;
-		public bool IsSynchronized => throw new NotImplementedException() ;
-		public void CopyTo( Array array , int index ) => throw new NotImplementedException() ;
-		#endregion
 	}
 	public class Aspect : List<Axe> , IList , Aspectable , INotifyCollectionChanged , INotifyPropertyChanged
 	{
@@ -101,24 +96,24 @@ namespace Rob.Act
 			internal Aspect Context ;
 			public bool Dirty { set => Context.Set(c=>c.Dirty=value) ; }
 			public string Spec { get => name ; set => Changed("Spec",name=value) ; } string name ;
-			public string Unit { get => unit ; set => Changed("Unit,Valunit",unit=value) ; } string unit ;
+			public string Form { get => form ; set => Changed("Form,Valunit",form=value) ; } string form ;
 			public string Lex { get => lex ; set => Changed("Lex,Value,Valunit",Resolver=(lex=value).Compile<Func<Aspect,Quant?>>()) ; } Func<Aspect,Quant?> Resolver ; string lex ;
 			void Changed<Value>( string properties , Value value ) { propertyChanged.On(this,properties,value) ; Dirty = true ; }
 			public Quant? Value => Resolver?.Invoke(Context) ;
-			public string Valunit => Value+Unit ;
-			public override string ToString() => $"{Spec.Null(n=>n.No()).Get(s=>s+'=')}{Value}{Unit.Null(v=>v.No())}" ;
+			public string Valunit => $"{{0{Form}}}".Form(Value) ;
+			public override string ToString() => $"{Spec.Null(n=>n.No()).Get(s=>s+'=')}{Valunit}" ;
 			public Traitlet() {} // Default constructor must be present to enable DataGrid implicit Add .
-			public Traitlet( Traitlet source ) { name = source?.Spec ; unit = source?.Unit ; lex = source?.Lex ; Resolver = source?.Resolver ; }
+			public Traitlet( Traitlet source ) { name = source?.Spec ; form = source?.Form ; lex = source?.Lex ; Resolver = source?.Resolver ; }
 			public event PropertyChangedEventHandler PropertyChanged { add => propertyChanged += value.DispatchResolve() ; remove => propertyChanged -= value.DispatchResolve() ; } protected PropertyChangedEventHandler propertyChanged ;
 			#region De/Serialization
 			/// <summary>
 			/// Deserializes aspect from string .
 			/// </summary>
-			public static explicit operator Traitlet( string text ) => text.Separate(Serialization.Separator,braces:null).Get(t=>new Traitlet{Spec=t.At(0),Lex=t.At(1),Unit=t.At(2)} ) ;
+			public static explicit operator Traitlet( string text ) => text.Separate(Serialization.Separator,braces:null).Get(t=>new Traitlet{Spec=t.At(0),Lex=t.At(1),Form=t.At(2)} ) ;
 			/// <summary>
 			/// Serializes aspect from string .
 			/// </summary>
-			public static explicit operator string( Traitlet trait ) => trait.Get(t=>string.Join(Serialization.Separator,t.name,t.lex,t.unit)) ;
+			public static explicit operator string( Traitlet trait ) => trait.Get(t=>string.Join(Serialization.Separator,t.name,t.lex,t.form)) ;
 			static class Serialization { public const string Separator = " \x1 Traitlet \x2 " ; }
 			#endregion
 		}
