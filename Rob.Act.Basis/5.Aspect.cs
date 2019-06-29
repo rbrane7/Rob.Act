@@ -100,8 +100,7 @@ namespace Rob.Act
 			public string Lex { get => lex ; set => Changed("Lex,Value,Valunit",Resolver=(lex=value).Compile<Func<Aspect,Quant?>>()) ; } Func<Aspect,Quant?> Resolver ; string lex ;
 			void Changed<Value>( string properties , Value value ) { propertyChanged.On(this,properties,value) ; Dirty = true ; }
 			public Quant? Value => Resolver?.Invoke(Context) ;
-			public string Valunit => $"{{0{Form}}}".Form(Value) ;
-			public override string ToString() => $"{Spec.Null(n=>n.No()).Get(s=>s+'=')}{Valunit}" ;
+			public override string ToString() => $"{Spec.Null(n=>n.No()).Get(s=>s+'=')}{$"{{0{Form}}}".Form(Value)}" ;
 			public Traitlet() {} // Default constructor must be present to enable DataGrid implicit Add .
 			public Traitlet( Traitlet source ) { name = source?.Spec ; form = source?.Form ; lex = source?.Lex ; Resolver = source?.Resolver ; }
 			public event PropertyChangedEventHandler PropertyChanged { add => propertyChanged += value.DispatchResolve() ; remove => propertyChanged -= value.DispatchResolve() ; } protected PropertyChangedEventHandler propertyChanged ;
@@ -153,9 +152,10 @@ namespace Rob.Act
 			public Aspect( Path path ) { Context = path ; Add(new Axe(Context){Axis=Axis.Time}) ; for( var ax = Axis.Lon ; ax<Axis.Time ; ++ax ) if( Context[ax]!=null ) Add(new Axe(Context){Axis=ax}) ; this.Each(a=>a.Quantizer=null) ; }
 			public override string Spec { get => Context.Spec ; set => base.Spec = value ; }
 			public override Aspectable Source { set {} }
-			public Axable this[ Axis ax ] => this.OfType<Axe>().FirstOrDefault(a=>a.Axis==ax) ?? new Axe(Context){Axis=ax}.Set(Add) ;
+			public Axable this[ Axis ax ] { get => this.OfType<Axe>().FirstOrDefault(a=>a.Axis==ax) ?? new Axe(Context){Axis=ax}.Set(Add) ; }
 			public override void Add( Act.Axe ax ) => base.Add(ax.Set(a=>{if(!(a is Axe))a.Aspect=this;})) ;
 			public override void Remove( Act.Axe ax ) => base.Remove(ax.Set(a=>{if(!(a is Axe))a.Aspect=null;})) ;
+			public void Reform( params string[] binds ) => this.OfType<Axe>().Each(a=>a.Form=binds.At((int)(uint)a.Axis)) ;
 			public override Point.Iterable Points => new Iterator{ Context = this } ;
 			public class Iterator : Point.Iterable
 			{

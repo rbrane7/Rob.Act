@@ -19,8 +19,9 @@ namespace Rob.Act
 		public event PropertyChangedEventHandler PropertyChanged { add => propertyChanged += value.DispatchResolve() ; remove => propertyChanged -= value.DispatchResolve() ; } PropertyChangedEventHandler propertyChanged ;
 		public Axe() : this(null,null) {} // Default constructor must be present to enable DataGrid implicit Add .
 		public Axe( Func<int,Quant?> resolver = null , Func<Aspectable,int> counter = null ) { this.resolver = resolver ; this.counter = counter ; Quantile = new Quantile(this) ; }
-		public Axe( Axe source ) { spec = source?.spec ; aspectlet = source?.aspectlet ; aspect = source?.aspect ; resolvelet = source?.resolvelet ; resolver = source?.resolver ; selectlet = source?.selectlet ; selector = source?.selector ; countlet = source?.countlet ; counter = source?.counter ; distribulet = source?.distribulet ; distributor = source?.distributor ; Quantizer = source?.Quantizer ; multi = source?.multi??false ; }
+		public Axe( Axe source ) { spec = source?.spec ; aspectlet = source?.aspectlet ; aspect = source?.aspect ; resolvelet = source?.resolvelet ; resolver = source?.resolver ; selectlet = source?.selectlet ; selector = source?.selector ; countlet = source?.countlet ; counter = source?.counter ; distribulet = source?.distribulet ; distributor = source?.distributor ; Quantizer = source?.Quantizer ; multi = source?.multi??false ; form = source?.form ; }
 		public virtual string Spec { get => spec ; set { if( value==spec ) return ; spec = value ; propertyChanged.On(this,"Spec") ; } } string spec ;
+		public string Form { get => form ; set { if( value==form ) return ; form = value ; propertyChanged.On(this,"Form") ; } } string form ;
 		public Aspectable Source { set { if( DefaultAspect==null ) Aspect = value ; else Resource.Source = value ; } }
 		public Aspectable[] Sources { set { if( DefaultAspect==null ) Aspects = new Aspectables(value) ; else Resource.Sources = value ; } }
 		public bool Multi { get => multi ; set { if( value==multi ) return ; multi = value ; Resolver = null ; Aspect = null ; propertyChanged.On(this,"Multi,Aspects") ; } } bool multi ;
@@ -116,11 +117,11 @@ namespace Rob.Act
 		/// <summary>
 		/// Deserializes aspect from string .
 		/// </summary>
-		public static explicit operator Axe( string text ) => text.Separate(Serialization.Separator,braces:null).Get(t=>new Axe{Spec=t.At(0),Multi=t.At(1)==Serialization.Multier,Resolvelet=t.At(2),Countlet=t.At(3),Selectlet=t.At(4),Distribulet=t.At(5),Quantlet=t.At(6)}) ;
+		public static explicit operator Axe( string text ) => text.Separate(Serialization.Separator,braces:null).Get(t=>new Axe{Spec=t.At(0),Multi=t.At(1)==Serialization.Multier,Resolvelet=t.At(2),Countlet=t.At(3),Selectlet=t.At(4),Distribulet=t.At(5),Quantlet=t.At(6),Form=t.At(7)}) ;
 		/// <summary>
 		/// Serializes aspect from string .
 		/// </summary>
-		public static explicit operator string( Axe aspect ) => aspect.Get(a=>string.Join(Serialization.Separator,a.spec,a.multi?Serialization.Multier:string.Empty,a.resolvelet,a.countlet,a.selectlet,a.distribulet,a.quantlet)) ;
+		public static explicit operator string( Axe aspect ) => aspect.Get(a=>string.Join(Serialization.Separator,a.spec,a.multi?Serialization.Multier:string.Empty,a.resolvelet,a.countlet,a.selectlet,a.distribulet,a.quantlet,a.Form)) ;
 		static class Serialization { public const string Separator = " \x1 Axlet \x2 " ; public const string Multier = "*" ; }
 		#endregion
 	}
@@ -172,7 +173,7 @@ namespace Rob.Act
 		{
 			internal Path Context ;
 			public virtual Axis Axis { get => axis ; set { base.Spec = ( axis = value ).Stringy() ; Resolver = at=>Context.At(at)?[Axis] ; } } Axis axis ;
-			public override string Spec { get => base.Spec ; set { if( value!=null ) Axis = (Axis)(int)value.Axis() ; base.Spec = value ; } }
+			public override string Spec { get => base.Spec ; set { if( value!=null ) Axis = (Axis)value.Axis() ; base.Spec = value ; } }
 			public Axe( Path context ) => Context = context ;
 			public override int Count => DefaultCount ;
 			protected override int DefaultCount => Context?.Count ?? 0 ;

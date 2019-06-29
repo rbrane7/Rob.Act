@@ -53,7 +53,7 @@ namespace Rob.Act
 		public void Depose() { for( var i=0 ; i<Count ; ++i ) { this[i].Time = TimeSpan.Zero ; this[i].Bit = this[i].Dist = null ; this[i].Asc = this[i].Dev = null ; } }
 		public void Reset() { Depose() ; Impose() ; }
 		public Path( DateTime time , bool close , IEnumerable<Point> points = null ) : this(time,points) { if( close ) { if( Beat==null ) { this[0].Beat = 0 ; for( var i=1 ; i<Count ; ++i ) this[i].Beat = this[i-1].Beat+this[i].Beat/60*(this[i].Time-this[i-1].Time).TotalSeconds ; Beat = this[Count-1].Beat ; } } }
-		public virtual void Adopt( Path path ) { base.Adopt(path) ; Tag = path.Tag ; for( var i=0 ; i<Content.Count ; ++i ) Content[i].Adopt(path.Content[i]) ; Reset() ; propertyChanged.On(this,"Spec,Spectrum") ; CollectionChanged?.Invoke(this,new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset)) ; }
+		public virtual void Adopt( Path path ) { Depose() ; base.Adopt(path) ; Tag = path.Tag ; for( var i=0 ; i<Content.Count ; ++i ) Content[i].Adopt(path.Content[i]) ; Impose() ; propertyChanged.On(this,"Spec,Spectrum") ; CollectionChanged?.Invoke(this,new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset)) ; }
 		void Pointable.Adopt( Pointable path ) => (path as Path).Set(Adopt) ;
 		#endregion
 

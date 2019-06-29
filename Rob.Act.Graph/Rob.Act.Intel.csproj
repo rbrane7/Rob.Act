@@ -159,4 +159,12 @@
     </BootstrapperPackage>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>del C:\Base\Soft\Rob.Act\Intel\*.exe
+del C:\Base\Soft\Rob.Act\Intel\*.dll
+del C:\Base\Soft\Rob.Act\Intel\*.pdb
+copy $(TargetDir)*.exe C:\Base\Soft\Rob.Act\Intel\
+copy $(TargetDir)*.dll C:\Base\Soft\Rob.Act\Intel\
+copy $(TargetDir)*.pdb C:\Base\Soft\Rob.Act\Intel\</PostBuildEvent>
+  </PropertyGroup>
 </Project>
