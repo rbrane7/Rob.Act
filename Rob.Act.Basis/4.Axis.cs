@@ -158,11 +158,15 @@ namespace Rob.Act
 	}
 	public struct Lap : Aid.Gettable<int,int>
 	{
-		int[] Content ;
+		readonly int[] Content ;
 		public Lap( Axe context , Quant dif )
 		{
 			var content = new List<int>() ; var dir = Math.Sign(dif) ; dif = Math.Abs(dif) ;
-			if( context!=null ) for( int c=context.Count , i=dir>0?0:c ; dif>0 && (dir>0?i<c:i>=0) ; content.Add(i-content.Count) ) for( var v = context.Resolve(content.Count) ; (dir>0?i<c:i>=0) && (context.Resolve(i)-v).use(Math.Abs)<dif ; i+=dir ) ;
+			if( context!=null )
+			{
+				if( dir>0 ) for( int c=context.Count , i=0 ; dif>0 && i<c ; content.Add(i-content.Count) ) for( var v = context.Resolve(content.Count) ; i<c && (context.Resolve(i)-v).use(Math.Abs)<dif ; ++i ) ;
+				else for( int c=context.Count , i=0 , j=0 ; dif>0 && i<c ; ++j ) for( var v = context.Resolve(j) ; i<c && (context.Resolve(i)-v).use(Math.Abs)<dif ; content.Add(j-++i) ) ;
+			}
 			Content = content.ToArray() ;
 		}
 		public int this[ int key ] => Content.At(key) ;

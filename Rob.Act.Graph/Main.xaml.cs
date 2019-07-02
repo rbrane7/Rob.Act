@@ -395,9 +395,8 @@ namespace Rob.Act.Analyze
 				public static implicit operator Binding( string value ) => new Binding(value) ;
 				public Binding( string value )
 				{
-					if( value?.TrimStart().StartsBy("(")==true ) { var cvt = value.Separate('/')[0] ; Converter = new Aid.Converters.LambdaConverter{Forward=cvt} ; Path = null ; value = value.RightFromFirst(cvt) ; }
-					else { Path = value.LeftFrom(':',true).LeftFrom(',',true).LeftFrom('/',true) ; Converter = null ; }
-					Name = value.LeftFrom(':',true).LeftFrom(',',true).RightFromFirst('/',true) ; Format = value.RightFromFirst(':') ; Align = value.LeftFrom(':').RightFrom(',') ;
+					if( value?.TrimStart().StartsBy("(")==true ) { var cvt = value.LeftFromScoped(true,'/',',',':') ; Converter = new Aid.Converters.LambdaConverter{Forward=cvt} ; Path = null ; value = value.RightFromFirst(cvt) ; } else { Path = value.LeftFrom(true,':',',','/') ; Converter = null ; }
+					Name = value.LeftFrom(true,':',',').RightFromFirst('/',true) ; Format = value.RightFromFirst(':') ; Align = value.LeftFrom(':').RightFrom(',') ;
 				}
 				public string Of( object value ) => Reform.Form( Converter is IValueConverter c ? c.Convert(value,null,null,null) : value ) ;
 			}
