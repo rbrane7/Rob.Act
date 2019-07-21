@@ -18,10 +18,10 @@ namespace Rob.Act
 		public static Func<IEnumerable<Aspectable>> Aspecter ;
 		public event PropertyChangedEventHandler PropertyChanged { add => propertyChanged += value.DispatchResolve() ; remove => propertyChanged -= value.DispatchResolve() ; } PropertyChangedEventHandler propertyChanged ;
 		public Axe() : this(null,null) {} // Default constructor must be present to enable DataGrid implicit Add .
-		public Axe( Func<int,Quant?> resolver = null , Func<Aspectable,int> counter = null ) { this.resolver = resolver ; this.counter = counter ; Quantile = new Quantile(this) ; }
-		public Axe( Axe source ) { spec = source?.spec ; aspectlet = source?.aspectlet ; aspect = source?.aspect ; resolvelet = source?.resolvelet ; resolver = source?.resolver ; selectlet = source?.selectlet ; selector = source?.selector ; countlet = source?.countlet ; counter = source?.counter ; distribulet = source?.distribulet ; distributor = source?.distributor ; Quantizer = source?.Quantizer ; multi = source?.multi??false ; form = source?.form ; }
+		public Axe( Func<int,Quant?> resolver = null , Func<Aspectable,int> counter = null ) { this.resolver = resolver ; this.counter = counter ; Quantile = new Quantile(this,q=>Distribution) ; }
+		public Axe( Axe source ) { spec = source?.spec ; aspectlet = source?.aspectlet ; aspect = source?.aspect ; resolvelet = source?.resolvelet ; resolver = source?.resolver ; selectlet = source?.selectlet ; selector = source?.selector ; countlet = source?.countlet ; counter = source?.counter ; distribulet = source?.distribulet ; distributor = source?.distributor ; Quantizer = source?.Quantizer ; multi = source?.multi??false ; bond = source?.bond ; }
 		public virtual string Spec { get => spec ; set { if( value==spec ) return ; spec = value ; propertyChanged.On(this,"Spec") ; } } string spec ;
-		public string Form { get => form ; set { if( value==form ) return ; form = value ; propertyChanged.On(this,"Form") ; } } string form ;
+		public string Binder { get => bond ; set { if( value==bond ) return ; bond = value ; propertyChanged.On(this,"Binder") ; } } string bond ;
 		public Aspectable Source { set { if( DefaultAspect==null ) Aspect = value ; else Resource.Source = value ; } }
 		public Aspectable[] Sources { set { if( DefaultAspect==null ) Aspects = new Aspectables(value) ; else Resource.Sources = value ; } }
 		public bool Multi { get => multi ; set { if( value==multi ) return ; multi = value ; Resolver = null ; Aspect = null ; propertyChanged.On(this,"Multi,Aspects") ; } } bool multi ;
@@ -43,9 +43,9 @@ namespace Rob.Act
 		protected virtual int DefaultCount => Resource?.Points.Count ?? 0 ;
 		public Func<Aspectable,int> Counter { get => counter ?? ( counter = countlet.Compile<Func<Aspectable,int>>()/*??Coaxe.Set(x=>{if(resolver==null)resolver=i=>x[i];})?.counter*/ ) ; set { if( counter==value ) return ; counter = value ; propertyChanged.On(this,"Counter") ; } } Func<Aspectable,int> counter ;
 		public string Countlet { get => countlet ; set { if( value.Null(c=>c.No())==countlet ) return ; countlet = value ; Counter = null ; propertyChanged.On(this,"Countlet") ; } } string countlet ;
-		public Func<Axe,IEnumerable<Quant>> Distributor { get => distributor ?? ( distributor = distribulet.Compile<Func<Axe,IEnumerable<Quant>>>() ) ; set { if( distributor==value ) return ; distributor = value ; propertyChanged.On(this,"Distributor,Quantile") ; } } Func<Axe,IEnumerable<Quant>> distributor ;
+		public Func<Axe,IEnumerable<Quant>> Distributor { get => distributor ?? ( distributor = distribulet.Compile<Func<Axe,IEnumerable<Quant>>>() ?? (a=>null) ) ; set { if( distributor==value ) return ; distributor = value ; propertyChanged.On(this,"Distributor,Quantile") ; } } Func<Axe,IEnumerable<Quant>> distributor ;
 		public IEnumerable<Quant> Distribution => Distributor?.Invoke(this) ?? DefaultDistribution ?? Enumerable.Empty<Quant>() ;
-		protected virtual IEnumerable<Quant> DefaultDistribution { get { var pts = this.Where(q=>q!=null).Cast<Quant>().ToArray() ; if( pts.Length<=0 ) return null ; var min = pts.Min() ; var max = pts.Max() ; var stp = (max-min)/10 ; return min.Recur(q=>q+stp,q=>q<=max) ; } }
+		protected virtual IEnumerable<Quant> DefaultDistribution => this.Where(q=>q!=null).Cast<Quant>().Distinct().OrderBy(q=>q).ToArray() ;
 		public string Distribulet { get => distribulet ; set { if( value==distribulet ) return ; distribulet = value ; Distributor = null ; propertyChanged.On(this,"Distribulet") ; } } string distribulet ;
 		public IEnumerator<Quant?> GetEnumerator() { for( int i=0 , count=Count ; i<count ; ++i ) yield return this[i] ; } IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
 		public Quantile Quantile { get ; private set ; }
@@ -106,7 +106,7 @@ namespace Rob.Act
 		public Axe this[ IEnumerable<int> fragment ] => For(fragment) ;
 		public Axe Shift( Axe upon , Quant quo = 0 ) => upon==null ? No : new Axe( i=>(quo*i).Get(at=>Shift(upon,(int)at,(int)((i-at)/2))) , a=>Count ) ;
 		public Axe Drift( Axe upon , Quant quo = 0 ) => upon.Shift(this,quo) ;
-		Quant? Diff( int at , int dif ) => Resolve(at+dif)-Resolve(at) ;
+		Quant? Diff( int at , int dif ) => (Resolve(at+dif)-Resolve(at))*Math.Sign(dif) ;
 		Quant? Quot( Axe upon , int at , int dif ) => Diff(at,dif)/upon.Diff(at,dif).Nil() ;
 		Quant? Shift( Axe upon , int at , int dis ) => Quot(upon,at+dis,dis)/Quot(upon,at,dis).Nil() ;
 		public Axe Rift( Axe upon , uint quo = 9 ) => upon==null ? No : new Axe( i=>Shift(upon,i,((Count-i)>>1)-1) , a=>(int)(Count*quo/(1D+quo)) ) ;
@@ -117,11 +117,11 @@ namespace Rob.Act
 		/// <summary>
 		/// Deserializes aspect from string .
 		/// </summary>
-		public static explicit operator Axe( string text ) => text.Separate(Serialization.Separator,braces:null).Get(t=>new Axe{Spec=t.At(0),Multi=t.At(1)==Serialization.Multier,Resolvelet=t.At(2),Countlet=t.At(3),Selectlet=t.At(4),Distribulet=t.At(5),Quantlet=t.At(6),Form=t.At(7)}) ;
+		public static explicit operator Axe( string text ) => text.Separate(Serialization.Separator,braces:null).Get(t=>new Axe{Spec=t.At(0),Multi=t.At(1)==Serialization.Multier,Resolvelet=t.At(2),Countlet=t.At(3),Selectlet=t.At(4),Distribulet=t.At(5),Quantlet=t.At(6),Binder=t.At(7)}) ;
 		/// <summary>
 		/// Serializes aspect from string .
 		/// </summary>
-		public static explicit operator string( Axe aspect ) => aspect.Get(a=>string.Join(Serialization.Separator,a.spec,a.multi?Serialization.Multier:string.Empty,a.resolvelet,a.countlet,a.selectlet,a.distribulet,a.quantlet,a.Form)) ;
+		public static explicit operator string( Axe aspect ) => aspect.Get(a=>string.Join(Serialization.Separator,a.spec,a.multi?Serialization.Multier:string.Empty,a.resolvelet,a.countlet,a.selectlet,a.distribulet,a.quantlet,a.Binder)) ;
 		static class Serialization { public const string Separator = " \x1 Axlet \x2 " ; public const string Multier = "*" ; }
 		#endregion
 	}
@@ -130,7 +130,7 @@ namespace Rob.Act
 		readonly Quantile Context ;
 		public Axe Ax => Axe ?? Context?.Ax ; readonly Axe Axe ;
 		internal Func<Quantile,IEnumerable<Quant>> Quantizer ;
-		Quant[] Distribution { get { if( distribution==null ) { distribution = Source?.ToArray() ; distribution = Quantizer?.Invoke(this)?.ToArray() ?? distribution ; } return distribution ; } } Quant[] distribution ; readonly IEnumerable<Quant> Source ;
+		Quant[] Distribution { get { if( distribution==null ) try { distribution = Source?.ToArray() ; distribution = Quantizer?.Invoke(this)?.ToArray() ?? distribution ; } catch( System.Exception e ) { System.Diagnostics.Trace.TraceWarning(e.Stringy()) ; } return distribution ; } } Quant[] distribution ; readonly IEnumerable<Quant> Source ;
 		Quantile( Axe context , IEnumerable<Quant> source , Func<Quantile,IEnumerable<Quant>> quantizer = null ) { Axe = context ; Source = source ; Quantizer = quantizer ; }
 		public Quantile( Axe context , Func<Quantile,IEnumerable<Quant>> quantizer = null , IEnumerable<Quant> distribution = null ) : this(context,(distribution??context?.Distribution)?.Select(d=>context[d]),quantizer) {}
 		Quantile( Quantile context , Func<Quantile,IEnumerable<Quant>> quantizer ) : this(null,context.Distribution,quantizer) => Context = context ;
@@ -138,11 +138,6 @@ namespace Rob.Act
 		public int Count => Distribution?.Length ?? 0 ;
 		public Quantile this[ IEnumerable<Quant> distribution ] => Axe.Get(a=>new Quantile(a,Quantizer,distribution)) ?? new Quantile(Context[distribution],Quantizer) ;
 		public IEnumerator<Quant> GetEnumerator() => (Distribution?.AsEnumerable()??Enumerable.Empty<Quant>()).GetEnumerator() ; IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
-		#region Blind
-		public object SyncRoot => throw new NotSupportedException() ;
-		public bool IsSynchronized => throw new NotSupportedException() ;
-		public void CopyTo( Array array, int index ) => throw new NotSupportedException() ;
-		#endregion
 		#region Operations
 		public static Quantile operator>>( Quantile source , int level ) => level<=0 ? source : new Quantile(source,q=>q.Get(d=>(d.Count-1).Steps(1).Select(i=>d[i]-d[i-1])))>>level-1 ;
 		public static Quantile operator-( Quantile source ) => new Quantile(source,q=>q.Select(v=>-v)) ;
@@ -161,8 +156,7 @@ namespace Rob.Act
 		readonly int[] Content ;
 		public Lap( Axe context , Quant dif )
 		{
-			var content = new List<int>() ; var dir = Math.Sign(dif) ; dif = Math.Abs(dif) ;
-			if( context!=null )
+			var content = new List<int>() ; var dir = Math.Sign(dif) ; dif = Math.Abs(dif) ; if( context!=null )
 			{
 				if( dir>0 ) for( int c=context.Count , i=0 ; dif>0 && i<c ; content.Add(i-content.Count) ) for( var v = context.Resolve(content.Count) ; i<c && (context.Resolve(i)-v).use(Math.Abs)<dif ; ++i ) ;
 				else for( int c=context.Count , i=0 , j=0 ; dif>0 && i<c ; ++j ) for( var v = context.Resolve(j) ; i<c && (context.Resolve(i)-v).use(Math.Abs)<dif ; content.Add(j-++i) ) ;
@@ -176,7 +170,7 @@ namespace Rob.Act
 		public class Axe : Act.Axe
 		{
 			internal Path Context ;
-			public virtual Axis Axis { get => axis ; set { base.Spec = ( axis = value ).Stringy() ; Resolver = at=>Context.At(at)?[Axis] ; } } Axis axis ;
+			public virtual Axis Axis { get => axis ; set { base.Spec = ( axis = value ).Stringy() ; Resolver = at=>Context?[at]?[Axis] ; } } Axis axis ;
 			public override string Spec { get => base.Spec ; set { if( value!=null ) Axis = (Axis)value.Axis() ; base.Spec = value ; } }
 			public Axe( Path context ) => Context = context ;
 			public override int Count => DefaultCount ;

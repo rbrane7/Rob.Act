@@ -19,7 +19,8 @@ namespace Rob.Act
 			DateTime Date = DateTime.Now ; string Spec , Subject , Locus ;
 			public Skierg( string data )
 			{
-				(TimeSpan Time,Quant Distance,Quant Work,Quant Beat,uint Bit,Quant Effort,Quant Drag) accu = (TimeSpan.Zero,0,0,0,0,0,0) ; uint idrag = 0 ;
+				(TimeSpan Time,Quant Distance,Quant Work,Quant Beat,uint Bit,Quant Effort,Quant Drag) accu = (TimeSpan.Zero,0,0,0,0,0,0) ;
+				uint idrag = 0 ; Quant atime = 0 , adist = 0 ;
 				foreach( var line in data.SeparateTrim('\n').Select(l=>l.Trim()) )
 				{
 					if( line.StartsBy(Sign) )
@@ -33,7 +34,8 @@ namespace Rob.Act
 					}
 					var vals = line.Separate(',').Select(v=>v.Trim('"')).ToArray() ; if( vals.At(7)==null ) continue ;
 					(uint bit,double time,double dist,uint beat,uint power,uint drag) = (vals[0].Parse<uint>(0),vals[1].Parse<double>(0),vals[2].Parse<double>(0),vals[7].Parse<uint>(0),vals[4].Parse<uint>(0),vals.At(8).Parse<uint>(0)) ;
-					var db = bit-accu.Bit ; var ib = Interpolate ? 1 : db ; var dt = TimeSpan.FromSeconds((time-accu.Time.TotalSeconds)/db*ib) ; accu.Bit = bit ; //if( dt==TimeSpan.Zero ) { accu.Drag += (drag.nil()??idrag)*db ; Data[Data.Count-1] = accu ; continue ; } // skipping empty bits
+					var db = bit-accu.Bit ; var ib = Interpolate ? 1 : db ; if( time<(accu.Time-TimeSpan.FromTicks(1)).TotalSeconds-atime ) { atime = accu.Time.TotalSeconds ; adist = accu.Distance ; }
+					time += atime ; var dt = TimeSpan.FromSeconds((time-accu.Time.TotalSeconds)/db*ib) ; dist += adist ; accu.Bit = bit ; if( dist<accu.Distance ) dist = accu.Distance+dt.TotalSeconds*Math.Pow(power/2.8,1D/3D) ; //if( dt==TimeSpan.Zero ) { accu.Drag += (drag.nil()??idrag)*db ; Data[Data.Count-1] = accu ; continue ; } // skipping empty bits
 					for( var i=ib ; i<=db ; i+=ib )/*interpolation*/{ accu.Time += dt ; accu.Distance = dist ; accu.Work = 2.8*Math.Pow(dist/time,3)*time ; accu.Beat += beat*dt.TotalSeconds/60 ; accu.Effort += power ; accu.Drag += (drag.nil()??idrag)*ib/100D ; Data.Add(accu) ; }
 				}
 			}

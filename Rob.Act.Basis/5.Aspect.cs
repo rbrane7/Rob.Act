@@ -57,7 +57,7 @@ namespace Rob.Act
 			public Point( Aspect context , int at ) { Context = context ; Content = context.Select(a=>a[at]).ToArray() ; Mark = Mark.No ; }
 			public Quant? this[ uint key ] => Content[key] ;
 			public Quant? this[ string key ] => Content[Context.Index(key)] ;
-			public IEnumerator<double?> GetEnumerator() => Content.Cast<Quant?>().GetEnumerator() ; IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
+			public IEnumerator<Quant?> GetEnumerator() => Content.Cast<Quant?>().GetEnumerator() ; IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
 			public Mark Mark ;
 			public struct Iterator : Iterable
 			{
@@ -96,23 +96,23 @@ namespace Rob.Act
 			internal Aspect Context ;
 			public bool Dirty { set => Context.Set(c=>c.Dirty=value) ; }
 			public string Spec { get => name ; set => Changed("Spec",name=value) ; } string name ;
-			public string Form { get => form ; set => Changed("Form,Valunit",form=value) ; } string form ;
+			public string Bond { get => bond ; set => Changed("Bond,Valunit",bond=value) ; } string bond ;
 			public string Lex { get => lex ; set => Changed("Lex,Value,Valunit",Resolver=(lex=value).Compile<Func<Aspect,Quant?>>()) ; } Func<Aspect,Quant?> Resolver ; string lex ;
 			void Changed<Value>( string properties , Value value ) { propertyChanged.On(this,properties,value) ; Dirty = true ; }
 			public Quant? Value => Resolver?.Invoke(Context) ;
-			public override string ToString() => $"{Spec.Null(n=>n.No()).Get(s=>s+'=')}{$"{{0{Form}}}".Form(Value)}" ;
+			public override string ToString() => $"{Spec.Null(n=>n.No()).Get(s=>s+'=')}{$"{{0{Bond}}}".Form(Value)}" ;
 			public Traitlet() {} // Default constructor must be present to enable DataGrid implicit Add .
-			public Traitlet( Traitlet source ) { name = source?.Spec ; form = source?.Form ; lex = source?.Lex ; Resolver = source?.Resolver ; }
+			public Traitlet( Traitlet source ) { name = source?.Spec ; bond = source?.Bond ; lex = source?.Lex ; Resolver = source?.Resolver ; }
 			public event PropertyChangedEventHandler PropertyChanged { add => propertyChanged += value.DispatchResolve() ; remove => propertyChanged -= value.DispatchResolve() ; } protected PropertyChangedEventHandler propertyChanged ;
 			#region De/Serialization
 			/// <summary>
 			/// Deserializes aspect from string .
 			/// </summary>
-			public static explicit operator Traitlet( string text ) => text.Separate(Serialization.Separator,braces:null).Get(t=>new Traitlet{Spec=t.At(0),Lex=t.At(1),Form=t.At(2)} ) ;
+			public static explicit operator Traitlet( string text ) => text.Separate(Serialization.Separator,braces:null).Get(t=>new Traitlet{Spec=t.At(0),Lex=t.At(1),Bond=t.At(2)} ) ;
 			/// <summary>
 			/// Serializes aspect from string .
 			/// </summary>
-			public static explicit operator string( Traitlet trait ) => trait.Get(t=>string.Join(Serialization.Separator,t.name,t.lex,t.form)) ;
+			public static explicit operator string( Traitlet trait ) => trait.Get(t=>string.Join(Serialization.Separator,t.name,t.lex,t.bond)) ;
 			static class Serialization { public const string Separator = " \x1 Traitlet \x2 " ; }
 			#endregion
 		}
@@ -155,7 +155,7 @@ namespace Rob.Act
 			public Axable this[ Axis ax ] { get => this.OfType<Axe>().FirstOrDefault(a=>a.Axis==ax) ?? new Axe(Context){Axis=ax}.Set(Add) ; }
 			public override void Add( Act.Axe ax ) => base.Add(ax.Set(a=>{if(!(a is Axe))a.Aspect=this;})) ;
 			public override void Remove( Act.Axe ax ) => base.Remove(ax.Set(a=>{if(!(a is Axe))a.Aspect=null;})) ;
-			public void Reform( params string[] binds ) => this.OfType<Axe>().Each(a=>a.Form=binds.At((int)(uint)a.Axis)) ;
+			public void Reform( params string[] binds ) => this.OfType<Axe>().Each(a=>a.Binder=binds.At((int)(uint)a.Axis)) ;
 			public override Point.Iterable Points => new Iterator{ Context = this } ;
 			public class Iterator : Point.Iterable
 			{

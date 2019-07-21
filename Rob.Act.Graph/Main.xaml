@@ -36,7 +36,7 @@
                     <DataGridTextColumn Header="Selector" Binding="{Binding Selectlet}" Width="1*"/>
                     <DataGridTextColumn Header="Distributor" Binding="{Binding Distribulet}" Width="1*"/>
                     <DataGridTextColumn Header="Quantizer" Binding="{Binding Quantlet}" Width="1*"/>
-                    <DataGridTextColumn Header="Form" Binding="{Binding Form}" Width="1*"/>
+                    <DataGridTextColumn Header="Binder" Binding="{Binding Binder}" Width="1*"/>
                 </DataGrid.Columns>
                 <DataGrid.CommandBindings>
                     <CommandBinding Command="Delete" Executed="DataGridDeleteCommandBinding_Executed"/>
@@ -46,7 +46,7 @@
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="Spec" Binding="{Binding Spec}" Width="1*"/>
                     <DataGridTextColumn Header="Resolver" Binding="{Binding Lex}" Width="4*"/>
-                    <DataGridTextColumn Header="Form" Binding="{Binding Form}" Width="1*"/>
+                    <DataGridTextColumn Header="Binder" Binding="{Binding Bond}" Width="1*"/>
                 </DataGrid.Columns>
                 <DataGrid.CommandBindings>
                     <CommandBinding Command="Delete" Executed="DataGridDeleteCommandBinding_Executed"/>
