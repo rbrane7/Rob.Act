@@ -18,7 +18,7 @@ namespace Rob.Act
 		public static Func<IEnumerable<Aspectable>> Aspecter ;
 		public event PropertyChangedEventHandler PropertyChanged { add => propertyChanged += value.DispatchResolve() ; remove => propertyChanged -= value.DispatchResolve() ; } PropertyChangedEventHandler propertyChanged ;
 		public Axe() : this(null,null) {} // Default constructor must be present to enable DataGrid implicit Add .
-		public Axe( Func<int,Quant?> resolver = null , Func<Aspectable,int> counter = null ) { this.resolver = resolver ; this.counter = counter ; Quantile = new Quantile(this,q=>Distribution) ; }
+		public Axe( Func<int,Quant?> resolver = null , Func<Aspectable,int> counter = null ) { this.resolver = resolver ; this.counter = counter ; Quantile = new Quantile(this) ; }
 		public Axe( Axe source ) { spec = source?.spec ; aspectlet = source?.aspectlet ; aspect = source?.aspect ; resolvelet = source?.resolvelet ; resolver = source?.resolver ; selectlet = source?.selectlet ; selector = source?.selector ; countlet = source?.countlet ; counter = source?.counter ; distribulet = source?.distribulet ; distributor = source?.distributor ; Quantizer = source?.Quantizer ; multi = source?.multi??false ; bond = source?.bond ; }
 		public virtual string Spec { get => spec ; set { if( value==spec ) return ; spec = value ; propertyChanged.On(this,"Spec") ; } } string spec ;
 		public string Binder { get => bond ; set { if( value==bond ) return ; bond = value ; propertyChanged.On(this,"Binder") ; } } string bond ;
@@ -33,6 +33,7 @@ namespace Rob.Act
 		public Func<IEnumerable<Aspectable>,IEnumerable<Aspectable>> Selector { get => selector ; set { if( selector==value ) return ; selector = value ; Aspect = null ; propertyChanged.On(this,"Selector") ; } } Func<IEnumerable<Aspectable>,IEnumerable<Aspectable>> selector ;
 		public string Selectlet { get => selectlet ; set { if( selectlet==value ) return ; Selector = value.Compile<Func<IEnumerable<Aspectable>,IEnumerable<Aspectable>>>() ; selectlet = value.Null(s=>s.No()) ; propertyChanged.On(this,"Selectlet") ; } } string selectlet ;
 		public Quant this[ Quant at ] => this.Count(q=>q>=at) ;
+		public Quant this[ Quant at , Axe ax ] { get { if( ax==null ) return this[at] ; Quant rez = 0 ; for( int i=0 , count=Count ; i<count ; ++i ) if( Resolve(i)>=at ) rez += ax[i+1]-ax[i]??0 ; return rez ; } }
 		public Quant? this[ int at ] => (uint)at<Count ? Resolve(at) : null as Quant? ;
 		protected internal virtual Quant? Resolve( int at ) => Resolver?.Invoke(at) ;
 		Axe Coaxe => Multi?Aspects.Get(a=>Resolvelet.Compile<Func<Aspectables,Axe>>(use:"Rob.Act").Of(a)):Aspect.Get(a=>Resolvelet.Compile<Func<Aspectable,Axe>>(use:"Rob.Act").Of(a)) ;
@@ -44,8 +45,8 @@ namespace Rob.Act
 		public Func<Aspectable,int> Counter { get => counter ?? ( counter = countlet.Compile<Func<Aspectable,int>>()/*??Coaxe.Set(x=>{if(resolver==null)resolver=i=>x[i];})?.counter*/ ) ; set { if( counter==value ) return ; counter = value ; propertyChanged.On(this,"Counter") ; } } Func<Aspectable,int> counter ;
 		public string Countlet { get => countlet ; set { if( value.Null(c=>c.No())==countlet ) return ; countlet = value ; Counter = null ; propertyChanged.On(this,"Countlet") ; } } string countlet ;
 		public Func<Axe,IEnumerable<Quant>> Distributor { get => distributor ?? ( distributor = distribulet.Compile<Func<Axe,IEnumerable<Quant>>>() ?? (a=>null) ) ; set { if( distributor==value ) return ; distributor = value ; propertyChanged.On(this,"Distributor,Quantile") ; } } Func<Axe,IEnumerable<Quant>> distributor ;
-		public IEnumerable<Quant> Distribution => Distributor?.Invoke(this) ?? DefaultDistribution ?? Enumerable.Empty<Quant>() ;
-		protected virtual IEnumerable<Quant> DefaultDistribution => this.Where(q=>q!=null).Cast<Quant>().Distinct().OrderBy(q=>q).ToArray() ;
+		public IEnumerable<Quant> Distribution => Distributor?.Invoke(this) ?? DefaultDistribution ; //?? Enumerable.Empty<Quant>() ;
+		protected virtual IEnumerable<Quant> DefaultDistribution => this.Refine().ToArray().Null(d=>d.Length<=0) ;
 		public string Distribulet { get => distribulet ; set { if( value==distribulet ) return ; distribulet = value ; Distributor = null ; propertyChanged.On(this,"Distribulet") ; } } string distribulet ;
 		public IEnumerator<Quant?> GetEnumerator() { for( int i=0 , count=Count ; i<count ; ++i ) yield return this[i] ; } IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
 		public Quantile Quantile { get ; private set ; }
@@ -125,18 +126,23 @@ namespace Rob.Act
 		static class Serialization { public const string Separator = " \x1 Axlet \x2 " ; public const string Multier = "*" ; }
 		#endregion
 	}
-	public class Quantile : Aid.Gettable<int,Quant> , Aid.Countable<Quant> , Aid.Gettable<IEnumerable<Quant>,Quantile>
+	public class Quantile : Aid.Gettable<int,Quant> , Aid.Countable<Quant>
 	{
-		readonly Quantile Context ;
-		public Axe Ax => Axe ?? Context?.Ax ; readonly Axe Axe ;
+		public Axe Ax => Axe ?? Context?.Ax ; readonly Quantile Context ; readonly Axe Axe ;
 		internal Func<Quantile,IEnumerable<Quant>> Quantizer ;
-		Quant[] Distribution { get { if( distribution==null ) try { distribution = Source?.ToArray() ; distribution = Quantizer?.Invoke(this)?.ToArray() ?? distribution ; } catch( System.Exception e ) { System.Diagnostics.Trace.TraceWarning(e.Stringy()) ; } return distribution ; } } Quant[] distribution ; readonly IEnumerable<Quant> Source ;
-		Quantile( Axe context , IEnumerable<Quant> source , Func<Quantile,IEnumerable<Quant>> quantizer = null ) { Axe = context ; Source = source ; Quantizer = quantizer ; }
-		public Quantile( Axe context , Func<Quantile,IEnumerable<Quant>> quantizer = null , IEnumerable<Quant> distribution = null ) : this(context,(distribution??context?.Distribution)?.Select(d=>context[d]),quantizer) {}
+		Quant[] Distribution { get { if( distribution==null ) try { distribution = Source ; distribution = Quantizer?.Invoke(this)?.ToArray() ?? distribution ; } catch( System.Exception e ) { System.Diagnostics.Trace.TraceWarning(e.Stringy()) ; } return distribution ; } } Quant[] distribution ;
+		Quant[] Source => _Source as Quant[] ?? ( _Source = _Source?.ToArray() ) as Quant[] ; Quant[] Basis => _Basis as Quant[] ?? ( _Basis = _Basis?.ToArray() ) as Quant[] ; IEnumerable<Quant> _Source , _Basis ;
+		Quantile( Axe context , IEnumerable<Quant> source , Func<Quantile,IEnumerable<Quant>> quantizer = null ) { Axe = context ; _Source = source ; Quantizer = quantizer ; }
+		public Quantile( Axe context , Func<Quantile,IEnumerable<Quant>> quantizer = null , IEnumerable<Quant> distribution = null , Axe on = null ) : this(context,distribution??context?.Distribution,quantizer) => _Source = (_Basis=_Source)?.Select(d=>context[d,on]) ;
 		Quantile( Quantile context , Func<Quantile,IEnumerable<Quant>> quantizer ) : this(null,context.Distribution,quantizer) => Context = context ;
-		public double this[ int key ] => Distribution.At(key) ;
+		public Quant this[ int key ] => Distribution.At(key) ;
+		public Quant this[ Quant level ] { get { var b = Basis ; if( level<b?[0] ) return this[0] ; for( var i=0 ; i<b?.Length-1 ; ++i ) if( b[i]<=level && b[i+1]>=level ) return this[i] ; return this[Count-1] ; } }
+		public Quant Treshold( Quant level ) { var s = Source ; var b = Basis ; if( s==null || b==null || level>s?[0] ) return b?[0]??0 ; for( var i=0 ; i<s.Length-1 ; ++i ) if( s[i]>=level && s[i+1]<=level ) return b[i] ; return b[b.Length-1] ; }
 		public int Count => Distribution?.Length ?? 0 ;
-		public Quantile this[ IEnumerable<Quant> distribution ] => Axe.Get(a=>new Quantile(a,Quantizer,distribution)) ?? new Quantile(Context[distribution],Quantizer) ;
+		public Duo Centre { get { Quant ex = 0 , cd = 0 ; var j = 0 ; var s = Source ; var b = Basis ; for( var i = 0 ; i<Count-1 ; ++i ) if( (cd=Math.Abs((s[i]-s[i+1])/(b[i]-b[i+1])))>ex ) { ex = cd ; j = i ; } return new Duo{X=this[j],Y=b?[j]??0} ; } }
+		public Quantile this[ Func<Quantile,IEnumerable<Quant>> quantizer , IEnumerable<Quant> distribution , Axe on = null , bool free = false ] => Axe.Get(a=>new Quantile(a,quantizer,distribution??(free?a.Refine():a.Distribution),on)) ?? new Quantile(Context[distribution,on,free],quantizer) ;
+		public Quantile this[ IEnumerable<Quant> distribution , Axe on = null , bool free = false ] => this[free?null:Quantizer,distribution,on,free] ;
+		public Quantile this[ Axe on , bool free = false ] => this[null,on,free] ;
 		public IEnumerator<Quant> GetEnumerator() => (Distribution?.AsEnumerable()??Enumerable.Empty<Quant>()).GetEnumerator() ; IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
 		#region Operations
 		public static Quantile operator>>( Quantile source , int level ) => level<=0 ? source : new Quantile(source,q=>q.Get(d=>(d.Count-1).Steps(1).Select(i=>d[i]-d[i-1])))>>level-1 ;
@@ -150,6 +156,7 @@ namespace Rob.Act
 		public static Quantile operator+( Quant value , Quantile source ) => new Quantile(source,q=>q.Select(v=>value+v)) ;
 		public static Quantile operator-( Quant value , Quantile source ) => new Quantile(source,q=>q.Select(v=>value-v)) ;
 		#endregion
+		public struct Duo { public Quant X , Y ; }
 	}
 	public struct Lap : Aid.Gettable<int,int>
 	{
@@ -186,5 +193,6 @@ namespace Rob.Act
 		public static Axe Drift( this int dis , Axe x , Axe y , int? dif = null ) => Shift(dis,y,x,dif) ;
 		public static Axe Quo( this int dif , Axe x , Axe y ) => (x%dif)/(y%dif) ;
 		public static Axe Quo( this Lap dif , Axe x , Axe y ) => (x/dif)/(y/dif) ;
+		public static IEnumerable<Quant> Refine( this IEnumerable<Quant?> source ) => source?.OfType<Quant>().Distinct().OrderBy(q=>q) ;
 	}
 }

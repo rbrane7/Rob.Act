@@ -55,8 +55,8 @@ namespace Rob.Act
 			Aspect Context ; Quant?[] Content ;
 			public Point( Aspect context , params Quant?[] content ) { Context = context ; Content = content ; Mark = Mark.No ; }
 			public Point( Aspect context , int at ) { Context = context ; Content = context.Select(a=>a[at]).ToArray() ; Mark = Mark.No ; }
-			public Quant? this[ uint key ] => Content[key] ;
-			public Quant? this[ string key ] => Content[Context.Index(key)] ;
+			public Quant? this[ uint key ] => Content.At((int)key) ;
+			public Quant? this[ string key ] => Content.At(Context.Index(key)) ;
 			public IEnumerator<Quant?> GetEnumerator() => Content.Cast<Quant?>().GetEnumerator() ; IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
 			public Mark Mark ;
 			public struct Iterator : Iterable
