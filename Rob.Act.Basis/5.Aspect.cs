@@ -12,7 +12,7 @@ using Aid.Extension;
 namespace Rob.Act
 {
 	using Quant = Double ;
-	public interface Aspectable : Aid.Gettable<int,Axe> , Aid.Gettable<Axe> , Aid.Countable<Axe> , Resourcable { string Spec { get; } }
+	public interface Aspectable : Aid.Gettable<int,Axe> , Aid.Gettable<Axe> , Aid.Countable<Axe> , Resourcable { string Spec { get; } Path Raw { get; } Path Rat( int at = 0 ) ; }
 	public interface Resourcable { Aspectable Source { set; } Aspectable[] Sources { set; } Aspect.Point.Iterable Points { get; } }
 	public struct Aspectables : Aid.Gettable<int,Aspectable> , Aid.Gettable<Aspectable> , Aid.Countable<Aspectable> , Resourcable
 	{
@@ -49,6 +49,8 @@ namespace Rob.Act
 		public virtual Aspectable[] Sources { get => sources ; set { sources = value ; this.Each(a=>a.Sources=value) ; } } Aspectable[] sources ;
 		public virtual Point.Iterable Points => new Point.Iterator{ Context = this } ;
 		public int Index( string axe ) => IndexOf(this[axe]) ;
+		public virtual Path Raw => Source?.Raw ;
+		public Path Rat( int at = 0 ) => Sources==null ? Raw : Sources.At(at)?.Raw ;
 		public struct Point : Quantable , IEnumerable<Quant?>
 		{
 			public interface Iterable : IEnumerable<Point> { int Count { get; } Aspectable Context { get; } Point this[ int at ] { get; } }
@@ -119,18 +121,22 @@ namespace Rob.Act
 		public class Traits : Aid.Collections.ObservableList<Traitlet> , Aid.Gettable<Quant?> , ICollection<Traitlet> , IList , INotifyPropertyChanged
 		{
 			public bool Dirty { get => Context?.Dirty==true ; set => Context.Set(c=>c.Dirty=value) ; }
-			internal Aspect Context { get => context ; set { context = value ; this.Each(t=>t.Context=value) ; } } Aspect context ;
+			internal Aspect Context { get => context ; set { this.Each(t=>{if(t.Context==context)t.Context=value;}) ; context = value ; } } Aspect context ;
+			public IEnumerable<Aspect> Contexts => this.Select(t=>t.Context).Distinct() ;
 			public Quant? this[ string key ] => key.Get(k=>new Regex(k).Get(r=>this.SingleOrNo(t=>r.Match(t.Spec).Success)))?.Value ;
-			public override void Add( Traitlet trait ) => base.Add(trait.Set(t=>{t.Context=Context;t.PropertyChanged+=ChangedItem;Spec=null;Dirty=true;})) ;
+			public override void Add( Traitlet trait ) => base.Add(trait.Set(t=>{if(t.Context==null){t.Context=Context;Dirty=true;}t.PropertyChanged+=ChangedItem;Spec=null;})) ;
+			public void Add( IEnumerable<Traitlet> traits ) => traits.Each(Add) ;
 			public static Traits operator+( Traits traits , Traitlet trait ) => traits.Set(t=>t.Add(trait)) ;
-			public override bool Remove( Traitlet item ) => base.Remove(item).Set(r=>{item.PropertyChanged-=ChangedItem;Spec=null;Dirty=true;}) ;
+			public override bool Remove( Traitlet item ) => base.Remove(item).Set(r=>{if(item.Context==context){item.Context=null;Dirty=true;}item.PropertyChanged-=ChangedItem;Spec=null;}) ;
 			void ICollection<Traitlet>.Add( Traitlet trait ) => Add(trait) ;
 			int IList.Add( object item ) { Add((Traitlet)item) ; return Count-1 ; }
 			void IList.Remove( object value ) => Remove( value as Traitlet ) ;
+			public void Clean() => this.Where(t=>t.Context!=Context).ToArray().Each(t=>Remove(t)) ;
 			public override string ToString() => Spec ;
-			public string Spec { get => this.Stringy(',').Null(v=>v.No()) ; protected set => propertyChanged.On(this,"Spec",Context.Set(c=>c.Score=value)) ; }
+			public string Spec { get => this.Stringy(',').Null(v=>v.No()) ; protected set { if( Propagate() ) propertyChanged.On(this,"Spec",Context.Set(c=>c.Score=value)) ; } }
 			void ChangedItem( object subject , PropertyChangedEventArgs prop ) { Spec = null ; Context?.propertyChanged.On(Context,"Trait") ; }
 			public event PropertyChangedEventHandler PropertyChanged { add => propertyChanged += value.DispatchResolve() ; remove => propertyChanged -= value.DispatchResolve() ; } protected PropertyChangedEventHandler propertyChanged ;
+			protected override void Refresh( IEnumerable<Traitlet> add = null, IEnumerable<Traitlet> rem = null ) { base.Refresh( add, rem ) ; if( add==null && rem==null ) Spec = null ; }
 			#region De/Serialization
 			/// <summary>
 			/// Deserializes aspect from string .
@@ -139,7 +145,7 @@ namespace Rob.Act
 			/// <summary>
 			/// Serializes aspect from string .
 			/// </summary>
-			public static explicit operator string( Traits traits ) => traits.Null(t=>t.Count<=0).Get(a=>string.Join(Serialization.Separator,a.Select(x=>(string)x))+Serialization.Separator) ;
+			public static explicit operator string( Traits traits ) => traits.Null(t=>t.Count<=0)?.Where(t=>t.Context==traits.Context).Get(a=>string.Join(Serialization.Separator,a.Select(x=>(string)x))+Serialization.Separator) ;
 			static class Serialization { public const string Separator = " \x1 Trait \x2\n" ; }
 			#endregion
 		}
@@ -157,10 +163,11 @@ namespace Rob.Act
 			public override void Remove( Act.Axe ax ) => base.Remove(ax.Set(a=>{if(!(a is Axe))a.Aspect=null;})) ;
 			public void Reform( params string[] binds ) => this.OfType<Axe>().Each(a=>a.Binder=binds.At((int)(uint)a.Axis)) ;
 			public override Point.Iterable Points => new Iterator{ Context = this } ;
+			public override Path Raw => Context ;
 			public class Iterator : Point.Iterable
 			{
 				public Aspectable Context { get; set; }
-				public int Count => (Context as Aspect)?.Context.Count??0 ; //Math.Max((Context as Aspect)?.Context.Count??0,Context.Where(a=>!(a is Axe)&&a.Counts).Null(e=>e.Count()<=0)?.Max(a=>a.Count)??0) ;
+				public int Count => (Context as Aspect)?.Context.Count ?? 0 ; //Math.Max((Context as Aspect)?.Context.Count??0,Context.Where(a=>!(a is Axe)&&a.Counts).Null(e=>e.Count()<=0)?.Max(a=>a.Count)??0) ;
 				public IEnumerator<Point> GetEnumerator() { for( int i=0 , count=Count ; i<count ; ++i ) yield return this[i] ; } IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
 				public Point this[ int at ] => new Point(Context as Aspect,at){Mark=(Context as Aspect)?.Context[at]?.Mark??Mark.No} ;
 			}

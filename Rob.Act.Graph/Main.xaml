@@ -28,7 +28,7 @@
             <GridSplitter Grid.Column="0" VerticalAlignment="Stretch" Width="3" HorizontalAlignment="Right"/>
             <DataGrid Name="AspectAxisGrid" ItemsSource="{Binding Aspect}" AutoGenerateColumns="False" Margin="2" SelectionChanged="AspectAxisGrid_SelectionChanged">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="Spec" Binding="{Binding Spec}" Width="1*"/>
+                    <DataGridTextColumn Header="Axe" Binding="{Binding Spec}" Width="1*"/>
                     <DataGridTextColumn Header="Aspect" Binding="{Binding Aspectlet}" Width="1*"/>
                     <DataGridCheckBoxColumn Header="s" Binding="{Binding Multi}"/>
                     <DataGridTextColumn Header="Resolver" Binding="{Binding Resolvelet}" Width="4*"/>
@@ -44,7 +44,7 @@
             </DataGrid>
             <DataGrid Name="AspectTraitsGrid" Grid.Column="1" ItemsSource="{Binding Aspect.Trait}" AutoGenerateColumns="False" Margin="2">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="Spec" Binding="{Binding Spec}" Width="1*"/>
+                    <DataGridTextColumn Header="Trait" Binding="{Binding Spec}" Width="1*"/>
                     <DataGridTextColumn Header="Resolver" Binding="{Binding Lex}" Width="4*"/>
                     <DataGridTextColumn Header="Binder" Binding="{Binding Bond}" Width="1*"/>
                 </DataGrid.Columns>
@@ -108,7 +108,7 @@
                 <Grid.RowDefinitions><RowDefinition/><RowDefinition Height="22"/></Grid.RowDefinitions>
                 <DataGrid Name="AspectsGrid" ItemsSource="{Binding Aspects}" Margin="2" AutoGenerateColumns="False" SelectionChanged="AspectTabs_Selected">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="Spec" Binding="{Binding Spec}" Width="*"/>
+                        <DataGridTextColumn Header="Aspect" Binding="{Binding Spec}" Width="*"/>
                     </DataGrid.Columns>
                     <DataGrid.CommandBindings>
                         <CommandBinding Command="Delete" Executed="DataGridDeleteCommandBinding_Executed"/>
@@ -216,10 +216,11 @@
         </DataGrid>
         <DataGrid Name="ActionFilterGrid" Grid.Row="0" Grid.Column="2" ItemsSource="{Binding ActionFilter}" AutoGenerateColumns="False" SelectionChanged="ActionFilterGrid_SelectionChanged" Margin="2">
             <DataGrid.Columns>
-                <DataGridCheckBoxColumn Header="Rex" Binding="{Binding Rex}"/>
+                <!--<DataGridCheckBoxColumn Header="Rex" Binding="{Binding Rex}"/>-->
                 <DataGridTextColumn Header="Actions" Binding="{Binding Filter}" Width="2*"/>
                 <DataGridTextColumn Header="Traits" Binding="{Binding Traits}" Width="1*"/>
                 <DataGridTextColumn Header="Matrix" Binding="{Binding Matrix}" Width="1*"/>
+                <DataGridTextColumn Header="Aspects" Binding="{Binding Associer}" Width="1*"/>
             </DataGrid.Columns>
             <DataGrid.CommandBindings>
                 <CommandBinding Command="Delete" Executed="DataGridDeleteCommandBinding_Executed"/>

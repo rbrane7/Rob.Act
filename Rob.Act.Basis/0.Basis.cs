@@ -107,6 +107,11 @@ namespace Rob.Act
 	}
 	namespace Pre
 	{
+		public class Metax
+		{
+			IDictionary<string,uint> Map = new Dictionary<string,uint>() ;
+			public uint this[ string ax ] => Map.At(ax,uint.MaxValue) ;
+		}
 		public abstract class Point : DynamicObject , Pointable
 		{
 			#region Construction
@@ -149,12 +154,16 @@ namespace Rob.Act
 			/// Kind of demarkaition .
 			/// </summary>
 			public Mark Mark { get; set; } public Mark? Marklet => Mark.nil() ;
+			/// <summary>
+			/// Metadata of axes .
+			/// </summary>
+			protected internal Metax Metax ;
 			#endregion
 
 			#region Trait
 			public abstract uint Dimension { get ; }
-			public Quant? this[ uint axis ] { get => Quantity.At((int)axis) ; set { if( axis>=Quantity.Length && value!=null ) Quantity.Set(q=>q.CopyTo(Quantity=new Quant?[axis+1],0)) ; if( axis<Quantity.Length ) Quantity[axis] = value ; } }
-			public Quant? this[ string axis ] { get => this[axis.Axis()] ; set => this[axis.Axis()] = value ; }
+			public Quant? this[ uint axis ] { get => Quantity.At((int)axis) ; set { if( axis>=Quantity.Length && value!=null && axis<uint.MaxValue ) Quantity.Set(q=>q.CopyTo(Quantity=new Quant?[axis+1],0)) ; if( axis<Quantity.Length ) Quantity[axis] = value ; } }
+			public Quant? this[ string axis ] { get => this[Metax?[axis]??axis.Axis()] ; set => this[Metax?[axis]??axis.Axis()] = value ; }
 			public override bool TrySetMember( SetMemberBinder binder , object value ) { this[binder.Name] = (Quant?)value ; return base.TrySetMember( binder, value ) ; }
 			public override bool TryGetMember( GetMemberBinder binder , out object result ) { result = this[binder.Name] ; return true ; }
 			public static implicit operator Quant?[]( Point point ) => point?.Quantity ;

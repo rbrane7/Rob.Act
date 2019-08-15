@@ -19,6 +19,7 @@ namespace Rob.Act.Analyze
 		public string[] MatrixTraits ;
 		public string[] SpectrumBinds ;
 		public int PrimaryShape = 1 ;
+		public Func<Pathable,Aspect,bool> ActionAssocier ;
 	}
 	public class State
 	{
