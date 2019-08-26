@@ -42,7 +42,7 @@ namespace Rob.Act
 		public Aspect() : this(axes:null) {} // Default constructor must be present to enable DataGrid implicit Add .
 		[LambdaContext.Dominant] public Axe this[ string key ] => this.FirstOrDefault(a=>a.Spec==key) ;
 		public virtual string Spec { get => spec ; set { if( value==spec ) return ; spec = value ; propertyChanged.On(this,"Spec") ; Dirty = true ; } } string spec ;
-		public string Origin { get => origin ; set { origin = value.Set(v=>Spec=System.IO.Path.GetFileNameWithoutExtension(v)) ; Dirty = true ; } } string origin ;
+		public string Origin { get => origin ; set { origin = value.Set(v=>Spec=System.IO.Path.GetFileNameWithoutExtension(v).LeftFrom('?',all:true)) ; Dirty = true ; } } string origin ;
 		public string Score { get => $"{Spec} {Trait}" ; set => propertyChanged.On(this,"Score") ; }
 		public Traits Trait { get; }
 		public virtual Aspectable Source { get => source ; set { source = value ; this.Each(a=>a.Source=value) ; Spec += $" {value?.Spec}" ; } } Aspectable source ;
@@ -162,6 +162,13 @@ namespace Rob.Act
 			public override void Add( Act.Axe ax ) => base.Add(ax.Set(a=>{if(!(a is Axe))a.Aspect=this;})) ;
 			public override void Remove( Act.Axe ax ) => base.Remove(ax.Set(a=>{if(!(a is Axe))a.Aspect=null;})) ;
 			public void Reform( params string[] binds ) => this.OfType<Axe>().Each(a=>a.Binder=binds.At((int)(uint)a.Axis)) ;
+			public Act.Axe Performance( Lap lap ) => Performance(Velocity(lap),Gradient(lap)) ;
+			public Act.Axe Velocity( Lap lap ) => lap.Quo(this[Axis.Dist]as Axe,this[Axis.Time]as Axe) ;
+			public Act.Axe Gradient( Lap lap ) => lap.Quo(this[Axis.Alt]as Axe,this[Axis.Dist]as Axe) ;
+			public Act.Axe Performance( int lap = -1 ) => Performance(Velocity(lap),Gradient(lap)) ;
+			public Act.Axe Velocity( int lap = -1 ) => lap.Quo(this[Axis.Dist]as Axe,this[Axis.Time]as Axe) ;
+			public Act.Axe Gradient( int lap = -1 ) => lap.Quo(this[Axis.Alt]as Axe,this[Axis.Dist]as Axe) ;
+			static Act.Axe Performance( Act.Axe velo , Act.Axe grad ) => velo*40*(true^grad*10) ;
 			public override Point.Iterable Points => new Iterator{ Context = this } ;
 			public override Path Raw => Context ;
 			public class Iterator : Point.Iterable

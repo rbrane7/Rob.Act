@@ -43,6 +43,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\Aid\Code\Aid.Core\bin\Release\Aid.Core.dll</HintPath>
     </Reference>
+    <Reference Include="Aid.Math">
+      <HintPath>..\..\..\..\Aid\Bin\Release\Aid.Math.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />

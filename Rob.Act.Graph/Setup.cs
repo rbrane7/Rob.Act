@@ -20,6 +20,7 @@ namespace Rob.Act.Analyze
 		public string[] SpectrumBinds ;
 		public int PrimaryShape = 1 ;
 		public Func<Pathable,Aspect,bool> ActionAssocier ;
+		public double SubjectMass = 76 ;
 	}
 	public class State
 	{

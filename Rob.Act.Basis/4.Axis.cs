@@ -11,6 +11,7 @@ namespace Rob.Act
 	using System.Collections ;
 	using System.ComponentModel ;
 	using Quant = Double ;
+	using Aid.Math ;
 	public interface Axable : Aid.Gettable<int,Quant?> , Aid.Gettable<Quant,Quant> , Aid.Countable<Quant?> { Func<int,Quant?> Resolver { get; set; } Func<Aspectable,int> Counter { get; set; } Func<Axe,IEnumerable<Quant>> Distributor { get; set; } string Spec { get; } }
 	public class Axe : Axable , INotifyPropertyChanged
 	{
@@ -53,7 +54,7 @@ namespace Rob.Act
 		public Func<Quantile,IEnumerable<Quant>> Quantizer { get => Quantile.Quantizer ; set => propertyChanged.On(this,"Quantizer,Quantile",Quantile=new Quantile(this,value)) ; }
 		public string Quantlet { get => quantlet ; set => propertyChanged.On(this,"Quantlet",Quantizer=(quantlet=value).Compile<Func<Quantile,IEnumerable<Quant>>>()) ; } string quantlet ;
 		#region Operations
-		public static Quant? operator+( Axe x ) => x?.Sum ;
+		public static Quant? operator+( Axe x ) => x?.Sum() ;
 		public static Axe operator-( Axe x ) => x==null ? No : new Axe( i=>-x.Resolve(i) , a=>x.Count ) ;
 		public static Axe operator+( Axe x , Axe y ) => x==null||y==null ? No : new Axe( i=>x.Resolve(i)+y.Resolve(i) , a=>Math.Max(x.Count,y.Count) ) ;
 		public static Axe operator-( Axe x , Axe y ) => x==null||y==null ? No : new Axe( i=>x.Resolve(i)-y.Resolve(i) , a=>Math.Max(x.Count,y.Count) ) ;
@@ -99,7 +100,6 @@ namespace Rob.Act
 		public static implicit operator Axe( Quant q ) => new Axe( i=>q , a=>a?.Points.Count??1 ) ;
 		public static implicit operator Axe( int q ) => new Axe( i=>q , a=>a?.Points.Count??1 ) ;
 		public Axe Round => new Axe( i=>Resolve(i).use(Math.Round) , a=>Count ) ;
-		public Quant? Sum => this.Sum() ;
 		public Axe Skip( int count ) => new Axe( i=>Resolve(count+i) , a=>Math.Max(0,Count-count) ) ;
 		public Axe Wait( int count ) => new Axe( i=>Resolve(i<count?0:i-count) , a=>Math.Max(0,Count-count) ) ;
 		public Axe Take( int count ) => new Axe( Resolve , a=>Math.Min(count,Count) ) ;
@@ -113,6 +113,8 @@ namespace Rob.Act
 		public Axe Rift( Axe upon , uint quo = 9 ) => upon==null ? No : new Axe( i=>Shift(upon,i,((Count-i)>>1)-1) , a=>(int)(Count*quo/(1D+quo)) ) ;
 		public Lap Lap( Quant dif ) => new Lap(this,dif) ;
 		public Lap By( Quant dif ) => Lap(dif) ;
+		public Axe Nil( Predicate<Quant> nil ) => new Axe( i=>Resolve(i).Nil(nil) , a=>Count ) ;
+		public Axe PacePower( Quant grade = 0 , Quant? drag = null ) => new Axe( i=>Resolve(i).PacePower(grade,drag??Aspect?.Raw?.Drager,Aspect?.Raw?.Profile?.Mass) , a=>Count ) ;
 		#endregion
 		#region De/Serialization
 		/// <summary>
@@ -184,6 +186,17 @@ namespace Rob.Act
 			public override int Count => DefaultCount ;
 			protected override int DefaultCount => Context?.Count ?? 0 ;
 			protected override Aspectable DefaultAspect => Context?.Spectrum ;
+			#region Operations
+			public Act.Axe PacePropagation( (Quant time,Quant potential) a , (Quant time,Quant potential) b ) => Axis==Axis.Time ? new Act.Axe( i=>Resolve(i)?.PacePropagation(a,b) , c=>Count ) : No ;
+			public Act.Axe Propagation( (TimeSpan time,Quant potential) a , (TimeSpan time,Quant potential) b ) => Axis==Axis.Time ? new Act.Axe( i=>Resolve(i)?.Propagation(a,b) , c=>Count ) : No ;
+			public Act.Axe Propagation( (Quant potential,TimeSpan time) a , (Quant potential,TimeSpan time) b ) => Axis==Axis.Time ? new Act.Axe( i=>Resolve(i)?.Propagation(a,b) , c=>Count ) : No ;
+			public Act.Axe PacePropagation( params (Quant time,Quant potential)[] a ) => Axis==Axis.Time && a?.Length>1 ? a.Duplets().Get( d => new Act.Axe( i=>d.Average(p=>Resolve(i)?.PacePropagation(p.A,p.B)) , c=>Count ) ) : No ;
+			public Act.Axe Propagation( params (TimeSpan time,Quant potential)[] a ) => Axis==Axis.Time && a?.Length>1 ? a.Duplets().Get( d => new Act.Axe( i=>d.Average(p=>Resolve(i)?.Propagation(p.A,p.B)) , c=>Count ) ) : No ;
+			public Act.Axe Propagation( params (Quant potential,TimeSpan time)[] a ) => Axis==Axis.Time && a?.Length>1 ? a.Duplets().Get( d => new Act.Axe( i=>d.Average(p=>Resolve(i)?.Propagation(p.A,p.B)) , c=>Count ) ) : No ;
+			public Act.Axe PacePropagation( params (Quant time,Quant potential,Quant weight)[] a ) => Axis==Axis.Time && a?.Length>1 ? a.Duplets().Get( d => new Act.Axe( i=>d.Centre(p=>Resolve(i)?.PacePropagation((p.A.time,p.A.potential),(p.B.time,p.B.potential)),p=>p.A.weight*p.B.weight) , c=>Count ) ) : No ;
+			public Act.Axe Propagation( params (TimeSpan time,Quant potential,Quant weight)[] a ) => Axis==Axis.Time && a?.Length>1 ? a.Duplets().Get( d => new Act.Axe( i=>d.Centre(p=>Resolve(i)?.Propagation((p.A.time,p.A.potential),(p.B.time,p.B.potential)),p=>p.A.weight*p.B.weight) , c=>Count ) ) : No ;
+			public Act.Axe Propagation( params (Quant potential,TimeSpan time,Quant weight)[] a ) => Axis==Axis.Time && a?.Length>1 ? a.Duplets().Get( d => new Act.Axe( i=>d.Centre(p=>Resolve(i)?.Propagation((p.A.time,p.A.potential),(p.B.time,p.B.potential)),p=>p.A.weight*p.B.weight) , c=>Count ) ) : No ;
+			#endregion
 		}
 		public static Axable operator&( Path path , string name ) => path.Spectrum[name] ;
 		public static Axable operator&( Path path , Axis name ) => path.Spectrum[name] ;
@@ -194,6 +207,8 @@ namespace Rob.Act
 		public static Axe Drift( this int dis , Axe x , Axe y , int? dif = null ) => Shift(dis,y,x,dif) ;
 		public static Axe Quo( this int dif , Axe x , Axe y ) => (x%dif)/(y%dif) ;
 		public static Axe Quo( this Lap dif , Axe x , Axe y ) => (x/dif)/(y/dif) ;
+		public static Axe D( this int dif , Axe x , Axe y ) => dif.Quo(x,y) ;
+		public static Axe D( this Lap dif , Axe x , Axe y ) => dif.Quo(x,y) ;
 		public static IEnumerable<Quant> Refine( this IEnumerable<Quant?> source ) => source?.OfType<Quant>().Distinct().OrderBy(q=>q) ;
 	}
 }

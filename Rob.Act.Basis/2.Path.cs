@@ -13,6 +13,7 @@ namespace Rob.Act
 {
 	using Quant = Double ;
 	using Configer = System.Configuration.ConfigurationManager ;
+	public struct Profile { public Quant? Mass ; }
 	public partial class Path : Point , IList<Point> , Gettable<DateTime,Point> , INotifyCollectionChanged , Pathable
 	{
 		enum Taglet { Object , Drag , Subject , Locus , Refine }
@@ -21,6 +22,7 @@ namespace Rob.Act
 		public static Dictionary<string,Quant?[]> Meta = new Dictionary<string,Quant?[]>{ ["Tabata"]=new Quant?[]{1,2} } ;
 		public static IDictionary<string,Quant> GradeTolerancy = new Dictionary<string,Quant>{ ["Polling"]=.25 , ["ROLLER_SKIING"]=.27 } ;
 		public static IDictionary<string,Quant> DeviaTolerancy = new Dictionary<string,Quant>{ ["Polling"]=.25 , ["ROLLER_SKIING"]=3 } ;
+		public static IDictionary<string,Profile> SubjectProfile = new Dictionary<string,Profile>{ ["Rob"]=new Profile{Mass=76} } ;
 
 		#region Construct
 		public Path( DateTime date , IEnumerable<Point> points = null ) : base(date) { points.Set(p=>Content.AddRange(p.OrderBy(t=>t.Date))) ; Impose() ; }
@@ -72,6 +74,8 @@ namespace Rob.Act
 		public string Object { get => tags.At((int)Taglet.Object) ; set { if( Object==value ) return ; while( Tags.Count<=(int)Taglet.Object ) Tags.Add(null) ; Tags[(int)Taglet.Object] = value ; propertyChanged.On(this,"Tag,Object") ; } }
 		public string Locus { get => tags.At((int)Taglet.Locus) ; set { if( Locus==value ) return ; while( Tags.Count<=(int)Taglet.Locus ) Tags.Add(null) ; Tags[(int)Taglet.Locus] = value ; propertyChanged.On(this,"Tag,Locus") ; } }
 		public string Refine { get => tags.At((int)Taglet.Refine) ; set { if( Refine==value ) return ; while( Tags.Count<=(int)Taglet.Refine ) Tags.Add(null) ; Tags[(int)Taglet.Refine] = value ; propertyChanged.On(this,"Tag,Refine") ; } }
+		public Quant? Drager => Object=="Skierg" ? null : Draglet ;
+		public Profile? Profile => SubjectProfile.On(Subject) ;
 		public event NotifyCollectionChangedEventHandler CollectionChanged ;
 		#endregion
 

@@ -104,6 +104,15 @@ namespace Rob.Act
 		internal static Quant? Veloa( this Path path , int at ) { Quant vol = 0 ; Quant? val = 0 ; for( var i=Math.Max(at-VeloAccu,0) ; i<Math.Min(path.Count,at+VeloAccu+1) ; ++i ) if( path[i].Speed.Set(v=>val+=v*path[i].Time.TotalSeconds)!=null ) vol+=path[i].Time.TotalSeconds ; return (vol>0?val/vol:null) ; }
 		internal static Quant? Vibre( this Path path , int at ) => path[at].Speed / path.Veloa(at) ;
 		#endregion
+
+		#region Curves
+		public static Quant Drag = 2.8 ;
+		public static Quant Mass = 76 ;
+		public static Quant? PacePropagation( this Quant time , (Quant time,Quant potential) a , (Quant time,Quant potential) b ) => a.time!=b.time && a.potential!=0 && b.potential!=0 && a.time>0 && b.time>0 && time>0 ? (a.time/a.potential+(b.time/b.potential-a.time/a.potential)/Math.Log(b.time/a.time)*Math.Log(time/a.time)).nil(v=>v<=0) : null as Quant? ;
+		public static Quant? Propagation( this Quant time , (TimeSpan time,Quant potential) a , (TimeSpan time,Quant potential) b ) => time.PacePropagation((a.time.TotalSeconds,a.potential),(b.time.TotalSeconds,b.potential)) ;
+		public static Quant? Propagation( this Quant time , (Quant potential,TimeSpan time) a , (Quant potential,TimeSpan time) b ) => 1/time.Propagation((a.time,a.potential),(b.time,b.potential)) ;
+		public static Quant? PacePower( this Quant? pace , Quant grade = 0 , Quant? drag = null , Quant? mass = null ) => pace>0 ? (grade*Gravity*(mass??Mass)+(drag??Drag)/pace/pace)/pace : null as Quant? ;
+		#endregion
 	}
 	namespace Pre
 	{
