@@ -115,6 +115,7 @@ namespace Rob.Act
 		public Lap By( Quant dif ) => Lap(dif) ;
 		public Axe Nil( Predicate<Quant> nil ) => new Axe( i=>Resolve(i).Nil(nil) , a=>Count ) ;
 		public Axe PacePower( Quant grade = 0 , Quant? drag = null ) => new Axe( i=>Resolve(i).PacePower(grade,drag??Aspect?.Raw?.Drager,Aspect?.Raw?.Profile?.Mass) , a=>Count ) ;
+		public Axe PowerPace( Quant grade = 0 , Quant? drag = null ) => new Axe( i=>Resolve(i).PowerPace(grade,drag??Aspect?.Raw?.Drager,Aspect?.Raw?.Profile?.Mass) , a=>Count ) ;
 		#endregion
 		#region De/Serialization
 		/// <summary>
@@ -186,16 +187,17 @@ namespace Rob.Act
 			public override int Count => DefaultCount ;
 			protected override int DefaultCount => Context?.Count ?? 0 ;
 			protected override Aspectable DefaultAspect => Context?.Spectrum ;
+			bool Intensive => Axis==Axis.Time || Axis==Axis.Bit || Axis==Axis.Beat ;
 			#region Operations
-			public Act.Axe PacePropagation( (Quant time,Quant potential) a , (Quant time,Quant potential) b ) => Axis==Axis.Time ? new Act.Axe( i=>Resolve(i)?.PacePropagation(a,b) , c=>Count ) : No ;
-			public Act.Axe Propagation( (TimeSpan time,Quant potential) a , (TimeSpan time,Quant potential) b ) => Axis==Axis.Time ? new Act.Axe( i=>Resolve(i)?.Propagation(a,b) , c=>Count ) : No ;
-			public Act.Axe Propagation( (Quant potential,TimeSpan time) a , (Quant potential,TimeSpan time) b ) => Axis==Axis.Time ? new Act.Axe( i=>Resolve(i)?.Propagation(a,b) , c=>Count ) : No ;
-			public Act.Axe PacePropagation( params (Quant time,Quant potential)[] a ) => Axis==Axis.Time && a?.Length>1 ? a.Duplets().Get( d => new Act.Axe( i=>d.Average(p=>Resolve(i)?.PacePropagation(p.A,p.B)) , c=>Count ) ) : No ;
-			public Act.Axe Propagation( params (TimeSpan time,Quant potential)[] a ) => Axis==Axis.Time && a?.Length>1 ? a.Duplets().Get( d => new Act.Axe( i=>d.Average(p=>Resolve(i)?.Propagation(p.A,p.B)) , c=>Count ) ) : No ;
-			public Act.Axe Propagation( params (Quant potential,TimeSpan time)[] a ) => Axis==Axis.Time && a?.Length>1 ? a.Duplets().Get( d => new Act.Axe( i=>d.Average(p=>Resolve(i)?.Propagation(p.A,p.B)) , c=>Count ) ) : No ;
-			public Act.Axe PacePropagation( params (Quant time,Quant potential,Quant weight)[] a ) => Axis==Axis.Time && a?.Length>1 ? a.Duplets().Get( d => new Act.Axe( i=>d.Centre(p=>Resolve(i)?.PacePropagation((p.A.time,p.A.potential),(p.B.time,p.B.potential)),p=>p.A.weight*p.B.weight) , c=>Count ) ) : No ;
-			public Act.Axe Propagation( params (TimeSpan time,Quant potential,Quant weight)[] a ) => Axis==Axis.Time && a?.Length>1 ? a.Duplets().Get( d => new Act.Axe( i=>d.Centre(p=>Resolve(i)?.Propagation((p.A.time,p.A.potential),(p.B.time,p.B.potential)),p=>p.A.weight*p.B.weight) , c=>Count ) ) : No ;
-			public Act.Axe Propagation( params (Quant potential,TimeSpan time,Quant weight)[] a ) => Axis==Axis.Time && a?.Length>1 ? a.Duplets().Get( d => new Act.Axe( i=>d.Centre(p=>Resolve(i)?.Propagation((p.A.time,p.A.potential),(p.B.time,p.B.potential)),p=>p.A.weight*p.B.weight) , c=>Count ) ) : No ;
+			public Act.Axe Propagation( (Quant time,Quant potential) a , (Quant time,Quant potential) b ) => new Act.Axe( i=>(Resolve(i),Intensive).Propagation(a,b) , c=>Count ) ;
+			public Act.Axe Propagation( (TimeSpan time,Quant potential) a , (TimeSpan time,Quant potential) b ) => new Act.Axe( i=>(Resolve(i),Intensive).Propagation(a,b) , c=>Count ) ;
+			public Act.Axe Propagation( (Quant potential,TimeSpan time) a , (Quant potential,TimeSpan time) b ) => new Act.Axe( i=>(Resolve(i),Intensive).Propagation(a,b) , c=>Count ) ;
+			public Act.Axe Propagation( params (Quant time,Quant potential)[] a ) => a?.Length>1 ? a.Duplets().Get( d => new Act.Axe( i=>d.Average(p=>(Resolve(i),Intensive).Propagation(p.A,p.B)) , c=>Count ) ) : No ;
+			public Act.Axe Propagation( params (TimeSpan time,Quant potential)[] a ) => a?.Length>1 ? a.Duplets().Get( d => new Act.Axe( i=>d.Average(p=>(Resolve(i),Intensive).Propagation(p.A,p.B)) , c=>Count ) ) : No ;
+			public Act.Axe Propagation( params (Quant potential,TimeSpan time)[] a ) => a?.Length>1 ? a.Duplets().Get( d => new Act.Axe( i=>d.Average(p=>(Resolve(i),Intensive).Propagation(p.A,p.B)) , c=>Count ) ) : No ;
+			public Act.Axe Propagation( params (Quant time,Quant potential,Quant weight)[] a ) => a?.Length>1 ? a.Duplets().Get( d => new Act.Axe( i=>d.Centre(p=>(Resolve(i),Intensive).Propagation((p.A.time,p.A.potential),(p.B.time,p.B.potential)),p=>p.A.weight*p.B.weight) , c=>Count ) ) : No ;
+			public Act.Axe Propagation( params (TimeSpan time,Quant potential,Quant weight)[] a ) => a?.Length>1 ? a.Duplets().Get( d => new Act.Axe( i=>d.Centre(p=>(Resolve(i),Intensive).Propagation((p.A.time,p.A.potential),(p.B.time,p.B.potential)),p=>p.A.weight*p.B.weight) , c=>Count ) ) : No ;
+			public Act.Axe Propagation( params (Quant potential,TimeSpan time,Quant weight)[] a ) => a?.Length>1 ? a.Duplets().Get( d => new Act.Axe( i=>d.Centre(p=>(Resolve(i),Intensive).Propagation((p.A.time,p.A.potential),(p.B.time,p.B.potential)),p=>p.A.weight*p.B.weight) , c=>Count ) ) : No ;
 			#endregion
 		}
 		public static Axable operator&( Path path , string name ) => path.Spectrum[name] ;
