@@ -118,7 +118,10 @@ namespace Rob.Act
 		public static Quant? Copropagation( this Quant potential , (TimeSpan time,Quant potential) a , (TimeSpan time,Quant potential) b ) => potential.Copropagation((a.time.TotalSeconds,a.potential),(b.time.TotalSeconds,b.potential)) ;
 		public static Quant? Copropagation( this Quant potential , (Quant potential,TimeSpan time) a , (Quant potential,TimeSpan time) b ) => 1/potential.Copropagation((a.time,a.potential),(b.time,b.potential)) ;
 		public static Quant? PacePower( this Quant? pace , Quant grade = 0 , Quant? drag = null , Quant? mass = null ) => pace>0 ? (grade*Gravity*(mass??Mass)+(drag??Drag)/pace/pace)/pace : null as Quant? ;
-		public static Quant? PowerPace( this Quant? power , Quant grade = 0 , Quant? drag = null , Quant? mass = null ) => power is double p && p>0 ? 1/p.Radix(u=>(grade*Gravity*(mass??Mass)+(drag??Drag)*u*u)*u-p,u=>grade*Gravity*(mass??Mass)+3*(drag??Drag)*u*u).Nil() : null as Quant? ;
+		public static Quant? PowerPace( this Quant? power , Quant grade = 0 , Quant? drag = null , Quant? mass = null )
+		{
+			if( power is Quant p ); else return null ; var g = grade*Gravity*(mass??Mass) ; var d = drag??Drag ; if( p==0&&d*g>=0 ) return null ; return p==0 ? 1/Math.Sqrt(Math.Abs(g/3*d)) : 1/(d*g<0?p+Math.Sign(p)*Math.Sqrt(Math.Abs(g/3*d)):p).Radix(u=>(g+d*u*u)*u-p,u=>g+3*d*u*u).Nil() ;
+		}
 		#endregion
 	}
 	namespace Pre
