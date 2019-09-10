@@ -29,14 +29,14 @@
             <DataGrid Name="AspectAxisGrid" ItemsSource="{Binding Aspect}" AutoGenerateColumns="False" Margin="2" SelectionChanged="AspectAxisGrid_SelectionChanged">
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="Axe" Binding="{Binding Spec}" Width="1*"/>
-                    <DataGridTextColumn Header="Aspect" Binding="{Binding Aspectlet}" Width="1*"/>
-                    <DataGridCheckBoxColumn Header="s" Binding="{Binding Multi}"/>
                     <DataGridTextColumn Header="Resolver" Binding="{Binding Resolvelet}" Width="4*"/>
-                    <DataGridTextColumn Header="Counter" Binding="{Binding Countlet}" Width="1*"/>
-                    <DataGridTextColumn Header="Selector" Binding="{Binding Selectlet}" Width="1*"/>
-                    <DataGridTextColumn Header="Distributor" Binding="{Binding Distribulet}" Width="1*"/>
+                    <DataGridTextColumn Header="Counter" Binding="{Binding Countlet}" Width="1*" Visibility="Collapsed"/>
+                    <DataGridTextColumn Header="Distributor" Binding="{Binding Distribulet}" Width="1*" Visibility="Collapsed"/>
+                    <DataGridTextColumn Header="Binder" Binding="{Binding Binder}" Width="1.5*"/>
                     <DataGridTextColumn Header="Quantizer" Binding="{Binding Quantlet}" Width="1*"/>
-                    <DataGridTextColumn Header="Binder" Binding="{Binding Binder}" Width="1*"/>
+                    <DataGridCheckBoxColumn Header="Rex" Binding="{Binding Asrex}"/>
+                    <DataGridTextColumn Header="Aspect" Binding="{Binding Aspectlet}" Width=".5*"/>
+                    <DataGridCheckBoxColumn Header="s" Binding="{Binding Multi}"/>
                 </DataGrid.Columns>
                 <DataGrid.CommandBindings>
                     <CommandBinding Command="Delete" Executed="DataGridDeleteCommandBinding_Executed"/>
@@ -109,6 +109,7 @@
                 <DataGrid Name="AspectsGrid" ItemsSource="{Binding Aspects}" Margin="2" AutoGenerateColumns="False" SelectionChanged="AspectTabs_Selected">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Aspect" Binding="{Binding Spec}" Width="*"/>
+                        <DataGridTextColumn Header="Tager" Binding="{Binding Taglet}"/>
                     </DataGrid.Columns>
                     <DataGrid.CommandBindings>
                         <CommandBinding Command="Delete" Executed="DataGridDeleteCommandBinding_Executed"/>

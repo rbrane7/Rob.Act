@@ -16,6 +16,7 @@ namespace Rob.Act
 	public interface Resourcable { Aspectable Source { set; } Aspectable[] Sources { set; } Aspect.Point.Iterable Points { get; } }
 	public struct Aspectables : Aid.Gettable<int,Aspectable> , Aid.Gettable<Aspectable> , Aid.Countable<Aspectable> , Resourcable
 	{
+		public static Func<IEnumerable<Aspectable>> The ;
 		Aspectable[] Content ;
 		public Aspectables( params Aspectable[] content ) => Content = content ;
 		public Aspectable this[ int key ] => Content.At(key) ;
@@ -37,14 +38,18 @@ namespace Rob.Act
 	public class Aspect : List<Axe> , IList , Aspectable , INotifyCollectionChanged , INotifyPropertyChanged
 	{
 		public event PropertyChangedEventHandler PropertyChanged { add => propertyChanged += value.DispatchResolve() ; remove => propertyChanged -= value.DispatchResolve() ; } protected PropertyChangedEventHandler propertyChanged ;
-		public Aspect( Aspect source , bool multi = false ) : this(source?.Where(a=>a.Multi==multi).Select(a=>new Axe(a))) { spec = source?.Spec ; source.Trait.Each(t=>Trait.Add(new Traitlet(t))) ; }
+		public Aspect( Aspect source , bool multi = false ) : this(source?.Where(a=>a.Multi==multi).Select(a=>new Axe(a))) { spec = source?.Spec ; source.Trait.Each(t=>Trait.Add(new Traitlet(t))) ; taglet = source?.taglet ; }
 		public Aspect( IEnumerable<Axe> axes = null , Traits trait = null ) : base(axes??Enumerable.Empty<Axe>()) { foreach( var ax in this ) ax.PropertyChanged += OnChanged ; Trait = (trait??new Traits()).Set(t=>t.Context=this) ; }
 		public Aspect() : this(axes:null) {} // Default constructor must be present to enable DataGrid implicit Add .
 		[LambdaContext.Dominant] public Axe this[ string key ] => this.FirstOrDefault(a=>a.Spec==key) ;
 		public virtual string Spec { get => spec ; set { if( value==spec ) return ; spec = value ; propertyChanged.On(this,"Spec") ; Dirty = true ; } } string spec ;
 		public string Origin { get => origin ; set { origin = value.Set(v=>Spec=System.IO.Path.GetFileNameWithoutExtension(v).LeftFrom('?',all:true)) ; Dirty = true ; } } string origin ;
-		public string Score { get => $"{Spec} {Trait}" ; set => propertyChanged.On(this,"Score") ; }
+		public string Score { get => $"{Spec} {Trait} {Tag}" ; set => propertyChanged.On(this,"Score") ; }
 		public Traits Trait { get; }
+		public string Taglet { get => taglet ; set { if( value==taglet ) return ; Tager = ( taglet = value ).Compile<Action<Aspect>>() ; tag = null ; propertyChanged.On(this,"Taglet") ; } } string taglet ;
+		public Action<Aspect> Tager { get => tager ; set { tager = value ; tags?.Clear() ; propertyChanged.On(this,"Tager,Tag") ; } } Action<Aspect> tager ;
+		public Tagger Tags => ( tags ?? Tager.Get(t=>System.Threading.Interlocked.CompareExchange(ref tags,new Tagger(p=>propertyChanged.On(this,p??"Tag")),null)) ?? tags ).Set(t=>{if(t.Count<=0)Tager.On(this);}) ; Tagger tags ;
+		public string Tag { get => tag ?? ( tag = Tags ) ; set { if( value==tag ) return ; tag = null ; Tags[value.ExtractTags()] = true ; Score = value ; } } string tag ;
 		public virtual Aspectable Source { get => source ; set { source = value ; this.Each(a=>a.Source=value) ; Spec += $" {value?.Spec}" ; } } Aspectable source ;
 		public virtual Aspectable[] Sources { get => sources ; set { sources = value ; this.Each(a=>a.Sources=value) ; } } Aspectable[] sources ;
 		public virtual Point.Iterable Points => new Point.Iterator{ Context = this } ;
@@ -85,12 +90,12 @@ namespace Rob.Act
 		/// <summary>
 		/// Deserializes aspect from string .
 		/// </summary>
-		public static explicit operator Aspect( string text ) => text.Get(t=>new Aspect(t.LeftFromLast(Serialization.Separator).Separate(Serialization.Separator,braces:null)?.Select(a=>(Axe)a),(Traits)t.RightFrom(Serialization.Separator))) ;
+		public static explicit operator Aspect( string text ) => text.Get(t=>new Aspect(t.LeftFromLast(Serialization.Separator).Separate(Serialization.Separator,braces:null)?.Select(a=>(Axe)a),(Traits)t.RightFrom(Serialization.Separator).LeftFromLast(Serialization.Postseparator,all:true)){taglet=t.RightFrom(Serialization.Postseparator)}) ;
 		/// <summary>
 		/// Serializes aspect from string .
 		/// </summary>
-		public static explicit operator string( Aspect aspect ) => aspect.Get(a=>string.Join(Serialization.Separator,a.Select(x=>(string)x))+(a.Count>0?Serialization.Separator:null)+(string)a.Trait) ;
-		protected static class Serialization { public const string Separator = " \x1 Axe \x2\n" ; }
+		public static explicit operator string( Aspect aspect ) => aspect.Get(a=>string.Join(Serialization.Separator,a.Select(x=>(string)x))+(a.Count>0?Serialization.Separator:null)+(string)a.Trait+a.Taglet.Get(t=>Serialization.Postseparator+a.Taglet)) ;
+		protected static class Serialization { public const string Separator = " \x1 Axe \x2\n" , Postseparator = " \x1 Tag \x2"  ; }
 		#endregion
 		public Quant Offset { get => offset ; set { if( value!=offset ) propertyChanged.On(this,"Offset",offset=value) ; } } Quant offset ;
 		public class Traitlet : INotifyPropertyChanged
@@ -162,13 +167,18 @@ namespace Rob.Act
 			public override void Add( Act.Axe ax ) => base.Add(ax.Set(a=>{if(!(a is Axe))a.Aspect=this;})) ;
 			public override void Remove( Act.Axe ax ) => base.Remove(ax.Set(a=>{if(!(a is Axe))a.Aspect=null;})) ;
 			public void Reform( params string[] binds ) => this.OfType<Axe>().Each(a=>a.Binder=binds.At((int)(uint)a.Axis)) ;
+			#region Operation
+			public Act.Axe Gradation( Lap lap ) => Gradation(Gradient(lap)) ;
 			public Act.Axe Performance( Lap lap ) => Performance(Velocity(lap),Gradient(lap)) ;
 			public Act.Axe Velocity( Lap lap ) => lap.Quo(this[Axis.Dist]as Axe,this[Axis.Time]as Axe) ;
 			public Act.Axe Gradient( Lap lap ) => lap.Quo(this[Axis.Alt]as Axe,this[Axis.Dist]as Axe) ;
+			public Act.Axe Gradation( int lap = -1 ) => Gradation(Gradient(lap)) ;
 			public Act.Axe Performance( int lap = -1 ) => Performance(Velocity(lap),Gradient(lap)) ;
 			public Act.Axe Velocity( int lap = -1 ) => lap.Quo(this[Axis.Dist]as Axe,this[Axis.Time]as Axe) ;
 			public Act.Axe Gradient( int lap = -1 ) => lap.Quo(this[Axis.Alt]as Axe,this[Axis.Dist]as Axe) ;
-			static Act.Axe Performance( Act.Axe velo , Act.Axe grad ) => velo*40*(true^grad*10) ;
+			static Act.Axe Performance( Act.Axe velo , Act.Axe grad ) => velo*40*Gradation(grad) ;
+			static Act.Axe Gradation( Act.Axe grad ) => true^grad*Basis.Gravity ;
+			#endregion
 			public override Point.Iterable Points => new Iterator{ Context = this } ;
 			public override Path Raw => Context ;
 			public class Iterator : Point.Iterable

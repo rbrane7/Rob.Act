@@ -16,7 +16,6 @@ namespace Rob.Act
 	public struct Profile { public Quant? Mass ; }
 	public partial class Path : Point , IList<Point> , Gettable<DateTime,Point> , INotifyCollectionChanged , Pathable
 	{
-		enum Taglet { Object , Drag , Subject , Locus , Refine }
 		public static bool Dominancy = Configer.AppSettings["Path.Dominancy"]!=null ;
 		public static double Margin = Configer.AppSettings["Path.Margin"].Parse<double>()??0 ;
 		public static Dictionary<string,Quant?[]> Meta = new Dictionary<string,Quant?[]>{ ["Tabata"]=new Quant?[]{1,2} } ;
@@ -64,17 +63,7 @@ namespace Rob.Act
 		int Depth = 1 ;
 		List<Point> Content = new List<Point>() ;
 		public bool Dominant = Dominancy ;
-		/// <summary>
-		/// Tags for path recognition among the others in a book .
-		/// </summary>
-		public List<string> Tags => tags ?? System.Threading.Interlocked.CompareExchange(ref tags,new List<string>(),null) ?? tags ; List<string> tags ;
-		public string Tag { get => tag ?? ( tag = tags.Null(t=>t.Count<=0).Stringy(' ') ) ; set { if( value==tag ) return ; tags?.Clear() ; tag = null ; Tags.AddRange(value.SeparateTrim(' ')) ; propertyChanged.On(this,"Tag,Spec,Subject,Object,Locus,Refine") ; } } string tag ;
-		public override string Spec { get => Tag is string t ? $"{base.Spec} {t}" : base.Spec ; set { if( value==base.Spec ) return ; base.Spec = value ; aspect.Set(a=>a.Spec=value) ; } }
-		public string Subject { get => tags.At((int)Taglet.Subject) ; set { if( Subject==value ) return ; while( Tags.Count<=(int)Taglet.Subject ) Tags.Add(null) ; Tags[(int)Taglet.Subject] = value ; propertyChanged.On(this,"Tag,Subject") ; } }
-		public string Object { get => tags.At((int)Taglet.Object) ; set { if( Object==value ) return ; while( Tags.Count<=(int)Taglet.Object ) Tags.Add(null) ; Tags[(int)Taglet.Object] = value ; propertyChanged.On(this,"Tag,Object") ; } }
-		public string Locus { get => tags.At((int)Taglet.Locus) ; set { if( Locus==value ) return ; while( Tags.Count<=(int)Taglet.Locus ) Tags.Add(null) ; Tags[(int)Taglet.Locus] = value ; propertyChanged.On(this,"Tag,Locus") ; } }
-		public string Refine { get => tags.At((int)Taglet.Refine) ; set { if( Refine==value ) return ; while( Tags.Count<=(int)Taglet.Refine ) Tags.Add(null) ; Tags[(int)Taglet.Refine] = value ; propertyChanged.On(this,"Tag,Refine") ; } }
-		public Quant? Drager => Object=="Skierg" ? null : Draglet ;
+		protected override void SpecChanged( string value ) { base.SpecChanged(value) ; aspect.Set(a=>a.Spec=value) ; }
 		public Profile? Profile => SubjectProfile.On(Subject) ;
 		public event NotifyCollectionChangedEventHandler CollectionChanged ;
 		#endregion

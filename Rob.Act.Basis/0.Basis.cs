@@ -88,7 +88,7 @@ namespace Rob.Act
 		public static int GradeAccu = Configer.AppSettings["Grade.Accumulation"].Parse(7) , VeloAccu = Configer.AppSettings["Speed.Accumulation"].Parse(1) ;
 		static Quant? Sqrm( this Point point , Axis axis , Point at ) { Quant? value = point[axis]??0 ; if( axis==Act.Axis.Lat ) value *= Degmet ; if( axis==Act.Axis.Lon ) value *= Londeg(at[Act.Axis.Lat]) ; return value*value ; }
 		static readonly Quant Degmet = 111321.5 ;
-		internal const Quant Gravity = 10 ;
+		public const Quant Gravity = 9.823 ;
 		static Quant? Londeg( Quant? latdeg ) => latdeg.Rad().use(Math.Cos) * Degmet ;
 		static Quant? Rad( this Quant? deg ) => deg/180*Math.PI ;
 		static Quant? Polar( this Point point , Point offset ) => point.Sqrm(Act.Axis.Lon,offset)+point.Sqrm(Act.Axis.Lat,offset) ;
@@ -111,7 +111,11 @@ namespace Rob.Act
 		public static Quant? Propagation( this (Quant? potential,bool inner) rad , (Quant time,Quant potential) a , (Quant time,Quant potential) b ) => rad.inner ? rad.potential?.Propagation(a,b) : rad.potential?.Copropagation(a,b) ;
 		public static Quant? Propagation( this (Quant? potential,bool inner) rad , (TimeSpan time,Quant potential) a , (TimeSpan time,Quant potential) b ) => rad.inner ? rad.potential?.Propagation(a,b) : rad.potential?.Copropagation(a,b) ;
 		public static Quant? Propagation( this (Quant? potential,bool inner) rad , (Quant potential,TimeSpan time) a , (Quant potential,TimeSpan time) b ) => 1/rad.Propagation((a.time,a.potential),(b.time,b.potential)) ;
-		public static Quant? Propagation( this Quant time , (Quant time,Quant potential) a , (Quant time,Quant potential) b ) => a.time!=b.time && a.potential!=0 && b.potential!=0 && a.time>0 && b.time>0 && time>0 ? (a.time/a.potential+(b.time/b.potential-a.time/a.potential)/Math.Log(b.time/a.time)*Math.Log(time/a.time)).nil(v=>v<=0) : null as Quant? ;
+		public static Quant? Propagation( this Quant time , (Quant time,Quant potential) a , (Quant time,Quant potential) b )
+		{
+			if( a.time!=b.time && a.potential!=0 && b.potential!=0 && a.time>0 && b.time>0 && time>0 ); else return null ;
+			var t = Math.Log(time/a.time)/Math.Log(b.time/a.time) ; return (a.time/a.potential+(b.time/b.potential-a.time/a.potential)*t).nil(v=>v<=0) ;
+		}
 		public static Quant? Copropagation( this Quant potential , (Quant time,Quant potential) a , (Quant time,Quant potential) b ) => a.time!=b.time && a.potential!=0 && b.potential!=0 && a.time>0 && b.time>0 && potential>0 ? (a.time/a.potential*Math.Pow(potential/a.potential,(b.time/b.potential-a.time/a.potential)/Math.Log(b.potential/a.potential)/(a.time/a.potential))) : null as Quant? ;
 		public static Quant? Propagation( this Quant time , (TimeSpan time,Quant potential) a , (TimeSpan time,Quant potential) b ) => time.Propagation((a.time.TotalSeconds,a.potential),(b.time.TotalSeconds,b.potential)) ;
 		public static Quant? Propagation( this Quant time , (Quant potential,TimeSpan time) a , (Quant potential,TimeSpan time) b ) => 1/time.Propagation((a.time,a.potential),(b.time,b.potential)) ;
@@ -120,8 +124,13 @@ namespace Rob.Act
 		public static Quant? PacePower( this Quant? pace , Quant grade = 0 , Quant? drag = null , Quant? mass = null ) => pace>0 ? (grade*Gravity*(mass??Mass)+(drag??Drag)/pace/pace)/pace : null as Quant? ;
 		public static Quant? PowerPace( this Quant? power , Quant grade = 0 , Quant? drag = null , Quant? mass = null )
 		{
-			if( power is Quant p ); else return null ; var g = grade*Gravity*(mass??Mass) ; var d = drag??Drag ; if( p==0&&d*g>=0 ) return null ; return p==0 ? 1/Math.Sqrt(Math.Abs(g/3*d)) : 1/(d*g<0?p+Math.Sign(p)*Math.Sqrt(Math.Abs(g/3*d)):p).Radix(u=>(g+d*u*u)*u-p,u=>g+3*d*u*u).Nil() ;
+			if( power is Quant p ); else return null ; var g = grade*Gravity*(mass??Mass) ; var d = drag??Drag ; if( p==0&&d*g>=0 ) return null ;
+			return p==0 ? 1/Math.Sqrt(Math.Abs(g/3*d)) : 1/(d*g<0?p+Math.Sign(p)*Math.Sqrt(Math.Abs(g/3*d)):p).Radix(u=>(g+d*u*u)*u-p,u=>g+3*d*u*u).Nil() ;
 		}
+		#endregion
+
+		#region Tags
+		public static IEnumerable<string> ExtractTags( this string value ) => value?.TrimStart().StartsBy("?")==true ? value.RightFromFirst('?').Separate(';','&').Get(elem=>typeof(Taglet).GetEnumNames().Get(n=>n.Select(e=>elem.Arg(e)).Concat(elem.Except(e=>e.LeftFrom('=')??string.Empty,n)))) : value.Separate(' ') ?? Enumerable.Empty<string>() ;
 		#endregion
 	}
 	namespace Pre

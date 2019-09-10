@@ -7,12 +7,31 @@ using System.Dynamic;
 using Aid.Extension;
 using Aid;
 using System.ComponentModel;
+using System.Text.RegularExpressions;
 
 namespace Rob.Act
 {
 	using Quant = Double ;
+	public enum Taglet { Object , Drag , Subject , Locus , Refine }
+	public interface Tagable { void Add( string item ) ; string this[ int key] { get ; set ; } string this[ Taglet tag ] { get ; set ; } string this[ string key ] { get ; set ; } }
+	public class Tagger : List<string> , Tagable
+	{
+		readonly Action<string> Notifier ;
+		internal Tagger( Action<string> notifier = null ) => Notifier = notifier ;
+		public new string this[ int key ] { get => (uint)key<Count ? base[key] : null ; set { if( this[key]==value ) return ; if( value!=null ) InsureCapacity(key) ; if( (uint)key<Count );else return ; base[key] = value ; Notifier?.Invoke(null) ; } }
+		public string this[ Taglet key ] { get => this[(int)key] ; set { if( this[key]==value ) return ; this[(int)key] = value ; Notifier?.Invoke(key.ToString()) ; } }
+		public string this[ string key ] { get => key.Parse<Taglet>() is Taglet t ? this[t] : MatchIndex(key) is int i ? this[i] : null ; set { if( key.Parse<Taglet>() is Taglet t ) { this[t] = value ; return ; } if( MatchIndex(key) is int i ) this[i] = value ; else Add(value) ; Notifier?.Invoke(key) ; } }
+		public bool this[ params string[] tag ] { get => this[ tag as IEnumerable<string> ] ; set => this[ tag as IEnumerable<string> ] = value ; }
+		public bool this[ IEnumerable<string> tag ] { get => this[tag] = false ; set { if( value ) Clear() ; AddRange(tag) ; Notifier?.Invoke(null) ; } }
+		public new void Add( string tag ) { base.Add(tag) ; Notifier?.Invoke(null) ; }
+		int? MatchIndex( string key ) => key.Get(k=>new Regex(k).Get(r=>this.IndexesWhere(r.IsMatch).singleOrNil())) ;
+		void InsureCapacity( int capacity ) { while( Count<=capacity ) base.Add(null) ; }
+		public static implicit operator string( Tagger the ) => the.Stringy(' ') ;
+		public override string ToString() => this ;
+	}
 	public class Point : Pre.Point , Accessible<Axis,Quant?> , INotifyPropertyChanged
 	{
+
 		#region Construction
 		public Point( DateTime date ) : base(date) {}
 		public Point( Point point ) : base(point) {}
@@ -22,7 +41,8 @@ namespace Rob.Act
 		/// <summary>
 		/// Assotiative text .
 		/// </summary>
-		public override string Spec { set { if( value==base.Spec ) return ; base.Spec = value ; propertyChanged.On(this,"Spec") ; } }
+		public override string Spec { get => Tag is string t ? $"{base.Spec} {t}" : base.Spec ; set { if( value==base.Spec ) return ; SpecChanged( base.Spec = value ) ; } }
+		protected virtual void SpecChanged( string value ) => propertyChanged.On(this,"Spec") ;
 		/// <summary>
 		/// Ascent of the path .
 		/// </summary>
@@ -31,6 +51,16 @@ namespace Rob.Act
 		/// Deviation of the path .
 		/// </summary>
 		public Bipole? Dev { get; set; }
+		#endregion
+
+		#region Tags
+		public Tagable Tags => tags ?? System.Threading.Interlocked.CompareExchange(ref tags,new Tagger(p=>propertyChanged.On(this,p??"Tag")),null) ?? tags ; Tagger tags ;
+		public string Tag { get => tag ?? ( tag = tags ) ; set { if( value==tag ) return ; tag = null ; (Tags as Tagger)[value.ExtractTags()] = true ; propertyChanged.On(this,"Spec,Subject,Object,Locus,Refine") ; } } string tag ;
+		public string Subject { get => tags?[Taglet.Subject] ; set => Tags[Taglet.Subject] = value ; }
+		public string Object { get => tags?[Taglet.Object] ; set => Tags[Taglet.Object] = value ; }
+		public string Locus { get => tags?[Taglet.Locus] ; set => Tags[Taglet.Locus] = value ; }
+		public string Refine { get => tags?[Taglet.Refine] ; set => Tags[Taglet.Refine] = value ; }
+		public Quant? Drager => Object=="Skierg" ? null : Draglet ;
 		#endregion
 
 		#region Vector
