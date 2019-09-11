@@ -132,6 +132,20 @@ namespace Rob.Act
 		#region Tags
 		public static IEnumerable<string> ExtractTags( this string value ) => value?.TrimStart().StartsBy("?")==true ? value.RightFromFirst('?').Separate(';','&').Get(elem=>typeof(Taglet).GetEnumNames().Get(n=>n.Select(e=>elem.Arg(e)).Concat(elem.Except(e=>e.LeftFrom('=')??string.Empty,n)))) : value.Separate(' ') ?? Enumerable.Empty<string>() ;
 		#endregion
+
+		public struct Binding
+		{
+			public string Path , Name , Format , Align ; public Func<object,object> Converter ; 
+			public string Form => Align.No() ? Format : Format.No() ? $"{{0,{Align}}}" : $"{{0,{Align}:{Format}}}" ;
+			public string Reform => Align.No()&&!Format.No() ? $"{{0:{Format}}}" : Form ;
+			public static implicit operator Binding( string value ) => new Binding(value) ;
+			public Binding( string value )
+			{
+				if( value?.TrimStart().StartsBy("(")==true ) { var cvt = value.LeftFromScoped(true,'/',',',':') ; Converter = cvt.Compile<Func<object,object>>() ; Path = null ; value = value.RightFromFirst(cvt) ; } else { Path = value.LeftFrom(true,':',',','/') ; Converter = null ; }
+				Name = value.LeftFrom(true,':',',').RightFromFirst('/',true) ; Format = value.RightFromFirst(':') ; Align = value.LeftFrom(':').RightFrom(',') ;
+			}
+			public string Of( object value ) => Reform.Form( Converter is Func<object,object> c ? c(value) : value ) ;
+		}
 	}
 	namespace Pre
 	{

@@ -46,9 +46,9 @@ namespace Rob.Act
 		public string Origin { get => origin ; set { origin = value.Set(v=>Spec=System.IO.Path.GetFileNameWithoutExtension(v).LeftFrom('?',all:true)) ; Dirty = true ; } } string origin ;
 		public string Score { get => $"{Spec} {Trait} {Tag}" ; set => propertyChanged.On(this,"Score") ; }
 		public Traits Trait { get; }
-		public string Taglet { get => taglet ; set { if( value==taglet ) return ; Tager = ( taglet = value ).Compile<Action<Aspect>>() ; tag = null ; propertyChanged.On(this,"Taglet") ; } } string taglet ;
-		public Action<Aspect> Tager { get => tager ; set { tager = value ; tags?.Clear() ; propertyChanged.On(this,"Tager,Tag") ; } } Action<Aspect> tager ;
-		public Tagger Tags => ( tags ?? Tager.Get(t=>System.Threading.Interlocked.CompareExchange(ref tags,new Tagger(p=>propertyChanged.On(this,p??"Tag")),null)) ?? tags ).Set(t=>{if(t.Count<=0)Tager.On(this);}) ; Tagger tags ;
+		public string Taglet { get => taglet ; set { if( value==taglet ) return ; taglet = value.Null(v=>v.No()) ; Tager = null ; tag = null ; propertyChanged.On(this,"Taglet") ; Dirty = true ; } } string taglet ;
+		public Action<Aspect> Tager { get => tager ?? ( tager = taglet.Compile<Action<Aspect>>() ) ; set { tager = value ; tags?.Clear() ; if( value==null ) tags = null ; propertyChanged.On(this,"Tager,Tag") ; } } Action<Aspect> tager ;
+		public Tagger Tags => ( tags ?? Tager.Get(t=>System.Threading.Interlocked.CompareExchange(ref tags,new Tagger(p=>propertyChanged.On(this,p??"Tag")),null)) ?? tags ).Set(t=>{if(t.Count<=0&&!notag)using(new Aid.Closure(()=>notag=true,()=>notag=false))Tager.On(this);}) ; Tagger tags ; bool notag ;
 		public string Tag { get => tag ?? ( tag = Tags ) ; set { if( value==tag ) return ; tag = null ; Tags[value.ExtractTags()] = true ; Score = value ; } } string tag ;
 		public virtual Aspectable Source { get => source ; set { source = value ; this.Each(a=>a.Source=value) ; Spec += $" {value?.Spec}" ; } } Aspectable source ;
 		public virtual Aspectable[] Sources { get => sources ; set { sources = value ; this.Each(a=>a.Sources=value) ; } } Aspectable[] sources ;
@@ -90,12 +90,12 @@ namespace Rob.Act
 		/// <summary>
 		/// Deserializes aspect from string .
 		/// </summary>
-		public static explicit operator Aspect( string text ) => text.Get(t=>new Aspect(t.LeftFromLast(Serialization.Separator).Separate(Serialization.Separator,braces:null)?.Select(a=>(Axe)a),(Traits)t.RightFrom(Serialization.Separator).LeftFromLast(Serialization.Postseparator,all:true)){taglet=t.RightFrom(Serialization.Postseparator)}) ;
+		public static explicit operator Aspect( string text ) => text.Get(t=>new Aspect(t.LeftFromLast(Serialization.Separator).Separate(Serialization.Separator,braces:null)?.Select(a=>(Axe)a),(Traits)t.RightFrom(Serialization.Separator).LeftFromLast(Serialization.Postseparator,all:true)){taglet=t.LeftFromLast(Serialization.Postseparator).RightFrom('\n').Null(v=>v.Void())}) ;
 		/// <summary>
 		/// Serializes aspect from string .
 		/// </summary>
-		public static explicit operator string( Aspect aspect ) => aspect.Get(a=>string.Join(Serialization.Separator,a.Select(x=>(string)x))+(a.Count>0?Serialization.Separator:null)+(string)a.Trait+a.Taglet.Get(t=>Serialization.Postseparator+a.Taglet)) ;
-		protected static class Serialization { public const string Separator = " \x1 Axe \x2\n" , Postseparator = " \x1 Tag \x2"  ; }
+		public static explicit operator string( Aspect aspect ) => aspect.Get(a=>string.Join(Serialization.Separator,a.Select(x=>(string)x))+(a.Count>0?Serialization.Separator:null)+(string)a.Trait+a.Taglet.Get(t=>$"{a.Taglet}{Serialization.Postseparator}")) ;
+		protected static class Serialization { public const string Separator = " \x1 Axe \x2\n" , Postseparator = " \x1 Tag \x2\n"  ; }
 		#endregion
 		public Quant Offset { get => offset ; set { if( value!=offset ) propertyChanged.On(this,"Offset",offset=value) ; } } Quant offset ;
 		public class Traitlet : INotifyPropertyChanged
@@ -103,11 +103,11 @@ namespace Rob.Act
 			internal Aspect Context ;
 			public bool Dirty { set => Context.Set(c=>c.Dirty=value) ; }
 			public string Spec { get => name ; set => Changed("Spec",name=value) ; } string name ;
-			public string Bond { get => bond ; set => Changed("Bond,Valunit",bond=value) ; } string bond ;
+			public string Bond { get => bond ; set => Changed("Bond,Valunit",bond=value) ; } string bond ; /*Basis.Binding binding ;*/
 			public string Lex { get => lex ; set => Changed("Lex,Value,Valunit",Resolver=(lex=value).Compile<Func<Aspect,Quant?>>()) ; } Func<Aspect,Quant?> Resolver ; string lex ;
 			void Changed<Value>( string properties , Value value ) { propertyChanged.On(this,properties,value) ; Dirty = true ; }
 			public Quant? Value => Resolver?.Invoke(Context) ;
-			public override string ToString() => $"{Spec.Null(n=>n.No()).Get(s=>s+'=')}{$"{{0{Bond}}}".Form(Value)}" ;
+			public override string ToString() => $"{Spec.Null(n=>n.No()).Get(s=>s+'=')}{new Basis.Binding(Bond).Of(Value)}" ;
 			public Traitlet() {} // Default constructor must be present to enable DataGrid implicit Add .
 			public Traitlet( Traitlet source ) { name = source?.Spec ; bond = source?.Bond ; lex = source?.Lex ; Resolver = source?.Resolver ; }
 			public event PropertyChangedEventHandler PropertyChanged { add => propertyChanged += value.DispatchResolve() ; remove => propertyChanged -= value.DispatchResolve() ; } protected PropertyChangedEventHandler propertyChanged ;
