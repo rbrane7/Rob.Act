@@ -24,7 +24,7 @@ namespace Rob.Act
 				path = p.Object.Reconcile().Internalize() ; var o = 0U ;
 				foreach( var (min,max) in p.Sequence ) { if( min is uint m ) path[(int)(m-o)].Mark |= Mark.Stop ; var a = (int?)min+1-(int)o??0 ; var c = (max??(uint)path.Count)-(min??0U) ; for( o+=c ; c>0 ; --c ) path.RemoveAt(a) ; }
 			}
-			return path.Set(s=>s.Reset()).Set(s=>s.Tags.Add(p.Name)) ;
+			return path.Set(s=>s.Reset()).Set(s=>s.Tag.Add(p.Name)) ;
 		}
 		readonly string Object , Name ; readonly IList<(uint?Min,uint?Max)> Sequence = new List<(uint?Min,uint?Max)>() ;
 	}

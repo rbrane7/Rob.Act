@@ -23,15 +23,15 @@ namespace Rob.Act
 		public string this[ string key ] { get => key.Parse<Taglet>() is Taglet t ? this[t] : MatchIndex(key) is int i ? this[i] : null ; set { if( key.Parse<Taglet>() is Taglet t ) { this[t] = value ; return ; } if( MatchIndex(key) is int i ) this[i] = value ; else Add(value) ; Notifier?.Invoke(key) ; } }
 		public bool this[ params string[] tag ] { get => this[ tag as IEnumerable<string> ] ; set => this[ tag as IEnumerable<string> ] = value ; }
 		public bool this[ IEnumerable<string> tag ] { get => this[tag] = false ; set { if( value ) Clear() ; AddRange(tag) ; Notifier?.Invoke(null) ; } }
-		public new void Add( string tag ) { base.Add(tag) ; Notifier?.Invoke(null) ; }
-		int? MatchIndex( string key ) => key.Get(k=>new Regex(k).Get(r=>this.IndexesWhere(r.IsMatch).singleOrNil())) ;
+		public new void Add( string tag ) { if( tag==null ) return ; base.Add(tag) ; Notifier?.Invoke(null) ; }
+		int? MatchIndex( string key ) => MatchIndexes(key).singleOrNil() ;
+		IEnumerable<int> MatchIndexes( string key ) => key.Get(k=>new Regex(k).Get(r=>this.IndexesWhere(r.IsMatch))) ;
 		void InsureCapacity( int capacity ) { while( Count<=capacity ) base.Add(null) ; }
 		public static implicit operator string( Tagger the ) => the.Stringy(' ') ;
 		public override string ToString() => this ;
 	}
 	public class Point : Pre.Point , Accessible<Axis,Quant?> , INotifyPropertyChanged
 	{
-
 		#region Construction
 		public Point( DateTime date ) : base(date) {}
 		public Point( Point point ) : base(point) {}
@@ -41,7 +41,7 @@ namespace Rob.Act
 		/// <summary>
 		/// Assotiative text .
 		/// </summary>
-		public override string Spec { get => Tag is string t ? $"{base.Spec} {t}" : base.Spec ; set { if( value==base.Spec ) return ; SpecChanged( base.Spec = value ) ; } }
+		public override string Spec { get => Tags is string t ? $"{base.Spec} {t}" : base.Spec ; set { if( value==base.Spec ) return ; SpecChanged( base.Spec = value ) ; } }
 		protected virtual void SpecChanged( string value ) => propertyChanged.On(this,"Spec") ;
 		/// <summary>
 		/// Ascent of the path .
@@ -54,13 +54,13 @@ namespace Rob.Act
 		#endregion
 
 		#region Tags
-		public Tagable Tags => tags ?? System.Threading.Interlocked.CompareExchange(ref tags,new Tagger(p=>propertyChanged.On(this,p??"Tag")),null) ?? tags ; Tagger tags ;
-		public string Tag { get => tag ?? ( tag = tags ) ; set { if( value==tag ) return ; tag = null ; (Tags as Tagger)[value.ExtractTags()] = true ; propertyChanged.On(this,"Spec,Subject,Object,Locus,Refine") ; } } string tag ;
-		public string Subject { get => tags?[Taglet.Subject] ; set => Tags[Taglet.Subject] = value ; }
-		public string Object { get => tags?[Taglet.Object] ; set => Tags[Taglet.Object] = value ; }
-		public string Locus { get => tags?[Taglet.Locus] ; set => Tags[Taglet.Locus] = value ; }
-		public string Refine { get => tags?[Taglet.Refine] ; set => Tags[Taglet.Refine] = value ; }
-		public Quant? Drager => Object=="Skierg" ? null : Draglet ;
+		public Tagable Tag => tags ?? System.Threading.Interlocked.CompareExchange(ref tags,new Tagger(p=>propertyChanged.On(this,p??"Tags")),null) ?? tags ; Tagger tags ;
+		public string Tags { get => tag ?? ( tag = tags ) ; set { if( value==tag ) return ; tag = null ; (Tag as Tagger)[value.ExtractTags()] = true ; propertyChanged.On(this,"Spec,Subject,Object,Locus,Refine") ; } } string tag ;
+		public string Subject { get => tags?[Taglet.Subject] ; set { if( value?.Length>0 ) Tag[Taglet.Subject] = value ; else tags.Set(t=>t[Taglet.Subject]=value) ; } }
+		public string Object { get => tags?[Taglet.Object] ; set { if( value?.Length>0 ) Tag[Taglet.Object] = value ; else tags.Set(t=>t[Taglet.Object]=value) ; } }
+		public string Locus { get => tags?[Taglet.Locus] ; set { if( value?.Length>0 ) Tag[Taglet.Locus] = value ; else tags.Set(t=>t[Taglet.Locus]=value) ; } }
+		public string Refine { get => tags?[Taglet.Refine] ; set { if( value?.Length>0 ) Tag[Taglet.Refine] = value ; else tags.Set(t=>t[Taglet.Refine]=value) ; } }
+		public string Dragstr { get => tags?[Taglet.Drag] ; set { if( value?.Length>0 ) Tag[Taglet.Drag] = value ; else tags.Set(t=>t[Taglet.Drag]=value) ; } }
 		#endregion
 
 		#region Vector
@@ -71,32 +71,33 @@ namespace Rob.Act
 
 		#region Trait
 		public Quant? Dist { get => this[Axis.Dist] ; set => this[Axis.Dist] = value ; }
-		public Quant? Ergy { get => this[Axis.Ergy] ; set => this[Axis.Ergy] = value ; }
+		public Quant? Energy { get => this[Axis.Energy] ; set => this[Axis.Energy] = value ; }
 		public Quant? Beat { get => this[Axis.Beat] ; set => this[Axis.Beat] = value ; }
 		public Quant? Bit { get => this[Axis.Bit] ; set => this[Axis.Bit] = value ; }
 		public Quant? Effort { get => this[Axis.Effort] ; set => this[Axis.Effort] = value ; }
 		public Quant? Drag { get => this[Axis.Drag] ; set => this[Axis.Drag] = value ; }
-		public Quant? Alt { get => this[Axis.Alt] ; set => this[Axis.Alt] = value ; }
+		public Quant? Alti { get => this[Axis.Alt] ; set => this[Axis.Alt] = value ; }
 		#endregion
 
 		#region Quotient
 		public Quant? Distance => Dist / Resist ;
 		public Quant? Speed => Distance.Quotient(Time.TotalSeconds) ;
 		public Quant? Pace => Time.TotalSeconds / Distance ;
-		public Quant? Power => Ergy.Quotient(Time.TotalSeconds) ;
-		public Quant? Force => Ergy.Quotient(Distance) ;
-		public Quant? Beatage => Ergy.Quotient(Beat) ;
-		public Quant? Bitage => Ergy.Quotient(Bit) ;
+		public Quant? Power => Energy.Quotient(Time.TotalSeconds) ;
+		public Quant? Force => Energy.Quotient(Distance) ;
+		public Quant? Beatage => Energy.Quotient(Beat) ;
+		public Quant? Bitage => Energy.Quotient(Bit) ;
 		public Quant? Beatrate => Beat.Quotient(Time.TotalMinutes) ;
 		public Quant? Bitrate => Bit.Quotient(Time.TotalMinutes) ;
-		public Quant? Draglet => Drag.Quotient(Bit) ;
+		public Quant? Draglet { get => Drag.Quotient(Bit) ; set => Drag = value*Bit ; }
+		public Quant? Drager { get { switch( Object ) { case "Skierg" : return null ; case "ROLLER_SKIING" : return Draglet ?? 1 ; case "SKIING_CROSS_COUNTRY" : return Draglet ?? 1 ; default : return Draglet ; } } }
 		public Bipole? Gradelet => Asc / Dist ;
 		public Bipole? Bendlet => Dev / Dist ;
 		#endregion
 
 		#region Query
 		public bool IsGeo => this[Axis.Lon]!=null || this[Axis.Lat]!=null ;
-		public Quant Resist => Math.Pow( Draglet??1 , 1D/3D ) ;
+		public Quant Resist { get { switch( Object ) { case "Skierg" : return Math.Pow( Draglet??1 , 1D/3D ) ; default : return 1 ; } } }
 		public override string Exposion => "{0}={1}bW".Comb("{0}/{1}".Comb(Power.Get(p=>$"{Math.Round(p)}W"),Beatrate.Get(b=>$"{Math.Round(b)}`b")),Beatage.use(Math.Round))+$" {Speed*3.6:0.00}km/h" ;
 		public override string Trace => $"{Draglet.Get(v=>$"Drag={v:0.00}")} {Asc.Get(v=>$"Ascent={v:0}m")} {Gradelet.Get(v=>$"Grade={v:.000}")} {Dev.Get(v=>$"Devia={v:0}m")} {Bendlet.Get(v=>$"Bend={v:.000}")} {Quantities} {Mark.nil(m=>m==Mark.No)}" ;
 		#endregion
@@ -114,5 +115,10 @@ namespace Rob.Act
 		#endregion
 
 		public event PropertyChangedEventHandler PropertyChanged { add => propertyChanged += value.DispatchResolve() ; remove => propertyChanged -= value.DispatchResolve() ; } protected PropertyChangedEventHandler propertyChanged ;
+	}
+	public static class PointExtension
+	{
+		public static Quant? Draglet( this string value ) => value.Parse<int>()/100D ;
+		public static string Dragstr( this Quant? value ) => (value*100)?.ToString() ;
 	}
 }

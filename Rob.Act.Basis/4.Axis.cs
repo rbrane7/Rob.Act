@@ -114,7 +114,7 @@ namespace Rob.Act
 		public Lap Lap( Quant dif ) => new Lap(this,dif) ;
 		public Lap By( Quant dif ) => Lap(dif) ;
 		public Axe Nil( Predicate<Quant> nil ) => new Axe( i=>Resolve(i).Nil(nil) , a=>Count ) ;
-		public Axe PacePower( Quant grade = 0 , Quant? drag = null ) => new Axe( i=>Resolve(i).PacePower(grade,drag??Aspect?.Raw?.Drager,Aspect?.Raw?.Profile?.Mass) , a=>Count ) ;
+		public Axe PacePower( Quant grade = 0 , Quant? drag = null ) => new Axe( i=>Resolve(i).PacePower(grade,(Aspect as Aspect)?.PaceDrag(drag),Aspect?.Raw?.Profile?.Mass) , a=>Count ) ;
 		public Axe PowerPace( Quant grade = 0 , Quant? drag = null ) => new Axe( i=>Resolve(i).PowerPace(grade,drag??Aspect?.Raw?.Drager,Aspect?.Raw?.Profile?.Mass) , a=>Count ) ;
 		#endregion
 		#region De/Serialization
@@ -211,12 +211,12 @@ namespace Rob.Act
 	}
 	public static class AxeOperations
 	{
-		public static Axe Shift( this int dis , Axe x , Axe y , int? dif = null ) => (dif??dis).Get(d=>d.Quo(x,y)).Get(a=>a.Skip(dis)/a) ;
+		public static Axe Shift( this int dis , Axe x , Axe y , int? dif = null ) => (dif??dis).Get(d=>d.quo(x,y)).Get(a=>a.Skip(dis)/a) ;
 		public static Axe Drift( this int dis , Axe x , Axe y , int? dif = null ) => Shift(dis,y,x,dif) ;
-		public static Axe Quo( this int dif , Axe x , Axe y ) => (x%dif)/(y%dif) ;
-		public static Axe Quo( this Lap dif , Axe x , Axe y ) => (x/dif)/(y/dif) ;
-		public static Axe D( this int dif , Axe x , Axe y ) => dif.Quo(x,y) ;
-		public static Axe D( this Lap dif , Axe x , Axe y ) => dif.Quo(x,y) ;
+		public static Axe quo( this int dif , Axe x , Axe y ) => (x%dif)/(y%dif) ;
+		public static Axe quo( this Lap dif , Axe x , Axe y ) => (x/dif)/(y/dif) ;
+		public static Axe d( this int dif , Axe x , Axe y ) => dif.quo(x,y) ;
+		public static Axe d( this Lap dif , Axe x , Axe y ) => dif.quo(x,y) ;
 		public static IEnumerable<Quant> Refine( this IEnumerable<Quant?> source ) => source?.OfType<Quant>().Distinct().OrderBy(q=>q) ;
 	}
 }

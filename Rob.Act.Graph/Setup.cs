@@ -10,7 +10,7 @@ namespace Rob.Act.Analyze
 	public class Settings
 	{
 		public string Doctee ;
-		public string WorkoutsPaths , AspectsPaths , AspectsPath ;
+		public string WorkoutsPaths , AspectsPaths , AspectsPath , WorkoutsPath ;
 		public Predicate<Pathable> WorkoutsFilter ;
 		public Predicate<Aspect> AspectsFilter ;
 		public string StatePath ;

@@ -27,7 +27,7 @@ namespace Rob.Act
 		public Path( DateTime date , IEnumerable<Point> points = null ) : base(date) { points.Set(p=>Content.AddRange(p.OrderBy(t=>t.Date))) ; Impose() ; }
 		public void Impose()
 		{
-			Alt = this.Average(p=>p.Alt) ; this[Axis.Lon] = this.Average(p=>p[Axis.Lon]) ; this[Axis.Lat] = this.Average(p=>p[Axis.Lat]) ;
+			Alti = this.Average(p=>p.Alti) ; this[Axis.Lon] = this.Average(p=>p[Axis.Lon]) ; this[Axis.Lat] = this.Average(p=>p[Axis.Lat]) ;
 			var date = DateTime.Now ; for( var i=0 ; i<Count ; ++i )
 			{
 				this[i].Metax = Metax ;
@@ -35,28 +35,31 @@ namespace Rob.Act
 				{
 					date = this[i].Date-(this.At(i-1)?.Time??TimeSpan.Zero) ;
 					if( this[i].Dist==null ) this[i].Dist = this.At(i-1)?.Dist??0 ;
-					if( this[i].Asc==null && Alt!=null ) this[i].Asc = this.At(i-1)?.Asc??0 ;
+					if( this[i].Asc==null && Alti!=null ) this[i].Asc = this.At(i-1)?.Asc??0 ;
 					if( this[i].Dev==null && IsGeo ) this[i].Dev = this.At(i-1)?.Dev??0 ;
-					if( this[i].Alt==null && Alt!=null ) this[i].Alt = ((Count-i).Steps(i).FirstOrDefault(j=>this[j].Alt!=null).nil()??i-1).Get(j=>this[j].Alt) ;
+					if( this[i].Alti==null && Alti!=null ) this[i].Alti = ((Count-i).Steps(i).FirstOrDefault(j=>this[j].Alti!=null).nil()??i-1).Get(j=>this[j].Alti) ;
 				}
 				if( this[i].Time==TimeSpan.Zero ) this[i].Time = this[i].Date-date ;
 				if( this[i].Bit==null ) this[i].Bit = i ;
-				if( !this[i].IsGeo ) continue ;
-				if( this[i].Dist==null ) this[i].Dist = this[i-1].Dist + (this[i]-this[i-1]).Euclid(this[i-1]) ;
-				if( Alt!=null )
+				if( this[i].IsGeo )
 				{
-					if( this[i].Alt==null ) this[i].Alt = this[i-1].Alt + ((Count-i).Steps(i).FirstOrDefault(j=>this[j].Alt!=null).nil()??i-1).Get(j=>(this[j].Alt-this[i-1].Alt)/j) ;
-					if( this[i].Asc==null ) this[i].Asc = this[i-1].Asc + ( this[i].Alt-this[i-1].Alt is Quant u && Math.Abs(u)/(this[i].Dist-this[i-1].Dist)<(GradeTolerancy.On(Action)??.3) ? u : 0 ) ;
+					if( this[i].Dist==null ) this[i].Dist = this[i-1].Dist + (this[i]-this[i-1]).Euclid(this[i-1]) ;
+					if( Alti!=null )
+					{
+						if( this[i].Alti==null ) this[i].Alti = this[i-1].Alti + ((Count-i).Steps(i).FirstOrDefault(j=>this[j].Alti!=null).nil()??i-1).Get(j=>(this[j].Alti-this[i-1].Alti)/j) ;
+						if( this[i].Asc==null ) this[i].Asc = this[i-1].Asc + ( this[i].Alti-this[i-1].Alti is Quant u && Math.Abs(u)/(this[i].Dist-this[i-1].Dist)<(GradeTolerancy.On(Action)??.3) ? u : 0 ) ;
+					}
+					if( this[i].Dev==null ) this[i].Dev = this[i-1].Dev + ( i<Count-1 && !this[i].Mark.HasFlag(Mark.Stop) && (this[i].Geo-this[i-1].Geo).Devia(this[i+1].Geo-this[i].Geo) is Quant v ? v : 0 ) ;
 				}
-				if( this[i].Dev==null ) this[i].Dev = this[i-1].Dev + ( i<Count-1 && !this[i].Mark.HasFlag(Mark.Stop) && (this[i].Geo-this[i-1].Geo).Devia(this[i+1].Geo-this[i].Geo) is Quant v /*&& Math.Abs(v)/(this[i].Dist-this[i-1].Dist)<(DeviaTolerancy.On(Action)??3)*/ ? v : 0 ) ;
 			}
 			this.At(Count-1).Set(p=>{Bit=p.Bit;Time=p.Time;Dist=p.Dist;Asc=p.Asc;Dev=p.Dev;}) ;
 		}
 		public void Depose() { for( var i=0 ; i<Count ; ++i ) { this[i].Time = TimeSpan.Zero ; this[i].Bit = this[i].Dist = null ; this[i].Asc = this[i].Dev = null ; } }
 		public void Reset() { Depose() ; Impose() ; }
-		public Path( DateTime time , bool close , IEnumerable<Point> points = null ) : this(time,points) { if( close ) { if( Beat==null ) { this[0].Beat = 0 ; for( var i=1 ; i<Count ; ++i ) this[i].Beat = this[i-1].Beat+this[i].Beat/60*(this[i].Time-this[i-1].Time).TotalSeconds ; Beat = this[Count-1].Beat ; } } }
-		public virtual void Adopt( Path path ) { Depose() ; base.Adopt(path) ; Tag = path.Tag ; for( var i=0 ; i<Content.Count ; ++i ) Content[i].Adopt(path.Content[i]) ; Impose() ; propertyChanged.On(this,"Spec,Spectrum") ; CollectionChanged?.Invoke(this,new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset)) ; }
+		public Path( DateTime time , bool close , IEnumerable<Point> points = null ) : this(time,points) { if( close ) { if( Beat==null ) { this[0].Beat = 0 ; Quant lb = 0 ; for( var i=1 ; i<Count ; ++i ) this[i].Beat = ((this[i-1].Beat??lb)+this[i].Beat/60*(this[i].Time-this[i-1].Time).TotalSeconds).use(b=>lb=b) ; Beat = lb ; } } }
+		public virtual void Adopt( Path path ) { Depose() ; base.Adopt(path) ; Tags = path.Tags ; for( var i=0 ; i<Content.Count ; ++i ) Content[i].Adopt(path.Content[i]) ; Impose() ; propertyChanged.On(this,"Spec,Spectrum") ; CollectionChanged?.Invoke(this,new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset)) ; }
 		void Pointable.Adopt( Pointable path ) => (path as Path).Set(Adopt) ;
+		public void Populate() { Metax.Reset(Spectrum.Trait) ; Spectrum.Trait.Each(t=>this[t.Spec]=t.Value) ; Spectrum.Tags.Set(Tag.Add) ; }
 		#endregion
 
 		#region State
@@ -76,7 +79,7 @@ namespace Rob.Act
 		public Quant? MaxBeat => (Count-1).Steps().Max(i=>(Content[i+1].Beat-Content[i].Beat).Quotient((Content[i+1].Time-Content[i].Time).TotalSeconds)) ;
 		public Quant? MaxExposure => MaxEffort/MaxBeat ;
 		public string MaxExposion => "{0}={1}".Comb("{0}/{1}".Comb(MaxEffort.Get(e=>$"{e}W"),MaxBeat.Get(v=>$"{Math.Round(v*60)}`b")),MaxExposure.Get(e=>$"{Math.Round(e)}bW")) ;
-		public Quant Durability => Math.Max(0,1.1-20/Time.TotalSeconds) ;
+		Quant Durability => Math.Max(0,1.1-20/Time.TotalSeconds) ;
 		public Quant? Shift => ((Spectrum[Axis.Energy] as Axe)^(Spectrum[Axis.Beat] as Axe))?.LastOrDefault() is Quant v ? Math.Log(v) : null as Quant? ;
 		public Quant? MaxShift => ((Spectrum[Axis.Energy] as Axe)^(Spectrum[Axis.Beat] as Axe)).Skip(150)?.Max() is Quant v ? Math.Log(v) : null as Quant? ;
 		#endregion
@@ -115,7 +118,7 @@ namespace Rob.Act
 		public IEnumerable<Point> Inte { get { Point point = null ; for( var i=0 ; i<Count ; ++i ) yield return point = new Point(this[i]) + point ; } }
 		#endregion
 
-		public override string ToString() => $"{Action} {Sign} {Distance/1000:0.00}km {Exposion} {"\\ {0} /".Comb(MaxExposion)} {MinEffort.Get(e=>$"{e}W\\")}{MinMaxEffort.Get(e=>$"{e}W")}:{AeroEffort.Get(a=>$"{a:#W}")} {Trace} {Tag}" ;
+		public override string ToString() => $"{Action} {Sign} {Distance/1000:0.00}km {Exposion} {"\\ {0} /".Comb(MaxExposion)} {MinEffort.Get(e=>$"{e}W\\")}{MinMaxEffort.Get(e=>$"{e}W")}:{AeroEffort.Get(a=>$"{a:#W}")} {Trace} {Tags}" ;
 
 		#region Implementation
 		public void Rely( Path lead )
@@ -178,5 +181,11 @@ namespace Rob.Act
 		public Point this[ int index ] { get => Content.At(index) ; set => throw new NotSupportedException("Path can't be directly inserted or repaced to .") ; }
 		Pointable Gettable<int,Pointable>.this[ int index ] => this[index] ;
 		#endregion
+
+		#region De/Serialization
+		public static implicit operator string( Path path ) => null ;
+		#endregion
+
+		public bool Equals( Pathable path ) => true ;
 	}
 }

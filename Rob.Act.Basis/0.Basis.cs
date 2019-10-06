@@ -16,7 +16,7 @@ namespace Rob.Act
 	/// </summary>
 	[Flags] public enum Mark { No = 0 , Stop = 1 , Lap = 2 , Act = 4 }
 	[Flags] public enum Oper { Merge = 0 , Combi = 1 , Trim = 2 , Smooth = 4 , Relat = 8 }
-	public enum Axis : uint { Lon , Longitude = Lon , Lat , Latitude = Lat , Alt , Altitude = Alt , Dist , Distance = Dist , Drag , Flow , Beat , Bit , Ergy , Energy = Ergy , Effort , Time }
+	public enum Axis : uint { Lon , Longitude = Lon , Lat , Latitude = Lat , Alt , Altitude = Alt , Dist , Distance = Dist , Drag , Flow , Beat , Bit , Energy , Effort , Time }
 	public struct Bipole : IFormattable
 	{
 		Bipole( Quant a , Quant b ) { A = Math.Abs(a) ; B = -Math.Abs(b) ; }
@@ -63,11 +63,11 @@ namespace Rob.Act
 	}
 	public interface Quantable : Aid.Gettable<uint,Quant?> , Aid.Gettable<Quant?> {}
 	public interface Pointable : Quantable , Aid.Accessible<uint,Quant?> , Aid.Accessible<Quant?> { DateTime Date { get; } TimeSpan Time { get; } uint Dimension { get; } string Action { get; } Mark Mark { get; } void Adopt( Pointable path ) ; }
-	public interface Pathable : Pointable , Aid.Countable , Aid.Gettable<DateTime,Pointable> , Aid.Gettable<int,Pointable> { string Origin { get; } Path.Aspect Spectrum { get; } string Object { get; } string Subject { get; } string Locus { get; } }
+	public interface Pathable : Pointable , Aid.Countable , Aid.Gettable<DateTime,Pointable> , Aid.Gettable<int,Pointable> , IEquatable<Pathable> { string Origin { get; } Path.Aspect Spectrum { get; } string Object { get; } string Subject { get; } string Locus { get; } }
 	static class Basis
 	{
 		#region Axis specifics
-		static List<string> axis = Enum.GetNames(typeof(Axis)).ToList() ; static List<uint> vaxi = Enum.GetValues(typeof(Axis)).Cast<uint>().ToList() ;
+		static readonly List<string> axis = Enum.GetNames(typeof(Axis)).ToList() ; static readonly List<uint> vaxi = Enum.GetValues(typeof(Axis)).Cast<uint>().ToList() ;
 		internal static uint Axis( this string name ) => vaxi.At(axis.IndexOf(name)).nil(i=>i<0) ?? (uint)axis.Set(a=>{a.Add(name);vaxi.Add((uint)vaxi.Count);}).Count-1 ;
 		internal static Quant ActLim( this Axis axis , string activity ) => 50 ;
 		#endregion
@@ -121,7 +121,7 @@ namespace Rob.Act
 		public static Quant? Propagation( this Quant time , (Quant potential,TimeSpan time) a , (Quant potential,TimeSpan time) b ) => 1/time.Propagation((a.time,a.potential),(b.time,b.potential)) ;
 		public static Quant? Copropagation( this Quant potential , (TimeSpan time,Quant potential) a , (TimeSpan time,Quant potential) b ) => potential.Copropagation((a.time.TotalSeconds,a.potential),(b.time.TotalSeconds,b.potential)) ;
 		public static Quant? Copropagation( this Quant potential , (Quant potential,TimeSpan time) a , (Quant potential,TimeSpan time) b ) => 1/potential.Copropagation((a.time,a.potential),(b.time,b.potential)) ;
-		public static Quant? PacePower( this Quant? pace , Quant grade = 0 , Quant? drag = null , Quant? mass = null ) => pace>0 ? (grade*Gravity*(mass??Mass)+(drag??Drag)/pace/pace)/pace : null as Quant? ;
+		public static Quant? PacePower( this Quant? pace , Quant grade = 0 , Quant? drag = null , Quant? mass = null ) => pace!=0 ? (grade*Gravity*(mass??Mass)+((drag??Drag)+grade*Gravity)/pace/pace)/pace : null as Quant? ;
 		public static Quant? PowerPace( this Quant? power , Quant grade = 0 , Quant? drag = null , Quant? mass = null )
 		{
 			if( power is Quant p ); else return null ; var g = grade*Gravity*(mass??Mass) ; var d = drag??Drag ; if( p==0&&d*g>=0 ) return null ;
@@ -151,8 +151,11 @@ namespace Rob.Act
 	{
 		public class Metax
 		{
-			IDictionary<string,uint> Map = new Dictionary<string,uint>() ;
+			internal uint Base ;
+			readonly IDictionary<string,uint> Map = new Dictionary<string,uint>() ;
 			public uint this[ string ax ] => Map.At(ax,uint.MaxValue) ;
+			public void Reset( Aspect.Traits traits ) { if( Map.Count>0 ) return ; uint i = 0 ; traits.Each(t=>Map[t.Spec]=Base+i++) ; }
+			public uint Dimension => Base+(uint)Map.Count ;
 		}
 		public abstract class Point : DynamicObject , Pointable
 		{
@@ -199,12 +202,12 @@ namespace Rob.Act
 			/// <summary>
 			/// Metadata of axes .
 			/// </summary>
-			protected internal Metax Metax ;
+			public Metax Metax { get => metax ; set { value.Set(v=>v.Base=metax?.Base??Dimension) ; metax = value ; } } Metax metax ;
 			#endregion
 
 			#region Trait
 			public abstract uint Dimension { get ; }
-			public Quant? this[ uint axis ] { get => Quantity.At((int)axis) ; set { if( axis>=Quantity.Length && value!=null && axis<uint.MaxValue ) Quantity.Set(q=>q.CopyTo(Quantity=new Quant?[axis+1],0)) ; if( axis<Quantity.Length ) Quantity[axis] = value ; } }
+			public Quant? this[ uint axis ] { get => Quantity.At((int)axis) ; set { if( axis>=Quantity.Length && value!=null && axis<uint.MaxValue ) Quantity.Set(q=>q.CopyTo(Quantity=new Quant?[Math.Max(axis+1,Metax?.Dimension??0)],0)) ; if( axis<Quantity.Length ) Quantity[axis] = value ; } }
 			public Quant? this[ string axis ] { get => this[Metax?[axis]??axis.Axis()] ; set => this[Metax?[axis]??axis.Axis()] = value ; }
 			public override bool TrySetMember( SetMemberBinder binder , object value ) { this[binder.Name] = (Quant?)value ; return base.TrySetMember( binder, value ) ; }
 			public override bool TryGetMember( GetMemberBinder binder , out object result ) { result = this[binder.Name] ; return true ; }

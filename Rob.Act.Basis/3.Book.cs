@@ -21,6 +21,7 @@ namespace Rob.Act.Gen
 		public static Book operator-( Book book , Path path ) => book.Set(b=>path.Set(b.Remove)) ;
 		public static Book operator-( Book book , Predicate<Path> path ) => book.Set(b=>path.Set(b.Remove)) ;
 		public static Book operator|( Book book , Path path ) => book.Set(b=>path.Set(p=>{ var i = b.IndexWhere(p.Match) ; if( i<0 ) b.Add(p) ; else if( b[i]!=p ) b[i].Adopt(p) ; })) ;
+		public void Save( string path , string matter ) { if( path!=null && Count>0 && matter.Compile<Func<Path,Path>>()(new Act.Path(this.Max(a=>a.Date),this.OfType<Act.Path>())) is Path p && !p.Equals(Entries.SingleOrNo(a=>a.Origin==p.Origin) ) ) p.Origin.WriteAll(p) ; }
 	}
 	static class PathExtension
 	{

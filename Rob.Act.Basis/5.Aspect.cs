@@ -47,9 +47,9 @@ namespace Rob.Act
 		public string Score { get => $"{Spec} {Trait} {Tag}" ; set => propertyChanged.On(this,"Score") ; }
 		public Traits Trait { get; }
 		public string Taglet { get => taglet ; set { if( value==taglet ) return ; taglet = value.Null(v=>v.No()) ; Tager = null ; tag = null ; propertyChanged.On(this,"Taglet") ; Dirty = true ; } } string taglet ;
-		public Action<Aspect> Tager { get => tager ?? ( tager = taglet.Compile<Action<Aspect>>() ) ; set { tager = value ; tags?.Clear() ; if( value==null ) tags = null ; propertyChanged.On(this,"Tager,Tag") ; } } Action<Aspect> tager ;
-		public Tagger Tags => ( tags ?? Tager.Get(t=>System.Threading.Interlocked.CompareExchange(ref tags,new Tagger(p=>propertyChanged.On(this,p??"Tag")),null)) ?? tags ).Set(t=>{if(t.Count<=0&&!notag)using(new Aid.Closure(()=>notag=true,()=>notag=false))Tager.On(this);}) ; Tagger tags ; bool notag ;
-		public string Tag { get => tag ?? ( tag = Tags ) ; set { if( value==tag ) return ; tag = null ; Tags[value.ExtractTags()] = true ; Score = value ; } } string tag ;
+		public Action<Aspect> Tager { get => tager ?? ( tager = taglet.Compile<Action<Aspect>>() ) ; set { tager = value ; tags?.Clear() ; if( value==null ) tags = null ; propertyChanged.On(this,"Tager,Tags") ; } } Action<Aspect> tager ;
+		public Tagger Tag => ( tags ?? Tager.Get(t=>System.Threading.Interlocked.CompareExchange(ref tags,new Tagger(p=>propertyChanged.On(this,p??"Tags")),null)) ?? tags ).Set(t=>{if(t.Count<=0&&!notag)using(new Aid.Closure(()=>notag=true,()=>notag=false))Tager.On(this);}) ; Tagger tags ; bool notag ;
+		public string Tags { get => tag ?? ( tag = Tag ) ; set { if( value==tag ) return ; tag = null ; Tag[value.ExtractTags()] = true ; Score = value ; } } string tag ;
 		public virtual Aspectable Source { get => source ; set { source = value ; this.Each(a=>a.Source=value) ; Spec += $" {value?.Spec}" ; } } Aspectable source ;
 		public virtual Aspectable[] Sources { get => sources ; set { sources = value ; this.Each(a=>a.Sources=value) ; } } Aspectable[] sources ;
 		public virtual Point.Iterable Points => new Point.Iterator{ Context = this } ;
@@ -81,6 +81,7 @@ namespace Rob.Act
 		public new virtual void Remove( Axe ax ) { base.Remove(ax) ; ax.PropertyChanged -= OnChanged ; OnChanged(NotifyCollectionChangedAction.Remove,ax) ; }
 		void IList.Remove( object value ) => Remove( value as Axe ) ;
 		int IList.Add( object value ) { Add( value as Axe ) ; return Count-1 ; }
+		internal Quant? PaceDrag( Quant? drag ) => Raw?.Drager.use(d=>drag??d) ;
 		public override string ToString() => Score ;
 		#region De/Serialization
 		/// <summary>
@@ -103,8 +104,8 @@ namespace Rob.Act
 			internal Aspect Context ;
 			public bool Dirty { set => Context.Set(c=>c.Dirty=value) ; }
 			public string Spec { get => name ; set => Changed("Spec",name=value) ; } string name ;
-			public string Bond { get => bond ; set => Changed("Bond,Valunit",bond=value) ; } string bond ; /*Basis.Binding binding ;*/
-			public string Lex { get => lex ; set => Changed("Lex,Value,Valunit",Resolver=(lex=value).Compile<Func<Aspect,Quant?>>()) ; } Func<Aspect,Quant?> Resolver ; string lex ;
+			public string Bond { get => bond ; set => Changed("Bond",bond=value) ; } string bond ;
+			public string Lex { get => lex ; set => Changed("Lex,Value",Resolver=(lex=value).Compile<Func<Aspect,Quant?>>()) ; } Func<Aspect,Quant?> Resolver ; string lex ;
 			void Changed<Value>( string properties , Value value ) { propertyChanged.On(this,properties,value) ; Dirty = true ; }
 			public Quant? Value => Resolver?.Invoke(Context) ;
 			public override string ToString() => $"{Spec.Null(n=>n.No()).Get(s=>s+'=')}{new Basis.Binding(Bond).Of(Value)}" ;
@@ -168,16 +169,17 @@ namespace Rob.Act
 			public override void Remove( Act.Axe ax ) => base.Remove(ax.Set(a=>{if(!(a is Axe))a.Aspect=null;})) ;
 			public void Reform( params string[] binds ) => this.OfType<Axe>().Each(a=>a.Binder=binds.At((int)(uint)a.Axis)) ;
 			#region Operation
-			public Act.Axe Gradation( Lap lap ) => Gradation(Gradient(lap)) ;
-			public Act.Axe Performance( Lap lap ) => Performance(Velocity(lap),Gradient(lap)) ;
-			public Act.Axe Velocity( Lap lap ) => lap.Quo(this[Axis.Dist]as Axe,this[Axis.Time]as Axe) ;
-			public Act.Axe Gradient( Lap lap ) => lap.Quo(this[Axis.Alt]as Axe,this[Axis.Dist]as Axe) ;
-			public Act.Axe Gradation( int lap = -1 ) => Gradation(Gradient(lap)) ;
-			public Act.Axe Performance( int lap = -1 ) => Performance(Velocity(lap),Gradient(lap)) ;
-			public Act.Axe Velocity( int lap = -1 ) => lap.Quo(this[Axis.Dist]as Axe,this[Axis.Time]as Axe) ;
-			public Act.Axe Gradient( int lap = -1 ) => lap.Quo(this[Axis.Alt]as Axe,this[Axis.Dist]as Axe) ;
-			static Act.Axe Performance( Act.Axe velo , Act.Axe grad ) => velo*40*Gradation(grad) ;
-			static Act.Axe Gradation( Act.Axe grad ) => true^grad*Basis.Gravity ;
+			public Act.Axe perf( Lap lap ) => perf(pace(lap),grad(lap),drag(lap)) ;
+			public Act.Axe velo( Lap lap ) => lap.quo(this[Axis.Dist]as Axe,this[Axis.Time]as Axe) ;
+			public Act.Axe pace( Lap lap ) => lap.quo(this[Axis.Time]as Axe,this[Axis.Dist]as Axe) ;
+			public Act.Axe grad( Lap lap ) => lap.quo(this[Axis.Alt]as Axe,this[Axis.Dist]as Axe) ;
+			public Act.Axe drag( Lap lap ) => lap.quo(this[Axis.Drag]as Axe,this[Axis.Bit]as Axe) ;
+			public Act.Axe perf( int lap = -1 ) => perf(pace(lap),grad(lap),drag(lap)) ;
+			public Act.Axe velo( int lap = -1 ) => lap.quo(this[Axis.Dist]as Axe,this[Axis.Time]as Axe) ;
+			public Act.Axe pace( int lap = -1 ) => lap.quo(this[Axis.Time]as Axe,this[Axis.Dist]as Axe) ;
+			public Act.Axe grad( int lap = -1 ) => lap.quo(this[Axis.Alt]as Axe,this[Axis.Dist]as Axe) ;
+			public Act.Axe drag( int lap = -1 ) => lap.quo(this[Axis.Drag]as Axe,this[Axis.Bit]as Axe) ;
+			Act.Axe perf( Act.Axe pace , Act.Axe grad , Act.Axe drag ) => Context.Get( c => new Act.Axe( i => Basis.PacePower( pace[i] , grad[i]??0 , PaceDrag(drag[i]) ) , a=>c.Count ) ) ?? Axe.No ;
 			#endregion
 			public override Point.Iterable Points => new Iterator{ Context = this } ;
 			public override Path Raw => Context ;
