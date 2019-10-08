@@ -72,7 +72,7 @@ namespace Rob.Act.Analyze
 		void ActionsEnhancing( params (Predicate<Pathable> Filter,Predicate<Associable> Associer)[] refiner ) { ActiveMetax = null ; foreach( var path in Book ) ActionEnhancing(path,refiner) ; SaveBook() ; }
 		void ActionEnhancing( Pathable path , params (Predicate<Pathable> Filter,Predicate<Associable> Associer)[] refiner ) { if( refiner==null || path==null ) return ; path.Spectrum.Trait.Clean() ; foreach( var refine in refiner ) if( refine.Filter?.Invoke(path)!=false ) foreach( var asp in Aspects.Entries ) if( (refine.Associer?.Invoke((path,asp))??Setup.ActionAssocier?.Invoke(path,asp))==true ) new Aspect(asp){Source=path.Spectrum}.Set(a=>{path.Spectrum.Trait.Add(a.Trait);path.Spectrum.Tager+=a.Tager;}) ; PathEnhancing(path as Path) ; }
 		void PathEnhancing( Path path ) => path.Set(p=>p.Metax=ActiveMetax??(ActiveMetax=new Pre.Metax()))?.Populate() ;
-		void SaveBook() { if( ActionFilterGrid.SelectedItems.Count==1 ) Book.Save(Setup?.WorkoutsPath,(ActionFilterGrid.SelectedItem as Filter.Entry)?.Matter) ; }
+		async void SaveBook() { if( ActionFilterGrid.SelectedItems.Count==1 ) await Task.Run(()=>Book.Save(Setup?.WorkoutsPath,(ActionFilterGrid.SelectedItem as Filter.Entry)?.Matter)) ; }
 		public Aid.Collections.ObservableList<Axe> Axes { get ; private set ; } = new Aid.Collections.ObservableList<Axe>() ;
 		public Aspect Aspect { get => Respect ; protected set { if( value==Aspect ) return ; Aspect.Set(a=>{a.CollectionChanged-=OnAspectChanged;a.PropertyChanged-=OnAspectChanged;}) ; (Respect=value).Set(a=>{a.CollectionChanged+=OnAspectChanged;a.PropertyChanged+=OnAspectChanged;}) ; Sources = null ; } } Aspect Respect ;
 		public IEnumerable<Aspect> Sources { get => SourcesFilter is Func<Aspect,bool> f ? Resources.Where(f) : Resources ; set => PropertyChangedOn("Aspect,Sources",sources=value) ; } IEnumerable<Aspect> sources ; Func<Aspect,bool> SourcesFilter ;
@@ -100,7 +100,7 @@ namespace Rob.Act.Analyze
 		void AddAspectTraitButton_Click( object sender , RoutedEventArgs e ) => Aspect.Trait.Add(new Aspect.Traitlet()) ;
 		void AddAspectButton_Click( object sender , RoutedEventArgs e ) => Aspects.Add(new Aspect()) ;
 		void AddAxeButton_Click( object sender , RoutedEventArgs e ) => Axes.Add(new Axe()) ;
-		void SaveAspectsButton_Click( object sender , RoutedEventArgs e ) => Setup.AspectsPath.Set(p=>Aspects.Each(a=>p.LeftFromLast('*',true).Path(a.Spec+p.RightFrom('*')).WriteAll((string)a))) ;
+		void SaveAspectsButton_Click( object sender , RoutedEventArgs e ) => Setup.AspectsPath.Set(p=>Aspects.Each(a=>p.Pathin(a.Spec).WriteAll((string)a))) ;
 		void DisplayTable_SelectionChanged( object sender , SelectionChangedEventArgs e )
 		{
 			var tab = e.AddedItems.Count>0 ? e.AddedItems[0] as TabItem : null ; switch( tab?.Header as string )

@@ -119,6 +119,7 @@ namespace Rob.Act
 		#endregion
 
 		public override string ToString() => $"{Action} {Sign} {Distance/1000:0.00}km {Exposion} {"\\ {0} /".Comb(MaxExposion)} {MinEffort.Get(e=>$"{e}W\\")}{MinMaxEffort.Get(e=>$"{e}W")}:{AeroEffort.Get(a=>$"{a:#W}")} {Trace} {Tags}" ;
+		public override string Sign => Dominant ? Date.ToString() : base.Sign ;
 
 		#region Implementation
 		public void Rely( Path lead )
@@ -183,9 +184,13 @@ namespace Rob.Act
 		#endregion
 
 		#region De/Serialization
-		public static implicit operator string( Path path ) => null ;
+		Path( string text ) : base(text.LeftFrom('\n',all:true)) => text.RightFromFirst('\n').SeparateTrim('\n').Set(e=>Content.AddRange(e.Select(p=>((Point)p).Set(a=>{if(a.Metax==null)a.Metax=Metax;})))) ;
+		public static explicit operator string( Path path ) => path.Get(a=>$"{(string)(a as Point)}{(string)a.Metax}\n{(string.Join("\n",a.Content.Select(p=>(string)p+(string)p.Metax.Null(m=>m==a.Metax))))}") ;
+		public static explicit operator Path( string text ) => text.Get(t=>new Path(t)) ;
 		#endregion
 
-		public bool Equals( Pathable path ) => true ;
+		#region Comparation
+		public virtual bool Equals( Pathable path ) => path is Path p && (this as Point).Equals(p) && Content.SequenceEquate(p.Content,(x,y)=>x.Equals(y)) && Metax?.Equals(p.Metax)!=false ;
+		#endregion
 	}
 }

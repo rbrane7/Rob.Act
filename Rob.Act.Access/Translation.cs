@@ -16,9 +16,9 @@ namespace Rob.Act
 			if( data.Consists(Tcx.Extension.Sign) ) return data.Deserialize<Tcx.TrainingCenterDatabase_t>() ;
 			if( data.StartsBy(Csv.Skierg.Sign) ) return new Csv.Skierg(data) ;
 			if( data.StartsBy(Partitioner.Sign) ) return new Partitioner(data) ;
-			return null ;
+			return (Path)data ;
 		}
-		public static string Externalize( this Path path , string ext ) { switch( ext ) { case "gpx" : return ((Gpx.gpxType)path).Serialize("utf-8","1.0") ; case "tcx" : return ((Tcx.TrainingCenterDatabase_t)path).Serialize("utf-8","1.0") ; case "skierg.csv" : return (Csv.Skierg)path ; default : return null ; } }
+		public static string Externalize( this Path path , string ext ) { switch( ext ) { case "gpx" : return ((Gpx.gpxType)path).Serialize("utf-8","1.0") ; case "tcx" : return ((Tcx.TrainingCenterDatabase_t)path).Serialize("utf-8","1.0") ; case "skierg.csv" : return (Csv.Skierg)path ; default : return (string)path ; } }
 		public static string Reconcile( this string file )
 		{
 			string cofile = null ; if( file.EndsWith(".tcx") && file.Contains("concept2-logbook-workout-") ) { cofile = file ; file = file.Replace("logbook-workout","result").Replace(".tcx",".csv") ; }

@@ -2,7 +2,7 @@
 {
 	Doctee = 'doctee://localhost:43202/Action/Analyze?Name=Rana' ,
 	WorkoutsPaths = @'C:\Users\teplyr\Downloads\concept2*.tcx,C:\Users\teplyr\Downloads\*.gpx,C:\Users\teplyr\Downloads\*.par' , /*WorkoutsFilter = p=>p.Action=='AeT' ,*/
-	WorkoutsPath = @'C:\Users\teplyr\Downloads\' ,
+	WorkoutsPath = @'C:\Users\teplyr\Downloads\*.path' ,
 	AspectsPaths = @'C:\Users\teplyr\Downloads\*.asp' , AspectsFilter = a=>a.Spec!='Test' ,
 	AspectsPath = @'C:\Users\teplyr\Downloads\*.asp' ,
 	StatePath = @'Run\' ,

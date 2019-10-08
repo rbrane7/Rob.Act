@@ -13,7 +13,7 @@ namespace Rob.Act
 {
 	using Quant = Double ;
 	public enum Taglet { Object , Drag , Subject , Locus , Refine }
-	public interface Tagable { void Add( string item ) ; string this[ int key] { get ; set ; } string this[ Taglet tag ] { get ; set ; } string this[ string key ] { get ; set ; } }
+	public interface Tagable : IEquatable<Tagable> { void Add( string item ) ; string this[ int key] { get ; set ; } string this[ Taglet tag ] { get ; set ; } string this[ string key ] { get ; set ; } }
 	public class Tagger : List<string> , Tagable
 	{
 		readonly Action<string> Notifier ;
@@ -27,8 +27,14 @@ namespace Rob.Act
 		int? MatchIndex( string key ) => MatchIndexes(key).singleOrNil() ;
 		IEnumerable<int> MatchIndexes( string key ) => key.Get(k=>new Regex(k).Get(r=>this.IndexesWhere(r.IsMatch))) ;
 		void InsureCapacity( int capacity ) { while( Count<=capacity ) base.Add(null) ; }
-		public static implicit operator string( Tagger the ) => the.Stringy(' ') ;
-		public override string ToString() => this ;
+		public override string ToString() => this.Stringy(' ') ;
+		public bool Equals( Tagable other ) => other is Tagger t && this.SequenceEquate(t) ;
+		#region De/Serialization
+		public static explicit operator string( Tagger the ) => the.Stringy(Serialization.Separator) ;
+		public static explicit operator Tagger( string text ) => text.Get(t=>new Tagger(t)) ;
+		Tagger( string text ) => AddRange(text.Separate(Serialization.Separator)) ;
+		class Serialization { public const string Separator = " \x1 Tag \x2 " ; }
+		#endregion
 	}
 	public class Point : Pre.Point , Accessible<Axis,Quant?> , INotifyPropertyChanged
 	{
@@ -55,7 +61,7 @@ namespace Rob.Act
 
 		#region Tags
 		public Tagable Tag => tags ?? System.Threading.Interlocked.CompareExchange(ref tags,new Tagger(p=>propertyChanged.On(this,p??"Tags")),null) ?? tags ; Tagger tags ;
-		public string Tags { get => tag ?? ( tag = tags ) ; set { if( value==tag ) return ; tag = null ; (Tag as Tagger)[value.ExtractTags()] = true ; propertyChanged.On(this,"Spec,Subject,Object,Locus,Refine") ; } } string tag ;
+		public string Tags { get => tag ?? ( tag = tags.Stringy() ) ; set { if( value==tag ) return ; tag = null ; (Tag as Tagger)[value.ExtractTags()] = true ; propertyChanged.On(this,"Spec,Subject,Object,Locus,Refine") ; } } string tag ;
 		public string Subject { get => tags?[Taglet.Subject] ; set { if( value?.Length>0 ) Tag[Taglet.Subject] = value ; else tags.Set(t=>t[Taglet.Subject]=value) ; } }
 		public string Object { get => tags?[Taglet.Object] ; set { if( value?.Length>0 ) Tag[Taglet.Object] = value ; else tags.Set(t=>t[Taglet.Object]=value) ; } }
 		public string Locus { get => tags?[Taglet.Locus] ; set { if( value?.Length>0 ) Tag[Taglet.Locus] = value ; else tags.Set(t=>t[Taglet.Locus]=value) ; } }
@@ -114,7 +120,19 @@ namespace Rob.Act
 		public Geos? Geo => this ;
 		#endregion
 
+		#region GUI
 		public event PropertyChangedEventHandler PropertyChanged { add => propertyChanged += value.DispatchResolve() ; remove => propertyChanged -= value.DispatchResolve() ; } protected PropertyChangedEventHandler propertyChanged ;
+		#endregion
+
+		#region Comparison
+		public override bool Equals( Pointable other ) => other is Point p && base.Equals(p) && tags?.Equals(p?.tags)!=false ;
+		#endregion
+
+		#region De/Serialization
+		protected Point( string text ) : base(text) { tags = (Tagger)text.RightFrom(Serialization.Act).LeftFrom(Serialization.Tag) ; Metax = (Pre.Metax)text.RightFrom(Serialization.Tag) ; }
+		public static explicit operator Point( string text ) => text?.Contains('\n')==true ? (Path)text : new Point(text) ;
+		public static explicit operator string( Point p ) => $"{(string)(p as Pre.Point)}{(string)p.tags}" ;
+		#endregion
 	}
 	public static class PointExtension
 	{

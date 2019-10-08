@@ -62,7 +62,7 @@ namespace Rob.Act
 		public static implicit operator Geos?( Point point ) => point?.IsGeo==true ? new Geos{Lon=point[Axis.Lon].Value,Lat=point[Axis.Lat].Value} : null as Geos? ;
 	}
 	public interface Quantable : Aid.Gettable<uint,Quant?> , Aid.Gettable<Quant?> {}
-	public interface Pointable : Quantable , Aid.Accessible<uint,Quant?> , Aid.Accessible<Quant?> { DateTime Date { get; } TimeSpan Time { get; } uint Dimension { get; } string Action { get; } Mark Mark { get; } void Adopt( Pointable path ) ; }
+	public interface Pointable : Quantable , Aid.Accessible<uint,Quant?> , Aid.Accessible<Quant?> , IEquatable<Pointable> { DateTime Date { get; } TimeSpan Time { get; } uint Dimension { get; } string Action { get; } Mark Mark { get; } void Adopt( Pointable path ) ; }
 	public interface Pathable : Pointable , Aid.Countable , Aid.Gettable<DateTime,Pointable> , Aid.Gettable<int,Pointable> , IEquatable<Pathable> { string Origin { get; } Path.Aspect Spectrum { get; } string Object { get; } string Subject { get; } string Locus { get; } }
 	static class Basis
 	{
@@ -149,13 +149,21 @@ namespace Rob.Act
 	}
 	namespace Pre
 	{
-		public class Metax
+		public class Metax : IEquatable<Metax>
 		{
 			internal uint Base ;
 			readonly IDictionary<string,uint> Map = new Dictionary<string,uint>() ;
-			public uint this[ string ax ] => Map.At(ax,uint.MaxValue) ;
-			public void Reset( Aspect.Traits traits ) { if( Map.Count>0 ) return ; uint i = 0 ; traits.Each(t=>Map[t.Spec]=Base+i++) ; }
+			public uint this[ string ax ] => Map.On(ax)+Base ?? uint.MaxValue ;
+			public void Reset( Aspect.Traits traits ) { if( Map.Count>0 ) return ; uint i = 0 ; traits.Each(t=>Map[t.Spec]=i++) ; }
+
+			public bool Equals( Metax other ) => other is Metax m && Base==m.Base && Map.SequenceEquate(m.Map) ;
 			public uint Dimension => Base+(uint)Map.Count ;
+			#region De/Serialization
+			public static explicit operator Metax( string text ) => text.Get(t=>new Metax(t)) ;
+			public static explicit operator string( Metax the ) => the.Get(t=>$"{t.Base}{Serialization.Separator}{t.Map.Select(e=>$"{e.Key}:{e.Value}").Stringy(Serialization.Separator)}") ;
+			static class Serialization { public const string Separator = " \x1 Axe \x2 " ; }
+			#endregion
+			public Metax( string text = null ) { Base = text.LeftFrom(Serialization.Separator,all:true).Parse<uint>()??0 ; text.RightFromFirst(Serialization.Separator).SeparateTrim(Serialization.Separator).Each(e=>Map.Add(e.LeftFromLast(':'),e.RightFrom(':').Parse<uint>()??0)) ; }
 		}
 		public abstract class Point : DynamicObject , Pointable
 		{
@@ -186,15 +194,15 @@ namespace Rob.Act
 			/// <summary>
 			/// Signature of the point .
 			/// </summary>
-			public string Sign => sign ?? ( sign = $"{Date}{Time.nil(t=>t==TimeSpan.Zero).Get(t=>$"+{t:hh\\:mm\\:ss}")}" ) ; string sign ;
+			public virtual string Sign => sign ?? ( sign = $"{Date}{Time.nil(t=>t==TimeSpan.Zero).Get(t=>$"+{t:hh\\:mm\\:ss}")}" ) ; string sign ;
 			/// <summary>
 			/// Assotiative text .
 			/// </summary>
-			public virtual string Spec { get => spec ?? ( spec = $"{Action} {Sign}" ) ; set { if( value!=spec ) spec = value ; } } string spec ;
+			public virtual string Spec { get => spec ?? ( spec = Despect ) ; set { if( value!=spec ) spec = value ; } } string spec ; string Despect => Despec(Action) ; string Despec( string act ) => $"{act??Action} {Sign}" ;
 			/// <summary>
 			/// Action specification .
 			/// </summary>
-			public string Action { get => action ; set { if( action==value ) return ; var a = action ; action = value ; if( spec==$"{a} {Sign}" ) Spec = null ; } } string action ;
+			public string Action { get => action ; set { if( action==value ) return ; var a = action ; action = value ; if( spec==Despec(a) ) Spec = null ; } } string action ;
 			/// <summary>
 			/// Kind of demarkaition .
 			/// </summary>
@@ -219,6 +227,21 @@ namespace Rob.Act
 			public virtual string Quantities => $"{((int)Dimension).Steps().Select(i=>Quantity[i].Get(q=>$"{(Axis)i}={q}")).Stringy(' ')}" ;
 			public virtual string Exposion => null ;
 			public virtual string Trace => null ;
+			#endregion
+
+			#region Comparison
+			public virtual bool Equals( Pointable other ) => other is Point p && date==p.date && time==p.time && Spec==p.Spec && action==p.action && Mark==p.Mark && Quantity.SequenceEquate(p.Quantity) ;
+			#endregion
+
+			#region de/Serialization
+			protected Point( string text )
+			{
+				var qs = text.LeftFrom(Serialization.Quant).Separate(',') ; qs[0].Parse<DateTime>().Use(v=>date=v) ; qs[1].Parse<TimeSpan>().Use(v=>time=v) ; Quantity = qs.Skip(2).Select(q=>q.Parse<Quant>()).ToArray() ;
+				qs = text.RightFromFirst(Serialization.Quant).LeftFrom(Serialization.Act).Separate(',') ; qs[0].Parse<Mark>().Use(v=>Mark=v) ; qs.At(1).Set(v=>spec=v) ; qs.At(2).Set(v=>action=v) ;
+			}  
+			public static explicit operator string( Point p ) => $"{p.Date},{p.Time},{p.Quantity.Stringy(',')}{Serialization.Quant}{p.Marklet},{(p.Spec!=p.Despect?p.Spec:null)},{p.Action}{Serialization.Act}" ;
+			public static explicit operator Point( string text ) => text?.Contains('\n')==true ? (Path)text : (Act.Point)text ;
+			protected static class Serialization { public const string Quant = " \x1 Quant \x2 " , Act = " \x1 Act \x2 " , Tag = " \x1 Tag \x2 " ; }
 			#endregion
 		}
 	}
