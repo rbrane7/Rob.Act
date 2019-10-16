@@ -15,16 +15,16 @@ namespace Rob.Act.Gpx
 	{
 		[XmlIgnore] public trkType First => trk.At(0) ; [XmlIgnore] public trkType Last => trk.At(trk.Length-1) ;
 		internal IEnumerable<Point> Iterator { get { if( trk==null ) yield break ; foreach( var track in trk ) foreach( var point in track.Iterator ) yield return point/*.Set(p=>p.Mark|=Last==track&&p.Mark.HasFlag(Mark.Stop)?Mark.Act:Mark.No)*/ ; } }
-		public static implicit operator Path( gpxType way ) => way.Get( w => new Path(w.metadata.time,true,w.Iterator) { Spec = w.First?.name , Object = w.trk?.Select(t=>t.type).Distinct().Stringy(',') , Action = w.trk?.Select(t=>t.name.Action()).Stringy(',') , Subject = w.trk?.Select(t=>t.link.At(0)?.href.Subject()).Distinct().Stringy(',') , Locus = w.trk?.Select(t=>t.name.Locus()).Distinct().Stringy(',') , Refine = w.trk?.Select(t=>t.name.Refine()).Distinct().Stringy(',') , Dragstr = w.trk?.Select(t=>t.name.Dragstr().Draglet()).Average().Dragstr() } ).Set( w => w[0].Set(p=>w.Date=p.Date) ) ;
-		public static implicit operator gpxType( Path path ) => path.Get( p => new gpxType { creator = "Rob" , metadata = new metadataType { name = p.Spec , time = p.Date , timeSpecified = p.Date!=null } , trk = (p/Mark.Act).Select(l=>(trkType)p).ToArray() } ) ;
+		public static implicit operator Path( gpxType way ) => way.Get( w => new Path(w.metadata.time,true,w.Iterator) { Object = w.trk?.Select(t=>t.type).Distinct().Stringy(',') , Action = w.trk?.Select(t=>t.name.Action()).Stringy(',') , Subject = w.trk?.Select(t=>t.link.At(0)?.href.Subject()).Distinct().Stringy(',') , Locus = w.trk?.Select(t=>t.name.Locus()).Distinct().Stringy(',') , Refine = w.trk?.Select(t=>t.name.Refine()).Distinct().Stringy(',') , Dragstr = w.trk?.Select(t=>t.name.Dragstr().Draglet()).Average().Dragstr() , Drawstr = w.trk?.Select(t=>t.name.Drawstr().Drawlet()).Average().Drawstr() } ).Set( w => w[0].Set(p=>w.Date=p.Date) ) ;
+		public static implicit operator gpxType( Path path ) => path.Get( p => new gpxType { creator = "Rob" , metadata = new metadataType { name = p.Name() , time = p.Date , timeSpecified = p.Date!=null } , trk = (p/Mark.Act).Select(l=>(trkType)p).ToArray() } ) ;
 	}
 	public partial class trkType
 	{
 		[XmlIgnore] public bool Close ;
 		[XmlIgnore] public trksegType First => trkseg.At(0) ; [XmlIgnore] public trksegType Last => trkseg.At(trkseg.Length-1) ;
 		internal IEnumerable<Point> Iterator { get { if( trkseg==null ) yield break ; foreach( var segment in trkseg ) foreach( var point in segment.Iterator ) yield return point.Set(p=>p.Mark|=Close&&Last==segment&&p.Mark.HasFlag(Mark.Stop)?Mark.Act:Mark.No) ; } }
-		public static implicit operator Path( trkType track ) => track.Get( t => new Path(t.First.First.time,true,t.Iterator) { Object = t.type , Spec = t.name , Action = t.name.Action() , Subject = t.link.At(0)?.href.Subject() , Locus = t.name.Locus() , Refine = t.name.Refine() , Dragstr = t.name.Dragstr() } ) ;
-		public static implicit operator trkType( Path path ) => path.Get( p => new trkType { type = p.Action , name = p.Spec , trkseg = (p/Mark.Stop).Where(s=>s.Count>1).Select(s=>(trksegType)s).ToArray() } ) ;
+		public static implicit operator Path( trkType track ) => track.Get( t => new Path(t.First.First.time,true,t.Iterator) { Object = t.type , Action = t.name.Action() , Subject = t.link.At(0)?.href.Subject() , Locus = t.name.Locus() , Refine = t.name.Refine() , Dragstr = t.name.Dragstr() , Drawstr = t.name.Drawstr() } ) ;
+		public static implicit operator trkType( Path path ) => path.Get( p => new trkType { type = p.Object , name = p.Name() , trkseg = (p/Mark.Stop).Where(s=>s.Count>1).Select(s=>(trksegType)s).ToArray() } ) ;
 	}
 	public partial class trksegType
 	{
@@ -60,13 +60,14 @@ namespace Rob.Act.Gpx
 		public static readonly IDictionary<string,string> Subjecter = new Dictionary<string,string>{ ["https://www.endomondo.com/users/913640"]="Rob" } ;
 		public const string Sign = "<gpx" ;
 		static readonly string[] Axes = new[] { "lon" , "lat" , "alt" , "dist" , "drag" , "flow" , "hr" , "cad" , "top" } ;
-		static readonly string[] Tags = Enum.GetNames(typeof(Taglet)) ;
 		internal static string Axis( this Axis axe ) => Axes.At((int)axe) ;
 		internal static string Subject( this string uri ) => uri.LeftFrom("/workouts").Get(i=>Subjecter.By(i)??i) ;
 		internal static string Action( this string value ) => value.LeftFrom('?',all:true)?.Trim() ;
-		internal static string Locus( this string value ) => value.RightFrom('?').Separate('&',';').Arg(Tags[(int)Taglet.Locus]) ;
-		internal static string Refine( this string value ) => value.RightFrom('?').Separate('&',';').Arg(Tags[(int)Taglet.Refine]) ;
-		internal static string Dragstr( this string value ) => value.RightFrom('?').Separate('&',';').Arg(Tags[(int)Taglet.Drag]) ;
+		internal static string Locus( this string value ) => value.RightFrom('?').Separate('&',';').Arg(Tagger.Names[(int)Taglet.Locus]) ;
+		internal static string Refine( this string value ) => value.RightFrom('?').Separate('&',';').Arg(Tagger.Names[(int)Taglet.Refine]) ;
+		internal static string Dragstr( this string value ) => value.RightFrom('?').Separate('&',';').Arg(Tagger.Names[(int)Taglet.Drag]) ;
+		internal static string Drawstr( this string value ) => value.RightFrom('?').Separate('&',';').Arg(Tagger.Names[(int)Taglet.Draw]) ;
+		internal static string Name( this Path path ) => path.Get(p=>$"{p.Action}{p.Tags.Get(t=>p.Tag.Uri)}") ;
 	}
 }
   

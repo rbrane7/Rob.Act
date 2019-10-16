@@ -24,22 +24,22 @@ namespace Rob.Act
 		public static IDictionary<string,Profile> SubjectProfile = new Dictionary<string,Profile>{ ["Rob"]=new Profile{Mass=76} } ;
 
 		#region Construct
-		public Path( DateTime date , IEnumerable<Point> points = null ) : base(date) { points.Set(p=>Content.AddRange(p.OrderBy(t=>t.Date))) ; Impose() ; }
-		public void Impose()
+		public Path( DateTime date , IEnumerable<Point> points = null ) : base(date) { Borrow(points) ; Impose() ; }
+		void Impose()
 		{
-			Alti = this.Average(p=>p.Alti) ; this[Axis.Lon] = this.Average(p=>p[Axis.Lon]) ; this[Axis.Lat] = this.Average(p=>p[Axis.Lat]) ;
+			if( Alti==null ) Alti = this.Average(p=>p.Alti) ; if( this[Axis.Lon]==null ) this[Axis.Lon] = this.Average(p=>p[Axis.Lon]) ; if( this[Axis.Lat]==null ) this[Axis.Lat] = this.Average(p=>p[Axis.Lat]) ;
 			var date = DateTime.Now ; for( var i=0 ; i<Count ; ++i )
 			{
-				this[i].Metax = Metax ;
+				if( this[i].Metax==null ) Metax.Set(m=>this[i].Metax=m) ;
 				if( i<=0 || this[i-1].Mark.HasFlag(Mark.Stop) )
 				{
-					date = this[i].Date-(this.At(i-1)?.Time??TimeSpan.Zero) ;
-					if( this[i].Dist==null ) this[i].Dist = this.At(i-1)?.Dist??0 ;
-					if( this[i].Asc==null && Alti!=null ) this[i].Asc = this.At(i-1)?.Asc??0 ;
-					if( this[i].Dev==null && IsGeo ) this[i].Dev = this.At(i-1)?.Dev??0 ;
+					date = this[i].Date-(this[i-1]?.Time??default) ;
+					if( this[i].Dist==null ) this[i].Dist = this[i-1]?.Dist??0 ;
+					if( this[i].Asc==null && Alti!=null ) this[i].Asc = this[i-1]?.Asc??0 ;
+					if( this[i].Dev==null && IsGeo ) this[i].Dev = this[i-1]?.Dev??0 ;
 					if( this[i].Alti==null && Alti!=null ) this[i].Alti = ((Count-i).Steps(i).FirstOrDefault(j=>this[j].Alti!=null).nil()??i-1).Get(j=>this[j].Alti) ;
 				}
-				if( this[i].Time==TimeSpan.Zero ) this[i].Time = this[i].Date-date ;
+				if( this[i].Time==default ) this[i].Time = this[i].Date-date ;
 				if( this[i].Bit==null ) this[i].Bit = i ;
 				if( this[i].IsGeo )
 				{
@@ -52,19 +52,33 @@ namespace Rob.Act
 					if( this[i].Dev==null ) this[i].Dev = this[i-1].Dev + ( i<Count-1 && !this[i].Mark.HasFlag(Mark.Stop) && (this[i].Geo-this[i-1].Geo).Devia(this[i+1].Geo-this[i].Geo) is Quant v ? v : 0 ) ;
 				}
 			}
-			this.At(Count-1).Set(p=>{Bit=p.Bit;Time=p.Time;Dist=p.Dist;Asc=p.Asc;Dev=p.Dev;}) ;
+			this[Count-1].Set(p=>{if(Bit==null)Bit=p.Bit;if(Time==default)Time=p.Time;if(Dist==null)Dist=p.Dist;if(Asc==null)Asc=p.Asc;if(Dev==null)Dev=p.Dev;}) ;
 		}
-		public void Depose() { for( var i=0 ; i<Count ; ++i ) { this[i].Time = TimeSpan.Zero ; this[i].Bit = this[i].Dist = null ; this[i].Asc = this[i].Dev = null ; } }
+		void Depose() { for( var i=0 ; i<Count ; ++i ) { this[i].Time = default ; this[i].Bit = this[i].Dist = null ; this[i].Asc = this[i].Dev = null ; } }
 		public void Reset() { Depose() ; Impose() ; }
 		public Path( DateTime time , bool close , IEnumerable<Point> points = null ) : this(time,points) { if( close ) { if( Beat==null ) { this[0].Beat = 0 ; Quant lb = 0 ; for( var i=1 ; i<Count ; ++i ) this[i].Beat = ((this[i-1].Beat??lb)+this[i].Beat/60*(this[i].Time-this[i-1].Time).TotalSeconds).use(b=>lb=b) ; Beat = lb ; } } }
-		public virtual void Adopt( Path path ) { Depose() ; base.Adopt(path) ; Tags = path.Tags ; for( var i=0 ; i<Content.Count ; ++i ) Content[i].Adopt(path.Content[i]) ; Impose() ; propertyChanged.On(this,"Spec,Spectrum") ; CollectionChanged?.Invoke(this,new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset)) ; }
+		protected virtual void Adopt( Path path )
+		{
+			Depose() ; base.Adopt(path) ;
+			if( Count>path.Count ) Content.RemoveRange(path.Count,Count-path.Count) ; for( var i=0 ; i<Count ; ++i ) this[i].Adopt(path[i]) ; if( Count<path.Count ) Content.AddRange(path.Content.Skip(Count)) ;
+			Impose() ; propertyChanged.On(this,"Spec,Spectrum") ; CollectionChanged?.Invoke(this,new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset)) ;
+		}
 		void Pointable.Adopt( Pointable path ) => (path as Path).Set(Adopt) ;
 		public void Populate() { Metax.Reset(Spectrum.Trait) ; Spectrum.Trait.Each(t=>this[t.Spec]=t.Value) ; Spectrum.Tags.Set(Tag.Add) ; }
+		void Borrow( IEnumerable<Point> points ) { points.Set(p=>Content.AddRange(p.OrderBy(t=>t.Date))) ; if( Metax==null ) Metax = points?.FirstOrDefault(p=>p.Metax!=null)?.Metax ; }
+		internal Path On( IEnumerable<Point> points )
+		{
+			Borrow(points) ;
+			for( var ax = Axis.Lon ; ax<=Axis.Alt ; ++ax ) this[ax] = this.Average(p=>p[ax]) ; for( var ax = Axis.Dist ; ax<=Axis.Time ; ++ax ) this[ax] = this.Sum(p=>p[ax]) ;
+			Asc = this.Sum(p=>(Quant?)p.Asc) ; Dev = this.Sum(p=>(Quant?)p.Dev) ; if( Metax!=null ) foreach( var ax in Metax ) this[ax.Value.At] = this.Average(p=>p[ax.Value.At]) ;
+			for( int i=0 , c=this.Min(p=>p.Tag.Count) ; i<c ; ++i ) Tag[i] = this.Where(p=>p.Tags!=null).Aggregate(string.Empty,(a,p)=>a==null?null:a==string.Empty?p.Tag[i]:a==p.Tag[i]||p.Tag[i].No()?a:null) ;
+			return this ;
+		}
 		#endregion
 
 		#region State
 		int Depth = 1 ;
-		List<Point> Content = new List<Point>() ;
+		readonly List<Point> Content = new List<Point>() ;
 		public bool Dominant = Dominancy ;
 		protected override void SpecChanged( string value ) { base.SpecChanged(value) ; aspect.Set(a=>a.Spec=value) ; }
 		public Profile? Profile => SubjectProfile.On(Subject) ;
@@ -100,8 +114,8 @@ namespace Rob.Act
 		public static Path operator|( Path prime , Path second ) => prime.Set( w => { if( w.Dominant ) w.Each(p=>p|=second[p.Date]) ; else w |= second as IEnumerable<Point> ; if( w[0]?.Date<w.Date ) w.Date = w[0].Date ; } ) ?? second ;
 		public static Path operator&( Path path , Path lead ) => path.Set(p=>p.Rely(lead)) ;
 		public static Path operator/( Path path , uint axis ) => path.Set(p=>p.Each(i=>i/=axis)) ;
-		public static Path operator/( Path path , Axis axis ) => path / (uint)(int)axis ;
-		public static Path operator/( Path path , string axis ) => path / axis.Axis() ;
+		public static Path operator/( Path path , Axis axis ) => path / (uint)axis ;
+		public static Path operator/( Path path , string axis ) => path / axis.Axis(path?.Dimension??default) ;
 		public static Path operator>>( Path path , int depth ) { if( path!=null ) while( depth-->0 ) path = new Path( path.Date , path.Diff ) ; return ++path ; }
 		public static Path operator<<( Path path , int depth ) { if( path!=null ) while( depth-->0 ) path = new Path( path.Date , path.Inte ) ; return ++path ; }
 		public static Path operator--( Path path ) => path - true ;
@@ -184,13 +198,20 @@ namespace Rob.Act
 		#endregion
 
 		#region De/Serialization
-		Path( string text ) : base(text.LeftFrom('\n',all:true)) => text.RightFromFirst('\n').SeparateTrim('\n').Set(e=>Content.AddRange(e.Select(p=>((Point)p).Set(a=>{if(a.Metax==null)a.Metax=Metax;})))) ;
-		public static explicit operator string( Path path ) => path.Get(a=>$"{(string)(a as Point)}{(string)a.Metax}\n{(string.Join("\n",a.Content.Select(p=>(string)p+(string)p.Metax.Null(m=>m==a.Metax))))}") ;
+		Path( string text ) : base(text.LeftFrom(Serialization.Separator,all:true).Get(t=>t.StartsBy(Serialization.Domimator)?t.RightFromFirst(Serialization.Domimator):t))
+		{
+			text.RightFromFirst(Serialization.Separator).Separate(Serialization.Separator,false).Set(e=>Content.AddRange(e.Select(p=>((Point)p).Set(a=>{if(a.Metax==null)a.Metax=Metax;})))) ; if( Dominant = text.StartsBy(Serialization.Domimator) );else return ;
+			for( var ax=Axis.Dist ; ax<=Axis.Time ; ++ax ) { Quant lval = 0 ; for( var i=0 ; i<Count ; ++i ) { this[i][ax] += lval ; this[i][ax].Use(v=>lval=v) ; } }
+		}
+		public static explicit operator string( Path path ) => path.Get(a=>$"{(path.Dominant?Serialization.Domimator:null)}{(string)(a as Point)}{(string)a.Metax}{Serialization.Separator}{(string.Join(null,a.Content.Select(p=>(string)p+(string)p.Metax.Null(m=>m==a.Metax)+Serialization.Separator)))}") ;
 		public static explicit operator Path( string text ) => text.Get(t=>new Path(t)) ;
+		new internal static class Serialization { public const string Separator = " \x1 Point \x2\n" ; public const string Domimator = "^ " ; }
 		#endregion
 
+		public override Metax Metax { set { if( Dominant && Metax!=null ) Metax.Basis = value ; else base.Metax = value ; } }
+
 		#region Comparation
-		public virtual bool Equals( Pathable path ) => path is Path p && (this as Point).Equals(p) && Content.SequenceEquate(p.Content,(x,y)=>x.Equals(y)) && Metax?.Equals(p.Metax)!=false ;
+		public virtual bool Equals( Pathable path ) => path is Path p && (this as Point).Equals(p) && Content.SequenceEquate(p.Content,(x,y)=>x.EqualsRestricted(y)) && Metax?.Equals(p.Metax)!=false ;
 		#endregion
 	}
 }

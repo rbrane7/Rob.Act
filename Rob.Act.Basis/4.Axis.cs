@@ -12,7 +12,7 @@ namespace Rob.Act
 	using System.ComponentModel ;
 	using Quant = Double ;
 	using Aid.Math ;
-	public interface Axable : Aid.Gettable<int,Quant?> , Aid.Gettable<Quant,Quant> , Aid.Countable<Quant?> { Func<int,Quant?> Resolver { get; set; } Func<Aspectable,int> Counter { get; set; } Func<Axe,IEnumerable<Quant>> Distributor { get; set; } string Spec { get; } }
+	public interface Axable : Aid.Gettable<int,Quant?> , Aid.Gettable<Quant,Quant> , Aid.Countable<Quant?> { string Spec { get; } }
 	public class Axe : Axable , INotifyPropertyChanged
 	{
 		public readonly static Axe No = new Axe() ;
@@ -30,22 +30,23 @@ namespace Rob.Act
 		protected Resourcable Resource => Aspect ?? Aspects as Resourcable ;
 		protected virtual Aspectables Aspects { get => aspects.Count>0 ? aspects : ( aspects = new Aspectables(Selector?.Invoke(Aspectables.The?.Invoke()).ToArray()) ) ; set { aspects = value ; Resolver = null ; propertyChanged.On(this,"Aspects") ; } } Aspectables aspects ;
 		public virtual Aspectable Aspect { get => aspect ?? ( aspect = DefaultAspect ) ; set { if( aspect==value ) return ; aspect = value ; Resolver = null ; propertyChanged.On(this,"Aspect") ; } } protected Aspectable aspect ;
-		public Func<IEnumerable<Aspectable>,IEnumerable<Aspectable>> Selector { get => selector ; set { if( selector==value ) return ; selector = value ; Aspect = null ; propertyChanged.On(this,"Selector") ; } } Func<IEnumerable<Aspectable>,IEnumerable<Aspectable>> selector ;
-		public string Aspectlet { get => selectlet ?? Aspect?.Spec ; set { if( value==Aspectlet ) return ; Selectlet = value ; propertyChanged.On(this,"Aspectlet") ; } } string selectlet ;
+		internal Aspectable Own ;
+		Func<IEnumerable<Aspectable>,IEnumerable<Aspectable>> Selector { get => selector ; set { if( selector==value ) return ; selector = value ; Aspect = null ; propertyChanged.On(this,"Selector") ; } } Func<IEnumerable<Aspectable>,IEnumerable<Aspectable>> selector ;
+		string Aspectlet { get => selectlet ?? Aspect?.Spec ; set { if( value==Aspectlet ) return ; Selectlet = value ; propertyChanged.On(this,"Aspectlet") ; } } string selectlet ;
 		string Selectlet { set { selectlet = value.Null(s=>s.No()) ; var aspectlet = Asrex ? value.Null(s=>s.No()).Get(v=>new Regex(v)) : null ; if( aspectlet==null ) Selector = selectlet.Compile<Func<IEnumerable<Aspectable>,IEnumerable<Aspectable>>>() ; else Selector = s=>s.Where(a=>aspectlet.Match(a.Spec).Success) ; } }
 		public Quant this[ Quant at ] => this.Count(q=>q>=at) ;
 		public Quant this[ Quant at , Axe ax ] { get { if( ax==null ) return this[at] ; Quant rez = 0 ; for( int i=0 , count=Count ; i<count ; ++i ) if( Resolve(i)>=at ) rez += ax[i+1]-ax[i]??0 ; return rez ; } }
 		public Quant? this[ int at ] => Resolve(at) ;
 		protected internal virtual Quant? Resolve( int at ) => Resolver?.Invoke(at) ;
-		Axe Coaxe => Multi?Aspects.Get(a=>Resolvelet.Compile<Func<Aspectables,Axe>>(use:"Rob.Act").Of(a)):Aspect.Get(a=>Resolvelet.Compile<Func<Aspectable,Axe>>(use:"Rob.Act").Of(a)) ;
-		public Func<int,Quant?> Resolver { get => resolver ?? ( resolver = Coaxe.Set(x=>{if(counter==null)counter=x.counter;}) is Axe a ? i=>a[i] : new Func<int,Quant?>(i=>null as Quant?) ) ; set { if( resolver==value ) return ; resolver = value ; propertyChanged.On(this,"Resolver") ; } } Func<int,Quant?> resolver ;
+		Axe Coaxe => Multi?Aspects.Get(a=>Resolvelet.Compile<Func<Aspectables,Axe>>(use:"Rob.Act").Of(a)):Aspect.Get(a=>Resolvelet.Compile<Func<Contextable,Axe>>(use:"Rob.Act").Of(new Context{Base=a,This=Own,The=this})) ;
+		protected Func<int,Quant?> Resolver { private get => resolver ?? ( resolver = Coaxe.Set(x=>{if(counter==null)counter=x.counter;}) is Axe a ? i=>a[i] : new Func<int,Quant?>(i=>null as Quant?) ) ; set { if( resolver==value ) return ; resolver = value ; propertyChanged.On(this,"Resolver") ; } } Func<int,Quant?> resolver ;
 		public string Resolvelet { get => resolvelet ; set { if( value==resolvelet ) return ; resolvelet = value ; Resolver = null ; propertyChanged.On(this,"Resolvelet") ; } } string resolvelet ;
 		public virtual int Count => Counter is Func<Aspectable,int> c ? c(Aspect) : DefaultCount ;
 		public bool Counts => counter!=null ;
 		protected virtual int DefaultCount => Resource?.Points.Count ?? 0 ;
-		public Func<Aspectable,int> Counter { get => counter ?? ( counter = countlet.Compile<Func<Aspectable,int>>()/*??Coaxe.Set(x=>{if(resolver==null)resolver=i=>x[i];})?.counter*/ ) ; set { if( counter==value ) return ; counter = value ; propertyChanged.On(this,"Counter") ; } } Func<Aspectable,int> counter ;
+		Func<Aspectable,int> Counter { get => counter ?? ( counter = countlet.Compile<Func<Aspectable,int>>()/*??Coaxe.Set(x=>{if(resolver==null)resolver=i=>x[i];})?.counter*/ ) ; set { if( counter==value ) return ; counter = value ; propertyChanged.On(this,"Counter") ; } } Func<Aspectable,int> counter ;
 		public string Countlet { get => countlet ; set { if( value.Null(c=>c.No())==countlet ) return ; countlet = value ; Counter = null ; propertyChanged.On(this,"Countlet") ; } } string countlet ;
-		public Func<Axe,IEnumerable<Quant>> Distributor { get => distributor ?? ( distributor = distribulet.Compile<Func<Axe,IEnumerable<Quant>>>() ?? (a=>null) ) ; set { if( distributor==value ) return ; distributor = value ; propertyChanged.On(this,"Distributor,Quantile") ; } } Func<Axe,IEnumerable<Quant>> distributor ;
+		Func<Axe,IEnumerable<Quant>> Distributor { get => distributor ?? ( distributor = distribulet.Compile<Func<Axe,IEnumerable<Quant>>>() ?? (a=>null) ) ; set { if( distributor==value ) return ; distributor = value ; propertyChanged.On(this,"Distributor,Quantile") ; } } Func<Axe,IEnumerable<Quant>> distributor ;
 		public IEnumerable<Quant> Distribution => Distributor?.Invoke(this) ?? DefaultDistribution ; //?? Enumerable.Empty<Quant>() ;
 		protected virtual IEnumerable<Quant> DefaultDistribution => this.Refine().ToArray().Null(d=>d.Length<=0) ;
 		public string Distribulet { get => distribulet ; set { if( value==distribulet ) return ; distribulet = value ; Distributor = null ; propertyChanged.On(this,"Distribulet") ; } } string distribulet ;
@@ -82,6 +83,7 @@ namespace Rob.Act
 		public static Axe operator^( Axe x , Axe y ) => x==null ? No : x.Shift(y) ;
 		public static Axe operator%( Axe x , int dif ) => x==null ? No : new Axe( i=>x.Diff(i,dif) , a=>x.Count-dif ) ;
 		public static Lap operator%( Axe x , Quant dif ) => x.By(dif) ;
+		public static Axe operator%( Axe x , float dif ) => x==null ? No : new Axe( i=>x.Resolve(i)%dif , a=>x.Count ) ;
 		public static Axe operator/( Axe x , Lap dif ) => x==null ? No : new Axe( i=>x.Diff(i,dif[i]) , a=>x.Count ) ;
 		public static Axe operator%( Axe x , Axe y ) => x==null ? No : x.Rift(y) ;
 		public static IEnumerable<int> operator>( Axe x , Quant? val ) => x?.Count.Steps().Where(i=>x[i]>val) ;
@@ -103,7 +105,7 @@ namespace Rob.Act
 		public Axe Skip( int count ) => new Axe( i=>Resolve(count+i) , a=>Math.Max(0,Count-count) ) ;
 		public Axe Wait( int count ) => new Axe( i=>Resolve(i<count?0:i-count) , a=>Math.Max(0,Count-count) ) ;
 		public Axe Take( int count ) => new Axe( Resolve , a=>Math.Min(count,Count) ) ;
-		public Axe For( IEnumerable<int> fragment ) => fragment?.ToArray().Get(f=>new Axe(i=>i<f.Length?Resolve(f[i]):null,a=>f?.Length??0)) ?? No ;
+		public Axe For( IEnumerable<int> fragment ) => fragment.Get(f=>new HashSet<int>(f)).Get(f=>new Axe(i=>f.Contains(i)?Resolve(i):null,a=>Count)) ?? No ;
 		public Axe this[ IEnumerable<int> fragment ] => For(fragment) ;
 		public Axe Shift( Axe upon , Quant quo = 0 ) => upon==null ? No : new Axe( i=>(quo*i).Get(at=>Shift(upon,(int)at,(int)((i-at)/2))) , a=>Count ) ;
 		public Axe Drift( Axe upon , Quant quo = 0 ) => upon.Shift(this,quo) ;
@@ -114,8 +116,8 @@ namespace Rob.Act
 		public Lap Lap( Quant dif ) => new Lap(this,dif) ;
 		public Lap By( Quant dif ) => Lap(dif) ;
 		public Axe Nil( Predicate<Quant> nil ) => new Axe( i=>Resolve(i).Nil(nil) , a=>Count ) ;
-		public Axe PacePower( Quant grade = 0 , Quant? drag = null ) => new Axe( i=>Resolve(i).PacePower(grade,(Aspect as Aspect)?.PaceDrag(drag),Aspect?.Raw?.Profile?.Mass) , a=>Count ) ;
-		public Axe PowerPace( Quant grade = 0 , Quant? drag = null ) => new Axe( i=>Resolve(i).PowerPace(grade,drag??Aspect?.Raw?.Drager,Aspect?.Raw?.Profile?.Mass) , a=>Count ) ;
+		public Axe PacePower( Quant grade = 0 , Quant? resi = null ) => new Axe( i=>Resolve(i).PacePower(grade,(Aspect as Aspect)?.Resistance(resi),Aspect?.Raw?.Profile?.Mass) , a=>Count ) ;
+		public Axe PowerPace( Quant grade = 0 , Quant? resi = null ) => new Axe( i=>Resolve(i).PowerPace(grade,resi??Aspect?.Raw?.Resister,Aspect?.Raw?.Profile?.Mass) , a=>Count ) ;
 		#endregion
 		#region De/Serialization
 		/// <summary>
@@ -128,6 +130,13 @@ namespace Rob.Act
 		public static explicit operator string( Axe aspect ) => aspect.Get(a=>string.Join(Serialization.Separator,a.spec,a.multi?Serialization.Multier:string.Empty,a.resolvelet,a.countlet,a.selectlet,a.distribulet,a.quantlet,a.Binder,a.rex?Serialization.Rex:string.Empty)) ;
 		static class Serialization { public const string Separator = " \x1 Axlet \x2 " ; public const string Multier = "*" , Rex = "rex"; }
 		#endregion
+		public struct Context : Contextable
+		{
+			public Aspectable Base , This ; public Axe The ;
+			[LambdaContext.Dominant] public Axe this[ string key ] => This?[key] is Axe a && a!=The ? a : Base?[key] ;
+			public Path Raw => Base?.Raw ;
+			public Path Rat( int at = 0 ) => Base?.Rat(at) ;
+		}
 	}
 	public class Quantile : Aid.Gettable<int,Quant> , Aid.Countable<Quant>
 	{
@@ -187,13 +196,14 @@ namespace Rob.Act
 		public class Axe : Act.Axe
 		{
 			internal Path Context ;
-			public virtual Axis Axis { get => axis ; set { base.Spec = ( axis = value ).Stringy() ; Resolver = at=>Context?[at]?[Axis] ; } } Axis axis ;
-			public override string Spec { get => base.Spec ; set { if( value!=null ) Axis = (Axis)value.Axis() ; base.Spec = value ; } }
+			public virtual uint Ax { get => axis ; set { base.Spec = ( axis = value ).Get(v=>v<(uint)Axis.Time?((Axis)v).Stringy():v<Context.Dimension?Context.Metax?[v].Name:v==Context.Dimension?Axis.Time.ToString():Axis.Date.ToString()) ; Resolver = at=>Context?[at]?[Ax] ; } } uint axis ;
+			public Axis Axis { get => axis==Context.Dimension ? Axis.Time : axis==Context.Dimension+1 ? Axis.Date : axis==(uint)Axis.Time ? (Axis)Context.Dimension : axis==(uint)Axis.Date ? (Axis)Context.Dimension+1 : (Axis)axis ; set => Ax = value==Axis.Time ? Context.Dimension : value==Axis.Date ? Context.Dimension+1 : value<Axis.Time ? (uint)value : (uint)value-2 ; }
+			public override string Spec { get => base.Spec ; set { if( value!=null ) Ax = value.Axis(Context.Dimension) ; base.Spec = value ; } }
 			public Axe( Path context ) => Context = context ;
 			public override int Count => DefaultCount ;
 			protected override int DefaultCount => Context?.Count ?? 0 ;
 			protected override Aspectable DefaultAspect => Context?.Spectrum ;
-			bool Intensive => Axis==Axis.Time || Axis==Axis.Bit || Axis==Axis.Beat ;
+			bool Intensive => Axis==Axis.Time || Axis==Axis.Date || Axis==Axis.Bit || Axis==Axis.Beat ;
 			#region Operations
 			public Act.Axe Propagation( (Quant time,Quant potential) a , (Quant time,Quant potential) b ) => new Act.Axe( i=>(Resolve(i),Intensive).Propagation(a,b) , c=>Count ) ;
 			public Act.Axe Propagation( (TimeSpan time,Quant potential) a , (TimeSpan time,Quant potential) b ) => new Act.Axe( i=>(Resolve(i),Intensive).Propagation(a,b) , c=>Count ) ;

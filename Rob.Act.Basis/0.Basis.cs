@@ -16,7 +16,7 @@ namespace Rob.Act
 	/// </summary>
 	[Flags] public enum Mark { No = 0 , Stop = 1 , Lap = 2 , Act = 4 }
 	[Flags] public enum Oper { Merge = 0 , Combi = 1 , Trim = 2 , Smooth = 4 , Relat = 8 }
-	public enum Axis : uint { Lon , Longitude = Lon , Lat , Latitude = Lat , Alt , Altitude = Alt , Dist , Distance = Dist , Drag , Flow , Beat , Bit , Energy , Effort , Time }
+	public enum Axis : uint { Lon , Longitude = Lon , Lat , Latitude = Lat , Alt , Altitude = Alt , Dist , Distance = Dist , Drag , Draw , Beat , Bit , Energy , Effort , Time , Date }
 	public struct Bipole : IFormattable
 	{
 		Bipole( Quant a , Quant b ) { A = Math.Abs(a) ; B = -Math.Abs(b) ; }
@@ -62,13 +62,16 @@ namespace Rob.Act
 		public static implicit operator Geos?( Point point ) => point?.IsGeo==true ? new Geos{Lon=point[Axis.Lon].Value,Lat=point[Axis.Lat].Value} : null as Geos? ;
 	}
 	public interface Quantable : Aid.Gettable<uint,Quant?> , Aid.Gettable<Quant?> {}
-	public interface Pointable : Quantable , Aid.Accessible<uint,Quant?> , Aid.Accessible<Quant?> , IEquatable<Pointable> { DateTime Date { get; } TimeSpan Time { get; } uint Dimension { get; } string Action { get; } Mark Mark { get; } void Adopt( Pointable path ) ; }
-	public interface Pathable : Pointable , Aid.Countable , Aid.Gettable<DateTime,Pointable> , Aid.Gettable<int,Pointable> , IEquatable<Pathable> { string Origin { get; } Path.Aspect Spectrum { get; } string Object { get; } string Subject { get; } string Locus { get; } }
+	/// <summary>
+	/// Equatable is used by GUI frameworks therefore they can't be used and overriden !
+	/// </summary>
+	public interface Pointable : Quantable , Aid.Accessible<uint,Quant?> , Aid.Accessible<Quant?> { DateTime Date { get; } TimeSpan Time { get; } uint Dimension { get; } string Action { get; } Mark Mark { get; } Tagable Tag { get; } void Adopt( Pointable path ) ; }
+	public interface Pathable : Pointable , Aid.Countable , Aid.Gettable<DateTime,Pointable> , Aid.Gettable<int,Pointable> { string Origin { get; } Path.Aspect Spectrum { get; } string Object { get; } string Subject { get; } string Locus { get; } string Refine { get; } }
 	static class Basis
 	{
 		#region Axis specifics
 		static readonly List<string> axis = Enum.GetNames(typeof(Axis)).ToList() ; static readonly List<uint> vaxi = Enum.GetValues(typeof(Axis)).Cast<uint>().ToList() ;
-		internal static uint Axis( this string name ) => vaxi.At(axis.IndexOf(name)).nil(i=>i<0) ?? (uint)axis.Set(a=>{a.Add(name);vaxi.Add((uint)vaxi.Count);}).Count-1 ;
+		internal static uint Axis( this string name , uint dim ) => vaxi.At(axis.IndexOf(name)).nil(i=>i<0).Get(i=>i==(uint)Act.Axis.Time?dim:i==(uint)Act.Axis.Date?dim+1:i) ?? (uint)axis.Set(a=>{a.Add(name);vaxi.Add((uint)vaxi.Count);}).Count-1 ;
 		internal static Quant ActLim( this Axis axis , string activity ) => 50 ;
 		#endregion
 
@@ -133,6 +136,12 @@ namespace Rob.Act
 		public static IEnumerable<string> ExtractTags( this string value ) => value?.TrimStart().StartsBy("?")==true ? value.RightFromFirst('?').Separate(';','&').Get(elem=>typeof(Taglet).GetEnumNames().Get(n=>n.Select(e=>elem.Arg(e)).Concat(elem.Except(e=>e.LeftFrom('=')??string.Empty,n)))) : value.Separate(' ') ?? Enumerable.Empty<string>() ;
 		#endregion
 
+		internal static IEnumerable<KeyValuePair<string,(uint At,string Form)>> Iterer( this Metax metax , uint @base = 0 ) => metax.Get(m=>m.Iterator(@base)) ?? Enumerable.Empty<KeyValuePair<string,(uint At,string Form)>>() ;
+		public static Quant TotalSeconds( this DateTime date ) => (date-DateTime.MinValue).TotalSeconds ;
+		public static bool Equals( this Quant x , Quant y ) => x==y || Math.Abs(x-y)/(Math.Abs(x)+Math.Abs(y))<=QuantEpsilon ;
+		public static bool Equals( this Quant? x , Quant? y ) => x==y || x is Quant a && y is Quant b && Equals(a,b) ;
+		const Quant QuantEpsilon = 1e-10 ;
+
 		public struct Binding
 		{
 			public string Path , Name , Format , Align ; public Func<object,object> Converter ; 
@@ -147,24 +156,32 @@ namespace Rob.Act
 			public string Of( object value ) => Reform.Form( Converter is Func<object,object> c ? c(value) : value ) ;
 		}
 	}
+	public class Metax : IEquatable<Metax> , IEnumerable<KeyValuePair<string,(uint At,string Form)>>
+	{
+		internal uint Base ; internal Metax Basis ;
+		readonly IDictionary<string,(uint At,string Form)> Map = new Dictionary<string,(uint At,string Form)>() ;
+		public uint this[ string ax ] => Map.On(ax)?.At+Base ?? Basis?.Map.On(ax)?.At+Base+Top ?? uint.MaxValue ;
+		public (string Name,string Form) this[ uint ax ] => this.SingleOrNil(m=>m.Value.At==ax).get(v=>(v.Key,v.Value.Form))??default ;
+		public void Reset( Aspect.Traits traits ) { if( (Basis?.Map.Count??Map.Count)>0 ) return ; uint i = 0 ; traits.Each(t=>(Basis?.Map??Map)[t.Spec]=(i++,t.Bond)) ; }
+		public bool Equals( Metax other ) => other is Metax m && Base==m.Base && this.SequenceEquate(m) ;
+		internal IEnumerable<KeyValuePair<string,(uint At,string Form)>> Iterator( uint @base ) => Map.Select(a=>new KeyValuePair<string,(uint At,string Form)>(a.Key,(a.Value.At+@base,a.Value.Form))) ;
+		public IEnumerator<KeyValuePair<string,(uint At,string Form)>> GetEnumerator() => (Iterator(Base).Concat(Basis.Iterer(Dim))).GetEnumerator() ; IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
+		public uint Dimension => Dim+(Basis?.Top??0) ; uint Dim => Base+Top ; uint Top => (uint)Map.Count ;
+		#region De/Serialization
+		public static explicit operator Metax( string text ) => text.Null(t=>t.Void()).Get(t=>new Metax(t)) ;
+		public static explicit operator string( Metax the ) => the.Get(t=>$"{t.Base}{Serialization.Separator}{t.Map.Concat(t.Basis.Iterer(t.Top)).Select(e=>$"{e.Key}{Serialization.Infix}{e.Value.At}{Serialization.Infix}{e.Value.Form}").Stringy(Serialization.Separator)}") ;
+		static class Serialization { public const string Separator = " \x1 Axe \x2 " , Infix = "\x1:\x2" ; }
+		#endregion
+		Metax( string text ) : this(text.LeftFrom(Serialization.Separator,all:true).Parse<uint>()??0)
+		{
+			foreach( var e in text.RightFromFirst(Serialization.Separator).SeparateTrim(Serialization.Separator) )
+				Map.Add(e.LeftFrom(Serialization.Infix),e.RightFromFirst(Serialization.Infix).get(v=>(v.LeftFrom(Serialization.Infix).Parse<uint>()??0,v.RightFrom(Serialization.Infix).Null(f=>f.No())))??default) ;
+		}
+		public Metax( uint zero = 0 ) => Base = zero ;
+		public IEnumerable<string> Bonds => this.Select(e=>$"[{e.Value.At}]/{e.Key}{e.Value.Form}") ;
+	}
 	namespace Pre
 	{
-		public class Metax : IEquatable<Metax>
-		{
-			internal uint Base ;
-			readonly IDictionary<string,uint> Map = new Dictionary<string,uint>() ;
-			public uint this[ string ax ] => Map.On(ax)+Base ?? uint.MaxValue ;
-			public void Reset( Aspect.Traits traits ) { if( Map.Count>0 ) return ; uint i = 0 ; traits.Each(t=>Map[t.Spec]=i++) ; }
-
-			public bool Equals( Metax other ) => other is Metax m && Base==m.Base && Map.SequenceEquate(m.Map) ;
-			public uint Dimension => Base+(uint)Map.Count ;
-			#region De/Serialization
-			public static explicit operator Metax( string text ) => text.Get(t=>new Metax(t)) ;
-			public static explicit operator string( Metax the ) => the.Get(t=>$"{t.Base}{Serialization.Separator}{t.Map.Select(e=>$"{e.Key}:{e.Value}").Stringy(Serialization.Separator)}") ;
-			static class Serialization { public const string Separator = " \x1 Axe \x2 " ; }
-			#endregion
-			public Metax( string text = null ) { Base = text.LeftFrom(Serialization.Separator,all:true).Parse<uint>()??0 ; text.RightFromFirst(Serialization.Separator).SeparateTrim(Serialization.Separator).Each(e=>Map.Add(e.LeftFromLast(':'),e.RightFrom(':').Parse<uint>()??0)) ; }
-		}
 		public abstract class Point : DynamicObject , Pointable
 		{
 			#region Construction
@@ -175,7 +192,7 @@ namespace Rob.Act
 
 			#region Setup
 			protected virtual void From( Pointable point ) { Time = point.Time ; for( uint i=0 ; i<point.Dimension ; ++i ) this[i] = point[i] ; }
-			public virtual void Adopt( Pointable point ) { From(point) ; Date = point.Date ; Action = point.Action ; Mark = point.Mark ; }
+			public virtual void Adopt( Pointable point ) { if( point==null ) return ; From(point) ; Date = point.Date ; Action = point.Action ; Mark = point.Mark ; (point as Point).Set(p=>Metax=p.Metax) ; }
 			#endregion
 
 			#region State
@@ -194,11 +211,11 @@ namespace Rob.Act
 			/// <summary>
 			/// Signature of the point .
 			/// </summary>
-			public virtual string Sign => sign ?? ( sign = $"{Date}{Time.nil(t=>t==TimeSpan.Zero).Get(t=>$"+{t:hh\\:mm\\:ss}")}" ) ; string sign ;
+			public virtual string Sign => sign ?? ( sign = $"{Date}{Time.nil().Get(t=>$"+{t:hh\\:mm\\:ss}")}" ) ; string sign ;
 			/// <summary>
 			/// Assotiative text .
 			/// </summary>
-			public virtual string Spec { get => spec ?? ( spec = Despect ) ; set { if( value!=spec ) spec = value ; } } string spec ; string Despect => Despec(Action) ; string Despec( string act ) => $"{act??Action} {Sign}" ;
+			public virtual string Spec { get => spec ?? ( spec = Despect ) ; set { if( value!=spec ) spec = value ; } } string spec ; protected string Despect => Despec(Action) ; protected virtual string Despec( string act ) => $"{act??Action} {Sign}" ;
 			/// <summary>
 			/// Action specification .
 			/// </summary>
@@ -210,13 +227,13 @@ namespace Rob.Act
 			/// <summary>
 			/// Metadata of axes .
 			/// </summary>
-			public Metax Metax { get => metax ; set { value.Set(v=>v.Base=metax?.Base??Dimension) ; metax = value ; } } Metax metax ;
+			public virtual Metax Metax { get ; set ; }
 			#endregion
 
 			#region Trait
 			public abstract uint Dimension { get ; }
-			public Quant? this[ uint axis ] { get => Quantity.At((int)axis) ; set { if( axis>=Quantity.Length && value!=null && axis<uint.MaxValue ) Quantity.Set(q=>q.CopyTo(Quantity=new Quant?[Math.Max(axis+1,Metax?.Dimension??0)],0)) ; if( axis<Quantity.Length ) Quantity[axis] = value ; } }
-			public Quant? this[ string axis ] { get => this[Metax?[axis]??axis.Axis()] ; set => this[Metax?[axis]??axis.Axis()] = value ; }
+			public Quant? this[ uint axis ] { get => axis==Dimension ? Time.TotalSeconds : axis==Dimension+1 ? Date.TotalSeconds() : Quantity.At((int)axis) ; set { if( axis>=Quantity.Length && value!=null && axis<uint.MaxValue ) Quantity.Set(q=>q.CopyTo(Quantity=new Quant?[Math.Max(axis+1,Metax?.Dimension??0)],0)) ; if( axis<Quantity.Length ) Quantity[axis] = value ; } }
+			public Quant? this[ string axis ] { get => this[Metax?[axis]??axis.Axis(Dimension)] ; set => this[Metax?[axis]??axis.Axis(Dimension)] = value ; }
 			public override bool TrySetMember( SetMemberBinder binder , object value ) { this[binder.Name] = (Quant?)value ; return base.TrySetMember( binder, value ) ; }
 			public override bool TryGetMember( GetMemberBinder binder , out object result ) { result = this[binder.Name] ; return true ; }
 			public static implicit operator Quant?[]( Point point ) => point?.Quantity ;
@@ -227,19 +244,22 @@ namespace Rob.Act
 			public virtual string Quantities => $"{((int)Dimension).Steps().Select(i=>Quantity[i].Get(q=>$"{(Axis)i}={q}")).Stringy(' ')}" ;
 			public virtual string Exposion => null ;
 			public virtual string Trace => null ;
+			public abstract Tagable Tag { get ; }
 			#endregion
 
 			#region Comparison
-			public virtual bool Equals( Pointable other ) => other is Point p && date==p.date && time==p.time && Spec==p.Spec && action==p.action && Mark==p.Mark && Quantity.SequenceEquate(p.Quantity) ;
+			public virtual bool Equals( Pointable other ) => other is Point p && date==p.date && time==p.time /*&& Spec==p.Spec*/ && action==p.action && Mark==p.Mark && Quantity.SequenceEquate(p.Quantity,Basis.Equals) ;
+			public virtual bool EqualsRestricted( Pointable other ) => other is Point p && date==p.date /*&& Spec==p.Spec*/ && action==p.action && Mark==p.Mark && Quantity.Skip((int)Axis.Time).SequenceEquate(p.Quantity.Skip((int)Axis.Time),Basis.Equals) ;
 			#endregion
 
 			#region de/Serialization
 			protected Point( string text )
 			{
 				var qs = text.LeftFrom(Serialization.Quant).Separate(',') ; qs[0].Parse<DateTime>().Use(v=>date=v) ; qs[1].Parse<TimeSpan>().Use(v=>time=v) ; Quantity = qs.Skip(2).Select(q=>q.Parse<Quant>()).ToArray() ;
-				qs = text.RightFromFirst(Serialization.Quant).LeftFrom(Serialization.Act).Separate(',') ; qs[0].Parse<Mark>().Use(v=>Mark=v) ; qs.At(1).Set(v=>spec=v) ; qs.At(2).Set(v=>action=v) ;
+				var ss = text.RightFrom(Serialization.Quant).LeftFromLast(Serialization.Act) ; ss.LeftFrom(',').Parse<Mark>().Use(v=>Mark=v) ;
+				ss = ss.RightFromFirst(',') ; ss.LeftFrom(Serialization.Act).Null(v=>v.No()).Set(v=>spec=v) ; ss.RightFrom(Serialization.Act).Null(v=>v.No()).Set(v=>action=v) ;
 			}  
-			public static explicit operator string( Point p ) => $"{p.Date},{p.Time},{p.Quantity.Stringy(',')}{Serialization.Quant}{p.Marklet},{(p.Spec!=p.Despect?p.Spec:null)},{p.Action}{Serialization.Act}" ;
+			public static explicit operator string( Point p ) => $"{p.Date},{p.Time},{p.Quantity.Stringy(',')}{Serialization.Quant}{p.Marklet},{(p.Spec!=p.Despect?p.Spec:null)}{Serialization.Act}{p.Action}{Serialization.Act}" ;
 			public static explicit operator Point( string text ) => text?.Contains('\n')==true ? (Path)text : (Act.Point)text ;
 			protected static class Serialization { public const string Quant = " \x1 Quant \x2 " , Act = " \x1 Act \x2 " , Tag = " \x1 Tag \x2 " ; }
 			#endregion
