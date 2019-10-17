@@ -42,7 +42,7 @@ namespace Rob.Act.Analyze
 		FileSystemWatcher[] WorkoutsWatchers ;
 		public event PropertyChangedEventHandler PropertyChanged ;
 		void PropertyChangedOn<Value>( string properties , Value value ) { PropertyChanged.On(this,properties,value) ; if( properties.Consists("Sources") ) if( GraphTab.IsSelected ) Graph_Draw(this) ; else if( MapTab.IsSelected ) Map_Draw(this) ; }
-		public Main() { InitializeComponent() ; new Aid.Prog.Setup().Go() ; ViewPanel = GraphPanel ; DataContext = this ; Doct += (this,"Main") ; Aspectables.The = ()=>Book.Select(p=>p.Spectrum).Union(Aspects) ; SourcesGrid.ItemContainerGenerator.ItemsChanged += SourcesGrid_ItemsChanged ; Load() ; }
+		public Main() { InitializeComponent() ; AppDomain.CurrentDomain.Load(typeof(AxeOperations).Assembly.FullName) ; new Aid.Prog.Setup().Go() ; ViewPanel = GraphPanel ; DataContext = this ; Doct += (this,"Main") ; Aspectables.The = ()=>Book.Select(p=>p.Spectrum).Union(Aspects) ; SourcesGrid.ItemContainerGenerator.ItemsChanged += SourcesGrid_ItemsChanged ; Load() ; }
 		void Load()
 		{
 			Setup.WorkoutsPaths.SeparateTrim(',').SelectMany(l=>l.MatchingFiles()).EachGuard(f=>NewAction(f,Setup?.WorkoutsFilter),(f,e)=>Trace.TraceError($"{f} faulted by {e}")) ;

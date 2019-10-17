@@ -15,7 +15,7 @@ namespace Rob.Act
 	public interface Axable : Aid.Gettable<int,Quant?> , Aid.Gettable<Quant,Quant> , Aid.Countable<Quant?> { string Spec { get; } }
 	public class Axe : Axable , INotifyPropertyChanged
 	{
-		public readonly static Axe No = new Axe() ;
+		public readonly static Support No = new Support(null) , One = new Support(null,i=>1) ;
 		public event PropertyChangedEventHandler PropertyChanged { add => propertyChanged += value.DispatchResolve() ; remove => propertyChanged -= value.DispatchResolve() ; } PropertyChangedEventHandler propertyChanged ;
 		public Axe() : this(null,null) {} // Default constructor must be present to enable DataGrid implicit Add .
 		public Axe( Func<int,Quant?> resolver = null , Func<Aspectable,int> counter = null ) { this.resolver = resolver ; this.counter = counter ; Quantile = new Quantile(this) ; }
@@ -38,7 +38,7 @@ namespace Rob.Act
 		public Quant this[ Quant at , Axe ax ] { get { if( ax==null ) return this[at] ; Quant rez = 0 ; for( int i=0 , count=Count ; i<count ; ++i ) if( Resolve(i)>=at ) rez += ax[i+1]-ax[i]??0 ; return rez ; } }
 		public Quant? this[ int at ] => Resolve(at) ;
 		protected internal virtual Quant? Resolve( int at ) => Resolver?.Invoke(at) ;
-		Axe Coaxe => Multi?Aspects.Get(a=>Resolvelet.Compile<Func<Aspectables,Axe>>(use:"Rob.Act").Of(a)):Aspect.Get(a=>Resolvelet.Compile<Func<Contextable,Axe>>(use:"Rob.Act").Of(new Context{Base=a,This=Own,The=this})) ;
+		Axe Coaxe => Multi?Aspects.Get(a=>Resolvelet.Compile<Func<Contexts,Axe>>(use:"Rob.Act").Of(new Contexts{Base=a,This=Own,The=this})):Aspect.Get(a=>Resolvelet.Compile<Func<Context,Axe>>(use:"Rob.Act").Of(new Context{Base=a,This=Own,The=this})) ;
 		protected Func<int,Quant?> Resolver { private get => resolver ?? ( resolver = Coaxe.Set(x=>{if(counter==null)counter=x.counter;}) is Axe a ? i=>a[i] : new Func<int,Quant?>(i=>null as Quant?) ) ; set { if( resolver==value ) return ; resolver = value ; propertyChanged.On(this,"Resolver") ; } } Func<int,Quant?> resolver ;
 		public string Resolvelet { get => resolvelet ; set { if( value==resolvelet ) return ; resolvelet = value ; Resolver = null ; propertyChanged.On(this,"Resolvelet") ; } } string resolvelet ;
 		public virtual int Count => Counter is Func<Aspectable,int> c ? c(Aspect) : DefaultCount ;
@@ -75,7 +75,8 @@ namespace Rob.Act
 		public static Axe operator^( Quant x , Axe y ) => y==null ? No : new Axe( i => y.Resolve(i) is Quant a ? Math.Pow(x,a) : null as Quant? , a=>y.Count ) ;
 		public static Axe operator^( Axe x , bool y ) => x==null ? No : new Axe( i => x.Resolve(i) is Quant a ? a>0?Math.Log(a):null as Quant? : null as Quant? , a=>x.Count ) ;
 		public static Axe operator^( bool x , Axe y ) => y==null ? No : new Axe( i => y.Resolve(i) is Quant a ? Math.Exp(a) : null as Quant? , a=>y.Count ) ;
-		public static Axe operator|( Axe x , Axe y ) => x==null ? y : y==null ? x : new Axe( i => i<x.Count ? x.Resolve(i) : y.Resolve(i-x.Count) , a=>x.Count+y.Count ) ;
+		public static Axe operator|( Axe x , Axe y ) => x==null ? y : y==null ? x : new Axe( i => x[i]*y[i]??x[i]??y[i] , a=>Math.Max(x.Count,y.Count) ) ;
+		public static Axe operator&( Axe x , Axe y ) => x*y ;
 		public static Axe operator++( Axe x ) => x==null ? No : new Axe( i=>x.Resolve(i+1) , a=>x.Count ) ;
 		public static Axe operator--( Axe x ) => x==null ? No :  new Axe( i=>x.Resolve(i-1) , a=>x.Count ) ;
 		public static Axe operator>>( Axe x , int lev ) => x==null ? No : lev<0 ? x<<-lev : lev==0 ? x : new Axe( i=>x.Resolve(i)-x.Resolve(i-1) , a=>x.Count )>>lev-1 ;
@@ -83,7 +84,9 @@ namespace Rob.Act
 		public static Axe operator^( Axe x , Axe y ) => x==null ? No : x.Shift(y) ;
 		public static Axe operator%( Axe x , int dif ) => x==null ? No : new Axe( i=>x.Diff(i,dif) , a=>x.Count-dif ) ;
 		public static Lap operator%( Axe x , Quant dif ) => x.By(dif) ;
-		public static Axe operator%( Axe x , float dif ) => x==null ? No : new Axe( i=>x.Resolve(i)%dif , a=>x.Count ) ;
+		public static Axe operator%( Axe x , float mod ) => x==null ? No : new Axe( i=>x.Resolve(i)%mod , a=>x.Count ) ;
+		public static Axe operator%( Axe x , IEnumerable<int> mod ) => x==null ? No : x.Flor(mod) ;
+		public static Axe operator%( Axe x , Support y ) => x==null ? No : x.Flor(y.Fragment) ;
 		public static Axe operator/( Axe x , Lap dif ) => x==null ? No : new Axe( i=>x.Diff(i,dif[i]) , a=>x.Count ) ;
 		public static Axe operator%( Axe x , Axe y ) => x==null ? No : x.Rift(y) ;
 		public static IEnumerable<int> operator>( Axe x , Quant? val ) => x?.Count.Steps().Where(i=>x[i]>val) ;
@@ -105,8 +108,9 @@ namespace Rob.Act
 		public Axe Skip( int count ) => new Axe( i=>Resolve(count+i) , a=>Math.Max(0,Count-count) ) ;
 		public Axe Wait( int count ) => new Axe( i=>Resolve(i<count?0:i-count) , a=>Math.Max(0,Count-count) ) ;
 		public Axe Take( int count ) => new Axe( Resolve , a=>Math.Min(count,Count) ) ;
-		public Axe For( IEnumerable<int> fragment ) => fragment.Get(f=>new HashSet<int>(f)).Get(f=>new Axe(i=>f.Contains(i)?Resolve(i):null,a=>Count)) ?? No ;
-		public Axe this[ IEnumerable<int> fragment ] => For(fragment) ;
+		public Support For( IEnumerable<int> fragment ) => fragment.Get(f=>new HashSet<int>(f)).Get(f=>new Support(f,i=>f.Contains(i)?Resolve(i):null,a=>Count)) ?? No ;
+		public Support Flor( IEnumerable<int> fragment ) => fragment.Get(f=>f.ToArray()).Get(f=>new Support( f , i => Array.IndexOf(f,i) is int at && at>=0 ? Resolve(i)-Resolve(f[at.LastContinualPredecessorIn(f)]) : null , a=>Count )) ?? No ;
+		public Support this[ IEnumerable<int> fragment ] => For(fragment) ;
 		public Axe Shift( Axe upon , Quant quo = 0 ) => upon==null ? No : new Axe( i=>(quo*i).Get(at=>Shift(upon,(int)at,(int)((i-at)/2))) , a=>Count ) ;
 		public Axe Drift( Axe upon , Quant quo = 0 ) => upon.Shift(this,quo) ;
 		Quant? Diff( int at , int dif ) => (Resolve(at+dif)-Resolve(at))*Math.Sign(dif) ;
@@ -134,9 +138,19 @@ namespace Rob.Act
 		{
 			public Aspectable Base , This ; public Axe The ;
 			[LambdaContext.Dominant] public Axe this[ string key ] => This?[key] is Axe a && a!=The ? a : Base?[key] ;
+			public Support this[ IEnumerable<int> fragment ] => One[fragment] ;
 			public Path Raw => Base?.Raw ;
-			public Path Rat( int at = 0 ) => Base?.Rat(at) ;
+			public Aspect.Traits Trait => This?.Trait ;
 		}
+		public struct Contexts : Contextables
+		{
+			public Aspectables Base ; public Aspectable This ; public Axe The ;
+			[LambdaContext.Dominant] public Axe this[ string key ] => This?[key] is Axe a && a!=The ? a : null ;
+			public Aspectable this[ int key ] => Base[key] ;
+			public Path Raw( int at = 0 ) => Base[at].Raw ;
+			public Support this[ IEnumerable<int> fragment ] => One[fragment] ;
+		}
+		public class Support : Axe { public readonly IEnumerable<int> Fragment ; internal Support( IEnumerable<int> fragment , Func<int,Quant?> resolver = null , Func<Aspectable,int> counter = null ) : base(resolver,counter) { Fragment = fragment ; } }
 	}
 	public class Quantile : Aid.Gettable<int,Quant> , Aid.Countable<Quant>
 	{
@@ -228,5 +242,6 @@ namespace Rob.Act
 		public static Axe d( this int dif , Axe x , Axe y ) => dif.quo(x,y) ;
 		public static Axe d( this Lap dif , Axe x , Axe y ) => dif.quo(x,y) ;
 		public static IEnumerable<Quant> Refine( this IEnumerable<Quant?> source ) => source?.OfType<Quant>().Distinct().OrderBy(q=>q) ;
+		internal static int LastContinualPredecessorIn( this int at , params int[] file ) { if( at<file.Length ) while( at>0 ) if( file[at-1]+1<file[at] ) return at ; else --at ; return at ; }
 	}
 }

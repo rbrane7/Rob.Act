@@ -12,13 +12,14 @@ using Aid.Extension;
 namespace Rob.Act
 {
 	using Quant = Double ;
-	public interface Contextable { [LambdaContext.Dominant] Axe this[ string key ] { get; } Path Raw { get; } Path Rat( int at = 0 ) ; }
+	public interface Contextable { [LambdaContext.Dominant] Axe this[ string key ] { get; } Axe.Support this[ IEnumerable<int> fragment ] { get; } Path Raw { get; } Aspect.Traits Trait { get; } }
+	public interface Contextables { [LambdaContext.Dominant] Axe this[ string key ] { get; } Axe.Support this[ IEnumerable<int> fragment ] { get; } Aspectable this[ int at ] { get; } Path Raw( int at = 0 ) ; }
 	public interface Aspectable : Aid.Gettable<int,Axe> , Contextable , Resourcable , Aid.Countable<Axe> { string Spec { get; } }
 	public interface Resourcable { Aspectable Source { set; } Aspectable[] Sources { set; } Aspect.Point.Iterable Points { get; } }
 	public struct Aspectables : Aid.Gettable<int,Aspectable> , Aid.Gettable<Aspectable> , Aid.Countable<Aspectable> , Resourcable
 	{
 		public static Func<IEnumerable<Aspectable>> The ;
-		Aspectable[] Content ;
+		readonly Aspectable[] Content ;
 		public Aspectables( params Aspectable[] content ) => Content = content ;
 		public Aspectable this[ int key ] => Content.At(key) ;
 		[LambdaContext.Dominant] public Aspectable this[ string key ] { get { var reg = new Regex(key) ; return Content.SingleOrNo(a=>reg.Match(a.Spec).Success) ; } }
@@ -56,7 +57,9 @@ namespace Rob.Act
 		public virtual Point.Iterable Points => new Point.Iterator{ Context = this } ;
 		public int Index( string axe ) => IndexOf(this[axe]) ;
 		public virtual Path Raw => Source?.Raw ;
-		public Path Rat( int at = 0 ) => Sources==null ? Raw : Sources.At(at)?.Raw ;
+		#region Operations
+		public Axe.Support this[ IEnumerable<int> fragment ] => new Axe.Context()[fragment] ;
+		#endregion
 		public struct Point : Quantable , IEnumerable<Quant?>
 		{
 			public interface Iterable : IEnumerable<Point> { int Count { get; } Aspectable Context { get; } Point this[ int at ] { get; } }
@@ -107,7 +110,7 @@ namespace Rob.Act
 			public bool Dirty { set => Context.Set(c=>c.Dirty=value) ; }
 			public string Spec { get => name ; set => Changed("Spec",name=value) ; } string name ;
 			public string Bond { get => bond ; set => Changed("Bond",bond=value) ; } string bond ;
-			public string Lex { get => lex ; set => Changed("Lex,Value",Resolver=(lex=value).Compile<Func<Aspect,Quant?>>()) ; } Func<Aspect,Quant?> Resolver ; string lex ;
+			public string Lex { get => lex ; set => Changed("Lex,Value",Resolver=(lex=value).Compile<Func<Contextable,Quant?>>()) ; } Func<Contextable,Quant?> Resolver ; string lex ;
 			void Changed<Value>( string properties , Value value ) { propertyChanged.On(this,properties,value) ; Dirty = true ; }
 			public Quant? Value => Resolver?.Invoke(Context) ;
 			public override string ToString() => $"{Spec.Null(n=>n.No()).Get(s=>s+'=')}{new Basis.Binding(Bond).Of(Value)}" ;
