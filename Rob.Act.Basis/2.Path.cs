@@ -61,7 +61,7 @@ namespace Rob.Act
 		{
 			Depose() ; base.Adopt(path) ;
 			if( Count>path.Count ) Content.RemoveRange(path.Count,Count-path.Count) ; for( var i=0 ; i<Count ; ++i ) this[i].Adopt(path[i]) ; if( Count<path.Count ) Content.AddRange(path.Content.Skip(Count)) ;
-			Impose() ; propertyChanged.On(this,"Spec,Spectrum") ; CollectionChanged?.Invoke(this,new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset)) ;
+			Impose() ; propertyChanged.On(this,"Spec,Spectrum") ; collectionChanged?.Invoke(this,new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset)) ;
 		}
 		void Pointable.Adopt( Pointable path ) => (path as Path).Set(Adopt) ;
 		public void Populate() { Metax.Reset(Spectrum.Trait) ; Spectrum.Trait.Each(t=>this[t.Spec]=t.Value) ; Spectrum.Tags.Set(Tag.Add) ; }
@@ -82,7 +82,7 @@ namespace Rob.Act
 		public bool Dominant = Dominancy ;
 		protected override void SpecChanged( string value ) { base.SpecChanged(value) ; aspect.Set(a=>a.Spec=value) ; }
 		public Profile? Profile => SubjectProfile.On(Subject) ;
-		public event NotifyCollectionChangedEventHandler CollectionChanged ;
+		public event NotifyCollectionChangedEventHandler CollectionChanged { add => collectionChanged += value.DispatchResolve() ; remove => collectionChanged -= value.DispatchResolve() ; } NotifyCollectionChangedEventHandler collectionChanged ;
 		#endregion
 
 		#region Trait
@@ -204,7 +204,7 @@ namespace Rob.Act
 			for( var ax=Axis.Dist ; ax<=Axis.Time ; ++ax ) { Quant lval = 0 ; for( var i=0 ; i<Count ; ++i ) { this[i][ax] += lval ; this[i][ax].Use(v=>lval=v) ; } }
 		}
 		public static explicit operator string( Path path ) => path.Get(a=>$"{(path.Dominant?Serialization.Domimator:null)}{(string)(a as Point)}{(string)a.Metax}{Serialization.Separator}{(string.Join(null,a.Content.Select(p=>(string)p+(string)p.Metax.Null(m=>m==a.Metax)+Serialization.Separator)))}") ;
-		public static explicit operator Path( string text ) => text.Get(t=>new Path(t)) ;
+		public static explicit operator Path( string text ) => text.Null(v=>v.No()).Get(t=>new Path(t)) ;
 		new internal static class Serialization { public const string Separator = " \x1 Point \x2\n" ; public const string Domimator = "^ " ; }
 		#endregion
 

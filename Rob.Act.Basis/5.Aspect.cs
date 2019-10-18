@@ -58,7 +58,7 @@ namespace Rob.Act
 		public int Index( string axe ) => IndexOf(this[axe]) ;
 		public virtual Path Raw => Source?.Raw ;
 		#region Operations
-		public Axe.Support this[ IEnumerable<int> fragment ] => new Axe.Context()[fragment] ;
+		public Axe.Support this[ IEnumerable<int> fragment ] => Axe.One[fragment] ;
 		#endregion
 		public struct Point : Quantable , IEnumerable<Quant?>
 		{

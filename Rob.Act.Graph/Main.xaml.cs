@@ -52,7 +52,7 @@ namespace Rob.Act.Analyze
 		}
 		protected override void OnClosing( CancelEventArgs e ) { Doct?.Dispose() ; base.OnClosing(e) ; }
 		protected override void OnClosed( EventArgs e ) { base.OnClosed(e) ; Process.GetCurrentProcess().Kill() ; }
-		void NewAction( string file , Predicate<Pathable> filter = null ) => file.Reconcile().Internalize().Set(p=>p.Origin=file).Set(Translation.Partitionate).Set(p=>p.Spectrum.Reform(Setup.SpectrumBinds)).Set(p=>{Book|=(filter as Predicate<Pathable>)?.Invoke(p)!=false?p:null;if(Book.Contains(p)){ActionEnhancing(p,ActiveRefiner);SaveBook();}}) ;
+		void NewAction( string file , Predicate<Pathable> filter = null ) => file.Reconcile().Internalize().Set(p=>p.Origin=file).Set(Translation.Partitionate).Set(p=>p.Spectrum.Reform(Setup.SpectrumBinds)).Set(p=>{Book|=(filter as Predicate<Pathable>)?.Invoke(p)!=false?p:null;if(Book.Contains(p)){ActionEnhancing(p,ActiveRefiner);Dispatcher.Invoke(SaveBook);}}) ;
 		void NewAction( object subject , System.IO.FileSystemEventArgs arg ) => NewAction(arg.FullPath,Setup?.WorkoutsFilter) ;
 		void NewAspect( string file , Predicate<Aspect> filter = null ) => ((Aspect)file.ReadAllText()).Set(a=>a.Origin=file).Set(a=>Aspects+=(filter as Predicate<Aspect>)?.Invoke(a)!=false?a:null) ;
 		public Book Book { get ; private set ; } = new Book("Main") ;
@@ -69,7 +69,7 @@ namespace Rob.Act.Analyze
 		(Predicate<Pathable> Filter,Predicate<Associable> Associer)[] ActiveRefiner ; Metax ActiveMetax ;
 		void FilterGrid_SelectionChanged<Objective,Enhancer>( object sender , Action<Predicate<Objective>,(Predicate<Objective> Filter,Predicate<Enhancer> Associer)[]> doing ) => Refiner<Objective,Enhancer>(sender as DataGrid)?.ToArray().Set(r=>ActiveRefiner=r as (Predicate<Pathable> Filter,Predicate<Associable> Associer)[]).Set(f=>doing(new Predicate<Objective>(o=>f.Length<=0||f.Any(i=>i.Filter?.Invoke(o)!=false)),f)) ;
 		public Aid.Collections.ObservableList<Aspect>.Filtered Aspects { get ; private set ; } = new Aid.Collections.ObservableList<Aspect>.Filtered{Sensible=true} ;
-		void ActionsEnhancing( params (Predicate<Pathable> Filter,Predicate<Associable> Associer)[] refiner ) { ActiveMetax = null ; foreach( var path in Book ) ActionEnhancing(path,refiner) ; SaveBook() ; }
+		void ActionsEnhancing( params (Predicate<Pathable> Filter,Predicate<Associable> Associer)[] refiner ) { ActiveMetax = null ; foreach( var path in Book ) ActionEnhancing(path,refiner) ; Dispatcher.Invoke(SaveBook) ; }
 		void ActionEnhancing( Pathable path , params (Predicate<Pathable> Filter,Predicate<Associable> Associer)[] refiner ) { if( refiner==null || path==null ) return ; path.Spectrum.Trait.Clean() ; foreach( var refine in refiner ) if( refine.Filter?.Invoke(path)!=false ) foreach( var asp in Aspects.Entries ) if( (refine.Associer?.Invoke((path,asp))??Setup.ActionAssocier?.Invoke(path,asp))==true ) new Aspect(asp){Source=path.Spectrum}.Set(a=>{path.Spectrum.Trait.Add(a.Trait);path.Spectrum.Tager+=a.Tager;}) ; PathEnhancing(path as Path) ; }
 		void PathEnhancing( Path path ) => path.Set(p=>p.Metax=ActiveMetax??(ActiveMetax=new Metax(p.Metax?.Base??p.Dimension)))?.Populate() ;
 		void SaveBook() { if( ActionFilterGrid.SelectedItems.Count==1 && (ActionFilterGrid.SelectedItem as Filter.Entry)?.Matter.Null(v=>v.Void()) is string matter && Book.Count>0 && Setup?.WorkoutsPath is string path ) try{Book.Save(path,matter);}catch(System.Exception e){Trace.TraceError("Save Book failed on {0}:{1} : {2}",path,matter,e);} }

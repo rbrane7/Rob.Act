@@ -103,7 +103,7 @@
             </DataGrid.CommandBindings>
         </DataGrid>
         <Grid Grid.Row="1">
-            <Grid.ColumnDefinitions><ColumnDefinition Width="6*"/><ColumnDefinition Width="1*"/></Grid.ColumnDefinitions>
+            <Grid.ColumnDefinitions><ColumnDefinition Width="6*"/><ColumnDefinition Width="15"/></Grid.ColumnDefinitions>
             <Grid>
                 <Grid.RowDefinitions><RowDefinition/><RowDefinition Height="22"/></Grid.RowDefinitions>
                 <DataGrid Name="AspectsGrid" ItemsSource="{Binding Aspects}" Margin="2" AutoGenerateColumns="False" SelectionChanged="AspectTabs_Selected">
