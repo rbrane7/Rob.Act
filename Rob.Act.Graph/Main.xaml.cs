@@ -236,7 +236,7 @@ namespace Rob.Act.Analyze
 		}
 		void GraphDrawQuantile()
 		{
-			var axes = AspectAxisGrid.SelectedItems.OfType<Axe>().ToArray() ; var yaxes = axes.Skip(1).Select(a=>a.Spec).ToArray() ;
+			var axes = AspectAxisGrid.SelectedItems.OfType<Axe>().ToArray() ; var yaxes = axes.Skip(1).Select(a=>a.Spec).ToArray() ; var selasps = SourcesGrid.SelectedItems.Null(s=>s.Count<=0) ;
 			(var width,var height) = ViewFrame = MainFrameSize ;
 			{
 				var brush = new SolidColorBrush(new Color{A=127,R=127,G=127,B=127}) ; var dash = new DoubleCollection{4} ;
@@ -260,9 +260,10 @@ namespace Rob.Act.Analyze
 					if( y.Min<0 && y.Max>0 ) { var yZero = ScreenY(y.Max/(y.Max-y.Min)*height) ; GraphPanel.Children.Add( new Line{ X1 = 0 , Y1 = yZero , X2 = width , Y2 = yZero , Stroke = Brushes.Gray } ) ; }
 				}
 				for( int j = 1 , cnt = ax.FirstOrDefault()?.Length??0 ; j<cnt ; ++j ) GraphPanel.Children.Add( new Polyline{
-					Stroke = new SolidColorBrush(Colos[(j-1)%Colos.Length]) , StrokeDashArray = k==0?null:new DoubleCollection{k} ,
+					Stroke = new SolidColorBrush( Colos[(selasps?[j-1] is Aspect asp?BookGrid.SelectedItems.IndexOf((asp as Path.Aspect??asp.Source as Path.Aspect)?.Context):j-1)%Colos.Length] ) , StrokeDashArray = k==0?null:new DoubleCollection{k} ,
 					Points = new PointCollection(ax.Select(a=>ScreenPoint((a[0]-x.Min)/(x.Max-x.Min)*width,height-(a[j]-y.Min)/(y.Max-y.Min)*height)))
-				} ) ; ++k ;
+				} ) ;
+				++k ;
 			}
 			Hypercube = rng ; var co = Coordinates.ToDictionary(c=>c.Axe) ; Coordinates.Clear() ;
 			rng.Each(e=>Coordinates+=co.By(e.Key).Set(c=>{c.Range=e.Value;c.Bond=axes.FirstOrDefault(a=>a.Spec==e.Key||a.Spec==e.Key.RightFrom(')'))?.Binder;})??new Coordinate(this,e.Key){Range=e.Value,Bond=axes.FirstOrDefault(a=>a.Spec==e.Key||a.Spec==e.Key.RightFrom(')'))?.Binder}) ;
@@ -384,8 +385,9 @@ namespace Rob.Act.Analyze
 	{
 		public object Convert( object[] values , Type targetType , object parameter , CultureInfo culture )
 		{
-			if(!( values.At(0) is Axe ax && values.At(1) is IEnumerable<Aspect> src )) return null ;
-			var srcs = src.Where(a=>a[ax.Spec]!=null) ; var dis = (ax.Distribution??srcs.SelectMany(s=>s[ax.Spec].Distribution??Enumerable.Empty<double>()).Distinct().OrderBy(v=>v)).ToArray() ;
+			if( values.At(0) is Axe ax && values.At(1) is IEnumerable<Aspect> src );else return null ;
+			var srcf = (values.At(3) as IEnumerable)?.OfType<Aspect>().Null(v=>v.Count()<=0) ; var srcs = (srcf??src).Where(a=>a[ax.Spec]!=null) ;
+			var dis = (ax.Distribution??srcs.SelectMany(s=>s[ax.Spec].Distribution??Enumerable.Empty<double>()).Distinct().OrderBy(v=>v)).ToArray() ;
 			var axon = values.At(2) as Axe ; var res = srcs.Select(a=>a[ax.Spec].Quantile[dis,a[axon?.Spec]].ToArray()).ToArray() ;
 			try { return new AxedEnumerable{ Ax = ax , Axon = axon , Content = res.Length>0 && res[0].Length>0 ? res[0].Length.Steps().Select(i=>res.Length.Steps().Select(j=>res[j][i]).Prepend(dis[i+(dis.Length>res[0].Length?1:0)]).ToArray()) : Enumerable.Empty<double[]>() } ; }
 			catch( System.Exception e ) { Trace.TraceWarning(e.Stringy()) ; return new AxedEnumerable{ Ax = ax , Axon = axon , Content = Enumerable.Empty<double[]>() } ; }
