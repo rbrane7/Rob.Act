@@ -209,10 +209,13 @@ namespace Rob.Act
 	{
 		public class Axe : Act.Axe
 		{
-			internal Path Context ;
+			new internal Path Context ;
 			public virtual uint Ax { get => axis ; set { base.Spec = ( axis = value ).Get(v=>v<(uint)Axis.Time?((Axis)v).Stringy():v<Context.Dimension?Context.Metax?[v].Name:v==Context.Dimension?Axis.Time.ToString():Axis.Date.ToString()) ; Resolver = at=>Context?[at]?[Ax] ; } } uint axis ;
-			public Axis Axis { get => axis==Context.Dimension ? Axis.Time : axis==Context.Dimension+1 ? Axis.Date : axis==(uint)Axis.Time ? (Axis)Context.Dimension : axis==(uint)Axis.Date ? (Axis)Context.Dimension+1 : (Axis)axis ; set => Ax = value==Axis.Time ? Context.Dimension : value==Axis.Date ? Context.Dimension+1 : value<Axis.Time ? (uint)value : (uint)value-2 ; }
-			public override string Spec { get => base.Spec ; set { if( value!=null ) Ax = value.Axis(Context.Dimension) ; base.Spec = value ; } }
+			public Axis Axis { get => axis==Context.Dimension||ax==Axis.Time ? Axis.Time : axis==Context.Dimension+1||ax==Axis.Date ? Axis.Date : axis==(uint)Axis.Time ? (Axis)Context.Dimension : axis==(uint)Axis.Date ? (Axis)Context.Dimension+1 : (Axis)axis ; set => Ax = (ax=value)==Axis.Time ? Context.Dimension : value==Axis.Date ? Context.Dimension+1 : value<Axis.Time ? (uint)value : (uint)value-2 ; } Axis ax ;
+			//public Axis Axis { get => axis ?? Axis4(ax) ; set => Ax = (uint)( axis = value ) ; } Axis? axis ;
+			//public virtual uint Ax { get => axis==Axis.Time ? Context.Dimension : axis==Axis.Date ? Context.Dimension+1 : ax ; set { base.Spec = ( ax = value ).Get(v=>v<(uint)Axis.Time?(axis=(Axis)v).Stringy():v<Context.Dimension?Context.Metax?[v].Name:(axis=v==Context.Dimension?Axis.Time:Axis.Date).ToString()) ; Resolver = at=>Context?[at]?[Ax] ; } } uint ax ;
+			Axis Axis4( uint a ) => a==Context.Dimension ? Axis.Time : a==Context.Dimension+1 ? Axis.Date : a==(uint)Axis.Time ? (Axis)Context.Dimension : a==(uint)Axis.Date ? (Axis)Context.Dimension+1 : (Axis)a ;
+			public override string Spec { get => base.Spec ; set { if( value!=null ) if( value.Axis(Context.Dimension) is uint v && v<Context.Dimension ) Ax = v ; else Axis = Axis4(v) ; base.Spec = value ; } }
 			public Axe( Path context ) => Context = context ;
 			public override int Count => DefaultCount ;
 			protected override int DefaultCount => Context?.Count ?? 0 ;

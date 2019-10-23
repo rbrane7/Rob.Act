@@ -74,17 +74,23 @@ namespace Rob.Act.Analyze
 		void PathEnhancing( Path path ) => path.Set(p=>p.Metax=ActiveMetax??(ActiveMetax=new Metax(p.Metax?.Base??p.Dimension)))?.Populate() ;
 		void SaveBook() { if( ActionFilterGrid.SelectedItems.Count==1 && (ActionFilterGrid.SelectedItem as Filter.Entry)?.Matter.Null(v=>v.Void()) is string matter && Book.Count>0 && Setup?.WorkoutsPath is string path ) try{Book.Save(path,matter);}catch(System.Exception e){Trace.TraceError("Save Book failed on {0}:{1} : {2}",path,matter,e);} }
 		public Aid.Collections.ObservableList<Axe> Axes { get ; private set ; } = new Aid.Collections.ObservableList<Axe>() ;
-		public Aspect Aspect { get => Respect ; protected set { if( value==Aspect ) return ; Aspect.Set(a=>{a.CollectionChanged-=OnAspectChanged;a.PropertyChanged-=OnAspectChanged;}) ; (Respect=value).Set(a=>{a.CollectionChanged+=OnAspectChanged;a.PropertyChanged+=OnAspectChanged;}) ; Sources = null ; } } Aspect Respect ;
+		public Aspect Aspect { get => Respect ; protected set { if( value==Aspect ) return ; Aspect.Set(a=>{a.CollectionChanged-=OnAspectChanged;a.PropertyChanged-=OnAspectChanged;}) ; (Respect=value).Set(a=>{a.CollectionChanged+=OnAspectChanged;a.PropertyChanged+=OnAspectChanged;}) ; AspectAxisGrid.CanUserAddRows = AspectAxisGrid.CanUserDeleteRows = AspectTraitsGrid.CanUserAddRows = AspectTraitsGrid.CanUserDeleteRows = AspectsGrid.SelectedItems.Count<=1 ; Sources = null ; } } Aspect Respect ;
 		public IEnumerable<Aspect> Sources { get => SourcesFilter is Func<Aspect,bool> f ? Resources.Where(f) : Resources ; set => PropertyChangedOn("Aspect,Sources",sources=value) ; } IEnumerable<Aspect> sources ; Func<Aspect,bool> SourcesFilter ;
-		new IEnumerable<Aspect> Resources => sources ?? ( sources = ( Aspect==null ? Enumerable.Empty<Aspect>() : Aspect is Path.Aspect ? BookGrid.SelectedItems.OfType<Pathable>().Select(s=>s.Spectrum) : BookGrid.SelectedItems.OfType<Pathable>().Get(p=>AspectMultiToggle.IsChecked==true?p.Select(s=>s.Spectrum).ToArray().Get(s=>Math.Min(AspectMultiCount.Text.Parse(0),s.Length).Get(c=>c>0?c.Steps().Select(i=>new Aspect(Aspect,true){Sources=s.Skip(i).Concat(s.Take(i)).ToArray()}):new Aspect(Aspect,true){Sources=s}.Times())):p.Select(s=>new Aspect(Aspect){Source=s.Spectrum})) ).ToArray() ) ;
+		new IEnumerable<Aspect> Resources => sources ?? ( sources = ( Aspect==null ? Enumerable.Empty<Aspect>() : ActionsProjection ).Get(l=>new Aid.Collections.ObservableList<Aspect>(l)) ) ;
+		Aspect Projection( Pathable path ) => new Aspect(Aspect){Source=path.Spectrum} ;
+		IEnumerable<Aspect> Projection( IEnumerable<Pathable> p ) => AspectMultiToggle.IsChecked==true ? p.Select(s=>s.Spectrum).ToArray().Get( s => Math.Min(AspectMultiCount.Text.Parse(0),s.Length).nil() is int c ? c.Steps().Select(i=>new Aspect(Aspect,true){Sources=s.Skip(i).Concat(s.Take(i)).ToArray()}) : new Aspect(Aspect,true){Sources=s}.Times() ) : p.Select(Projection) ;
+		IEnumerable<Aspect> ActionsProjection => BookGrid.SelectedItems.OfType<Pathable>().Get( p => Aspect is Path.Aspect ? p.Select(s=>s.Spectrum) : Projection(p) ) ;
+		Aspect Resource( Pathable path ) => Aspect==null ? null : Aspect is Path.Aspect ? path.Spectrum : Projection(path) ;
 		void SourcesGrid_SelectionChanged( object sender , SelectionChangedEventArgs e ) => Sources = sources ;
+		void AspectTraitsGrid_SelectionChanged( object sender, SelectionChangedEventArgs e ) => new HashSet<string>(AspectTraitsGrid.SelectedItems.OfType<Aspect.Traitlet>().Select(t=>t.Spec)).Set(t=>SourcesGrid.Columns.Skip(1).Each(c=>c.Visibility=t.Count<=0||t.Contains(c.Header)?Visibility.Visible:Visibility.Hidden)) ;
 		void CoordinatesGrid_SelectionChanged( object sender , SelectionChangedEventArgs e ) { if( MapTab.IsSelected ) Map_Draw(this) ; }
 		void OnAspectChanged( object subject , NotifyCollectionChangedEventArgs arg=null ) { var sub = Aspect is Path.Aspect ? SpectrumTabs : AspectTabs ; Revoke : var six = sub.SelectedIndex ; if( sub==AspectTabs || sub==QuantileTabs ) Sources = null ; sub.SelectedIndex = -1 ; sub.SelectedIndex = six ; if( sub==AspectTabs ) { sub = QuantileTabs ; goto Revoke ; } }
 		void OnAspectChanged( object subject , PropertyChangedEventArgs arg ) => OnAspectChanged(subject) ;
 		void AddActionButton_Click( object sender , RoutedEventArgs e ) { var dlg = new OpenFileDialog{Multiselect=true} ; if( dlg.ShowDialog(this)==true ) dlg.FileNames.Each(f=>NewAction(f)) ; }
 		void BookGrid_SelectionChanged( object sender , SelectionChangedEventArgs e )
 		{
-			Sources = null ; if( sender is DataGrid bg ); else return ; var sel = bg.SelectedItems.Cast<Pathable>() ; var i=0 ;
+			if( sender is DataGrid bg );else return ; var sel = bg.SelectedItems.Cast<Pathable>() ; var i=0 ;
+			if( sources is IList<Aspect> sl && Aspect!=null && AspectMultiToggle.IsChecked!=true ) { foreach( Pathable path in e.RemovedItems ) sl.IndexIf(a=>a.Raw==path).Use(sl.RemoveAt) ; foreach( Pathable path in e.AddedItems ) if( !sl.Any(a=>a.Raw==path) ) Resource(path).Set(sl.Add) ; Sources = sources ; } else Sources = null ;
 			foreach( var item in sel ) { if( bg.ItemContainerGenerator.ContainerFromItem(item) is DataGridRow row && row.Cell(0) is DataGridCell cell && cell.Foreground is SolidColorBrush b && b.Color!=Colos[i%Colos.Length] ) cell.Foreground = new SolidColorBrush(Colos[i%Colos.Length]) ; ++i ; }
 			foreach( var item in bg.Items.Cast<Pathable>().Except(sel) ) if( bg.ItemContainerGenerator.ContainerFromItem(item) is DataGridRow row ) if( row.Cell(0).Foreground is SolidColorBrush b && b.Color!=Colors.Black ) row.Cell(0).Foreground = Brushes.Black ;
 		}
@@ -99,18 +105,19 @@ namespace Rob.Act.Analyze
 		void BookGrid_AutoGeneratedColumns( object sender=null , EventArgs e=null ) => ConGrid_AutoGeneratedColumns(sender??BookGrid,ActionTraits) ;
 		void MatrixGrid_AutoGeneratedColumns( object sender , EventArgs e=null ) => ConGrid_AutoGeneratedColumns(sender,MatrixTraits) ;
 		void ConGrid_AutoGeneratedColumns( object sender , params string[] traits ) { if( traits==null ) return ; var grid = sender as DataGrid ; grid.Columns.Clear() ; foreach( Filter.Entry.Binding tr in traits ) grid.Columns.Add(new DataGridTextColumn{Header=tr.Name,Binding=new Binding(tr.Path){Converter=tr.Converter,StringFormat=tr.Form}}) ; }
-		async void SourcesGrid_ItemsChanged( object sender , System.Windows.Controls.Primitives.ItemsChangedEventArgs e ) { var gen = sender as ItemContainerGenerator ; for( int i=0 , c=gen.Items.Count ; i<c ; ++i ) { Retry: if( gen.ContainerFromIndex(i) is DataGridRow row ) row.Cell(0).Foreground = new SolidColorBrush(Colos[BookGrid.SelectedItems.IndexOf((gen.Items[i] as Aspect)?.Raw)%Colos.Length]) ; else { await Task.Delay(100) ; goto Retry ; } } }
-		void AspectTabs_Selected( object sender , SelectionChangedEventArgs e ) { var asp = e.AddedItems.Count>0 ? e.AddedItems[0] : null ; switch( (DisplayTable.SelectedItem as TabItem)?.Header ) { case "Aspect" : (asp as Aspect).Set(a=>Aspect=a) ; break ; case "Spectrum" : (asp as Pathable)?.Spectrum.Set(a=>Aspect=a) ; break ; } }
+		async void SourcesGrid_ItemsChanged( object sender , System.Windows.Controls.Primitives.ItemsChangedEventArgs e ) { var gen = sender as ItemContainerGenerator ; for( int i=0 , c=gen.Items.Count ; i<c ; ++i ) try { Retry: if( gen.ContainerFromIndex(i) is DataGridRow row ) row.Cell(0).Foreground = new SolidColorBrush(Colos[BookGrid.SelectedItems.IndexOf((gen.Items[i] as Aspect)?.Raw)%Colos.Length]) ; else { await Task.Delay(100) ; goto Retry ; } } catch {} }
+		void AspectTabs_Selected( object sender , SelectionChangedEventArgs e ) { var asp = e.AddedItems.Count>0 ? e.AddedItems[0] : null ; switch( (DisplayTable.SelectedItem as TabItem)?.Header ) { case "Aspect" : Aspect = AspectSelection ; break ; case "Spectrum" : (asp as Pathable)?.Spectrum.Set(a=>Aspect=a) ; break ; } }
 		void AddAspectAxeButton_Click( object sender , RoutedEventArgs e ) => Aspect.Add(new Axe{Aspect=Aspect as Path.Aspect}.Set(Axes.Add)) ;
 		void AddAspectTraitButton_Click( object sender , RoutedEventArgs e ) => Aspect.Trait.Add(new Aspect.Traitlet()) ;
 		void AddAspectButton_Click( object sender , RoutedEventArgs e ) => Aspects.Add(new Aspect()) ;
 		void AddAxeButton_Click( object sender , RoutedEventArgs e ) => Axes.Add(new Axe()) ;
 		void SaveAspectsButton_Click( object sender , RoutedEventArgs e ) => Setup.AspectsPath.Set(p=>Aspects.Each(a=>p.Pathin(a.Spec).WriteAll((string)a))) ;
+		Aspect AspectSelection => AspectsGrid.SelectedItems.Count>1 ? new Aspect(AspectsGrid.SelectedItems.OfType<Aspect>(),AspectMultiToggle.IsChecked==true) : AspectsGrid.SelectedItem as Aspect ;
 		void DisplayTable_SelectionChanged( object sender , SelectionChangedEventArgs e )
 		{
 			var tab = e.AddedItems.Count>0 ? e.AddedItems[0] as TabItem : null ; switch( tab?.Header as string )
 			{
-				case "Aspect" : Aspect = AspectsGrid.SelectedItem as Aspect ; ViewType = "Aspect" ; break ;
+				case "Aspect" : Aspect = AspectSelection ; ViewType = "Aspect" ; break ;
 				case "Spectrum" : Aspect = (((SpectrumTabs.SelectedItem as TabItem)?.Content as DataGrid)?.ItemsSource as Pathable??SpectrumTabs.ItemsSource.OfType<Pathable>().One())?.Spectrum ; ViewType = "Spectrum" ; break ;
 				case "Quantile" : ViewType = "Quantile" ; break ;
 				case "Graph" : ViewPanel = GraphPanel ; break ;
@@ -413,7 +420,7 @@ namespace Rob.Act.Analyze
 			public string Matrix { get => matrix ; set { if( (value=value.Null(v=>v.Void()))==matrix ) return ; matrix = value ; Dirty = true ; } } string matrix ;
 			public string Associer { get => associer ; set { if( (value=value.Null(v=>v.Void()))==associer ) return ; associer = value ; Dirty = true ; } } string associer ;
 			public string Matter { get => matter ; set { if( (value=value.Null(v=>v.Void()))==matter ) return ; matter = value ; Dirty = true ; } } string matter ;
-			public bool Dirty ;
+			public bool Dirty ; public bool Empty => Filter.No() && Traits.No() && Matrix.No() && Associer.No() && Matter.No() ;
 			public static explicit operator string( Entry entry ) => entry.Get(e=>string.Join(Separator,e.Rex?" ":string.Empty,e.Filter,e.Traits,e.Matrix,e.Associer,e.Matter)) ;
 			public static implicit operator Entry( string entry ) => entry.Get(e=>{ var f = e.Separate(Separator) ; return f.Length<=1 ? null : new Entry{ rex = f[0]==" " , filter = f.At(1) , traits = f.At(2) , matrix = f.At(3) , associer = f.At(4) , matter = f.At(5) } ; }) ;
 			public Predicate<Objective> ToFilter<Objective>() => Rex ? new System.Text.RegularExpressions.Regex(Filter).Get(r=>new Predicate<Objective>(o=>r.Match(o?.ToString()).Success)) : Filter.Compile<Predicate<Objective>>() ;
@@ -434,7 +441,7 @@ namespace Rob.Act.Analyze
 			}
 		}
 		const string Separator = " \x1 Filter \x2\n" ;
-		public static explicit operator string( Filter filter ) => filter.Get(f=>string.Join(Separator,f.Where(e=>!e.Filter.Void()).Select(e=>(string)e+Separator))) ;
+		public static explicit operator string( Filter filter ) => filter.Get(f=>string.Join(Separator,f.Where(e=>!e.Empty).Select(e=>(string)e+Separator))) ;
 		public static implicit operator Filter( string filter ) => filter.Get(f=>new Filter{Sensible=true}.Set(t=>f.Separate(Separator).Each(e=>t.Add(e)))) ;
 	}
 	public struct Associable { public Pathable Path ; public Aspect Aspect ; public Associable( Pathable path , Aspect aspect ) { Path = path ; Aspect = aspect ; } public  static implicit operator Associable( (Pathable path,Aspect aspect) arg ) => new Associable(arg.path,arg.aspect) ; }
