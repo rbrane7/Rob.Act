@@ -209,6 +209,7 @@
                 <DataGridTextColumn Header="Matrix" Binding="{Binding Matrix}" Width="1*"/>
                 <DataGridTextColumn Header="Aspects" Binding="{Binding Associer}" Width="1*"/>
                 <DataGridTextColumn Header="Matter" Binding="{Binding Matter}" Width="1*"/>
+                <DataGridTextColumn Header="Query" Binding="{Binding Query}" Width="1*"/>
             </DataGrid.Columns>
             <DataGrid.CommandBindings>
                 <CommandBinding Command="Delete" Executed="DataGridDeleteCommandBinding_Executed"/>
