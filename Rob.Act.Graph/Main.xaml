@@ -219,6 +219,7 @@
             <DataGrid.Columns>
                 <DataGridCheckBoxColumn Header="Rex" Binding="{Binding Rex}"/>
                 <DataGridTextColumn Header="Sources" Binding="{Binding Filter}" Width="*"/>
+                <DataGridTextColumn Header="Query" Binding="{Binding Query}" Width="*"/>
             </DataGrid.Columns>
             <DataGrid.CommandBindings>
                 <CommandBinding Command="Delete" Executed="DataGridDeleteCommandBinding_Executed"/>
