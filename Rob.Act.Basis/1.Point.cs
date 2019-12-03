@@ -98,7 +98,7 @@ namespace Rob.Act
 		public Quant? Distance => Dist / Transfer ;
 		public Quant? Speed => Distance.Quotient(Time.TotalSeconds) ;
 		public Quant? Pace => Time.TotalSeconds / Distance ;
-		public Quant? Power => Energy.Quotient(Time.TotalSeconds) ;
+		public Quant? Power => Object==Basis.Device.Skierg.Code ? (Time.TotalSeconds/Dist).PacePower() : Energy.Quotient(Time.TotalSeconds) ;
 		public Quant? Force => Energy.Quotient(Distance) ;
 		public Quant? Beatage => Energy.Quotient(Beat) ;
 		public Quant? Bitage => Energy.Quotient(Bit) ;

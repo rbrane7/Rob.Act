@@ -87,7 +87,7 @@ namespace Rob.Act
 		public new virtual void Remove( Axe ax ) { base.Remove(ax) ; ax.Own = null ; ax.PropertyChanged -= OnChanged ; OnChanged(NotifyCollectionChangedAction.Remove,ax) ; }
 		void IList.Remove( object value ) => Remove( value as Axe ) ;
 		int IList.Add( object value ) { Add( value as Axe ) ; return Count-1 ; }
-		internal Quant? Resistance( Quant? resi ) => (Raw?.Resister).use(d=>resi??d) ;
+		internal Quant? Resistance( Quant? resi ) => Raw.Object==Basis.Device.Skierg.Code ? null : (Raw?.Resister).use(d=>resi??d) ;
 		public override string ToString() => Score ;
 		#region De/Serialization
 		/// <summary>
@@ -170,22 +170,22 @@ namespace Rob.Act
 			public Aspect( Path path ) { Context = path ; Add(new Axe(Context){Axis=Axis.Date}) ; Add(new Axe(Context){Axis=Axis.Time}) ; for( uint ax = 0 ; ax<Context.Dimension ; ++ax ) if( Context[ax]!=null ) Add(new Axe(Context){Ax=ax}) ; this.Each(a=>a.Quantizer=null) ; }
 			public override string Spec { get => Context.Spec ; set => base.Spec = value ; }
 			public override Aspectable Source { set {} }
-			public Axable this[ Axis ax ] { get => this.OfType<Axe>().FirstOrDefault(a=>a.Ax==(uint)ax) ?? new Axe(Context){Ax=(uint)ax}.Set(Add) ; }
+			public Axable this[ Axis ax , bool insure = false ] => this.OfType<Axe>().FirstOrDefault(a=>a.Axis==ax) ??( insure ? new Axe(Context){Axis=ax}.Set(Add) : Axe.No as Axable ) ;
 			public override void Add( Act.Axe ax ) => base.Add(ax.Set(a=>{if(!(a is Axe))a.Aspect=this;})) ;
 			public override void Remove( Act.Axe ax ) => base.Remove(ax.Set(a=>{if(!(a is Axe))a.Aspect=null;})) ;
 			public void Reform( params string[] binds ) => this.OfType<Axe>().Each(a=>a.Binder=binds.At((int)a.Axis)??Context.Metax?[a.Ax].Form) ;
 			#region Operation
 			public Act.Axe perf( Lap lap ) => perf(pace(lap),grad(lap),resi(lap)) ;
-			public Act.Axe velo( Lap lap ) => lap.quo(this[Axis.Dist]as Axe,this[Axis.Time]as Axe) ;
-			public Act.Axe pace( Lap lap ) => lap.quo(this[Axis.Time]as Axe,this[Axis.Dist]as Axe) ;
-			public Act.Axe grad( Lap lap ) => lap.quo(this[Axis.Alt]as Axe,this[Axis.Dist]as Axe) ;
-			public Act.Axe resi( Lap lap ) => lap.quo(this[Axis.Drag]as Axe,this[Axis.Bit]as Axe) ;
-			public Act.Axe perf( int lap = -1 ) => perf(pace(lap),grad(lap),resi(lap)) ;
-			public Act.Axe velo( int lap = -1 ) => lap.quo(this[Axis.Dist]as Axe,this[Axis.Time]as Axe) ;
-			public Act.Axe pace( int lap = -1 ) => lap.quo(this[Axis.Time]as Axe,this[Axis.Dist]as Axe) ;
-			public Act.Axe grad( int lap = -1 ) => lap.quo(this[Axis.Alt]as Axe,this[Axis.Dist]as Axe) ;
-			public Act.Axe resi( int lap = -1 ) => lap.quo(this[Axis.Drag]as Axe,this[Axis.Bit]as Axe) ;
-			Act.Axe perf( Act.Axe pace , Act.Axe grad , Act.Axe resi ) => Context.Get( c => new Act.Axe( i => Basis.PacePower( pace[i] , grad[i]??0 , Resistance(resi[i]) ) , a=>c.Count ) ) ?? Axe.No ;
+			public Act.Axe velo( Lap lap ) => lap.quo(this[Axis.Dist,false]as Axe,this[Axis.Time,false]as Axe) ;
+			public Act.Axe pace( Lap lap ) => lap.quo(this[Axis.Time,false]as Axe,this[Axis.Dist,false]as Axe) ;
+			public Act.Axe grad( Lap lap ) => lap.quo(this[Axis.Alt,false]as Axe,this[Axis.Dist,false]as Axe) ;
+			public Act.Axe resi( Lap lap ) => lap.quo(this[Axis.Drag,false]as Axe,this[Axis.Bit,false]as Axe) ;
+			public Act.Axe perf( int lap = 0 ) => perf(pace(lap),grad(lap),resi(lap)) ;
+			public Act.Axe velo( int lap = 0 ) => lap.quo(this[Axis.Dist,false]as Axe,this[Axis.Time,false]as Axe) ;
+			public Act.Axe pace( int lap = 0 ) => lap.quo(this[Axis.Time,false]as Axe,this[Axis.Dist,false]as Axe) ;
+			public Act.Axe grad( int lap = 0 ) => lap.quo(this[Axis.Alt,false]as Axe,this[Axis.Dist,false]as Axe) ;
+			public Act.Axe resi( int lap = 0 ) => lap.quo(this[Axis.Drag,false]as Axe,this[Axis.Bit,false]as Axe) ;
+			Act.Axe perf( Act.Axe pace , Act.Axe grad = null , Act.Axe resi = null ) => Context.Get( c => new Act.Axe( i => pace[i].PacePower(grad?[i]??0,Resistance(resi?[i])) , a=>c.Count ) ) ?? Axe.No ;
 			#endregion
 			public override Point.Iterable Points => new Iterator{ Context = this } ;
 			public override Path Raw => Context ;

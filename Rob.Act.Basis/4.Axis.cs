@@ -114,6 +114,7 @@ namespace Rob.Act
 		public Axe Shift( Axe upon , Quant quo = 0 ) => upon==null ? No : new Axe( i=>(quo*i).Get(at=>Shift(upon,(int)at,(int)((i-at)/2))) , a=>Count ) ;
 		public Axe Drift( Axe upon , Quant quo = 0 ) => upon.Shift(this,quo) ;
 		Quant? Diff( int at , int dif ) => (Resolve(at+dif)-Resolve(at))*Math.Sign(dif) ;
+		Quant? Diff( int at , double dif ) { var a = at+dif ; var f = Math.Floor(a) ; var c = Math.Ceiling(a) ; return c==f ? Diff(at,(int)dif) : (Resolve((int)f)*(c-a)+Resolve((int)c)*(a-f)-Resolve(at))*Math.Sign(dif) ; }
 		Quant? Quot( Axe upon , int at , int dif ) => Diff(at,dif)/upon.Diff(at,dif).Nil() ;
 		Quant? Shift( Axe upon , int at , int dis ) => Quot(upon,at+dis,dis)/Quot(upon,at,dis).Nil() ;
 		public Axe Rift( Axe upon , uint quo = 9 ) => upon==null ? No : new Axe( i=>Shift(upon,i,((Count-i)>>1)-1) , a=>(int)(Count*quo/(1D+quo)) ) ;
@@ -141,6 +142,8 @@ namespace Rob.Act
 			public Support this[ IEnumerable<int> fragment ] => One[fragment] ;
 			public Path Raw => Base?.Raw ;
 			public Aspect.Traits Trait => This?.Trait ;
+			public Axe Perf( Lap lap ) => (Base as Path.Aspect)?.perf(lap) ?? Axe.No ;
+			public Axe Perf( int dif = 0 ) => (Base as Path.Aspect)?.perf(dif) ?? Axe.No ;
 		}
 		public struct Contexts : Contextables
 		{
@@ -191,9 +194,9 @@ namespace Rob.Act
 		#endregion
 		public struct Duo { public Quant? X , Y ; public static Duo operator+( Duo a , Duo b ) => new Duo{ X = a.X+b.X , Y = a.Y+b.Y } ; public static Duo operator/( Duo a , Quant b ) => new Duo{ X = a.X/b.nil() , Y = a.Y/b.nil() } ; public static Duo operator|( Duo a , Duo b ) => (a+b)/2 ; }
 	}
-	public struct Lap : Aid.Gettable<int,int>
+	public struct Lap : Aid.Gettable<int,double>
 	{
-		readonly int[] Content ;
+		readonly double[] Content ;
 		public Lap( Axe context , Quant dif )
 		{
 			var content = new List<int>() ; var dir = Math.Sign(dif) ; dif = Math.Abs(dif) ; if( context!=null )
@@ -201,9 +204,9 @@ namespace Rob.Act
 				if( dir>0 ) for( int c=context.Count , i=0 ; dif>0 && i<c ; content.Add(i-content.Count) ) for( var v = context.Resolve(content.Count) ; i<c && (context.Resolve(i)-v).use(Math.Abs)<dif ; ++i ) ;
 				else for( int c=context.Count , i=0 , j=0 ; dif>0 && i<c ; ++j ) for( var v = context.Resolve(j) ; i<c && (context.Resolve(i)-v).use(Math.Abs)<dif ; content.Add(j-++i) ) ;
 			}
-			Content = content.ToArray() ;
+			var k = 0 ; Content = content.Select(i=>i+( context?[k++] is Quant a && context?[k+i-1] is Quant x && context?[k+i] is Quant y && x!=y ? Math.Abs(Math.Abs(x-a)-dif)/Math.Abs(x-y) : 0 )).ToArray() ;
 		}
-		public int this[ int key ] => Content.At(key) ;
+		public double this[ int key ] => Content.At(key) ;
 	}
 	public partial class Path
 	{
@@ -234,13 +237,13 @@ namespace Rob.Act
 			#endregion
 		}
 		public static Axable operator&( Path path , string name ) => path.Spectrum[name] ;
-		public static Axable operator&( Path path , Axis name ) => path.Spectrum[name] ;
+		public static Axable operator&( Path path , Axis name ) => path.Spectrum[name,false] ;
 	}
 	public static class AxeOperations
 	{
 		public static Axe Shift( this int dis , Axe x , Axe y , int? dif = null ) => (dif??dis).Get(d=>d.quo(x,y)).Get(a=>a.Skip(dis)/a) ;
 		public static Axe Drift( this int dis , Axe x , Axe y , int? dif = null ) => Shift(dis,y,x,dif) ;
-		public static Axe quo( this int dif , Axe x , Axe y ) => (x%dif)/(y%dif) ;
+		public static Axe quo( this int dif , Axe x , Axe y ) => dif==0 ? x/y : (x%dif)/(y%dif) ;
 		public static Axe quo( this Lap dif , Axe x , Axe y ) => (x/dif)/(y/dif) ;
 		public static Axe d( this int dif , Axe x , Axe y ) => dif.quo(x,y) ;
 		public static Axe d( this Lap dif , Axe x , Axe y ) => dif.quo(x,y) ;

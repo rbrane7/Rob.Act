@@ -67,12 +67,16 @@ namespace Rob.Act
 	/// </summary>
 	public interface Pointable : Quantable , Aid.Accessible<uint,Quant?> , Aid.Accessible<Quant?> { DateTime Date { get; } TimeSpan Time { get; } uint Dimension { get; } string Action { get; } Mark Mark { get; } Tagable Tag { get; } void Adopt( Pointable path ) ; }
 	public interface Pathable : Pointable , Aid.Countable , Aid.Gettable<DateTime,Pointable> , Aid.Gettable<int,Pointable> { string Origin { get; } Path.Aspect Spectrum { get; } string Object { get; } string Subject { get; } string Locus { get; } string Refine { get; } }
-	static class Basis
+	public static class Basis
 	{
 		#region Axis specifics
 		static readonly List<string> axis = Enum.GetNames(typeof(Axis)).ToList() ; static readonly List<uint> vaxi = Enum.GetValues(typeof(Axis)).Cast<uint>().ToList() ;
 		internal static uint Axis( this string name , uint dim ) => vaxi.At(axis.IndexOf(name)).nil(i=>i<0).Get(i=>i==(uint)Act.Axis.Time?dim:i==(uint)Act.Axis.Date?dim+1:i) ?? (uint)axis.Set(a=>{a.Add(name);vaxi.Add((uint)vaxi.Count);}).Count-1 ;
 		internal static Quant ActLim( this Axis axis , string activity ) => 50 ;
+		public static class Device
+		{
+			public static class Skierg { public const string Code = "Skierg" ; }
+		}
 		#endregion
 
 		#region Point interpolation
