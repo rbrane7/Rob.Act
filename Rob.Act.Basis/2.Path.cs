@@ -13,28 +13,36 @@ namespace Rob.Act
 {
 	using Quant = Double ;
 	using Configer = System.Configuration.ConfigurationManager ;
-	public struct Profile { public Quant? Mass ; }
+	public class Profile
+	{
+		public static string The { get => the ; set { the = value ; dflt = null ; } } static string the ;
+		public static Profile Default => dflt ??( dflt = Path.SubjectProfile.By(The)??Path.SubjectProfile.One().Value ) ; static Profile dflt ;
+		public Quant Mass , Span ;
+		public Quant Resi => Span*Basis.AirResistance ;
+	}
 	public partial class Path : Point , IList<Point> , Gettable<DateTime,Point> , INotifyCollectionChanged , Pathable
 	{
-		public static bool Dominancy = Configer.AppSettings["Path.Dominancy"]!=null ;
+		public static bool Dominancy = Configer.AppSettings["Path.Dominancy"]!=null , Corrects , Altismooths ;
 		public static double Margin = Configer.AppSettings["Path.Margin"].Parse<double>()??0 ;
-		public static Dictionary<string,Quant?[]> Meta = new Dictionary<string,Quant?[]>{ ["Tabata"]=new Quant?[]{1,2} } ;
-		public static IDictionary<string,Quant> GradeTolerancy = new Dictionary<string,Quant>{ ["Polling"]=.25 , ["ROLLER_SKIING"]=.27 } ;
-		public static IDictionary<string,Quant> DeviaTolerancy = new Dictionary<string,Quant>{ ["Polling"]=.25 , ["ROLLER_SKIING"]=3 } ;
-		public static IDictionary<string,Profile> SubjectProfile = new Dictionary<string,Profile>{ ["Rob"]=new Profile{Mass=76} } ;
+		public static readonly Dictionary<string,Quant?[]> Meta = new Dictionary<string,Quant?[]>{ ["Tabata"]=new Quant?[]{1,2} } ;
+		public static readonly Dictionary<string,(Quant Grade,Quant Devia,Quant Velo,byte Rad)> Tolerancy = new Dictionary<string,(Quant Grade,Quant Devia,Quant Velo,byte Rad)>{ ["Polling"]=(.20,.25,20,5) , ["ROLLER_SKIING"]=(.20,3,25,5) , ["SKIING_CROSS_COUNTRY"]=(.20,3,20,5) } ;
+		public static readonly IDictionary<string,Profile> SubjectProfile = new Dictionary<string,Profile>{ ["Rob"]=new Profile{Mass=76,Span=1.92} } ;
+		public static IList<Altiplane> Altiplanes ;
+		Altiplane AltOf => Altiplanes.Get(ap=>Tolerancy.On(Object).Get(m=>ap.FirstOrDefault(a=>a.Grade>=m.Grade)??new Altiplane(m.Grade){Radius=m.Rad}.Set(ap.Add))) ;
 
 		#region Construct
 		public Path( DateTime date , IEnumerable<Point> points = null ) : base(date) { Borrow(points) ; Impose() ; }
 		void Impose()
 		{
-			if( Alti==null ) Alti = this.Average(p=>p.Alti) ; if( this[Axis.Lon]==null ) this[Axis.Lon] = this.Average(p=>p[Axis.Lon]) ; if( this[Axis.Lat]==null ) this[Axis.Lat] = this.Average(p=>p[Axis.Lat]) ;
+			Preclude() ;
 			var date = DateTime.Now ; for( var i=0 ; i<Count ; ++i )
 			{
+				if( this[i].Owner==null ) this[i].Owner = this ;
 				if( this[i].Metax==null ) Metax.Set(m=>this[i].Metax=m) ;
 				if( i<=0 || this[i-1].Mark.HasFlag(Mark.Stop) )
 				{
 					date = this[i].Date-(this[i-1]?.Time??default) ;
-					if( this[i].Dist==null ) this[i].Dist = this[i-1]?.Dist??0 ;
+					if( this[i].Dist==null && IsGeo ) this[i].Dist = this[i-1]?.Dist??0 ;
 					if( this[i].Asc==null && Alti!=null ) this[i].Asc = this[i-1]?.Asc??0 ;
 					if( this[i].Dev==null && IsGeo ) this[i].Dev = this[i-1]?.Dev??0 ;
 					if( this[i].Alti==null && Alti!=null ) this[i].Alti = ((Count-i).Steps(i).FirstOrDefault(j=>this[j].Alti!=null).nil()??i-1).Get(j=>this[j].Alti) ;
@@ -46,15 +54,17 @@ namespace Rob.Act
 					if( this[i].Dist==null ) this[i].Dist = this[i-1].Dist + (this[i]-this[i-1]).Euclid(this[i-1]) ;
 					if( Alti!=null )
 					{
-						if( this[i].Alti==null ) this[i].Alti = this[i-1].Alti + ((Count-i).Steps(i).FirstOrDefault(j=>this[j].Alti!=null).nil()??i-1).Get(j=>(this[j].Alti-this[i-1].Alti)/j) ;
-						if( this[i].Asc==null ) this[i].Asc = this[i-1].Asc + ( this[i].Alti-this[i-1].Alti is Quant u && Math.Abs(u)/(this[i].Dist-this[i-1].Dist)<(GradeTolerancy.On(Action)??.3) ? u : 0 ) ;
+						if( this[i].Alti==null ) this[i].Alti = this[i-1].Alti + (((Count-i).Steps(i).FirstOrDefault(j=>this[j].Alti!=null).nil()??i-1).Get(j=>(this[j].Alti-this[i-1].Alti)/j).Nil(a=>Math.Abs(a)>(this[i].Dist-this[i-1].Dist)*Tolerancy.On(Object)?.Grade)??0) ;
+						if( this[i].Asc==null ) this[i].Asc = this[i-1].Asc + ( this[i].Alti-this[i-1].Alti is Quant u && Math.Abs(u)<(this[i].Dist-this[i-1].Dist)*(Tolerancy.On(Object)?.Grade??.3) ? u : 0 ) ;
 					}
 					if( this[i].Dev==null ) this[i].Dev = this[i-1].Dev + ( i<Count-1 && !this[i].Mark.HasFlag(Mark.Stop) && (this[i].Geo-this[i-1].Geo).Devia(this[i+1].Geo-this[i].Geo) is Quant v ? v : 0 ) ;
 				}
 			}
-			this[Count-1].Set(p=>{if(Bit==null)Bit=p.Bit;if(Time==default)Time=p.Time;if(Dist==null)Dist=p.Dist;if(Asc==null)Asc=p.Asc;if(Dev==null)Dev=p.Dev;}) ;
+			Conclude(this[Count-1]) ;
 		}
-		void Depose() { for( var i=0 ; i<Count ; ++i ) { this[i].Time = default ; this[i].Bit = this[i].Dist = null ; this[i].Asc = this[i].Dev = null ; } }
+		void Preclude() { if( Alti==null ) Alti = this.Average(p=>p.Alti) ; if( this[Axis.Lon]==null ) this[Axis.Lon] = this.Average(p=>p[Axis.Lon]) ; if( this[Axis.Lat]==null ) this[Axis.Lat] = this.Average(p=>p[Axis.Lat]) ; }
+		void Conclude( Point point ) => point.Set(p=>{var z=this[0];if(Bit==null)Bit=p.Bit-z.Bit;if(Time==default)Time=p.Time-z.Time;if(Dist==null)Dist=p.Dist-z.Dist;if(Asc==null)Asc=p.Asc-z.Asc;if(Dev==null)Dev=p.Dev-z.Dev;}) ;
+		void Depose() { for( var i=0 ; i<Count ; ++i ) { this[i].Time = default ; this[i].Bit = this[i].Dist = null ; this[i].Asc = this[i].Dev = null ; this[i].Owner = null ; } }
 		public void Reset() { Depose() ; Impose() ; }
 		public Path( DateTime time , bool close , IEnumerable<Point> points = null ) : this(time,points) { if( close ) { if( Beat==null ) { this[0].Beat = 0 ; Quant lb = 0 ; for( var i=1 ; i<Count ; ++i ) this[i].Beat = ((this[i-1].Beat??lb)+this[i].Beat/60*(this[i].Time-this[i-1].Time).TotalSeconds).use(b=>lb=b) ; Beat = lb ; } } }
 		protected virtual void Adopt( Path path )
@@ -74,6 +84,60 @@ namespace Rob.Act
 			for( int i=0 , c=this.Min(p=>p.Tag.Count) ; i<c ; ++i ) Tag[i] = this.Where(p=>p.Tags!=null).Aggregate(string.Empty,(a,p)=>a==null?null:a==string.Empty?p.Tag[i]:a==p.Tag[i]||p.Tag[i].No()?a:null) ;
 			return this ;
 		}
+		public Path Energize()
+		{
+			var dflt = Basis.Energing.On(Object) ;
+			if( Grade==null ) Granelet = Gradstr.Parse<Quant>()??dflt?.Grade ; if( Flow==null ) Flowlet = Flowstr.Parse<Quant>() ; if( Drag==null ) Draglet = Dragstr.Parse<Quant>() ;
+			for( var i=0 ; i<Count ; ++i )
+			{
+				var dist = this[i].Dist-this[i-1].Null(p=>p.Mark.HasFlag(Mark.Stop))?.Dist ?? 0 ;
+				if( Granelet is Quant g && this[i].Grade==null ) this[i].Grade = this[i-1]?.Grade + g*dist ?? 0 ;
+				if( Flowlet is Quant f && this[i].Flow==null ) this[i].Flow = this[i-1]?.Flow + f*dist ?? 0 ;
+				if( Draglet is Quant d && this[i].Drag==null ) this[i].Drag = this[i-1]?.Drag + d*dist ?? 0 ;
+			}
+			return this ;
+		}
+		public Path Correct()
+		{
+			if( !Corrects ) return this ;
+			Quant cord = 0 , cora = 0 ;
+			Quant? Dif( int i , int? at=null ) => this[i]?.Dist-this[at??i-1]?.Dist ;
+			bool DifKo( int i ) => Dif(i)>(this[i].Time-this[i-1].Time).TotalSeconds*Tolerancy.On(Object)?.Velo ;
+			Quant? DifOk( int i ) => Dif(i) is Quant d && !(d>(this[i].Time-this[i-1].Time).TotalSeconds*Tolerancy.On(Object)?.Velo) ? d : null as Quant? ;
+			Quant? OkDif( int i ) { for( var j=i+1 ; j<Count ; ++j ) if( DifOk(j) is Quant d ) return d ; else if( this[j-1]?.Mark.HasFlag(Mark.Stop)!=false ) break ; return null ; }
+			Quant? Ald( int i , int? at=null ) => this[i]?.Alti-this[at??i-1]?.Alti ;
+			bool AldKo( int i ) => Ald(i).use(Math.Abs)>Dif(i)*Tolerancy.On(Object)?.Grade ;
+			Quant? AldOk( int i , int at ) => Ald(i) is Quant d && !(Math.Abs(d)>Dif(i)*Tolerancy.On(Object)?.Grade) && !(Ald(i,at).use(Math.Abs)>Dif(i,at)*Tolerancy.On(Object)?.Grade) ? d : null as Quant? ;
+			Quant? OkAld( int i ) { for( var j=i+1 ; j<Count ; ++j ) if( AldOk(j,i-1) is Quant d ) return d ; /*else if( this[j-1]?.Mark.HasFlag(Mark.Stop)!=false ) break ;*/ return null ; }
+			for( var i=1 ; i<Count ; ++i )
+			{
+				if( cord!=0 ) this[i].Dist += cord ; if( cora!=0 ) this[i].Alti += cora ;
+				if( this[i].IsGeo )
+				{
+					if( !this[i-1].Mark.HasFlag(Mark.Stop) )
+					{
+						if( DifKo(i) ) { var lad = this[i].Dist ; var di = Dif(i-1) ; var ds = OkDif(i) ; this[i].Dist = this[i-1].Dist + ((di+ds)/2??di??ds??0) ; cord += this[i].Dist-lad ?? 0 ; }
+						if( AldKo(i) ) { var lad = this[i].Alti ; var di = Ald(i-1) ; var ds = OkAld(i) ; this[i].Alti = this[i-1].Alti + ((di+ds)/2??di??ds??0) ; cora += this[i].Alti-lad ?? 0 ; }
+					}
+				}
+			}
+			if( cord!=0 ) Dist += cord ;
+			return this ;
+		}
+		public Path Altify() { if( AltOf is Altiplane alp ) { alp.Include(this) ; for( var i=1 ; i<Count ; ++i ) if( alp[this[i].Geo] is Quant a ) this[i].Alti = a ; } return this ; }
+		public Path Altismooth()
+		{
+			if( !Altismooths ) return this ;
+			(Quant Alt,int Idx) MaxInd()
+			{
+				(Quant Alt,int Idx) max = default ;
+				for( var i=1 ; i<Count-1 ; ++i ) if( !(this[i-1].Mark.HasFlag(Mark.Stop)||this[i].Mark.HasFlag(Mark.Stop)) )
+					if( (((this[i+1].Alti-this[i].Alti)/(this[i+1].Dist-this[i].Dist)-(this[i].Alti-this[i-1].Alti)/(this[i].Dist-this[i-1].Dist))/(this[i+1].Dist-this[i-1].Dist)*2).use(Math.Abs) is Quant c && c>max.Alt ) max = (c,i) ;
+				return max ;
+			}
+			var count = Count ; for( (Quant Alt,int Idx) max ; count>0 && (max=MaxInd()).Alt>Tolerancy.On(Object)?.Grade ; --count ) this[max.Idx].Alti = (this[max.Idx-1].Alti+this[max.Idx+1].Alti)/2 ;
+			return this ;
+		}
 		#endregion
 
 		#region State
@@ -81,7 +145,7 @@ namespace Rob.Act
 		readonly List<Point> Content = new List<Point>() ;
 		public bool Dominant = Dominancy ;
 		protected override void SpecChanged( string value ) { base.SpecChanged(value) ; aspect.Set(a=>a.Spec=value) ; }
-		public Profile? Profile => SubjectProfile.On(Subject) ;
+		public Profile Profile => SubjectProfile.By(Subject) ;
 		public event NotifyCollectionChangedEventHandler CollectionChanged { add => collectionChanged += value.DispatchResolve() ; remove => collectionChanged -= value.DispatchResolve() ; } NotifyCollectionChangedEventHandler collectionChanged ;
 		#endregion
 
@@ -215,5 +279,24 @@ namespace Rob.Act
 		#region Comparation
 		public virtual bool Equals( Pathable path ) => path is Path p && (this as Point).Equals(p) && Content.SequenceEquate(p.Content,(x,y)=>x.EqualsRestricted(y)) && Metax?.Equals(p.Metax)!=false ;
 		#endregion
+
+		public class Altiplane : Act.Altiplane
+		{
+			public bool Dirty { get ; private set ; }
+			public readonly Quant Grade ;
+			public Altiplane( Quant grade , Quant grane = 10 ) : base(grane) => Grade = grade ;
+			public void Include( Path path )
+			{
+				if( path==null || !Include(path.Date) ) return ; Dirty = true ;
+				for( var i=0 ; i<path.Count ; ++i )
+				{
+					var alt = path[i].Alti ;
+					//for( var j=Math.Max(0,i-170) ; j<Math.Min(i+171,path.Count) ; ++j ) if( path[i].Alti is Quant a && path[j].Alti is Quant b && Math.Abs(a-b)>Grade*(path[i]-path[j]).Euclid(path[i]) ) alt = null ;
+					this[path[i].Geo] = alt ;
+				}
+			}
+			public Altiplane( string file ) : base(file) => Grade = file.RightFrom(FileSign).LeftFrom(ArgSep).Parse(.999) ;
+			public override void Save( string file ) { base.Save(file) ; Dirty = false ; }
+		}
 	}
 }

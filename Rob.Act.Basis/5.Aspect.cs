@@ -87,7 +87,8 @@ namespace Rob.Act
 		public new virtual void Remove( Axe ax ) { base.Remove(ax) ; ax.Own = null ; ax.PropertyChanged -= OnChanged ; OnChanged(NotifyCollectionChangedAction.Remove,ax) ; }
 		void IList.Remove( object value ) => Remove( value as Axe ) ;
 		int IList.Add( object value ) { Add( value as Axe ) ; return Count-1 ; }
-		internal Quant? Resistance( Quant? resi ) => Raw.Object==Basis.Device.Skierg.Code ? null : (Raw?.Resister).use(d=>resi??d) ;
+		internal Quant Resistance( Quant? resi ) => Raw.Object==Basis.Device.Skierg.Code ? Basis.Device.Skierg.Draw : (Raw?.Resister).use(d=>resi??d)??0 ;
+		internal Quant Gradient( Quant grad ) => Raw.Object==Basis.Device.Skierg.Code ? 0 : Path.Tolerancy.On(Raw?.Object)?.Grade is Quant v && v<Math.Abs(grad) ? -.01 : grad ;
 		public override string ToString() => Score ;
 		#region De/Serialization
 		/// <summary>
@@ -175,17 +176,21 @@ namespace Rob.Act
 			public override void Remove( Act.Axe ax ) => base.Remove(ax.Set(a=>{if(!(a is Axe))a.Aspect=null;})) ;
 			public void Reform( params string[] binds ) => this.OfType<Axe>().Each(a=>a.Binder=binds.At((int)a.Axis)??Context.Metax?[a.Ax].Form) ;
 			#region Operation
-			public Act.Axe perf( Lap lap ) => perf(pace(lap),grad(lap),resi(lap)) ;
+			public Act.Axe perf( Lap lap ) => perf(pace(lap),grad(lap),resi(lap),flow(lap),gran(lap)) ;
 			public Act.Axe velo( Lap lap ) => lap.quo(this[Axis.Dist,false]as Axe,this[Axis.Time,false]as Axe) ;
 			public Act.Axe pace( Lap lap ) => lap.quo(this[Axis.Time,false]as Axe,this[Axis.Dist,false]as Axe) ;
 			public Act.Axe grad( Lap lap ) => lap.quo(this[Axis.Alt,false]as Axe,this[Axis.Dist,false]as Axe) ;
-			public Act.Axe resi( Lap lap ) => lap.quo(this[Axis.Drag,false]as Axe,this[Axis.Bit,false]as Axe) ;
-			public Act.Axe perf( int lap = 0 ) => perf(pace(lap),grad(lap),resi(lap)) ;
+			public Act.Axe gran( Lap lap ) => lap.quo(this[Axis.Grade,false]as Axe,this[Axis.Dist,false]as Axe) ;
+			public Act.Axe flow( Lap lap ) => Raw.Object==Basis.Device.Skierg.Code ? Axe.No : lap.quo(this[Axis.Flow,false]as Axe,this[Axis.Dist,false]as Axe) ;
+			public Act.Axe resi( Lap lap ) => lap.quo(this[Axis.Drag,false]as Axe,this[Axis.Dist,false]as Axe) ;
+			public Act.Axe perf( int lap = 0 ) => perf(pace(lap),grad(lap),resi(lap),flow(lap),gran(lap)) ;
 			public Act.Axe velo( int lap = 0 ) => lap.quo(this[Axis.Dist,false]as Axe,this[Axis.Time,false]as Axe) ;
 			public Act.Axe pace( int lap = 0 ) => lap.quo(this[Axis.Time,false]as Axe,this[Axis.Dist,false]as Axe) ;
 			public Act.Axe grad( int lap = 0 ) => lap.quo(this[Axis.Alt,false]as Axe,this[Axis.Dist,false]as Axe) ;
-			public Act.Axe resi( int lap = 0 ) => lap.quo(this[Axis.Drag,false]as Axe,this[Axis.Bit,false]as Axe) ;
-			Act.Axe perf( Act.Axe pace , Act.Axe grad = null , Act.Axe resi = null ) => Context.Get( c => new Act.Axe( i => pace[i].PacePower(grad?[i]??0,Resistance(resi?[i])) , a=>c.Count ) ) ?? Axe.No ;
+			public Act.Axe gran( int lap = 0 ) => lap.quo(this[Axis.Grade,false]as Axe,this[Axis.Dist,false]as Axe) ;
+			public Act.Axe flow( int lap = 0 ) => Raw.Object==Basis.Device.Skierg.Code ? Axe.No : lap.quo(this[Axis.Flow,false]as Axe,this[Axis.Dist,false]as Axe) ;
+			public Act.Axe resi( int lap = 0 ) => lap.quo(this[Axis.Drag,false]as Axe,this[Axis.Dist,false]as Axe) ;
+			Act.Axe perf( Act.Axe pace , Act.Axe grad = null , Act.Axe resi = null , Act.Axe flow = null , Act.Axe gran = null ) => Context.Get( c => new Act.Axe( i => pace[i].PacePower((Gradient(grad?[i]??0),gran?[i]??0),Resistance(resi?[i]),flow?[i]??0) , a=>c.Count , pace ) ) ?? Axe.No ;
 			#endregion
 			public override Point.Iterable Points => new Iterator{ Context = this } ;
 			public override Path Raw => Context ;

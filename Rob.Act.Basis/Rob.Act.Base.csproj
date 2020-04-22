@@ -66,6 +66,7 @@
     <Compile Include="1.Point.cs" />
     <Compile Include="4.Axis.cs" />
     <Compile Include="5.Aspect.cs" />
+    <Compile Include="Altiplane.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

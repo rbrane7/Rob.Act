@@ -21,6 +21,7 @@ namespace Rob.Act.Analyze
 		public int PrimaryShape = 1 ;
 		public Func<Pathable,Aspect,bool> ActionAssocier ;
 		public double SubjectMass = 76 ;
+		public (double Grade,double Grane,byte Radius) Altiplane = default ;
 	}
 	public class State
 	{
@@ -44,6 +45,7 @@ namespace Rob.Act.Analyze
 			if( Context.SourceFilter.Any(f=>f.Dirty) ) { Context.SourceFilter.Each(f=>f.Dirty=false) ; Main.Setup.StatePath.Set(p=>System.IO.Directory.CreateDirectory(p)).Path("SourceFilter.stt").WriteAll((string)Context.SourceFilter) ; }
 			if( Context.AspectFilter.Any(f=>f.Dirty) ) { Context.AspectFilter.Each(f=>f.Dirty=false) ; Main.Setup.StatePath.Set(p=>System.IO.Directory.CreateDirectory(p)).Path("AspectFilter.stt").WriteAll((string)Context.AspectFilter) ; }
 			if( Recoordinate ) { Recoordinate = false ; Main.Setup.StatePath.Set(p=>System.IO.Directory.CreateDirectory(p)).Path("Coordinater.stt").WriteAll(Coordinater?.Select(e=>$"{e.Key}:{e.Value}").Stringy(Environment.NewLine)) ; }
+			if( Main.Setup.Altiplane.Grade!=default ) Path.Altiplanes?.Where(a=>a.Dirty).Each(a=>a.Save(Main.Setup.StatePath.Set(p=>System.IO.Directory.CreateDirectory(p)).Path($"{Altiplane.FileSign}{a.Grade:.000}{Altiplane.ArgSep}{a.Grane:000}{Path.Altiplane.ExtSign}"))) ;
 		}
 		internal Main Context { get => context ; set { context = value ; Saver?.Dispose() ; Saver = new System.Threading.Timer(Save,null,Main.Setup.SavePeriod,Main.Setup.SavePeriod) ; Load() ; } } Main context ;
 	}

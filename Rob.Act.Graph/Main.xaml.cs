@@ -29,8 +29,9 @@ namespace Rob.Act.Analyze
 	/// </summary>
 	public partial class Main : Window , INotifyPropertyChanged
 	{
-		public static Settings Setup => setup?.Result ; static readonly Aid.Prog.Setup<Settings> setup = (Resetup,e=>Trace.TraceError($"Setup {e}")) ;
-		static Aid.Prog.Doct Doct = (Setup.Doctee.Uri(),e=>Trace.TraceError($"Doctor {e}")) ;
+		public static Settings Setup => setup?.Result ; static readonly Aid.Prog.Setup<Settings> setup ;
+		static Main() { new Aid.Prog.Setup(e=>Trace.TraceError($"Setup {e}")).Go() ; setup = (Resetup,e=>Trace.TraceError($"Setup Settings {e}")) ; Doct = (Setup.Doctee.Uri(),e=>Trace.TraceError($"Doctor {e}")) ; }
+		static Aid.Prog.Doct Doct ;
 		public static readonly Aspect Laboratory = new Aspect() ;
 		readonly Presources Presources ;
 		static void Resetup( Settings past )
@@ -46,13 +47,18 @@ namespace Rob.Act.Analyze
 		void PropertyChangedOn<Value>( string properties , Value value ) { PropertyChanged.On(this,properties,value) ; if( properties.Consists("Sources") ) if( GraphTab.IsSelected ) Graph_Draw(this) ; else if( MapTab.IsSelected ) Map_Draw(this) ; }
 		public Main()
 		{
-			InitializeComponent() ; Presources = new Presources(BookGrid,this) ; AppDomain.CurrentDomain.Load(typeof(AxeOperations).Assembly.FullName) ; new Aid.Prog.Setup().Go() ; ViewPanel = GraphPanel ; DataContext = this ;
+			InitializeComponent() ; Presources = new Presources(BookGrid,this) ; AppDomain.CurrentDomain.Load(typeof(AxeOperations).Assembly.FullName) ; ViewPanel = GraphPanel ; DataContext = this ;
 			Doct += (this,"Main") ; Aspectables.The = ()=>Book.Select(p=>p.Spectrum).Union(Aspects) ; SourcesGrid.ItemContainerGenerator.ItemsChanged += SourcesGrid_ItemsChanged ; Load() ;
 		}
 		void Load()
 		{
-			Setup.WorkoutsPaths.SeparateTrim(',').SelectMany(l=>l.MatchingFiles()).EachGuard(f=>NewAction(f,Setup?.WorkoutsFilter),(f,e)=>Trace.TraceError($"{f} faulted by {e}")) ;
-			Setup.AspectsPaths.SeparateTrim(',').SelectMany(l=>l.MatchingFiles()).EachGuard(f=>NewAspect(f,Setup?.AspectsFilter),(f,e)=>Trace.TraceError($"{f} faulted by {e}")) ;
+			Setup.Altiplane.nil(a=>a.Grade==0).Use(g=>{
+				Path.Altiplanes = new List<Path.Altiplane>() ;
+				foreach( var a in System.IO.Directory.GetFiles(Setup.StatePath,$"{Altiplane.FileSign}*{Path.Altiplane.ExtSign}") ) { Trace.TraceInformation($"Loading {a}") ; Path.Altiplanes.Add(new Path.Altiplane(a){Radius=g.Radius}) ; }
+				if( Path.Altiplanes.Count==0 ) Path.Altiplanes.Add(new Path.Altiplane(g.Grade,g.Grane){Radius=g.Radius}) ;
+			}) ;
+			Setup.WorkoutsPaths.SeparateTrim(',').SelectMany(l=>l.MatchingFiles()).EachGuard(f=>{Trace.TraceInformation($"Loading {f}");NewAction(f,Setup?.WorkoutsFilter);},(f,e)=>Trace.TraceError($"{f} faulted by {e}")) ;
+			Setup.AspectsPaths.SeparateTrim(',').SelectMany(l=>l.MatchingFiles()).EachGuard(f=>{Trace.TraceInformation($"Loading {f}");NewAspect(f,Setup?.AspectsFilter);},(f,e)=>Trace.TraceError($"{f} faulted by {e}")) ;
 			WorkoutsWatchers = Setup.WorkoutsPaths.SeparateTrim(',').Select(l=>new FileSystemWatcher(l){EnableRaisingEvents=true}.Set(w=>{ w.Edited += NewAction ; w.Deleted += (s,a)=>Book-=p=>p.Origin==a.FullPath ; })).ToArray() ;
 			State = new State{ Context = this } ;
 		}
@@ -144,7 +150,7 @@ namespace Rob.Act.Analyze
 		void GraphDrawAspect()
 		{
 			var axes = AspectAxisGrid.SelectedItems.OfType<Axe>().ToArray() ; var yaxes = axes.Skip(1).Select(a=>a.Spec).ToArray() ; if( yaxes.Length<1 || !( AspectAxisGrid.SelectedItem is Axe xaxe ) ) return ;
-			(var width,var height) = ViewFrame = MainFrameSize ;
+			(var width,var height) = ViewFrame = MainFrameSize ; var sources = GraphingSources ;
 			{
 				var brush = new SolidColorBrush(new Color{A=127,R=200,G=200,B=200}) ; var dash = new DoubleCollection{4} ;
 				for( var m=0 ; m<=width ; m+=50 ) GraphPanel.Children.Add( new Line{ X1 = m , Y1 = 0 , X2 = m , Y2 = height , Stroke = brush , StrokeDashArray = dash } ) ;
@@ -153,7 +159,7 @@ namespace Rob.Act.Analyze
 				for( var m=0 ; m<=width ; m+=10 ) GraphPanel.Children.Add( new Line{ X1 = m , Y1 = 0 , X2 = m , Y2 = height , Stroke = brush , StrokeDashArray = dash } ) ;
 				for( var m=height ; m>=0 ; m-=10 ) GraphPanel.Children.Add( new Line{ X1 = 0 , Y1 = m , X2 = width , Y2 = m , Stroke = brush , StrokeDashArray = dash } ) ;
 			}
-			var rng = new Dictionary<string,(double Min,double Max)>() ; var sources = GraphingSources ;
+			var rng = new Dictionary<string,(double Min,double Max)>() ;
 			sources.SelectMany(s=>s).Each(a=>{if(a.Any(q=>q!=null))if(!rng.ContainsKey(a.Spec))rng[a.Spec]=(a.Min().Value,a.Max().Value);else{rng[a.Spec]=(Math.Min(rng[a.Spec].Min,a.Min().Value),Math.Max(rng[a.Spec].Max,a.Max().Value));}}) ; if( !rng.ContainsKey(xaxe.Spec) ) return ;
 			{
 				var x = rng[xaxe.Spec] ; var axe = xaxe ; Filter.Entry.Binding axb = axe.Binder ; string format( double v ) => axe.Binder.No() ? Format(v) : axb.Of(v) ;
@@ -171,7 +177,11 @@ namespace Rob.Act.Analyze
 			{
 				var xax = asp[xaxe.Spec] ; var color = new SolidColorBrush(Coloring(asp)) ; foreach( var ax in asp ) if( yaxes.Contains(ax.Spec) ) try
 				{
-					var ptss = new List<(int Count,int From)>() ; { int c,i ; for( i=0 , c=0 ; i<ax.Count ; ++i ) if( xax[i]!=null&&ax[i]!=null ) ++c ; else { if( c>0 ) ptss.Add((c,i-c)) ; c = 0 ; } if( c>0 ) ptss.Add((c,i-c)) ; }
+					var ptss = new List<(int Count,int From)>() ;
+					{
+						int c,i ; for( i=0 , c=0 ; i<ax.Count ; ++i ) { var stop = false ; if( xax[i]!=null&&ax[i]!=null ) ++c ; else stop = true ; if( stop||asp.Raw?[i].Mark==Mark.Stop ) { if( c>0 ) ptss.Add((c,i-c+(stop?0:1))) ; c = 0 ; } }
+						if( c>0 ) ptss.Add((c,i-c)) ;
+					}
 					foreach( var pts in ptss ) GraphPanel.Children.Add( new Polyline{
 						Stroke = color , StrokeDashArray = Array.IndexOf(yaxes,ax.Spec).Get(j=>j<1?null:new DoubleCollection{j}) ,
 						Points = new PointCollection(pts.Count.Steps(pts.From).Select(i=>ScreenPoint(((xax[i].Value-rng[xax.Spec].Min)/(rng[xax.Spec].Max-rng[xax.Spec].Min).nil()*width??0)+asp.Offset,height-(ax[i].Value-rng[ax.Spec].Min)/(rng[ax.Spec].Max-rng[ax.Spec].Min).nil()*height??0)))
@@ -359,7 +369,7 @@ namespace Rob.Act.Analyze
 		System.Windows.Point? ScreenMouse { get { if( ScreenRect==null || MousePoint==null ) return MousePoint ; (var width,var height) = MainFrameSize ; var p = MousePoint.Value ; var r = ScreenRect.Value ; return new System.Windows.Point(p.X*r.Size.Width/width+r.Location.X,p.Y*r.Size.Height/height+r.Location.Y) ; } }
 		void ViewPanel_MouseDown( object sender, MouseButtonEventArgs e ) => ScreenOrigin = MousePoint ;
 		void DisplayTable_MouseUp( object sender, MouseButtonEventArgs e ) { if( ScreenMouse==ScreenOrigin ) return ; var scr = ScreenOrigin.Get(s=>ScreenMouse.use(p=>new Rect(s,p))) ; if( scr==ScreenRect ) return ; ScreenRect = scr ; if( GraphTab.IsSelected ) Graph_Draw(sender) ; if( MapTab.IsSelected ) Map_Draw(sender) ; }
-		void DisplayTable_MouseDoubleClick( object sender, MouseButtonEventArgs e ) { var draw = ScreenRect!=null ; ScreenOrigin = null ; ScreenRect = null ; if( draw ) if( GraphTab.IsSelected ) Graph_Draw(sender,e) ; else if( MapTab.IsSelected ) Map_Draw(sender,e) ; }
+		void DisplayTable_MouseDoubleClick( object sender, MouseButtonEventArgs e ) { /*var draw = ScreenRect!=null ;*/ ScreenOrigin = null ; ScreenRect = null ; /*if( draw )*/ if( GraphTab.IsSelected ) Graph_Draw(sender,e) ; else if( MapTab.IsSelected ) Map_Draw(sender,e) ; }
 		System.Windows.Point ScreenPoint( double x , double y ) => new System.Windows.Point(ScreenX(x),ScreenY(y)) ;
 		double ScreenX( double x ) { if( ScreenRect==null ) return x ; var r = ScreenRect.Value ; return (x-r.Location.X)*ViewFrame.Width/r.Size.Width ; }
 		double ScreenY( double y ) { if( ScreenRect==null ) return y ; var r = ScreenRect.Value ; return (y-r.Location.Y)*ViewFrame.Height/r.Size.Height ; }

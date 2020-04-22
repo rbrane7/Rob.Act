@@ -14,9 +14,9 @@ namespace Rob.Act
 	/// <summary>
 	/// Kind of separation marks .
 	/// </summary>
-	[Flags] public enum Mark { No = 0 , Stop = 1 , Lap = 2 , Act = 4 }
-	[Flags] public enum Oper { Merge = 0 , Combi = 1 , Trim = 2 , Smooth = 4 , Relat = 8 }
-	public enum Axis : uint { Lon , Longitude = Lon , Lat , Latitude = Lat , Alt , Altitude = Alt , Dist , Distance = Dist , Drag , Draw , Beat , Bit , Energy , Effort , Time , Date }
+	[Flags] public enum Mark { No=0 , Stop=1 , Lap=2 , Act=4 }
+	[Flags] public enum Oper { Merge=0 , Combi=1 , Trim=2 , Smooth=4 , Relat=8 }
+	public enum Axis : uint { Lon,Longitude=Lon , Lat,Latitude=Lat , Alt,Altitude=Alt , Dist,Distance=Dist , Drag , Flow , Beat , Bit , Energy , Grade , Time , Date }
 	public struct Bipole : IFormattable
 	{
 		Bipole( Quant a , Quant b ) { A = Math.Abs(a) ; B = -Math.Abs(b) ; }
@@ -75,8 +75,12 @@ namespace Rob.Act
 		internal static Quant ActLim( this Axis axis , string activity ) => 50 ;
 		public static class Device
 		{
-			public static class Skierg { public const string Code = "Skierg" ; }
+			public static class Skierg { public const string Code = "Skierg" ; public const Quant Draw = 2.8 ; }
 		}
+		public readonly static IDictionary<string,(Quant Grade,Quant Flow,Quant Drag)> Energing = new Dictionary<string,(Quant Grade,Quant Flow,Quant Drag)>
+		{
+			["SKIING_CROSS_COUNTRY"]=(.03,0,.14) , ["ROLLER_SKIING"]=(.01,0,.14) ,
+		} ;
 		#endregion
 
 		#region Point interpolation
@@ -89,19 +93,28 @@ namespace Rob.Act
 		internal static Point Give( this DateTime date , IEnumerable<Point> points ) { Point bot = null ; foreach( var point in points ) if( point.Date<date ) bot = point ; else if( point.Date==date ) return point ; else if( bot==null ) return new Point(date)|point ; else return new Point(date)|date.Give(bot,point) ; return new Point(date)|bot ; }
 		internal static Quant?[] Give( this DateTime date , Point bot , Point top ) { var quo = (Quant)( (date-bot.Date).TotalSeconds/(top.Date-bot.Date).TotalSeconds ) ; var cuo = 1-quo ; return ((int)Math.Max(bot.Dimension,top.Dimension)).Steps().Select(i=>(bot[(uint)i]*cuo+top[(uint)i]*quo)).ToArray() ; }
 		internal static Quant? Quotient( this Quant? x , Quant? y ) => x / y.Nil() ;
+		internal static Quant? Quotient( this Quant x , Quant? y ) => x / y.Nil() ;
 		#endregion
 
 		#region Euclid metrics
+		/// <param name="vect"> Vector of distance from at point .</param>
+		/// <param name="axis"> Axis to calculate .</param>
+		/// <param name="at"> Point at absolute coordinates to relate to .</param>
 		public static int GradeAccu = Configer.AppSettings["Grade.Accumulation"].Parse(7) , VeloAccu = Configer.AppSettings["Speed.Accumulation"].Parse(1) ;
-		static Quant? Sqrm( this Point point , Axis axis , Point at ) { Quant? value = point[axis]??0 ; if( axis==Act.Axis.Lat ) value *= Degmet ; if( axis==Act.Axis.Lon ) value *= Londeg(at[Act.Axis.Lat]) ; return value*value ; }
+		static Quant Sqr( this Quant value ) => value*value ;
+		static Quant? Sqr( this Quant? value ) => value.use(Sqr) ;
+		/// <summary>
+		/// Square of given axis of vector at point of sphere .
+		/// </summary>
+		static Quant? Sqrm( this Point vect , Axis axis , Point at ) { Quant? value = vect[axis]??0 ; if( axis==Act.Axis.Lat ) value *= Degmet ; if( axis==Act.Axis.Lon ) value *= Londeg(at[Act.Axis.Lat]) ; return value*value ; }
 		static readonly Quant Degmet = 111321.5 ;
 		public const Quant Gravity = 9.823 ;
 		static Quant? Londeg( Quant? latdeg ) => latdeg.Rad().use(Math.Cos) * Degmet ;
 		static Quant? Rad( this Quant? deg ) => deg/180*Math.PI ;
-		static Quant? Polar( this Point point , Point offset ) => point.Sqrm(Act.Axis.Lon,offset)+point.Sqrm(Act.Axis.Lat,offset) ;
-		internal static Quant? Euclid( this Point point , Point offset ) => (point.Polar(offset)+point.Sqrm(Act.Axis.Alt,offset)).use(Math.Sqrt) ;
-		internal static Quant? Sphere( this Point point , Point offset ) => point.Polar(offset).use(Math.Sqrt) ;
-		internal static Quant? Grade( this Point point , Point offset ) => point.Get(p=>p[Act.Axis.Alt]/p.Sphere(offset).Nil(d=>d==0)) ;
+		static Quant? Polar( this Point vect , Point at ) => vect.Sqrm(Act.Axis.Lon,at)+vect.Sqrm(Act.Axis.Lat,at) ; // Polar 2D square of size of vector at point of sphere .
+		internal static Quant? Euclid( this Point vect , Point at ) => (vect.Polar(at)+vect.Sqrm(Act.Axis.Alt,at)).use(Math.Sqrt) ; // Complete 3D size of vector at point of sphere .
+		internal static Quant? Sphere( this Point vect , Point at ) => vect.Polar(at).use(Math.Sqrt) ; // Polar 2D size of vector at point of sphere .
+		internal static Quant? Grade( this Point vect , Point at ) => vect.Get(p=>p[Act.Axis.Alt]/p.Sphere(at).Nil(d=>d==0)) ; // Grade as tangent of ascent angle .
 #if true // grade average by count
 		internal static Quant? Grade( this Path path , int at , Point offset ) { var count = 0 ; Quant? grade = 0 ; for( var i=Math.Max(at-GradeAccu,0) ; i<Math.Min(path.Count,at+GradeAccu+1) ; ++i ) if( path[i].Grade(offset).Set(g=>grade+=g)!=null ) ++count ; return count>0 ? grade/count : null ; }
 #else	// grade average by distance
@@ -113,8 +126,7 @@ namespace Rob.Act
 		#endregion
 
 		#region Curves
-		public static Quant Drag = 2.8 ;
-		public static Quant Mass = 76 ;
+		public static Quant Mass = Profile.Default.Mass ;
 		public static Quant? Propagation( this (Quant? potential,bool inner) rad , (Quant time,Quant potential) a , (Quant time,Quant potential) b ) => rad.inner ? rad.potential?.Propagation(a,b) : rad.potential?.Copropagation(a,b) ;
 		public static Quant? Propagation( this (Quant? potential,bool inner) rad , (TimeSpan time,Quant potential) a , (TimeSpan time,Quant potential) b ) => rad.inner ? rad.potential?.Propagation(a,b) : rad.potential?.Copropagation(a,b) ;
 		public static Quant? Propagation( this (Quant? potential,bool inner) rad , (Quant potential,TimeSpan time) a , (Quant potential,TimeSpan time) b ) => 1/rad.Propagation((a.time,a.potential),(b.time,b.potential)) ;
@@ -128,12 +140,16 @@ namespace Rob.Act
 		public static Quant? Propagation( this Quant time , (Quant potential,TimeSpan time) a , (Quant potential,TimeSpan time) b ) => 1/time.Propagation((a.time,a.potential),(b.time,b.potential)) ;
 		public static Quant? Copropagation( this Quant potential , (TimeSpan time,Quant potential) a , (TimeSpan time,Quant potential) b ) => potential.Copropagation((a.time.TotalSeconds,a.potential),(b.time.TotalSeconds,b.potential)) ;
 		public static Quant? Copropagation( this Quant potential , (Quant potential,TimeSpan time) a , (Quant potential,TimeSpan time) b ) => 1/potential.Copropagation((a.time,a.potential),(b.time,b.potential)) ;
-		public static Quant? PacePower( this Quant? pace , Quant grade = 0 , Quant? drag = null , Quant? mass = null ) => pace!=0 ? (grade*Gravity*(mass??Mass)+((drag??Drag)+grade*Gravity)/pace/pace)/pace : null as Quant? ;
-		public static Quant? PowerPace( this Quant? power , Quant grade = 0 , Quant? drag = null , Quant? mass = null )
+		public static Quant? PacePower( this Quant? pace , Quant grade = 0 , Quant drag = 0 , Quant flow = 0 , Quant? mass = null ) => pace!=0 ? (grade*Gravity*(mass??Mass)).Get(g=>g*Histeresis+(g+grade.Recuperation()*(flow+drag/pace)/pace)/pace) : null as Quant? ;
+		public static Quant? PacePower( this Quant? pace , (Quant grade,Quant grane) g , Quant drag = 0 , Quant flow = 0 , Quant? mass = null ) => pace.PacePower(g.GradeGrane(),drag,flow,mass) ;
+		public static Quant? PowerPace( this Quant? power , Quant grade = 0 , Quant drag = 0 , Quant flow = 0 , Quant? mass = null )
 		{
-			if( power is Quant p ); else return null ; var g = grade*Gravity*(mass??Mass) ; var d = drag??Drag ; if( p==0&&d*g>=0 ) return null ;
-			return p==0 ? 1/Math.Sqrt(Math.Abs(g/3*d)) : 1/(d*g<0?p+Math.Sign(p)*Math.Sqrt(Math.Abs(g/3*d)):p).Radix(u=>(g+d*u*u)*u-p,u=>g+3*d*u*u).Nil() ;
+			if( power is Quant p );else return null ; var g = grade*Gravity*(mass??Mass) ; var d = drag ; var f = flow ; if( p==0 && d*g>=0 ) return null ;
+			return p==0 ? 1/Math.Sqrt(Math.Abs(g/3*d)) : 1/(d*g<0?p+Math.Sign(p)*Math.Sqrt(Math.Abs(g/3*d)):p).Radix(u=>(g+(f+d*u)*u)*u-p,u=>g+(2*f+3*d*u)*u).Nil() ;
 		}
+		static Quant Recuperation( this Quant grade ) => grade<0 ? 1-Math.Tanh(grade*GravityRecuperation).Sqr() : 1 ;
+		public static Quant GravityRecuperation = 200 , AirResistance = .4 , Histeresis = 1 ;
+		static Quant GradeGrane( this (Quant grade,Quant grane) g ) => g.grade.nil(v=>Math.Abs(v)>1) is Quant a ? a+g.grane*Math.Sqrt(1-a.Sqr()) : g.grane ;
 		#endregion
 
 		#region Tags
@@ -148,7 +164,7 @@ namespace Rob.Act
 
 		public struct Binding
 		{
-			public string Path , Name , Format , Align ; public Func<object,object> Converter ; 
+			public string Path , Name , Format , Align ; public Func<object,object> Converter ;
 			public string Form => Align.No() ? Format : Format.No() ? $"{{0,{Align}}}" : $"{{0,{Align}:{Format}}}" ;
 			public string Reform => Align.No()&&!Format.No() ? $"{{0:{Format}}}" : Form ;
 			public static implicit operator Binding( string value ) => new Binding(value) ;

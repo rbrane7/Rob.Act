@@ -18,8 +18,9 @@ namespace Rob.Act
 		public readonly static Support No = new Support(null) , One = new Support(null,i=>1) ;
 		public event PropertyChangedEventHandler PropertyChanged { add => propertyChanged += value.DispatchResolve() ; remove => propertyChanged -= value.DispatchResolve() ; } PropertyChangedEventHandler propertyChanged ;
 		public Axe() : this(null,null) {} // Default constructor must be present to enable DataGrid implicit Add .
-		public Axe( Func<int,Quant?> resolver = null , Func<Aspectable,int> counter = null ) { this.resolver = resolver ; this.counter = counter ; Quantile = new Quantile(this) ; }
-		public Axe( Axe source ) { spec = source?.spec ; aspect = source?.aspect ; resolvelet = source?.resolvelet ; resolver = source?.resolver ; rex = source?.rex??false ; selectlet = source?.selectlet ; selector = source?.selector ; countlet = source?.countlet ; counter = source?.counter ; distribulet = source?.distribulet ; distributor = source?.distributor ; Quantizer = source?.Quantizer ; multi = source?.multi??false ; bond = source?.bond ; }
+		public Axe( Func<int,Quant?> resolver , Axe source ) : this(resolver,null,source) {}
+		public Axe( Func<int,Quant?> resolver = null , Func<Aspectable,int> counter = null , Axe source = null ) { this.resolver = resolver ; this.counter = counter ; Quantile = new Quantile(this) ; aspect = source?.Aspect ; rex = source?.rex??default ; selectlet = source?.selectlet ; selector = source?.selector ; multi = source?.multi??default ; }
+		public Axe( Axe source ) { spec = source?.spec ; aspect = source?.aspect ; resolvelet = source?.resolvelet ; resolver = source?.resolver ; rex = source?.rex??default ; selectlet = source?.selectlet ; selector = source?.selector ; countlet = source?.countlet ; counter = source?.counter ; distribulet = source?.distribulet ; distributor = source?.distributor ; Quantizer = source?.Quantizer ; multi = source?.multi??default ; bond = source?.bond ; }
 		public virtual string Spec { get => spec ; set { if( value==spec ) return ; spec = value ; propertyChanged.On(this,"Spec") ; } } string spec ;
 		public string Binder { get => bond ; set { if( value==bond ) return ; bond = value ; propertyChanged.On(this,"Binder") ; } } string bond ;
 		public Aspectable Source { set { if( DefaultAspect==null ) Aspect = value ; else Resource.Source = value ; } }
@@ -56,38 +57,38 @@ namespace Rob.Act
 		public string Quantlet { get => quantlet ; set => propertyChanged.On(this,"Quantlet",Quantizer=(quantlet=value).Compile<Func<Quantile,IEnumerable<Quant>>>()) ; } string quantlet ;
 		#region Operations
 		public static Quant? operator+( Axe x ) => x?.Sum() ;
-		public static Axe operator-( Axe x ) => x==null ? No : new Axe( i=>-x.Resolve(i) , a=>x.Count ) ;
-		public static Axe operator+( Axe x , Axe y ) => x==null||y==null ? No : new Axe( i=>x.Resolve(i)+y.Resolve(i) , a=>Math.Max(x.Count,y.Count) ) ;
-		public static Axe operator-( Axe x , Axe y ) => x==null||y==null ? No : new Axe( i=>x.Resolve(i)-y.Resolve(i) , a=>Math.Max(x.Count,y.Count) ) ;
-		public static Axe operator*( Axe x , Axe y ) => x==null||y==null ? No : new Axe( i=>x.Resolve(i)*y.Resolve(i) , a=>Math.Max(x.Count,y.Count) ) ;
-		public static Axe operator/( Axe x , Axe y ) => x==null||y==null ? No : new Axe( i=>x.Resolve(i)/y.Resolve(i).Nil() , a=>Math.Max(x.Count,y.Count) ) ;
+		public static Axe operator-( Axe x ) => x==null ? No : new Axe( i=>-x.Resolve(i) , a=>x.Count , x ) ;
+		public static Axe operator+( Axe x , Axe y ) => x==null||y==null ? No : new Axe( i=>x.Resolve(i)+y.Resolve(i) , a=>Math.Max(x.Count,y.Count) , x ) ;
+		public static Axe operator-( Axe x , Axe y ) => x==null||y==null ? No : new Axe( i=>x.Resolve(i)-y.Resolve(i) , a=>Math.Max(x.Count,y.Count) , x ) ;
+		public static Axe operator*( Axe x , Axe y ) => x==null||y==null ? No : new Axe( i=>x.Resolve(i)*y.Resolve(i) , a=>Math.Max(x.Count,y.Count) , x ) ;
+		public static Axe operator/( Axe x , Axe y ) => x==null||y==null ? No : new Axe( i=>x.Resolve(i)/y.Resolve(i).Nil() , a=>Math.Max(x.Count,y.Count) , x ) ;
 		//public static Axe operator^( Axe x , Axe y ) => x==null||y==null ? No : new Axe( i => x.Resolve(i) is Quant a && y.Resolve(i) is Quant b ? Math.Pow(a,b) : null as Quant? , a=>Math.Max(x.Count,y.Count) ) ;
-		public static Axe operator+( Axe x , Quant y ) => x==null ? No : new Axe( i=>x.Resolve(i)+y , a=>x.Count ) ;
-		public static Axe operator-( Axe x , Quant y ) => x==null ? No : new Axe( i=>x.Resolve(i)-y , a=>x.Count ) ;
-		public static Axe operator*( Axe x , Quant y ) => x==null ? No : new Axe( i=>x.Resolve(i)*y , a=>x.Count ) ;
-		public static Axe operator/( Axe x , Quant y ) => x==null ? No : new Axe( i=>x.Resolve(i)/y.nil() , a=>x.Count ) ;
-		public static Axe operator+( Quant x , Axe y ) => y==null ? No : new Axe( i=>x+y.Resolve(i) , a=>y.Count ) ;
-		public static Axe operator-( Quant x , Axe y ) => y==null ? No : new Axe( i=>x-y.Resolve(i) , a=>y.Count ) ;
-		public static Axe operator*( Quant x , Axe y ) => y==null ? No : new Axe( i=>x*y.Resolve(i) , a=>y.Count ) ;
-		public static Axe operator/( Quant x , Axe y ) => y==null ? No : new Axe( i=>x/y.Resolve(i).Nil() , a=>y.Count ) ;
-		public static Axe operator/( bool x , Axe y ) => y==null ? No : new Axe( i=>1D/y.Resolve(i).Nil() , a=>y.Count ) ;
-		public static Axe operator^( Axe x , Quant y ) => x==null ? No : new Axe( i => x.Resolve(i) is Quant a ? Math.Pow(a,y) : null as Quant? , a=>x.Count ) ;
-		public static Axe operator^( Quant x , Axe y ) => y==null ? No : new Axe( i => y.Resolve(i) is Quant a ? Math.Pow(x,a) : null as Quant? , a=>y.Count ) ;
-		public static Axe operator^( Axe x , bool y ) => x==null ? No : new Axe( i => x.Resolve(i) is Quant a ? a>0?Math.Log(a):null as Quant? : null as Quant? , a=>x.Count ) ;
-		public static Axe operator^( bool x , Axe y ) => y==null ? No : new Axe( i => y.Resolve(i) is Quant a ? Math.Exp(a) : null as Quant? , a=>y.Count ) ;
-		public static Axe operator|( Axe x , Axe y ) => x==null ? y : y==null ? x : new Axe( i => x[i]*y[i]??x[i]??y[i] , a=>Math.Max(x.Count,y.Count) ) ;
-		public static Axe operator&( Axe x , Axe y ) => x*y ;
-		public static Axe operator++( Axe x ) => x==null ? No : new Axe( i=>x.Resolve(i+1) , a=>x.Count ) ;
-		public static Axe operator--( Axe x ) => x==null ? No :  new Axe( i=>x.Resolve(i-1) , a=>x.Count ) ;
-		public static Axe operator>>( Axe x , int lev ) => x==null ? No : lev<0 ? x<<-lev : lev==0 ? x : new Axe( i=>x.Resolve(i)-x.Resolve(i-1) , a=>x.Count )>>lev-1 ;
-		public static Axe operator<<( Axe x , int lev ) => x==null ? No : lev<0 ? x>>-lev : lev==0 ? x : new Axe( i=>i.Steps().Sum(x.Resolve) , a=>x.Count )>>lev-1 ;
+		public static Axe operator+( Axe x , Quant y ) => x==null ? No : new Axe( i=>x.Resolve(i)+y , a=>x.Count , x ) ;
+		public static Axe operator-( Axe x , Quant y ) => x==null ? No : new Axe( i=>x.Resolve(i)-y , a=>x.Count , x ) ;
+		public static Axe operator*( Axe x , Quant y ) => x==null ? No : new Axe( i=>x.Resolve(i)*y , a=>x.Count , x ) ;
+		public static Axe operator/( Axe x , Quant y ) => x==null ? No : new Axe( i=>x.Resolve(i)/y.nil() , a=>x.Count , x ) ;
+		public static Axe operator+( Quant x , Axe y ) => y==null ? No : new Axe( i=>x+y.Resolve(i) , a=>y.Count , y ) ;
+		public static Axe operator-( Quant x , Axe y ) => y==null ? No : new Axe( i=>x-y.Resolve(i) , a=>y.Count , y ) ;
+		public static Axe operator*( Quant x , Axe y ) => y==null ? No : new Axe( i=>x*y.Resolve(i) , a=>y.Count , y ) ;
+		public static Axe operator/( Quant x , Axe y ) => y==null ? No : new Axe( i=>x/y.Resolve(i).Nil() , a=>y.Count , y ) ;
+		public static Axe operator/( bool x , Axe y ) => y==null ? No : new Axe( i=>1D/y.Resolve(i).Nil() , a=>y.Count , y ) ;
+		public static Axe operator^( Axe x , Quant y ) => x==null ? No : new Axe( i => x.Resolve(i) is Quant a ? Math.Pow(a,y) : null as Quant? , a=>x.Count , x ) ;
+		public static Axe operator^( Quant x , Axe y ) => y==null ? No : new Axe( i => y.Resolve(i) is Quant a ? Math.Pow(x,a) : null as Quant? , a=>y.Count , y ) ;
+		public static Axe operator^( Axe x , bool y ) => x==null ? No : new Axe( i => x.Resolve(i) is Quant a ? a>0?Math.Log(a):null as Quant? : null as Quant? , a=>x.Count , x ) ;
+		public static Axe operator^( bool x , Axe y ) => y==null ? No : new Axe( i => y.Resolve(i) is Quant a ? Math.Exp(a) : null as Quant? , a=>y.Count , y ) ;
+		public static Axe operator|( Axe x , Axe y ) => x==null ? y : y==null ? x : new Axe( i => x[i]*y[i]??x[i]??y[i] , a=>Math.Max(x.Count,y.Count) , x ) ;
+		public static Axe operator&( Axe x , Axe y ) => x.Centre(y) ;
+		public static Axe operator++( Axe x ) => x==null ? No : new Axe( i=>x.Resolve(i+1) , a=>x.Count , x ) ;
+		public static Axe operator--( Axe x ) => x==null ? No :  new Axe( i=>x.Resolve(i-1) , a=>x.Count , x ) ;
+		public static Axe operator>>( Axe x , int lev ) => x==null ? No : lev<0 ? x<<-lev : lev==0 ? x : new Axe( i=>x.Resolve(i)-x.Resolve(i-1) , a=>x.Count , x )>>lev-1 ;
+		public static Axe operator<<( Axe x , int lev ) => x==null ? No : lev<0 ? x>>-lev : lev==0 ? x : new Axe( i=>i.Steps().Sum(x.Resolve) , a=>x.Count , x )>>lev-1 ;
 		public static Axe operator^( Axe x , Axe y ) => x==null ? No : x.Shift(y) ;
-		public static Axe operator%( Axe x , int dif ) => x==null ? No : new Axe( i=>x.Diff(i,dif) , a=>x.Count-dif ) ;
+		public static Axe operator%( Axe x , int dif ) => x==null ? No : new Axe( i=>x.Diff(i,dif) , a=>x.Count-dif , x ) ;
 		public static Lap operator%( Axe x , Quant dif ) => x.By(dif) ;
-		public static Axe operator%( Axe x , float mod ) => x==null ? No : new Axe( i=>x.Resolve(i)%mod , a=>x.Count ) ;
+		public static Axe operator%( Axe x , float mod ) => x==null ? No : new Axe( i=>x.Resolve(i)%mod , a=>x.Count , x ) ;
 		public static Axe operator%( Axe x , IEnumerable<int> mod ) => x==null ? No : x.Flor(mod) ;
 		public static Axe operator%( Axe x , Support y ) => x==null ? No : x.Flor(y.Fragment) ;
-		public static Axe operator/( Axe x , Lap dif ) => x==null ? No : new Axe( i=>x.Diff(i,dif[i]) , a=>x.Count ) ;
+		public static Axe operator/( Axe x , Lap dif ) => x==null ? No : new Axe( i=>x.Diff(i,dif[i]) , a=>x.Count , x ) ;
 		public static Axe operator%( Axe x , Axe y ) => x==null ? No : x.Rift(y) ;
 		public static IEnumerable<int> operator>( Axe x , Quant? val ) => x?.Count.Steps().Where(i=>x[i]>val) ;
 		public static IEnumerable<int> operator<( Axe x , Quant? val ) => x?.Count.Steps().Where(i=>x[i]<val) ;
@@ -104,25 +105,27 @@ namespace Rob.Act
 		public static implicit operator Axe( Func<int,Quant?> resolver ) => resolver.Get(r=>new Axe(r)) ;
 		public static implicit operator Axe( Quant q ) => new Axe( i=>q ) ;
 		public static implicit operator Axe( int q ) => new Axe( i=>q ) ;
-		public Axe Round => new Axe( i=>Resolve(i).use(Math.Round) , a=>Count ) ;
-		public Axe Skip( int count ) => new Axe( i=>Resolve(count+i) , a=>Math.Max(0,Count-count) ) ;
-		public Axe Wait( int count ) => new Axe( i=>Resolve(i<count?0:i-count) , a=>Math.Max(0,Count-count) ) ;
-		public Axe Take( int count ) => new Axe( Resolve , a=>Math.Min(count,Count) ) ;
-		public Support For( IEnumerable<int> fragment ) => fragment.Get(f=>new HashSet<int>(f)).Get(f=>new Support(f,i=>f.Contains(i)?Resolve(i):null,a=>Count)) ?? No ;
-		public Support Flor( IEnumerable<int> fragment ) => fragment.Get(f=>f.ToArray()).Get(f=>new Support( f , i => Array.IndexOf(f,i) is int at && at>=0 ? Resolve(i)-Resolve(f[at.LastContinualPredecessorIn(f)]) : null , a=>Count )) ?? No ;
+		public static implicit operator Quant?( Axe a ) => +a ;
+		public Axe Round => new Axe( i=>Resolve(i).use(Math.Round) , a=>Count , this ) ;
+		public Axe Skip( int count ) => new Axe( i=>Resolve(count+i) , a=>Math.Max(0,Count-count) , this ) ;
+		public Axe Wait( int count ) => new Axe( i=>Resolve(i<count?0:i-count) , a=>Math.Max(0,Count-count) , this ) ;
+		public Axe Take( int count ) => new Axe( Resolve , a=>Math.Min(count,Count) , this ) ;
+		public Support For( IEnumerable<int> fragment ) => fragment.Get(f=>new HashSet<int>(f)).Get(f=>new Support(f,i=>f.Contains(i)?Resolve(i):null,a=>Count,this)) ?? No ;
+		public Support Flor( IEnumerable<int> fragment ) => fragment.Get(f=>f.ToArray()).Get(f=>new Support( f , i => Array.IndexOf(f,i) is int at && at>=0 ? Resolve(i)-Resolve(f[at.LastContinualPredecessorIn(f)]) : null , a=>Count , this )) ?? No ;
 		public Support this[ IEnumerable<int> fragment ] => For(fragment) ;
-		public Axe Shift( Axe upon , Quant quo = 0 ) => upon==null ? No : new Axe( i=>(quo*i).Get(at=>Shift(upon,(int)at,(int)((i-at)/2))) , a=>Count ) ;
+		public Axe Shift( Axe upon , Quant quo = 0 ) => upon==null ? No : new Axe( i=>(quo*i).Get(at=>Shift(upon,(int)at,(int)((i-at)/2))) , a=>Count , this ) ;
 		public Axe Drift( Axe upon , Quant quo = 0 ) => upon.Shift(this,quo) ;
 		Quant? Diff( int at , int dif ) => (Resolve(at+dif)-Resolve(at))*Math.Sign(dif) ;
 		Quant? Diff( int at , double dif ) { var a = at+dif ; var f = Math.Floor(a) ; var c = Math.Ceiling(a) ; return c==f ? Diff(at,(int)dif) : (Resolve((int)f)*(c-a)+Resolve((int)c)*(a-f)-Resolve(at))*Math.Sign(dif) ; }
 		Quant? Quot( Axe upon , int at , int dif ) => Diff(at,dif)/upon.Diff(at,dif).Nil() ;
 		Quant? Shift( Axe upon , int at , int dis ) => Quot(upon,at+dis,dis)/Quot(upon,at,dis).Nil() ;
-		public Axe Rift( Axe upon , uint quo = 9 ) => upon==null ? No : new Axe( i=>Shift(upon,i,((Count-i)>>1)-1) , a=>(int)(Count*quo/(1D+quo)) ) ;
+		public Axe Rift( Axe upon , uint quo = 9 ) => upon==null ? No : new Axe( i=>Shift(upon,i,((Count-i)>>1)-1) , a=>(int)(Count*quo/(1D+quo)) , this ) ;
 		public Lap Lap( Quant dif ) => new Lap(this,dif) ;
 		public Lap By( Quant dif ) => Lap(dif) ;
-		public Axe Nil( Predicate<Quant> nil ) => new Axe( i=>Resolve(i).Nil(nil) , a=>Count ) ;
-		public Axe PacePower( Quant grade = 0 , Quant? resi = null ) => new Axe( i=>Resolve(i).PacePower(grade,(Aspect as Aspect)?.Resistance(resi),Aspect?.Raw?.Profile?.Mass) , a=>Count ) ;
-		public Axe PowerPace( Quant grade = 0 , Quant? resi = null ) => new Axe( i=>Resolve(i).PowerPace(grade,resi??Aspect?.Raw?.Resister,Aspect?.Raw?.Profile?.Mass) , a=>Count ) ;
+		public Axe Nil( Predicate<Quant> nil ) => new Axe( i=>Resolve(i).Nil(nil) , a=>Count , this ) ;
+		public Axe PacePower( Quant grade = 0 , Quant? resi = null , Quant flow = 0 ) => new Axe( i=>Resolve(i).PacePower(grade,(Aspect as Aspect)?.Resistance(resi)??0,flow,Aspect?.Raw?.Profile?.Mass) , a=>Count , this ) ;
+		public Axe PowerPace( Quant grade = 0 , Quant? resi = null , Quant flow = 0 ) => new Axe( i=>Resolve(i).PowerPace(grade,resi??Aspect?.Raw?.Resister??0,flow,Aspect?.Raw?.Profile?.Mass) , a=>Count , this ) ;
+		public Axe Centre( Axe mesure ) => this*mesure/+mesure ;
 		#endregion
 		#region De/Serialization
 		/// <summary>
@@ -153,7 +156,7 @@ namespace Rob.Act
 			public Path Raw( int at = 0 ) => Base[at].Raw ;
 			public Support this[ IEnumerable<int> fragment ] => One[fragment] ;
 		}
-		public class Support : Axe { public readonly IEnumerable<int> Fragment ; internal Support( IEnumerable<int> fragment , Func<int,Quant?> resolver = null , Func<Aspectable,int> counter = null ) : base(resolver,counter) { Fragment = fragment ; } }
+		public class Support : Axe { public readonly IEnumerable<int> Fragment ; internal Support( IEnumerable<int> fragment , Func<int,Quant?> resolver = null , Func<Aspectable,int> counter = null , Axe source = null ) : base(resolver,counter,source) => Fragment = fragment ; }
 	}
 	public class Quantile : Aid.Gettable<int,Quant> , Aid.Countable<Quant>
 	{
@@ -225,15 +228,15 @@ namespace Rob.Act
 			protected override Aspectable DefaultAspect => Context?.Spectrum ;
 			bool Intensive => Axis==Axis.Time || Axis==Axis.Date || Axis==Axis.Bit || Axis==Axis.Beat ;
 			#region Operations
-			public Act.Axe Propagation( (Quant time,Quant potential) a , (Quant time,Quant potential) b ) => new Act.Axe( i=>(Resolve(i),Intensive).Propagation(a,b) , c=>Count ) ;
-			public Act.Axe Propagation( (TimeSpan time,Quant potential) a , (TimeSpan time,Quant potential) b ) => new Act.Axe( i=>(Resolve(i),Intensive).Propagation(a,b) , c=>Count ) ;
-			public Act.Axe Propagation( (Quant potential,TimeSpan time) a , (Quant potential,TimeSpan time) b ) => new Act.Axe( i=>(Resolve(i),Intensive).Propagation(a,b) , c=>Count ) ;
-			public Act.Axe Propagation( params (Quant time,Quant potential)[] a ) => a?.Length>1 ? a.Duplets().Get( d => new Act.Axe( i=>d.Average(p=>(Resolve(i),Intensive).Propagation(p.A,p.B)) , c=>Count ) ) : No ;
-			public Act.Axe Propagation( params (TimeSpan time,Quant potential)[] a ) => a?.Length>1 ? a.Duplets().Get( d => new Act.Axe( i=>d.Average(p=>(Resolve(i),Intensive).Propagation(p.A,p.B)) , c=>Count ) ) : No ;
-			public Act.Axe Propagation( params (Quant potential,TimeSpan time)[] a ) => a?.Length>1 ? a.Duplets().Get( d => new Act.Axe( i=>d.Average(p=>(Resolve(i),Intensive).Propagation(p.A,p.B)) , c=>Count ) ) : No ;
-			public Act.Axe Propagation( params (Quant time,Quant potential,Quant weight)[] a ) => a?.Length>1 ? a.Duplets().Get( d => new Act.Axe( i=>d.Centre(p=>(Resolve(i),Intensive).Propagation((p.A.time,p.A.potential),(p.B.time,p.B.potential)),p=>p.A.weight*p.B.weight) , c=>Count ) ) : No ;
-			public Act.Axe Propagation( params (TimeSpan time,Quant potential,Quant weight)[] a ) => a?.Length>1 ? a.Duplets().Get( d => new Act.Axe( i=>d.Centre(p=>(Resolve(i),Intensive).Propagation((p.A.time,p.A.potential),(p.B.time,p.B.potential)),p=>p.A.weight*p.B.weight) , c=>Count ) ) : No ;
-			public Act.Axe Propagation( params (Quant potential,TimeSpan time,Quant weight)[] a ) => a?.Length>1 ? a.Duplets().Get( d => new Act.Axe( i=>d.Centre(p=>(Resolve(i),Intensive).Propagation((p.A.time,p.A.potential),(p.B.time,p.B.potential)),p=>p.A.weight*p.B.weight) , c=>Count ) ) : No ;
+			public Act.Axe Propagation( (Quant time,Quant potential) a , (Quant time,Quant potential) b ) => new Act.Axe( i=>(Resolve(i),Intensive).Propagation(a,b) , c=>Count , this ) ;
+			public Act.Axe Propagation( (TimeSpan time,Quant potential) a , (TimeSpan time,Quant potential) b ) => new Act.Axe( i=>(Resolve(i),Intensive).Propagation(a,b) , c=>Count , this ) ;
+			public Act.Axe Propagation( (Quant potential,TimeSpan time) a , (Quant potential,TimeSpan time) b ) => new Act.Axe( i=>(Resolve(i),Intensive).Propagation(a,b) , c=>Count , this ) ;
+			public Act.Axe Propagation( params (Quant time,Quant potential)[] a ) => a?.Length>1 ? a.Duplets().Get( d => new Act.Axe( i=>d.Average(p=>(Resolve(i),Intensive).Propagation(p.A,p.B)) , c=>Count , this ) ) : No ;
+			public Act.Axe Propagation( params (TimeSpan time,Quant potential)[] a ) => a?.Length>1 ? a.Duplets().Get( d => new Act.Axe( i=>d.Average(p=>(Resolve(i),Intensive).Propagation(p.A,p.B)) , c=>Count , this ) ) : No ;
+			public Act.Axe Propagation( params (Quant potential,TimeSpan time)[] a ) => a?.Length>1 ? a.Duplets().Get( d => new Act.Axe( i=>d.Average(p=>(Resolve(i),Intensive).Propagation(p.A,p.B)) , c=>Count , this ) ) : No ;
+			public Act.Axe Propagation( params (Quant time,Quant potential,Quant weight)[] a ) => a?.Length>1 ? a.Duplets().Get( d => new Act.Axe( i=>d.Centre(p=>(Resolve(i),Intensive).Propagation((p.A.time,p.A.potential),(p.B.time,p.B.potential)),p=>p.A.weight*p.B.weight) , c=>Count , this ) ) : No ;
+			public Act.Axe Propagation( params (TimeSpan time,Quant potential,Quant weight)[] a ) => a?.Length>1 ? a.Duplets().Get( d => new Act.Axe( i=>d.Centre(p=>(Resolve(i),Intensive).Propagation((p.A.time,p.A.potential),(p.B.time,p.B.potential)),p=>p.A.weight*p.B.weight) , c=>Count , this ) ) : No ;
+			public Act.Axe Propagation( params (Quant potential,TimeSpan time,Quant weight)[] a ) => a?.Length>1 ? a.Duplets().Get( d => new Act.Axe( i=>d.Centre(p=>(Resolve(i),Intensive).Propagation((p.A.time,p.A.potential),(p.B.time,p.B.potential)),p=>p.A.weight*p.B.weight) , c=>Count , this ) ) : No ;
 			#endregion
 		}
 		public static Axable operator&( Path path , string name ) => path.Spectrum[name] ;
@@ -249,5 +252,6 @@ namespace Rob.Act
 		public static Axe d( this Lap dif , Axe x , Axe y ) => dif.quo(x,y) ;
 		public static IEnumerable<Quant> Refine( this IEnumerable<Quant?> source ) => source?.OfType<Quant>().Distinct().OrderBy(q=>q) ;
 		internal static int LastContinualPredecessorIn( this int at , params int[] file ) { if( at<file.Length ) while( at>0 ) if( file[at-1]+1<file[at] ) return at ; else --at ; return at ; }
+		public static Axe Plus( this Axe x , Axe y ) => x==null ? y : y==null ? x : new Axe( i=>(x[i]??0)+(y[i]??0) , a=>Math.Max(x.Count,y.Count) , x ) ;
 	}
 }

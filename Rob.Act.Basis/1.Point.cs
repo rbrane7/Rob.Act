@@ -12,7 +12,7 @@ using System.Text.RegularExpressions;
 namespace Rob.Act
 {
 	using Quant = Double ;
-	public enum Taglet { Object , Drag , Subject , Locus , Refine , Draw }
+	public enum Taglet { Object , Drag , Subject , Locus , Refine , Grade , Flow }
 	public interface Tagable : IEquatable<Tagable> , IEnumerable<string> { void Add( string item ) ; string this[ int key ] { get ; set ; } string this[ Taglet tag ] { get ; set ; } string this[ string key ] { get ; set ; } int Count { get ; } void Clear() ; void Adopt( Tagable tags ) ; string Uri { get ; } }
 	public class Tagger : List<string> , Tagable
 	{
@@ -42,9 +42,10 @@ namespace Rob.Act
 	}
 	public class Point : Pre.Point , Accessible<Axis,Quant?> , INotifyPropertyChanged
 	{
+		protected internal Pathable Owner ;
 		#region Construction
-		public Point( DateTime date ) : base(date) {}
-		public Point( Point point ) : base(point) {}
+		public Point( DateTime date , Pathable owner = null ) : base(date) => Owner = owner ;
+		public Point( Point point , Pathable owner = null ) : base(point) => Owner = owner??point?.Owner ;
 		public override void Adopt( Pointable point ) { base.Adopt(point) ; if( (point as Point)?.Tags!=null || Tags!=null ) Tag.Adopt(point.Tag) ; }
 		#endregion
 
@@ -68,17 +69,18 @@ namespace Rob.Act
 		#region Tags
 		public override Tagable Tag => tags ?? System.Threading.Interlocked.CompareExchange(ref tags,new Tagger(p=>{tag=null;if(Spec==Despect)Spec=null;propertyChanged.On(this,p??"Tags");}),null) ?? tags ; Tagger tags ;
 		public string Tags { get => tag ?? ( tag = tags.Stringy() ) ; set { if( value==tag ) return ; tag = null ; (Tag as Tagger)[value.ExtractTags()] = true ; propertyChanged.On(this,"Subject,Object,Locus,Refine") ; } } string tag ;
-		public string Subject { get => tags?[Taglet.Subject] ; set { if( value?.Length>0 ) Tag[Taglet.Subject] = value ; else tags.Set(t=>t[Taglet.Subject]=value) ; } }
-		public string Object { get => tags?[Taglet.Object] ; set { if( value?.Length>0 ) Tag[Taglet.Object] = value ; else tags.Set(t=>t[Taglet.Object]=value) ; } }
-		public string Locus { get => tags?[Taglet.Locus] ; set { if( value?.Length>0 ) Tag[Taglet.Locus] = value ; else tags.Set(t=>t[Taglet.Locus]=value) ; } }
-		public string Refine { get => tags?[Taglet.Refine] ; set { if( value?.Length>0 ) Tag[Taglet.Refine] = value ; else tags.Set(t=>t[Taglet.Refine]=value) ; } }
-		public string Dragstr { get => tags?[Taglet.Drag] ; set { if( value?.Length>0 ) Tag[Taglet.Drag] = value ; else tags.Set(t=>t[Taglet.Drag]=value) ; } }
-		public string Drawstr { get => tags?[Taglet.Draw] ; set { if( value?.Length>0 ) Tag[Taglet.Draw] = value ; else tags.Set(t=>t[Taglet.Draw]=value) ; } }
+		public string Subject { get => tags?[Taglet.Subject]??Owner?.Subject ; set { if( value?.Length>0 ) Tag[Taglet.Subject] = value ; else tags.Set(t=>t[Taglet.Subject]=value) ; } }
+		public string Object { get => tags?[Taglet.Object]??Owner?.Object ; set { if( value?.Length>0 ) Tag[Taglet.Object] = value ; else tags.Set(t=>t[Taglet.Object]=value) ; } }
+		public string Locus { get => tags?[Taglet.Locus]??Owner?.Locus ; set { if( value?.Length>0 ) Tag[Taglet.Locus] = value ; else tags.Set(t=>t[Taglet.Locus]=value) ; } }
+		public string Refine { get => tags?[Taglet.Refine]??Owner?.Refine ; set { if( value?.Length>0 ) Tag[Taglet.Refine] = value ; else tags.Set(t=>t[Taglet.Refine]=value) ; } }
+		public string Dragstr { get => tags?[Taglet.Drag]??(Owner as Path)?.Dragstr ; set { if( value?.Length>0 ) Tag[Taglet.Drag] = value ; else tags.Set(t=>t[Taglet.Drag]=value) ; } }
+		public string Gradstr { get => tags?[Taglet.Grade]??(Owner as Path)?.Gradstr ; set { if( value?.Length>0 ) Tag[Taglet.Grade] = value ; else tags.Set(t=>t[Taglet.Grade]=value) ; } }
+		public string Flowstr { get => tags?[Taglet.Flow]??(Owner as Path)?.Flowstr ; set { if( value?.Length>0 ) Tag[Taglet.Flow] = value ; else tags.Set(t=>t[Taglet.Flow]=value) ; } }
 		#endregion
 
 		#region Vector
 		public static Point Zero( DateTime date ) => new Point(date){ Time = TimeSpan.Zero }.Set( p=>{ for( uint i=0 ; i<p.Dimension ; ++i ) p[i] = 0 ; } ) ;
-		public override uint Dimension => (uint?)((Quant?[])this)?.Length ?? (uint)Axis.Time ;
+		public override uint Dimension => (uint?)((Quant?[])this)?.Length ?? (uint)Axis.Time ; // Dimension doesn't include Time and Date components , as they state is separate fields . Therefore Axis.Time limits index .
 		public new Quant? this[ uint axis ] { get => base[axis] ; set => base[axis] = value ; } // because of WFP bug proprty of Binding.Path property resolution on inedexers
 		public virtual Quant? this[ Axis axis ] { get => axis==Axis.Time ? Time.TotalSeconds : axis==Axis.Date ? Date.TotalSeconds() : this[(uint)axis] ; set { if( axis<Axis.Time ) this[(uint)axis] = value ; else if( axis>Axis.Date ) this[(uint)axis-2] = value ; else if( value is Quant q ) if( axis==Axis.Time ) Time = TimeSpan.FromSeconds(q) ; else Date = DateTime.MinValue.AddSeconds(q) ; } }
 		#endregion
@@ -89,31 +91,32 @@ namespace Rob.Act
 		public Quant? Energy { get => this[Axis.Energy] ; set => this[Axis.Energy] = value ; }
 		public Quant? Beat { get => this[Axis.Beat] ; set => this[Axis.Beat] = value ; }
 		public Quant? Bit { get => this[Axis.Bit] ; set => this[Axis.Bit] = value ; }
-		public Quant? Effort { get => this[Axis.Effort] ; set => this[Axis.Effort] = value ; }
+		public Quant? Grade { get => this[Axis.Grade] ; set => this[Axis.Grade] = value ; }
 		public Quant? Drag { get => this[Axis.Drag] ; set => this[Axis.Drag] = value ; }
-		public Quant? Draw { get => this[Axis.Draw] ; set => this[Axis.Draw] = value ; }
+		public Quant? Flow { get => this[Axis.Flow] ; set => this[Axis.Flow] = value ; }
 		#endregion
 
 		#region Quotient
 		public Quant? Distance => Dist / Transfer ;
 		public Quant? Speed => Distance.Quotient(Time.TotalSeconds) ;
 		public Quant? Pace => Time.TotalSeconds / Distance ;
-		public Quant? Power => Object==Basis.Device.Skierg.Code ? (Time.TotalSeconds/Dist).PacePower() : Energy.Quotient(Time.TotalSeconds) ;
+		public Quant? Power => Object==Basis.Device.Skierg.Code ? Time.TotalSeconds.Quotient(Dist).PacePower(drag:Basis.Device.Skierg.Draw) : Energy.Quotient(Time.TotalSeconds) ;
 		public Quant? Force => Energy.Quotient(Distance) ;
 		public Quant? Beatage => Energy.Quotient(Beat) ;
 		public Quant? Bitage => Energy.Quotient(Bit) ;
 		public Quant? Beatrate => Beat.Quotient(Time.TotalMinutes) ;
 		public Quant? Bitrate => Bit.Quotient(Time.TotalMinutes) ;
-		public Quant? Draglet { get => Drag.Quotient(Bit) ; set => Drag = value*Bit ; }
-		public Quant? Drawlet { get => Draw.Quotient(Bit) ; set => Draw = value*Bit ; }
+		public Quant? Granelet { get => Grade.Quotient(Dist) ; set => Grade = value*Dist ; }
+		public Quant? Draglet { get => Drag.Quotient(Dist) ; set => Drag = value*Dist ; }
+		public Quant? Flowlet { get => Flow.Quotient(Dist) ; set => Flow = value*Dist ; }
 		public Bipole? Gradelet => Asc / Dist ;
 		public Bipole? Bendlet => Dev / Dist ;
 		#endregion
 
 		#region Query
 		public bool IsGeo => this[Axis.Lon]!=null || this[Axis.Lat]!=null ;
-		public Quant Transfer => Math.Pow(Draglet??1,1D/3D) ;
-		public Quant Resister => (Draw??1)*(Drag??1) ;
+		public Quant Transfer => Basis.Device.Skierg.Code==Object ? Math.Pow(Draglet??1,1D/3D) : 1 ;
+		public Quant Resister => Object==Basis.Device.Skierg.Code ? Basis.Device.Skierg.Draw : Drag??Path.SubjectProfile.By(Subject)?.Resi??0 ;
 		public override string Exposion => "{0}={1}bW".Comb("{0}/{1}".Comb(Power.Get(p=>$"{Math.Round(p)}W"),Beatrate.Get(b=>$"{Math.Round(b)}`b")),Beatage.use(Math.Round))+$" {Speed*3.6:0.00}km/h" ;
 		public override string Trace => $"{Resister.Get(v=>$"Resist={v:0.00}")} {Asc.Get(v=>$"Ascent={v:0}m")} {Gradelet.Get(v=>$"Grade={v:.000}")} {Dev.Get(v=>$"Devia={v:0}m")} {Bendlet.Get(v=>$"Bend={v:.000}")} {Quantities} {Mark.nil(m=>m==Mark.No)}" ;
 		#endregion
@@ -147,9 +150,11 @@ namespace Rob.Act
 	}
 	public static class PointExtension
 	{
-		public static Quant? Draglet( this string value ) => value.Parse<int>()/100D ;
-		public static string Dragstr( this Quant? value ) => (value*100)?.ToString() ;
-		public static Quant? Drawlet( this string value ) => value.Parse<int>()/100D ;
-		public static string Drawstr( this Quant? value ) => (value*100)?.ToString() ;
+		public static Quant? Draglet( this string value ) => value.Parse<Quant>() ;
+		public static string Dragstr( this Quant? value ) => value?.ToString() ;
+		public static Quant? Gradlet( this string value ) => value.Parse<Quant>() ;
+		public static string Gradstr( this Quant? value ) => value?.ToString() ;
+		public static Quant? Flowlet( this string value ) => value.Parse<Quant>() ;
+		public static string Flowstr( this Quant? value ) => value?.ToString() ;
 	}
 }

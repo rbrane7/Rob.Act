@@ -16,7 +16,7 @@ namespace Rob.Act.Gen
 	{
 		public string Subject { get ; protected set ; }
 		public Book( string subject = null ) => Subject = subject ;
-		public Path this[ DateTime date ] => this.FirstOrDefault(p=>p.Date==date) ;
+		public Path this[ DateTime date ] => this[p=>p.Date==date] ;
 		public static Book operator+( Book book , Path path ) => book.Set(b=>path.Set(b.Add)) ;
 		public static Book operator-( Book book , Path path ) => book.Set(b=>path.Set(b.Remove)) ;
 		public static Book operator-( Book book , Predicate<Path> path ) => book.Set(b=>path.Set(b.Remove)) ;
