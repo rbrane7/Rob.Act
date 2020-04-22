@@ -125,28 +125,33 @@ namespace Rob.Act
 		internal static Quant? Vibre( this Path path , int at ) => path[at].Speed / path.Veloa(at) ;
 		#endregion
 
-		#region Curves
-		public static Quant Mass = Profile.Default.Mass ;
-		public static Quant? Propagation( this (Quant? potential,bool inner) rad , (Quant time,Quant potential) a , (Quant time,Quant potential) b ) => rad.inner ? rad.potential?.Propagation(a,b) : rad.potential?.Copropagation(a,b) ;
-		public static Quant? Propagation( this (Quant? potential,bool inner) rad , (TimeSpan time,Quant potential) a , (TimeSpan time,Quant potential) b ) => rad.inner ? rad.potential?.Propagation(a,b) : rad.potential?.Copropagation(a,b) ;
-		public static Quant? Propagation( this (Quant? potential,bool inner) rad , (Quant potential,TimeSpan time) a , (Quant potential,TimeSpan time) b ) => 1/rad.Propagation((a.time,a.potential),(b.time,b.potential)) ;
-		public static Quant? Propagation( this Quant time , (Quant time,Quant potential) a , (Quant time,Quant potential) b )
-		{
-			if( a.time!=b.time && a.potential!=0 && b.potential!=0 && a.time>0 && b.time>0 && time>0 ); else return null ;
-			var t = Math.Log(time/a.time)/Math.Log(b.time/a.time) ; return (a.time/a.potential+(b.time/b.potential-a.time/a.potential)*t).nil(v=>v<=0) ;
-		}
-		public static Quant? Copropagation( this Quant potential , (Quant time,Quant potential) a , (Quant time,Quant potential) b ) => a.time!=b.time && a.potential!=0 && b.potential!=0 && a.time>0 && b.time>0 && potential>0 ? (a.time/a.potential*Math.Pow(potential/a.potential,(b.time/b.potential-a.time/a.potential)/Math.Log(b.potential/a.potential)/(a.time/a.potential))) : null as Quant? ;
-		public static Quant? Propagation( this Quant time , (TimeSpan time,Quant potential) a , (TimeSpan time,Quant potential) b ) => time.Propagation((a.time.TotalSeconds,a.potential),(b.time.TotalSeconds,b.potential)) ;
-		public static Quant? Propagation( this Quant time , (Quant potential,TimeSpan time) a , (Quant potential,TimeSpan time) b ) => 1/time.Propagation((a.time,a.potential),(b.time,b.potential)) ;
-		public static Quant? Copropagation( this Quant potential , (TimeSpan time,Quant potential) a , (TimeSpan time,Quant potential) b ) => potential.Copropagation((a.time.TotalSeconds,a.potential),(b.time.TotalSeconds,b.potential)) ;
-		public static Quant? Copropagation( this Quant potential , (Quant potential,TimeSpan time) a , (Quant potential,TimeSpan time) b ) => 1/potential.Copropagation((a.time,a.potential),(b.time,b.potential)) ;
-		public static Quant? PacePower( this Quant? pace , Quant grade = 0 , Quant drag = 0 , Quant flow = 0 , Quant? mass = null ) => pace!=0 ? (grade*Gravity*(mass??Mass)).Get(g=>g*Histeresis+(g+grade.Recuperation()*(flow+drag/pace)/pace)/pace) : null as Quant? ;
-		public static Quant? PacePower( this Quant? pace , (Quant grade,Quant grane) g , Quant drag = 0 , Quant flow = 0 , Quant? mass = null ) => pace.PacePower(g.GradeGrane(),drag,flow,mass) ;
+		public static Quant Mass = Profile.Default.Mass , Tranq = Profile.Default.Tranq ;
+
+		#region Propagation
+		public static Quant? Propagation( this Quant time , (Quant time,Quant potential) a , (Quant time,Quant potential) b , Quant? tranq = null ) => a.time!=b.time && a.potential!=0 && b.potential!=0 && a.time*b.time>0 && time*a.time>0 ?
+			(a.time/a.potential/Math.Tanh(time/(tranq??Tranq))+(b.time/b.potential-a.time/a.potential)*Math.Log(time/a.time)/Math.Log(b.time/a.time)).nil(v=>v<=0) : null as Quant? ;
+		public static Quant? Copropagation( this Quant potential , (Quant time,Quant potential) a , (Quant time,Quant potential) b , Quant? tranq = null ) => a.time!=b.time && a.potential!=0 && b.potential!=0 && a.time>0 && b.time>0 && potential>0 ?
+			a.time/a.potential*Math.Pow(potential/a.potential,(b.time/b.potential-a.time/a.potential)/Math.Log(b.potential/a.potential)/(a.time/a.potential))*Math.Tanh(potential/(tranq??Tranq)) : null as Quant? ;
+		#endregion
+		#region Propagators
+		public static Quant? Propagation( this (Quant? potential,bool inner) rad , (Quant time,Quant potential) a , (Quant time,Quant potential) b , Quant? tranq = null ) => rad.inner ? rad.potential?.Propagation(a,b,tranq) : rad.potential?.Copropagation(a,b,tranq) ;
+		public static Quant? Propagation( this (Quant? potential,bool inner) rad , (TimeSpan time,Quant potential) a , (TimeSpan time,Quant potential) b , Quant? tranq = null ) => rad.inner ? rad.potential?.Propagation(a,b,tranq) : rad.potential?.Copropagation(a,b,tranq) ;
+		public static Quant? Propagation( this (Quant? potential,bool inner) rad , (Quant potential,TimeSpan time) a , (Quant potential,TimeSpan time) b , Quant? tranq = null ) => 1/rad.Propagation((a.time,a.potential),(b.time,b.potential),tranq) ;
+		public static Quant? Propagation( this Quant time , (TimeSpan time,Quant potential) a , (TimeSpan time,Quant potential) b , Quant? tranq = null ) => time.Propagation((a.time.TotalSeconds,a.potential),(b.time.TotalSeconds,b.potential),tranq) ;
+		public static Quant? Propagation( this Quant time , (Quant potential,TimeSpan time) a , (Quant potential,TimeSpan time) b , Quant? tranq = null ) => 1/time.Propagation((a.time,a.potential),(b.time,b.potential),tranq) ;
+		public static Quant? Copropagation( this Quant potential , (TimeSpan time,Quant potential) a , (TimeSpan time,Quant potential) b , Quant? tranq = null ) => potential.Copropagation((a.time.TotalSeconds,a.potential),(b.time.TotalSeconds,b.potential),tranq) ;
+		public static Quant? Copropagation( this Quant potential , (Quant potential,TimeSpan time) a , (Quant potential,TimeSpan time) b , Quant? tranq = null ) => 1/potential.Copropagation((a.time,a.potential),(b.time,b.potential),tranq) ;
+		#endregion
+
+		#region Transformators
 		public static Quant? PowerPace( this Quant? power , Quant grade = 0 , Quant drag = 0 , Quant flow = 0 , Quant? mass = null )
 		{
 			if( power is Quant p );else return null ; var g = grade*Gravity*(mass??Mass) ; var d = drag ; var f = flow ; if( p==0 && d*g>=0 ) return null ;
 			return p==0 ? 1/Math.Sqrt(Math.Abs(g/3*d)) : 1/(d*g<0?p+Math.Sign(p)*Math.Sqrt(Math.Abs(g/3*d)):p).Radix(u=>(g+(f+d*u)*u)*u-p,u=>g+(2*f+3*d*u)*u).Nil() ;
 		}
+		public static Quant? PacePower( this Quant? pace , Quant grade = 0 , Quant drag = 0 , Quant flow = 0 , Quant? mass = null ) => pace!=0 ?
+			(grade*Gravity*(mass??Mass)).Get(g=>g*Histeresis+(g+grade.Recuperation()*(flow+drag/pace)/pace)/pace) : null as Quant? ;
+		public static Quant? PacePower( this Quant? pace , (Quant grade,Quant grane) g , Quant drag = 0 , Quant flow = 0 , Quant? mass = null ) => pace.PacePower(g.GradeGrane(),drag,flow,mass) ;
 		static Quant Recuperation( this Quant grade ) => grade<0 ? 1-Math.Tanh(grade*GravityRecuperation).Sqr() : 1 ;
 		public static Quant GravityRecuperation = 200 , AirResistance = .4 , Histeresis = 1 ;
 		static Quant GradeGrane( this (Quant grade,Quant grane) g ) => g.grade.nil(v=>Math.Abs(v)>1) is Quant a ? a+g.grane*Math.Sqrt(1-a.Sqr()) : g.grane ;
