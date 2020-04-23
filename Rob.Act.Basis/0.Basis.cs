@@ -129,7 +129,7 @@ namespace Rob.Act
 
 		#region Propagation
 		public static Quant? Propagation( this Quant time , (Quant time,Quant potential) a , (Quant time,Quant potential) b , Quant? tranq = null ) => a.time!=b.time && a.potential!=0 && b.potential!=0 && a.time*b.time>0 && time*a.time>0 ?
-			(a.time/a.potential/Math.Tanh(time/(tranq??Tranq))+(b.time/b.potential-a.time/a.potential)*Math.Log(time/a.time)/Math.Log(b.time/a.time)).nil(v=>v<=0) : null as Quant? ;
+			(a.time/a.potential/Math.Tanh(time/(tranq??Tranq))+(b.time/b.potential-a.time/a.potential)*Math.Log(time/a.time)/Math.Log(b.time/a.time)) : null as Quant? ;
 		public static Quant? Copropagation( this Quant potential , (Quant time,Quant potential) a , (Quant time,Quant potential) b , Quant? tranq = null ) => a.time!=b.time && a.potential!=0 && b.potential!=0 && a.time>0 && b.time>0 && potential>0 ?
 			a.time/a.potential*Math.Pow(potential/a.potential,(b.time/b.potential-a.time/a.potential)/Math.Log(b.potential/a.potential)/(a.time/a.potential))*Math.Tanh(potential/(tranq??Tranq)) : null as Quant? ;
 		#endregion

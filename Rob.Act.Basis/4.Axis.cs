@@ -78,6 +78,8 @@ namespace Rob.Act
 		public static Axe operator^( bool x , Axe y ) => y==null ? No : new Axe( i => y.Resolve(i) is Quant a ? Math.Exp(a) : null as Quant? , a=>y.Count , y ) ;
 		public static Axe operator|( Axe x , Axe y ) => x==null ? y : y==null ? x : new Axe( i => x[i]*y[i]??x[i]??y[i] , a=>Math.Max(x.Count,y.Count) , x ) ;
 		public static Axe operator&( Axe x , Axe y ) => x.Centre(y) ;
+		public static Axe operator&( Axe x , Quant y ) => x.Nil(v=>v>y) ;
+		public static Axe operator&( Quant x , Axe y ) => y.Nil(v=>v<x) ;
 		public static Axe operator++( Axe x ) => x==null ? No : new Axe( i=>x.Resolve(i+1) , a=>x.Count , x ) ;
 		public static Axe operator--( Axe x ) => x==null ? No :  new Axe( i=>x.Resolve(i-1) , a=>x.Count , x ) ;
 		public static Axe operator>>( Axe x , int lev ) => x==null ? No : lev<0 ? x<<-lev : lev==0 ? x : new Axe( i=>x.Resolve(i)-x.Resolve(i-1) , a=>x.Count , x )>>lev-1 ;
