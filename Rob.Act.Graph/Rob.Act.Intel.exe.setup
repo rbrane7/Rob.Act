@@ -11,7 +11,7 @@
 	SpectrumBinds = []{ string.Empty , string.Empty , ':0.0m' , ':0.0m' , ':0.00m' , string.Empty , ':0' , string.Empty , ':0J' , ':0.00m' , '(time.FromSeconds(.)):h\:mm\:ss\.f' , '(.(date.MinValue.AddSeconds(.))):yyMMdd\.hh\:mm\:ss\.f' } ,
 	ActionAssocier = (p,a)=>p.Action==a.Spec ,
 	SubjectMass = 76 ,
-	Altiplane = (0.25,10D,2B) ,
+	Altiplane = (0.0,10D,2B) ,
 }
 ;
 System.Diagnostics.{ Trace.Listeners.Add(Aid.Diagnostics.StoreListener(@"Destiny=Run\Local.log"){TraceOutputOptions=type.DateTime}) ; Trace.AutoFlush = true ; Trace.TraceInformation('Started') } ;
