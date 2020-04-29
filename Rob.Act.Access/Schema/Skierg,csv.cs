@@ -42,9 +42,9 @@ namespace Rob.Act
 				}
 			}
 			public static implicit operator Path( Skierg work ) =>
-				new Path(work.Date,work.Data.Select(p=>new Point(work.Date+p.Time){ Time = p.Time , Dist = p.Distance , Energy = p.Energy , Flow = p.Effort , Beat = p.Beat , Bit = p.Bit , Drag = p.Drag.nil() }))
+				new Path(work.Date,work.Data.Select(p=>new Point(work.Date+p.Time){ Time = p.Time , Dist = p.Distance , Energy = p.Energy , Fuel = p.Effort , Beat = p.Beat , Bit = p.Bit , Drag = p.Drag.nil() }))
 				{ Action = work.Spec , Tags = $"{Basis.Device.Skierg.Code} {work.Data[work.Data.Count-1].get(d=>d.Drag/d.Distance):0.00} {work.Subject} {work.Locus} {work.Refine}" }
-				.Set(p=>{ var l = work.Data[work.Data.Count-1] ; var f = work.Data[0] ; p.Dist = l.Distance-f.Distance ; p.Time = l.Time-f.Time ; p.Energy = l.Energy-f.Energy ; p.Flow = l.Effort-f.Effort ; p.Beat = l.Beat-f.Beat ; p.Bit = l.Bit-f.Bit ; p.Drag = l.Drag-f.Drag ; }) ;
+				.Set(p=>{ var l = work.Data[work.Data.Count-1] ; var f = work.Data[0] ; p.Dist = l.Distance-f.Distance ; p.Time = l.Time-f.Time ; p.Energy = l.Energy-f.Energy ; p.Fuel = l.Effort-f.Effort ; p.Beat = l.Beat-f.Beat ; p.Bit = l.Bit-f.Bit ; p.Drag = l.Drag-f.Drag ; }) ;
 			public static explicit operator Skierg( Path data ) => throw new NotImplementedException() ;
 			public static implicit operator string( Skierg data ) => throw new NotImplementedException() ;
 		}

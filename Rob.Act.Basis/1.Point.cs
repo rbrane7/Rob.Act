@@ -94,6 +94,7 @@ namespace Rob.Act
 		public Quant? Grade { get => this[Axis.Grade] ; set => this[Axis.Grade] = value ; }
 		public Quant? Drag { get => this[Axis.Drag] ; set => this[Axis.Drag] = value ; }
 		public Quant? Flow { get => this[Axis.Flow] ; set => this[Axis.Flow] = value ; }
+		public Quant? Fuel { get => this[Axis.Flow] ; set => this[Axis.Flow] = value ; }
 		#endregion
 
 		#region Quotient
