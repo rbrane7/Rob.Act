@@ -103,9 +103,9 @@
             </DataGrid.CommandBindings>
         </DataGrid>
         <Grid Grid.Row="1">
-            <Grid.ColumnDefinitions><ColumnDefinition Width="6*"/><ColumnDefinition Width="15"/></Grid.ColumnDefinitions>
+            <Grid.ColumnDefinitions><ColumnDefinition/></Grid.ColumnDefinitions>
             <Grid>
-                <Grid.RowDefinitions><RowDefinition/><RowDefinition Height="22"/></Grid.RowDefinitions>
+                <Grid.RowDefinitions><RowDefinition/></Grid.RowDefinitions>
                 <DataGrid Name="AspectsGrid" ItemsSource="{Binding Aspects}" Margin="2" AutoGenerateColumns="False" SelectionChanged="AspectTabs_Selected">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Aspect" Binding="{Binding Spec}" Width="*"/>
@@ -115,9 +115,7 @@
                         <CommandBinding Command="Delete" Executed="DataGridDeleteCommandBinding_Executed"/>
                     </DataGrid.CommandBindings>
                 </DataGrid>
-                <TextBox Name="AspectMultiCount" Grid.Row="1" HorizontalContentAlignment="Right" LostFocus="AspectMultiToggle_Changed" Margin="2"/>
             </Grid>
-            <ToggleButton Name="AspectMultiToggle" Content="*" Grid.Column="1" Margin="2" Checked="AspectMultiToggle_Changed" Unchecked="AspectMultiToggle_Changed"/>
         </Grid>
         <Grid Grid.Row="2" Grid.Column="1">
             <Grid.ColumnDefinitions><ColumnDefinition Width="17*"/><ColumnDefinition Width="1*"/></Grid.ColumnDefinitions>

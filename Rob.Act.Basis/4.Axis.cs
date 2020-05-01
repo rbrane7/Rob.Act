@@ -39,10 +39,10 @@ namespace Rob.Act
 		public Quant this[ Quant at , Axe ax ] { get { if( ax==null ) return this[at] ; Quant rez = 0 ; for( int i=0 , count=Count ; i<count ; ++i ) if( Resolve(i)>=at ) rez += ax[i+1]-ax[i]??0 ; return rez ; } }
 		public Quant? this[ int at ] => Resolve(at) ;
 		protected internal virtual Quant? Resolve( int at ) => Resolver?.Invoke(at) ;
-		Axe Coaxe { get { try { return Multi?Aspects.Get(a=>Resolvelet.Compile<Func<Contexts,Axe>>(use:"Rob.Act").Of(new Contexts{Base=a,This=Own,The=this})):Aspect.Get(a=>Resolvelet.Compile<Func<Context,Axe>>(use:"Rob.Act").Of(new Context{Base=a,This=Own,The=this})) ; } catch( System.Exception e ) { throw new InvalidOperationException($"Problem compiling {Spec} !",e) ; } } }
-		protected Func<int,Quant?> Resolver { private get => resolver ?? ( resolver = Coaxe.Set(x=>{if(counter==null)counter=x.counter;}) is Axe a ? i=>a[i] : new Func<int,Quant?>(i=>null as Quant?) ) ; set { if( resolver==value ) return ; resolver = value ; propertyChanged.On(this,"Resolver") ; } } Func<int,Quant?> resolver ;
+		Axe Coaxe { get { try { return Multi?Aspects.Get(a=>Resolvelet.Compile<Func<Contexts,Axe>>(use:"Rob.Act").Of(new Contexts{Base=a,This=Own,The=this})):Aspect.Get(a=>Resolvelet.Compile<Func<Context,Axe>>(use:"Rob.Act").Of(new Context{Base=a,This=Own,The=this})) ; } catch( LambdaContext.Exception ) { throw ; } catch( System.Exception e ) { throw new InvalidOperationException($"Problem resolving {Spec} !",e) ; } } }
+		protected Func<int,Quant?> Resolver { private get => resolver ??( resolver = Coaxe.Set(x=>{if(counter==null)counter=x.counter;}) is Axe a ? i=>a[i] : No.Resolver ) ; set { if( resolver==value ) return ; resolver = value ; propertyChanged.On(this,"Resolver") ; } } Func<int,Quant?> resolver ;
 		public string Resolvelet { get => resolvelet ; set { if( value==resolvelet ) return ; resolvelet = value ; Resolver = null ; propertyChanged.On(this,"Resolvelet") ; } } string resolvelet ;
-		public virtual int Count => Counter is Func<Aspectable,int> c ? c(Aspect) : DefaultCount ;
+		public virtual int Count => /*Counter is Func<Aspectable,int> c ? c(Aspect) :*/ DefaultCount ;
 		public bool Counts => counter!=null ;
 		protected virtual int DefaultCount => Resource?.Points.Count ?? 0 ;
 		Func<Aspectable,int> Counter { get => counter ?? ( counter = countlet.Compile<Func<Aspectable,int>>()/*??Coaxe.Set(x=>{if(resolver==null)resolver=i=>x[i];})?.counter*/ ) ; set { if( counter==value ) return ; counter = value ; propertyChanged.On(this,"Counter") ; } } Func<Aspectable,int> counter ;
@@ -85,7 +85,7 @@ namespace Rob.Act
 		public static Axe operator++( Axe x ) => x==null ? No : new Axe( i=>x.Resolve(i+1) , a=>x.Count , x ) ;
 		public static Axe operator--( Axe x ) => x==null ? No : new Axe( i=>x.Resolve(i-1) , a=>x.Count , x ) ;
 		public static Axe operator>>( Axe x , int lev ) => x==null ? No : lev<0 ? x<<-lev : lev==0 ? x : new Axe( i=>x.Resolve(i)-x.Resolve(i-1) , a=>x.Count , x )>>lev-1 ;
-		public static Axe operator<<( Axe x , int lev ) => x==null ? No : lev<0 ? x>>-lev : lev==0 ? x : new Axe( i=>i.Steps().Sum(x.Resolve) , a=>x.Count , x )>>lev-1 ;
+		public static Axe operator<<( Axe x , int lev ) => x==null ? No : lev<0 ? x>>-lev : lev==0 ? x : new Axe( i=>i.Steps().Sum(x.Resolve) , a=>x.Count , x )<<lev-1 ;
 		public static Axe operator^( Axe x , Axe y ) => x==null ? No : x.Drift(y) ;
 		public static Axe operator%( Axe x , int dif ) => x==null ? No : new Axe( i=>x.Diff(i,dif) , a=>x.Count-dif , x ) ;
 		public static Lap operator%( Axe x , Quant dif ) => x.By(dif) ;

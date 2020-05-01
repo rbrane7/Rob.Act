@@ -40,24 +40,25 @@ namespace Rob.Act
 	public class Aspect : List<Axe> , IList , Aspectable , INotifyCollectionChanged , INotifyPropertyChanged
 	{
 		public event PropertyChangedEventHandler PropertyChanged { add => propertyChanged += value.DispatchResolve() ; remove => propertyChanged -= value.DispatchResolve() ; } protected PropertyChangedEventHandler propertyChanged ;
-		public Aspect( IEnumerable<Aspect> sources , bool multi = false ) : this(sources?.SelectMany(s=>s.Where(a=>a.Multi==multi)).Distinct(a=>a.Spec).Select(a=>new Axe(a))) { spec = sources?.Select(s=>s.Spec).Stringy(' ') ; sources?.SelectMany(s=>s.Trait).Distinct(t=>t.Spec).Each(t=>Trait.Add(new Traitlet(t))) ; }
-		public Aspect( Aspect source , bool multi = false ) : this(source?.Where(a=>a.Multi==multi).Select(a=>new Axe(a))) { spec = source?.Spec ; source.Trait.Each(t=>Trait.Add(new Traitlet(t))) ; taglet = source?.taglet ; }
+		public Aspect( IEnumerable<Aspect> sources ) : this(sources?.SelectMany(s=>s).Distinct(a=>a.Spec).Select(a=>new Axe(a))) { spec = sources?.Select(s=>s.Spec).Stringy(' ') ; sources?.SelectMany(s=>s.Trait).Distinct(t=>t.Spec).Each(t=>Trait.Add(new Traitlet(t))) ; }
+		public Aspect( Aspect source ) : this(source?.Select(a=>new Axe(a))) { spec = source?.Spec ; source.Trait.Each(t=>Trait.Add(new Traitlet(t))) ; taglet = source?.taglet ; }
 		public Aspect( IEnumerable<Axe> axes = null , Traits trait = null ) : base(axes??Enumerable.Empty<Axe>()) { foreach( var ax in this ) { ax.Own = this ; ax.PropertyChanged += OnChanged ; } Trait = (trait??new Traits()).Set(t=>t.Context=this) ; }
 		public Aspect() : this(axes:null) {} // Default constructor must be present to enable DataGrid implicit Add .
 		[LambdaContext.Dominant] public Axe this[ string key ] => this.FirstOrDefault(a=>a.Spec==key) ;
 		public virtual string Spec { get => spec ; set { if( value==spec ) return ; spec = value ; propertyChanged.On(this,"Spec") ; Dirty = true ; } } string spec ;
 		public string Origin { get => origin ; set { origin = value.Set(v=>Spec=System.IO.Path.GetFileNameWithoutExtension(v).LeftFrom('?',all:true)) ; Dirty = true ; } } string origin ;
-		public string Score { get => $"{Spec} {Trait} {Tag}" ; set => propertyChanged.On(this,"Score") ; }
+		public string Score { get => $"{Spec} {Trait} {Tags}" ; set => propertyChanged.On(this,"Score") ; }
 		public Traits Trait { get; }
 		public string Taglet { get => taglet ; set { if( value==taglet ) return ; taglet = value.Null(v=>v.No()) ; Tager = null ; tag = null ; propertyChanged.On(this,"Taglet") ; Dirty = true ; } } string taglet ;
 		public Action<Aspect> Tager { get => tager ?? ( tager = taglet.Compile<Action<Aspect>>() ) ; set { tager = value ; tags?.Clear() ; if( value==null ) tags = null ; propertyChanged.On(this,"Tager,Tags") ; } } Action<Aspect> tager ;
 		public Tagger Tag => ( tags ?? Tager.Get(t=>System.Threading.Interlocked.CompareExchange(ref tags,new Tagger(p=>{tag=null;propertyChanged.On(this,p??"Tags");}),null)) ?? tags ).Set(t=>{if(t.Count<=0&&!notag)using(new Aid.Closure(()=>notag=true,()=>notag=false))Tager.On(this);}) ; Tagger tags ; bool notag ;
 		public string Tags { get => tag ?? ( tag = Tag.Stringy() ) ; set { if( value==tag ) return ; tag = null ; Tag[value.ExtractTags()] = true ; Score = value ; } } string tag ;
-		public virtual Aspectable Source { get => source ; set { source = value ; this.Each(a=>a.Source=value) ; Spec += $" {value?.Spec}" ; } } Aspectable source ;
-		public virtual Aspectable[] Sources { get => sources ; set { sources = value ; this.Each(a=>a.Sources=value) ; } } Aspectable[] sources ;
+		public virtual Aspectable Source { get => source ; set { source = value ; this.Where(a=>!a.Multi).Each(a=>a.Source=value) ; Spec += $" {value?.Spec}" ; } } Aspectable source ;
+		public virtual Aspectable[] Sources { get => sources ; set { sources = value ; this.Where(a=>a.Multi).Each(a=>a.Sources=value) ; } } Aspectable[] sources ;
 		public virtual Point.Iterable Points => new Point.Iterator{ Context = this } ;
 		public int Index( string axe ) => IndexOf(this[axe]) ;
 		public virtual Path Raw => Source?.Raw ;
+		public bool Orphan => Source==null && Sources==null ;
 		#region Operations
 		public Axe.Support this[ IEnumerable<int> fragment ] => Axe.One[fragment] ;
 		#endregion
@@ -65,12 +66,12 @@ namespace Rob.Act
 		{
 			public interface Iterable : IEnumerable<Point> { int Count { get; } Aspectable Context { get; } Point this[ int at ] { get; } }
 			readonly Aspect Context ; readonly Quant?[] Content ;
-			public Point( Aspect context , params Quant?[] content ) { Context = context ; Content = content ; Mark = Mark.No ; Tags = null ; }
-			public Point( Aspect context , int at ) { Context = context ; Content = context.Select(a=>a[at]).ToArray() ; Mark = Mark.No ; Tags = null ; }
+			public Point( Aspect context , int at ) { Context = context ; Content = context.Select(a=>a[at]).ToArray() ; var raw = context.Raw?[at] ; Mark = raw?.Mark??Mark.No ; Tags = raw?.Tags ; }
 			public Quant? this[ uint key ] => Content.At((int)key) ;
 			public Quant? this[ string key ] => Content.At(Context.Index(key)) ;
 			public IEnumerator<Quant?> GetEnumerator() => Content.Cast<Quant?>().GetEnumerator() ; IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
 			public Mark Mark { get ; set ; }
+			public Mark? Marklet => Mark.nil() ;
 			public string Tags { get ; set ; }
 			public struct Iterator : Iterable
 			{
@@ -109,15 +110,16 @@ namespace Rob.Act
 		public class Traitlet : INotifyPropertyChanged
 		{
 			internal Aspect Context ;
+			public bool Orphan => Context?.Orphan!=false ;
 			public bool Dirty { set => Context.Set(c=>c.Dirty=value) ; }
 			public string Spec { get => name ; set => Changed("Spec",name=value) ; } string name ;
 			public string Bond { get => bond ; set => Changed("Bond",bond=value) ; } string bond ;
 			public string Lex { get => lex ; set => Changed("Lex,Value",Resolver=(lex=value).Compile<Func<Contextable,Quant?>>()) ; } Func<Contextable,Quant?> Resolver ; string lex ;
 			void Changed<Value>( string properties , Value value ) { propertyChanged.On(this,properties,value) ; Dirty = true ; }
-			public Quant? Value => Resolver?.Invoke(Context) ;
-			public override string ToString() => $"{Spec.Null(n=>n.No()).Get(s=>s+'=')}{new Basis.Binding(Bond).Of(Value)}" ;
+			public Quant? Value => Orphan ? null : Resolver?.Invoke(Context) ;
+			public override string ToString() => Orphan ? null : $"{Spec.Null(n=>n.No()).Get(s=>s+'=')}{new Basis.Binding(Bond).Of(Value)}" ;
 			public Traitlet() {} // Default constructor must be present to enable DataGrid implicit Add .
-			public Traitlet( Traitlet source ) { name = source?.Spec ; bond = source?.Bond ; lex = source?.Lex ; Resolver = source?.Resolver ; }
+			internal Traitlet( Traitlet source ) { name = source?.Spec ; bond = source?.Bond ; lex = source?.Lex ; Resolver = source?.Resolver ; }
 			public event PropertyChangedEventHandler PropertyChanged { add => propertyChanged += value.DispatchResolve() ; remove => propertyChanged -= value.DispatchResolve() ; } protected PropertyChangedEventHandler propertyChanged ;
 			#region De/Serialization
 			/// <summary>
@@ -133,12 +135,13 @@ namespace Rob.Act
 		}
 		public class Traits : Aid.Collections.ObservableList<Traitlet> , Aid.Gettable<Quant?> , ICollection<Traitlet> , IList , INotifyPropertyChanged
 		{
+			public bool Orphan => Context?.Orphan!=false ;
 			public bool Dirty { get => Context?.Dirty==true ; set => Context.Set(c=>c.Dirty=value) ; }
 			internal Aspect Context { get => context ; set { this.Each(t=>{if(t.Context==context)t.Context=value;}) ; context = value ; } } Aspect context ;
 			public IEnumerable<Aspect> Contexts => this.Select(t=>t.Context).Distinct() ;
-			public Quant? this[ string key ] => key.Get(k=>new Regex(k).Get(r=>this.SingleOrNo(t=>r.Match(t.Spec).Success)))?.Value ;
+			public Quant? this[ string rek ] => this[rek,t=>t.Spec]?.Value ;
 			public override void Add( Traitlet trait ) => base.Add(trait.Set(t=>{if(t.Context==null){t.Context=Context;Dirty=true;}t.PropertyChanged+=ChangedItem;Spec=null;})) ;
-			public void Add( IEnumerable<Traitlet> traits ) => traits.Each(Add) ;
+			public new void Add( IEnumerable<Traitlet> traits ) => traits.Each(Add) ;
 			public static Traits operator+( Traits traits , Traitlet trait ) => traits.Set(t=>t.Add(trait)) ;
 			public override bool Remove( Traitlet item ) => base.Remove(item).Set(r=>{if(item.Context==context){item.Context=null;Dirty=true;}item.PropertyChanged-=ChangedItem;Spec=null;}) ;
 			void ICollection<Traitlet>.Add( Traitlet trait ) => Add(trait) ;
@@ -146,7 +149,7 @@ namespace Rob.Act
 			void IList.Remove( object value ) => Remove( value as Traitlet ) ;
 			public void Clean() => this.Where(t=>t.Context!=Context).ToArray().Each(t=>Remove(t)) ;
 			public override string ToString() => Spec ;
-			public string Spec { get => this.Stringy(',').Null(v=>v.No()) ; protected set { if( Propagate() ) propertyChanged.On(this,"Spec",Context.Set(c=>c.Score=value)) ; } }
+			public string Spec { get => Orphan ? null : this.Stringy(',').Null(v=>v.No()) ; protected set { if( Propagate() ) propertyChanged.On(this,"Spec",Context.Set(c=>c.Score=value)) ; } }
 			void ChangedItem( object subject , PropertyChangedEventArgs prop ) { Spec = null ; Context?.propertyChanged.On(Context,"Trait") ; }
 			public event PropertyChangedEventHandler PropertyChanged { add => propertyChanged += value.DispatchResolve() ; remove => propertyChanged -= value.DispatchResolve() ; } protected PropertyChangedEventHandler propertyChanged ;
 			protected override void Refresh( IEnumerable<Traitlet> add = null, IEnumerable<Traitlet> rem = null ) { base.Refresh( add, rem ) ; if( add==null && rem==null ) Spec = null ; }
@@ -197,9 +200,9 @@ namespace Rob.Act
 			public class Iterator : Point.Iterable
 			{
 				public Aspectable Context { get; set; }
-				public int Count => (Context as Aspect)?.Context.Count ?? 0 ; //Math.Max((Context as Aspect)?.Context.Count??0,Context.Where(a=>!(a is Axe)&&a.Counts).Null(e=>e.Count()<=0)?.Max(a=>a.Count)??0) ;
+				public int Count => Context?.Raw?.Count ?? 0 ; //Math.Max((Context as Aspect)?.Context.Count??0,Context.Where(a=>!(a is Axe)&&a.Counts).Null(e=>e.Count()<=0)?.Max(a=>a.Count)??0) ;
 				public IEnumerator<Point> GetEnumerator() { for( int i=0 , count=Count ; i<count ; ++i ) yield return this[i] ; } IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
-				public Point this[ int at ] => new Point(Context as Aspect,at){Mark=(Context as Aspect)?.Context[at]?.Mark??Mark.No,Tags=(Context as Aspect)?.Context[at]?.Tags} ;
+				public Point this[ int at ] => new Point(Context as Aspect,at) ;
 			}
 			#region De/Serialization
 			public static explicit operator string( Aspect aspect ) => aspect.Get(a=>string.Join(Serialization.Separator,a.Where(x=>!(x is Axe)).Select(x=>(string)x))+(a.Count(x=>!(x is Axe))>0?Serialization.Separator:null)+(string)a.Trait) ;
