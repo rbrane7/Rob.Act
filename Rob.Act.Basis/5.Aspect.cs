@@ -27,11 +27,11 @@ namespace Rob.Act
 		public Aspectable Source { set => this.Each(a=>a.Source=value) ; }
 		public Aspectable[] Sources { set => this.Each(a=>a.Sources=value) ; }
 		public Aspect.Point.Iterable Points => new Iterator{ Context = this } ;
-		public IEnumerator<Aspectable> GetEnumerator() => Content.Cast<Aspectable>().GetEnumerator() ; IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
-		public struct Iterator : Aspect.Point.Iterable
+		public IEnumerator<Aspectable> GetEnumerator() => (Content?.Cast<Aspectable>()??Enumerable.Empty<Aspectable>()).GetEnumerator() ; IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
+		struct Iterator : Aspect.Point.Iterable
 		{
-			public Aid.Countable<Aspectable> Context { get; set; }
-			public int Count => Context?.Count>0 ? Context.Max(s=>s?.Count>0?s.Max(a=>a?.Count>0?a.Count:0):0) : 0 ;
+			internal Aid.Countable<Aspectable> Context { get; set; }
+			public int Count => Context?.Count>0 ? Context.Max(s=>s?.Count(a=>!a.Multi)>0?s.Where(a=>!a.Multi).Max(a=>a?.Count??0):0) : 0 ;
 			Aspectable Aspect.Point.Iterable.Context => throw new NotSupportedException("Single context not supported on multi-context version !") ;
 			public IEnumerator<Aspect.Point> GetEnumerator() => throw new NotSupportedException("Points iterator not supported on multi-context version !") ; IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
 			public Aspect.Point this[ int at ] => throw new NotSupportedException("Points not supported on multi-context version !") ;
@@ -44,17 +44,18 @@ namespace Rob.Act
 		public Aspect( Aspect source ) : this(source?.Select(a=>new Axe(a))) { spec = source?.Spec ; source.Trait.Each(t=>Trait.Add(new Traitlet(t))) ; taglet = source?.taglet ; }
 		public Aspect( IEnumerable<Axe> axes = null , Traits trait = null ) : base(axes??Enumerable.Empty<Axe>()) { foreach( var ax in this ) { ax.Own = this ; ax.PropertyChanged += OnChanged ; } Trait = (trait??new Traits()).Set(t=>t.Context=this) ; }
 		public Aspect() : this(axes:null) {} // Default constructor must be present to enable DataGrid implicit Add .
-		[LambdaContext.Dominant] public Axe this[ string key ] => this.FirstOrDefault(a=>a.Spec==key) ;
+		[LambdaContext.Dominant] public Axe this[ string key ] => this.FirstOrDefault(a=>a.Spec==key) ?? Resources.Select(a=>a[key]).SingleOrNo() ;
 		public virtual string Spec { get => spec ; set { if( value==spec ) return ; spec = value ; propertyChanged.On(this,"Spec") ; Dirty = true ; } } string spec ;
 		public string Origin { get => origin ; set { origin = value.Set(v=>Spec=System.IO.Path.GetFileNameWithoutExtension(v).LeftFrom('?',all:true)) ; Dirty = true ; } } string origin ;
 		public string Score { get => $"{Spec} {Trait} {Tags}" ; set => propertyChanged.On(this,"Score") ; }
 		public Traits Trait { get; }
 		public string Taglet { get => taglet ; set { if( value==taglet ) return ; taglet = value.Null(v=>v.No()) ; Tager = null ; tag = null ; propertyChanged.On(this,"Taglet") ; Dirty = true ; } } string taglet ;
-		public Action<Aspect> Tager { get => tager ?? ( tager = taglet.Compile<Action<Aspect>>() ) ; set { tager = value ; tags?.Clear() ; if( value==null ) tags = null ; propertyChanged.On(this,"Tager,Tags") ; } } Action<Aspect> tager ;
+		public Action<Aspect> Tager { get => tager ??( tager = taglet.Compile<Action<Aspect>>() ) ; set { tager = value ; tags?.Clear() ; if( value==null ) tags = null ; propertyChanged.On(this,"Tager,Tags") ; } } Action<Aspect> tager ;
 		public Tagger Tag => ( tags ?? Tager.Get(t=>System.Threading.Interlocked.CompareExchange(ref tags,new Tagger(p=>{tag=null;propertyChanged.On(this,p??"Tags");}),null)) ?? tags ).Set(t=>{if(t.Count<=0&&!notag)using(new Aid.Closure(()=>notag=true,()=>notag=false))Tager.On(this);}) ; Tagger tags ; bool notag ;
 		public string Tags { get => tag ?? ( tag = Tag.Stringy() ) ; set { if( value==tag ) return ; tag = null ; Tag[value.ExtractTags()] = true ; Score = value ; } } string tag ;
 		public virtual Aspectable Source { get => source ; set { source = value ; this.Where(a=>!a.Multi).Each(a=>a.Source=value) ; Spec += $" {value?.Spec}" ; } } Aspectable source ;
 		public virtual Aspectable[] Sources { get => sources ; set { sources = value ; this.Where(a=>a.Multi).Each(a=>a.Sources=value) ; } } Aspectable[] sources ;
+		IEnumerable<Aspectable> Resources => this.SelectMany(a=>a.Resources).Distinct() ;
 		public virtual Point.Iterable Points => new Point.Iterator{ Context = this } ;
 		public int Index( string axe ) => IndexOf(this[axe]) ;
 		public virtual Path Raw => Source?.Raw ;
@@ -193,7 +194,7 @@ namespace Rob.Act
 			public Act.Axe gran( int lap = 0 ) => lap.quo(this[Axis.Grade,false]as Axe,this[Axis.Dist,false]as Axe) ;
 			public Act.Axe flow( int lap = 0 ) => Raw.Object==Basis.Device.Skierg.Code ? Axe.No : lap.quo(this[Axis.Flow,false]as Axe,this[Axis.Dist,false]as Axe) ;
 			public Act.Axe resi( int lap = 0 ) => lap.quo(this[Axis.Drag,false]as Axe,this[Axis.Dist,false]as Axe) ;
-			Act.Axe perf( Act.Axe pace , Act.Axe grad = null , Act.Axe resi = null , Act.Axe flow = null , Act.Axe gran = null ) => Context.Get( c => new Act.Axe( i => pace[i].PacePower((Gradient(grad?[i]??0),gran?[i]??0),Resistance(resi?[i]),flow?[i]??0) , a=>c.Count , pace ) ) ?? Axe.No ;
+			Act.Axe perf( Act.Axe pace , Act.Axe grad = null , Act.Axe resi = null , Act.Axe flow = null , Act.Axe gran = null ) => Context.Get( c => new Act.Axe( i => pace[i].PacePower((Gradient(grad?[i]??0),gran?[i]??0),Resistance(resi?[i]),flow?[i]??0) , pace ) ) ?? Axe.No ;
 			#endregion
 			public override Point.Iterable Points => new Iterator{ Context = this } ;
 			public override Path Raw => Context ;

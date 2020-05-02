@@ -93,7 +93,7 @@ namespace Rob.Act.Analyze
 		public IEnumerable<Aspect> Sources { get => Resources.Issue(Sourcer) ; set => PropertyChangedOn("Aspect,Sources",sources=value) ; } (Func<Aspect,bool> Filter,Func<IEnumerable<Aspect>,IEnumerable<Aspect>> Query)[] Sourcer ;
 		new IEnumerable<Aspect> Resources => sources ??( sources = new Aid.Collections.ObservableList<Aspect>(ActionsProjection) ) ; IEnumerable<Aspect> sources ;
 		Aspect Projection( Pathable path ) => new Aspect(Aspect){Source=path.Spectrum} ;
-		IEnumerable<Aspect> Projection( IEnumerable<Pathable> p ) => p.Select(Projection).Each((s,a,i)=>a.Sources=s.Skip(i).Concat(s.Take(i)).ToArray()) ;
+		IEnumerable<Aspect> Projection( IEnumerable<Pathable> p ) => p.Select(Projection).ToArray().Each((s,a,i)=>a.Sources=s.Skip(i).Concat(s.Take(i)).ToArray()) ;
 		IEnumerable<Aspect> ActionsProjection => Presources.Get( p => Aspect is Path.Aspect ? p.Select(s=>s.Spectrum) : Projection(p) ) ;
 		Aspect Resource( Pathable path ) => Aspect is Path.Aspect ? path.Spectrum : Projection(path) ;
 		int SourceIndex( object item ) => item is Aspect asp ? Resources.IndexIf(a=>a==asp) is int i ? i : Presources.IndexOf(asp?.Raw) : item is Pathable path ? Resources.IndexIf(a=>a.Raw==path) is int j ? j : Presources.IndexOf(path) : -1 ;
