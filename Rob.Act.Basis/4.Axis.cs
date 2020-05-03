@@ -34,7 +34,8 @@ namespace Rob.Act
 		public IEnumerable<Aspectable> Resources => (Regular?Multi?aspects:aspect?.Times():null)??Enumerable.Empty<Aspectable>() ;
 		protected virtual Aspectables Aspects { get => aspects.Count>0 ? aspects : ( aspects = new Aspectables(DefaultAspects) ) ; set { aspects = value ; Resolver = null ; propertyChanged.On(this,"Aspects") ; } } Aspectables aspects ;
 		public virtual Aspectable Aspect { get => aspect ??( aspect = DefaultAspect ) ; set { if( aspect==value ) return ; aspect = value ; Resolver = null ; propertyChanged.On(this,"Aspect") ; } } protected Aspectable aspect ;
-		public virtual int Count => Resource.Points.Count ;
+		public virtual int Count => Counter?.Invoke() ?? Resource.Points.Count ;
+		protected Func<int> Counter ;
 		internal Aspectable Own ;
 		Func<IEnumerable<Aspectable>,IEnumerable<Aspectable>> Selector { get => selector ; set { if( selector==value ) return ; selector = value ; Aspect = null ; propertyChanged.On(this,"Selector") ; } } Func<IEnumerable<Aspectable>,IEnumerable<Aspectable>> selector ;
 		string Aspectlet { get => selectlet ?? Aspect?.Spec ; set { if( value==Aspectlet ) return ; Selectlet = value ; propertyChanged.On(this,"Aspectlet") ; } } string selectlet ;
@@ -42,10 +43,10 @@ namespace Rob.Act
 		public Quant this[ Quant at ] => this.Count(q=>q>=at) ;
 		public Quant this[ Quant at , Axe ax ] { get { if( ax==null ) return this[at] ; Quant rez = 0 ; for( int i=0 , count=Count ; i<count ; ++i ) if( Resolve(i)>=at ) rez += ax[i+1]-ax[i]??0 ; return rez ; } }
 		public Quant? this[ int at ] => Resolve(at) ;
-		protected internal virtual Quant? Resolve( int at ) => Resolver?.Invoke(at) ;
+		protected internal virtual Quant? Resolve( int at ) => Resolver(at) ;
 		Axe Coaxe { get { try { return Multi?Aspects.Get(a=>Resolvelet.Compile<Func<Contexts,Axe>>(use:"Rob.Act").Of(new Contexts{Base=a,This=Own,The=this})):Aspect.Get(a=>Resolvelet.Compile<Func<Context,Axe>>(use:"Rob.Act").Of(new Context{Base=a,This=Own,The=this})) ; } catch( LambdaContext.Exception ) { throw ; } catch( System.Exception e ) { throw new InvalidOperationException($"Problem resolving {Spec} !",e) ; } } }
 		/// <summary> Never null . If nul than always throws . </summary>
-		protected Func<int,Quant?> Resolver { private get => resolver ??( resolver = Coaxe is Axe a ? i=>a[i] : No.Resolver ) ; set { if( resolver==value ) return ; resolver = value ; propertyChanged.On(this,"Resolver") ; } } Func<int,Quant?> resolver ;
+		protected Func<int,Quant?> Resolver { private get => resolver ??( resolver = (Coaxe??No).Get(a=>{Counter=a.Counter;return a.Resolver;}) ) ; set { if( resolver==value ) return ; resolver = value ; propertyChanged.On(this,"Resolver") ; } } Func<int,Quant?> resolver ;
 		public string Resolvelet { get => resolvelet ; set { if( value==resolvelet ) return ; resolvelet = value ; Resolver = null ; propertyChanged.On(this,"Resolvelet") ; } } string resolvelet ;
 		Func<Axe,IEnumerable<Quant>> Distributor { get => distributor ?? ( distributor = distribulet.Compile<Func<Axe,IEnumerable<Quant>>>() ?? (a=>null) ) ; set { if( distributor==value ) return ; distributor = value ; propertyChanged.On(this,"Distributor,Quantile") ; } } Func<Axe,IEnumerable<Quant>> distributor ;
 		public IEnumerable<Quant> Distribution => Distributor?.Invoke(this) ?? DefaultDistribution ; //?? Enumerable.Empty<Quant>() ;
@@ -87,12 +88,12 @@ namespace Rob.Act
 		public static Axe operator>>( Axe x , int lev ) => x==null ? No : lev<0 ? x<<-lev : lev==0 ? x : new Axe( i=>x.Resolve(i)-x.Resolve(i-1) , x )>>lev-1 ;
 		public static Axe operator<<( Axe x , int lev ) => x==null ? No : lev<0 ? x>>-lev : lev==0 ? x : new Axe( i=>i.Steps().Sum(x.Resolve) , x )<<lev-1 ;
 		public static Axe operator^( Axe x , Axe y ) => x==null ? No : x.Drift(y) ;
-		public static Axe operator%( Axe x , int dif ) => x==null ? No : new Axe( i=>x.Diff(i,dif) , x ) ;
-		public static Lap operator%( Axe x , Quant dif ) => x.By(dif) ;
+		public static Axe operator%( Axe x , int dif ) => x==null ? No : new Axe( i=>x.Dif(i,dif) , x ) ;
+		public static Lap operator%( Axe x , Quant dif ) => x.Lap(dif) ;
 		public static Axe operator%( Axe x , float mod ) => x==null ? No : new Axe( i=>x.Resolve(i)%mod , x ) ;
 		public static Axe operator%( Axe x , IEnumerable<int> mod ) => x==null ? No : x.Flor(mod) ;
 		public static Axe operator%( Axe x , Support y ) => x==null ? No : x.Flor(y.Fragment) ;
-		public static Axe operator/( Axe x , Lap dif ) => x==null ? No : new Axe( i=>x.Diff(i,dif[i]) , x ) ;
+		public static Axe operator/( Axe x , Lap dif ) => x==null ? No : new Axe( i => dif[i] is double d ? x.Dif(i,d) : null , x ) ;
 		public static Axe operator%( Axe x , Axe y ) => x==null ? No : x.Rift(y) ;
 		public static IEnumerable<int> operator>( Axe x , Quant? val ) => x?.Count.Steps().Where(i=>x[i]>val) ;
 		public static IEnumerable<int> operator<( Axe x , Quant? val ) => x?.Count.Steps().Where(i=>x[i]<val) ;
@@ -113,23 +114,67 @@ namespace Rob.Act
 		public Axe Round => new Axe( i=>Resolve(i).use(Math.Round) , this ) ;
 		public Axe Skip( int count ) => new Axe( i=>Resolve(count+i) , this ) ;
 		public Axe Wait( int count ) => new Axe( i=>Resolve(i<count?0:i-count) , this ) ;
-		public Axe Take( int count ) => new Axe( Resolve , this ) ;
-		/// <summary> Restricts axe to given subset of pointys . </summary>
+		public Axe Take( int count ) => new Axe( i=>i<count?Resolve(i):null , this ) ;
+		/// <summary> Restricts axe to given subset of points , null elsewhere . </summary>
 		/// <param name="fragment"> Points subset to restrict axe on . </param>
-		public Support For( IEnumerable<int> fragment ) => fragment.Get(f=>new HashSet<int>(f)).Get(f=>new Support(f,i=>f.Contains(i)?Resolve(i):null,this)) ?? No ;
+		public Support On( IEnumerable<int> fragment ) => fragment.Get(f=>new HashSet<int>(f)).Get(f=>new Support(f,i=>f.Contains(i)?Resolve(i):null,this)) ?? No ;
 		/// <summary> Axe of values relative to beginning of continual subset the point belongs to . </summary>
 		/// <param name="fragment"> Fragment of continual subsets . </param>
 		/// <returns> Axe which values are ofsetted to preceding continual predesessing value with respect to <paramref name="fragment"/> . </returns>
 		public Support Flor( IEnumerable<int> fragment ) => fragment.Get(f=>f.ToArray()).Get(f=>new Support( f , i => Array.IndexOf(f,i) is int at && at>=0 ? Resolve(i)-Resolve(f[at.LastContinualPredecessorIn(f)]) : null , this )) ?? No ;
-		public Support this[ IEnumerable<int> fragment ] => For(fragment) ;
+		/// <summary> Restricts axe to given subset of points , null elsewhere . </summary>
+		/// <param name="fragment"> Points subset to restrict axe on . </param>
+		public Support this[ IEnumerable<int> fragment ] => On(fragment) ;
+		/// <summary> Refines this axe to <paramref name="lap"/> distance axe . </summary>
+		/// <param name="lap"> Lap representing index distance between point of this axe . </param>
+		/// <returns> Axe of exact <paramref name="lap"/> distanced points of this axe values . </returns>
+		public Axe By( Lap lap ) => lap.Positions.Get(p=>new Axe( i => p.at(i) is double a ? At(a) : null , this ){ Counter = ()=>p.Length } ) ;
+		/// <summary> Restricts axe to given subset of points , null elsewhere . </summary>
+		/// <param name="fragment"> Points subset to restrict axe on . </param>
+		public Axe this[ Lap lap ] => By(lap) ;
+		/// <summary> Creates axe of drift of this axe on given <paramref name="upon"/> . </summary>
+		/// <param name="upon"> Axe to calculate drift on . </param>
+		/// <param name="at"> Position where to get drift at . </param>
+		/// <param name="dis"> Distance to calculate drift for . </param>
+		/// <returns> Axe of drift of this axe <paramref name="at"/> poositon for <paramref name="dis"/>tance <paramref name="upon"/> axis . </returns>
 		public Axe Drift( Axe upon , Quant quo = 0 ) => upon==null ? No : new Axe( i=>(quo*i).Get(at=>Drift(upon,(int)at,(int)((i-at)/2))) , this ) ;
-		Quant? Diff( int at , int dif ) => (Resolve(at+dif)-Resolve(at))*Math.Sign(dif) ;
-		Quant? Diff( int at , double dif ) { var a = at+dif ; var f = Math.Floor(a) ; var c = Math.Ceiling(a) ; return c==f ? Diff(at,(int)dif) : (Resolve((int)f)*(c-a)+Resolve((int)c)*(a-f)-Resolve(at))*Math.Sign(dif) ; }
-		Quant? Quot( Axe upon , int at , int dif ) => Diff(at,dif)/upon.Diff(at,dif).Nil() ;
-		Quant? Drift( Axe upon , int at , int dis ) => Quot(upon,at,dis)/Quot(upon,at+dis,dis).Nil() ;
+		/// <summary> Calculates value difference of this axe between value <paramref name="at"/> positin and position differing by <paramref name="dif"/> . </summary>
+		/// <param name="at"> Position where to calculate differce . </param>
+		/// <param name="dif"> Index difference from position <paramref name="at"/> . </param>
+		/// <returns> Difference value of axe . </returns>
+		Quant? Dif( int at , int dif ) => (Resolve(at+dif)-Resolve(at))*Math.Sign(dif) ;
+		/// <summary> Calculates value difference of this axe between value <paramref name="at"/> positin and position differing by <paramref name="dif"/> . </summary>
+		/// <param name="at"> Position where to calculate differce . </param>
+		/// <param name="dif"> Index difference from position <paramref name="at"/> . </param>
+		/// <returns> Difference value of axe . </returns>
+		Quant? Ave( int at , int dif ) => dif.Steps(at).Aggregate((Quant?)0D,(a,i)=>Resolve(i)) ;
+		/// <summary>
+		/// Calculates value difference of this axe between value <paramref name="at"/> positin and position differing exactly by real <paramref name="dif"/> . 
+		/// Calculation uses linear interpolation for intermediary positions . 
+		/// </summary>
+		/// <param name="at"> Position where to calculate differce . </param>
+		/// <param name="dif"> Exact real index difference from position <paramref name="at"/> . </param>
+		/// <returns> Difference value of axe . </returns>
+		Quant? Dif( int at , double dif ) { var a = at+dif ; var f = Math.Floor(a) ; var c = Math.Ceiling(a) ; return c==f ? Dif(at,(int)dif) : (Resolve((int)f)*(c-a)+Resolve((int)c)*(a-f)-Resolve(at))*Math.Sign(dif) ; }
+		/// <summary>
+		/// Calculates value of this axe at exact <paramref name="at"/> positin . 
+		/// Calculation uses linear interpolation for intermediary positions . 
+		/// </summary>
+		/// <param name="at"> Position where to calculate differce . </param>
+		/// <returns> Interpolated value of axe . </returns>
+		public Quant? At( double at ) { var f = Math.Floor(at) ; var c = Math.Ceiling(at) ; return c==f ? Resolve((int)at) : (Resolve((int)f)*(c-at)+Resolve((int)c)*(at-f)) ; }
+		Quant? Quo( Axe upon , int at , int dif ) => Dif(at,dif)/upon.Dif(at,dif).Nil() ;
+		/// <summary> Calculates drift of this axe on given <paramref name="upon"/> . </summary>
+		/// <param name="upon"> Axe to calculate drift on . </param>
+		/// <param name="at"> Position where to get drift at . </param>
+		/// <param name="dis"> Distance to calculate drift for . </param>
+		/// <returns> Value of drift <paramref name="at"/> poositon for <paramref name="dis"/>tance <paramref name="upon"/> axis . </returns>
+		Quant? Drift( Axe upon , int at , int dis ) => Quo(upon,at,dis)/Quo(upon,at+dis,dis).Nil() ;
 		public Axe Rift( Axe upon , uint quo = 9 ) => upon==null ? No : new Axe( i=>Drift(upon,i,((Count-i)>>1)-1) , this ) ;
+		/// <summary> <see cref="Rob.Act.Lap"/> for given parameter <paramref name="dif"/> and this Axe . </summary>
 		public Lap Lap( Quant dif ) => new Lap(this,dif) ;
-		public Lap By( Quant dif ) => Lap(dif) ;
+		/// <summary> <see cref="Rob.Act.Lap"/> for given parameter <paramref name="dif"/> and this Axe . </summary>
+		public Axe By( Quant dif ) => By(Lap(dif)) ;
 		public Axe Nil( Predicate<Quant> nil ) => new Axe( i=>Resolve(i).Nil(nil) , this ) ;
 		public Axe Fun( Func<Quant,Quant> fun ) => new Axe( i=>Resolve(i).use(fun) , this ) ;
 		public Axe PacePower( Quant grade = 0 , Quant? resi = null , Quant flow = 0 ) => new Axe( i=>Resolve(i).PacePower(grade,(Aspect as Aspect)?.Resistance(resi)??0,flow,Aspect?.Raw?.Profile?.Mass) , this ) ;
@@ -165,7 +210,8 @@ namespace Rob.Act
 			public Path Raw( int at = 0 ) => Base[at].Raw ;
 			public Support this[ IEnumerable<int> fragment ] => One[fragment] ;
 		}
-		public class Support : Axe { public readonly IEnumerable<int> Fragment ; internal Support( IEnumerable<int> fragment , Func<int,Quant?> resolver = null , Axe source = null ) : base(resolver,source) => Fragment = fragment ; }
+		public class Support : Support<IEnumerable<int>> { public IEnumerable<int> Fragment => Arg ; internal Support( IEnumerable<int> fragment , Func<int,Quant?> resolver = null , Axe source = null ) : base(fragment,resolver,source) {} }
+		public class Support<Param> : Axe { public readonly Param Arg ; internal Support( Param arg , Func<int,Quant?> resolver = null , Axe source = null ) : base(resolver,source) => Arg = arg ; }
 	}
 	public class Quantile : Aid.Gettable<int,Quant> , Aid.Countable<Quant>
 	{
@@ -206,9 +252,18 @@ namespace Rob.Act
 		#endregion
 		public struct Duo { public Quant? X , Y ; public static Duo operator+( Duo a , Duo b ) => new Duo{ X = a.X+b.X , Y = a.Y+b.Y } ; public static Duo operator/( Duo a , Quant b ) => new Duo{ X = a.X/b.nil() , Y = a.Y/b.nil() } ; public static Duo operator|( Duo a , Duo b ) => (a+b)/2 ; }
 	}
-	public struct Lap : Aid.Gettable<int,double>
+	/// <summary>
+	/// Container of real relative difference indexes for given axe and given difference paramener .
+	/// </summary>
+	public struct Lap : Aid.Gettable<int,double?> , IEnumerable<double>
 	{
-		readonly double[] Content ;
+		readonly double[] Content , Retent ;
+		//Axe Context ;
+		/// <summary>
+		/// Constructs container od differences of poisitions proportional to <paramref name="dif"/> by axe value . 
+		/// </summary>
+		/// <param name="context"> Axe to construct differences by . </param>
+		/// <param name="dif"> Difference parameter which by <paramref name="context"/> value exactly corresponds to index difference from position in axe <paramref name="context"/> . </param>
 		public Lap( Axe context , Quant dif )
 		{
 			var content = new List<int>() ; var dir = Math.Sign(dif) ; dif = Math.Abs(dif) ; if( context!=null )
@@ -217,8 +272,43 @@ namespace Rob.Act
 				else for( int c=context.Count , i=0 , j=0 ; dif>0 && i<c ; ++j ) for( var v = context.Resolve(j) ; i<c && (context.Resolve(i)-v).use(Math.Abs)<dif ; content.Add(j-++i) ) ;
 			}
 			var k = 0 ; Content = content.Select(i=>i+( context?[k++] is Quant a && context?[k+i-1] is Quant x && context?[k+i] is Quant y && x!=y ? Math.Abs(Math.Abs(x-a)-dif)/Math.Abs(x-y) : 0 )).ToArray() ;
+			var retent = new List<double>() ; Quant? oy = null ; for( int c=context.Count , i=0 ; i<c ; ++i ) if( context[i] is Quant ay )
+			{
+				if( oy==null ) { oy = ay ; retent.Add(i) ; continue ; }
+				var ly = context[i-1] ; if( (ay-ly).Nil() is double dy ) for( int j=1 , n=(int)((ay-oy).use(Math.Abs)/dif) ; j<=n ; ++j ) (i-1+((oy+=dif)-ly)/dy).Use(retent.Add) ;
+			}
+			Retent = retent.ToArray() ;
 		}
-		public double this[ int key ] => Content.At(key) ;
+		/// <summary>
+		/// Relative index real (noninteger) difference which must be add to <paramref name="at"/> to obtain exact position , 
+		/// where the axe difference from <paramref name="at"/> position is exactly those given by constructor dif argument . 
+		/// </summary>
+		/// <param name="at"> Index to get pear distanced exactly by <see cref="Lap"/> construct parameter . </param>
+		public double? this[ int at ] => Content.at(at) ;
+		/// <summary>
+		/// Relative index real (noninteger) difference which must be add to <paramref name="at"/> to obtain exact position , 
+		/// where the axe difference from <paramref name="at"/> position is exactly those given by constructor dif argument . 
+		/// </summary>
+		/// <param name="at"> Index to get pear distanced exactly by <see cref="Lap"/> construct parameter . </param>
+		public double? this[ double at ] => At(at) ;
+		/// <summary>
+		/// Calculates value of this axe at exact <paramref name="at"/> positin . 
+		/// Calculation uses linear interpolation for intermediary positions . 
+		/// </summary>
+		/// <param name="at"> Position where to calculate differce . </param>
+		/// <returns> Interpolated value of axe . </returns>
+		double? At( double at ) { var f = Math.Floor(at) ; var c = Math.Ceiling(at) ; return c==f ? Retent.at((int)at) : Retent.at((int)f)*(c-at)+Retent.at((int)c)*(at-f) ; }
+		public IEnumerator<double> GetEnumerator() => Content.AsEnumerable().GetEnumerator() ; IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
+		/// <summary>
+		/// Real exact Positions equidistantly distributed respecting creation parameter difference . 
+		/// </summary>
+		public double[] Positions => Retent ;
+		//public static implicit operator Act.Axe( Lap lap ) => lap.Context ;
+		//public class Axe : Act.Axe.Support<double[]>
+		//{
+		//	internal Axe( double[] lap , Act.Axe context ) : base(lap,i=>lap.at(i)is double a?context.At(a):null,context) {}
+		//	public override int Count => Arg.Length ;
+		//}
 	}
 	public partial class Path
 	{

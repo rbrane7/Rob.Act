@@ -185,7 +185,9 @@ namespace Rob.Act.Analyze
 				{
 					var ptss = new List<(int Count,int From)>() ;
 					{
-						int c,i ; for( i=0 , c=0 ; i<ax.Count ; ++i ) { var stop = false ; if( xax[i]!=null&&ax[i]!=null ) ++c ; else stop = true ; if( stop||asp.Raw?[i].Mark==Mark.Stop ) { if( c>0 ) ptss.Add((c,i-c+(stop?0:1))) ; c = 0 ; } }
+						int c,i,ac ; for( i=0 , c=0 , ac=ax.Count ; i<ac ; ++i ) try
+						{ var stop = false ; if( xax[i]!=null&&ax[i]!=null ) ++c ; else stop = true ; if( stop||asp.Raw?[i]?.Mark==Mark.Stop ) { if( c>0 ) ptss.Add((c,i-c+(stop?0:1))) ; c = 0 ; } }
+						catch( System.Exception e ) { Trace.TraceWarning($"Points calculation problem at {i}/{c}/{ac} : {e}") ; }
 						if( c>0 ) ptss.Add((c,i-c)) ;
 					}
 					foreach( var pts in ptss ) GraphPanel.Children.Add( new Polyline{
