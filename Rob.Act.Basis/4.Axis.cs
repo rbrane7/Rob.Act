@@ -299,7 +299,7 @@ namespace Rob.Act
 		/// </summary>
 		public class Axe : Act.Axe.Support<Lap>
 		{
-			internal Axe( Act.Axe context , Lap lap ) : base(lap,i=>lap.Absolution.at(i)is double a?context.At(a):context[i],context) => Counter = ()=>lap.Absolution?.Length??context.Count ;
+			internal Axe( Act.Axe context , Lap lap ) : base(lap,i=>lap.Absolution.at(i)is double a?context.At(a):null,context) => Counter = ()=>lap.Absolution.Length ;
 			internal Axe( Act.Axe context , Quant dif ) : this(context,new Lap(context,dif)) {}
 			public static implicit operator Lap( Axe a ) => a.Arg ;
 		}
