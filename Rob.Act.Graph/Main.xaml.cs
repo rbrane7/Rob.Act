@@ -93,7 +93,7 @@ namespace Rob.Act.Analyze
 		public IEnumerable<Aspect> Sources { get => Resources.Issue(Sourcer) ; set => PropertyChangedOn("Aspect,Sources",sources=value) ; } (Func<Aspect,bool> Filter,Func<IEnumerable<Aspect>,IEnumerable<Aspect>> Query)[] Sourcer ;
 		new IEnumerable<Aspect> Resources => sources ??( sources = new Aid.Collections.ObservableList<Aspect>(ActionsProjection) ) ; IEnumerable<Aspect> sources ;
 		Aspect Projection( Pathable path ) => new Aspect(Aspect){Source=path.Spectrum} ;
-		IEnumerable<Aspect> Projection( IEnumerable<Pathable> p ) => p.Select(Projection).ToArray().Each((s,a,i)=>a.Sources=s.Skip(i).Concat(s.Take(i)).ToArray()) ;
+		IEnumerable<Aspect> Projection( IEnumerable<Pathable> p ) => p.Select(Projection).ToArray().Reprojection() ;
 		IEnumerable<Aspect> ActionsProjection => Presources.Get( p => Aspect is Path.Aspect ? p.Select(s=>s.Spectrum) : Projection(p) ) ;
 		Aspect Resource( Pathable path ) => Aspect is Path.Aspect ? path.Spectrum : Projection(path) ;
 		int SourceIndex( object item ) => item is Aspect asp ? Resources.IndexIf(a=>a==asp) is int i ? i : Presources.IndexOf(asp?.Raw) : item is Pathable path ? Resources.IndexIf(a=>a.Raw==path) is int j ? j : Presources.IndexOf(path) : -1 ;
@@ -108,9 +108,10 @@ namespace Rob.Act.Analyze
 		void BookGrid_SelectionChanged( object sender , SelectionChangedEventArgs e ) { if( BlockSourcesUpdate ) return ; Sources_Update(e) ; Grid_Coloring(sender) ; }
 		void Sources_Update( SelectionChangedEventArgs e )
 		{
+			//if( Multiaspected ) { Sources = null ; return ; } // inoptimal solution
 			if( sources is IList<Aspect> sl ); else return ;
-			foreach( Pathable path in e.RemovedItems ) sl.IndexIf(a=>a.Raw==path).Use(sl.RemoveAt) ; foreach( Pathable path in e.AddedItems ) if( !sl.Any(a=>a.Raw==path) ) Resource(path).Set(sl.Add) ;
-			if( Multiaspected ) Sources = null ; // inoptimal solution
+			foreach( Pathable path in e.RemovedItems ) sl.IndexIf(a=>a.Raw==path).Use(sl.RemoveAt) ; foreach( Pathable path in e.AddedItems ) if( !sl.Any(a=>a.Raw==path) ) Resource(path).Set(sl.Add) ; // Individual aspect perspective update .
+			if( Multiaspected ) sl.Reprojection() ; // Update of multi-sources for each aspect .
 			Sources = sources ;
 		}
 		async internal void Grid_Coloring( object sender ) { for( var success = RecolorGrid(sender)?0:10 ; success>0 ; success -= RecolorGrid(sender)?success:1 ) await Task.Delay(100) ; }
@@ -514,5 +515,6 @@ namespace Rob.Act.Analyze
 	{
 		public static IEnumerable<Objective> Issue<Objective>( this IEnumerable<Objective> items , params (Func<Objective,bool> Filter,Func<IEnumerable<Objective>,IEnumerable<Objective>> Query)[] refine ) => items==null ? null : refine?.Length>0 ? refine?.Length>1 ? refine.SelectMany(items.Issue).Distinct() : items.Issue(refine[0]) : items ;
 		public static IEnumerable<Objective> Issue<Objective>( this IEnumerable<Objective> items , (Func<Objective,bool> Filter,Func<IEnumerable<Objective>,IEnumerable<Objective>> Query) refine ) => items==null ? null : refine.Query==null ? refine.Filter==null ? items : items.Where(refine.Filter) : refine.Filter==null ? refine.Query(items) : refine.Query(items.Where(refine.Filter)) ;
+		public static IEnumerable<Aspect> Reprojection( this IList<Aspect> sources ) => sources.Each((s,a,i)=>a.Sources=s.Skip(i).Concat(s.Take(i)).ToArray()) ;
 	}
 }

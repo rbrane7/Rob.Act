@@ -20,6 +20,7 @@ namespace Rob.Act
 	{
 		public static Func<IEnumerable<Aspectable>> The ;
 		readonly Aspectable[] Content ;
+		public bool No => Content==null ;
 		public Aspectables( params Aspectable[] content ) => Content = content ;
 		public Aspectable this[ int key ] => Content.At(key) ;
 		[LambdaContext.Dominant] public Aspectable this[ string key ] { get { var reg = new Regex(key) ; return Content.SingleOrNo(a=>reg.Match(a.Spec).Success) ; } }

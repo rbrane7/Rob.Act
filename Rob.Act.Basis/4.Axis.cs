@@ -24,19 +24,20 @@ namespace Rob.Act
 		public string Binder { get => bond ; set { if( value==bond ) return ; bond = value ; propertyChanged.On(this,"Binder") ; } } string bond ;
 		public Aspectable Source { set { if( Selector==null && DefaultAspect==null ) Aspect = value ; else Resource.Source = value ; } }
 		public Aspectable[] Sources { set { if( Selector==null && DefaultAspects==null ) Aspects = new Aspectables(value) ; else Resource.Sources = value ; } }
-		public bool Multi { get => multi ; set { if( value==multi ) return ; multi = value ; Resolver = null ; Aspect = null ; propertyChanged.On(this,"Multi,Aspects") ; } } bool multi ;
+		public bool Multi { get => multi ; set { if( value==multi ) return ; multi = value ; Aspect = null ; propertyChanged.On(this,"Multi,Aspects") ; } } bool multi ;
 		public bool Regular => !Multi || Selector!=null ;
 		public bool Asrex { get => rex ; set { if( value==rex ) return ; rex = value ; Selectlet = selectlet ; propertyChanged.On(this,"Asrex,Aspects") ; } } bool rex ;
-		protected virtual Aspectable DefaultAspect => Multi ? null : Selector?.Invoke(Aspectables.The?.Invoke()).SingleOrNo() ;
-		protected virtual Aspectable[] DefaultAspects => Multi ? Selector?.Invoke(Aspectables.The?.Invoke()).ToArray() : null ;
+		protected virtual Aspectable DefaultAspect => Multi ? null : Selection?.SingleOrNo() ;
+		protected virtual Aspectable[] DefaultAspects => Multi ? Selection?.ToArray() : null ;
 		/// <summary> Cant' be null . </summary>
 		protected internal Resourcable Resource => Aspect ?? Aspects as Resourcable ;
 		public IEnumerable<Aspectable> Resources => (Regular?Multi?aspects:aspect?.Times():null)??Enumerable.Empty<Aspectable>() ;
-		protected virtual Aspectables Aspects { get => aspects.Count>0 ? aspects : ( aspects = new Aspectables(DefaultAspects) ) ; set { aspects = value ; Resolver = null ; propertyChanged.On(this,"Aspects") ; } } Aspectables aspects ;
+		protected virtual Aspectables Aspects { get => aspects.No ? aspects = new Aspectables(DefaultAspects) : aspects ; set { aspects = value ; Resolver = null ; propertyChanged.On(this,"Aspects,Aspect") ; } } Aspectables aspects ;
 		public virtual Aspectable Aspect { get => aspect ??( aspect = DefaultAspect ) ; set { if( aspect==value ) return ; aspect = value ; Resolver = null ; propertyChanged.On(this,"Aspect") ; } } protected Aspectable aspect ;
 		public virtual int Count => Counter?.Invoke() ?? Resource.Points.Count ;
 		protected Func<int> Counter ;
 		internal Aspectable Own ;
+		IEnumerable<Aspectable> Selection => Selector?.Invoke(Aspectables.The?.Invoke()) ;
 		Func<IEnumerable<Aspectable>,IEnumerable<Aspectable>> Selector { get => selector ; set { if( selector==value ) return ; selector = value ; Aspect = null ; propertyChanged.On(this,"Selector") ; } } Func<IEnumerable<Aspectable>,IEnumerable<Aspectable>> selector ;
 		string Aspectlet { get => selectlet ?? Aspect?.Spec ; set { if( value==Aspectlet ) return ; Selectlet = value ; propertyChanged.On(this,"Aspectlet") ; } } string selectlet ;
 		string Selectlet { set { selectlet = value.Null(s=>s.No()) ; var aspectlet = Asrex ? value.Null(s=>s.No()).Get(v=>new Regex(v)) : null ; Selector = aspectlet==null ? selectlet.Compile<Func<IEnumerable<Aspectable>,IEnumerable<Aspectable>>>() : s=>s.Where(a=>aspectlet.Match(a.Spec).Success) ; } }
