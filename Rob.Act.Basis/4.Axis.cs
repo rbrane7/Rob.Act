@@ -270,7 +270,7 @@ namespace Rob.Act
 		{
 			// Calculation of absolute equidifferenced distribution .
 			var retent = new List<double>() ; Quant? oy = null ; for( int c=context.Count , i=0 ; i<c ; ++i ) if( context[i] is Quant ay ) if( oy==null ) { oy = ay ; retent.Add(i) ; }
-			else if( context[i-1] is Quant ly && (ay-ly).nil() is double dy ) for( int j=1 , n=(int)((ay-oy)/dif).use(Math.Abs) ; j<=n ; ++j ) (i-1+((oy+=dif)-ly)/dy).Use(retent.Add) ;
+			else if( context[i-1] is Quant ly && (ay-ly).nil() is double dy ) for( int j=1 , n=(int)((ay-oy)/dif) ; j<=n ; ++j ) (i-1+((oy+=dif)-ly)/dy).Use(retent.Add) ;
 			Absolution = retent.ToArray() ;
 			// Calculation of diferential distribution .
 			var content = new List<int>() ; var dir = Math.Sign(dif) ; dif = Math.Abs(dif) ; if( context!=null )
@@ -339,11 +339,15 @@ namespace Rob.Act
 		public static Axe Drift( this int dis , Axe x , Axe y , int? dif = null ) => (dif??dis).Get(d=>d.quo(x,y)).Get(a=>a/a.Skip(dis)) ;
 		public static Axe quo( this int dif , Axe x , Axe y ) => dif==0 ? x/y : (x%dif)/(y%dif) ;
 		public static Axe quo( this Lap dif , Axe x , Axe y ) => (x/dif)/(y/dif) ;
+		public static Axe quo( this Lap.Axe dif , Axe x , Axe y ) => dif.Arg.quo(x,y) ;
 		public static Axe d( this int dif , Axe x , Axe y ) => dif.quo(x,y) ;
 		public static Axe d( this Lap dif , Axe x , Axe y ) => dif.quo(x,y) ;
+		public static Axe d( this Lap.Axe dif , Axe x , Axe y ) => dif.quo(x,y) ;
 		public static IEnumerable<Quant> Refine( this IEnumerable<Quant?> source ) => source?.OfType<Quant>().Distinct().OrderBy(q=>q) ;
-		/// <summary> Seeks last continualpredecessor (subsequent) in <paramref name="file"/> of <paramref name="at"/> position . 
-		/// If we consider file as set of continual number subsets , then this function seeks begining of continual subcet which is around the position <paramref name="at"/> . </summary>
+		/// <summary>
+		/// Seeks last continualpredecessor (subsequent) in <paramref name="file"/> of <paramref name="at"/> position . 
+		/// If we consider file as set of continual number subsets , then this function seeks begining of continual subcet which is around the position <paramref name="at"/> . 
+		/// </summary>
 		/// <param name="at"> Position as <paramref name="file"/> file . </param>
 		/// <param name="file"> File of points representing continual (subsequent numbers) sets . </param>
 		/// <returns> Index in <paramref name="file"/> where continual subset begins . </returns>
