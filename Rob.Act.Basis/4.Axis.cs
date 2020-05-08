@@ -203,8 +203,9 @@ namespace Rob.Act
 			public Support this[ IEnumerable<int> fragment ] => One[fragment] ;
 			public Path Raw => Base?.Raw ;
 			public Aspect.Traits Trait => This?.Trait ;
-			public Axe Perf( Lap lap ) => (Base as Path.Aspect)?.perf(lap) ?? Axe.No ;
-			public Axe Perf( int dif = 0 ) => (Base as Path.Aspect)?.perf(dif) ?? Axe.No ;
+			public Axe Perf( Axe lap ) => lap is Lap.Axe a ? Perf(a.Arg) : No ;
+			public Axe Perf( Lap lap ) => (Base as Path.Aspect)?.perf(lap) ?? No ;
+			public Axe Perf( int dif = 0 ) => (Base as Path.Aspect)?.perf(dif) ?? No ;
 		}
 		public struct Contexts : Contextables
 		{
@@ -340,10 +341,10 @@ namespace Rob.Act
 		public static Axe Drift( this int dis , Axe x , Axe y , int? dif = null ) => (dif??dis).Get(d=>d.quo(x,y)).Get(a=>a/a.Skip(dis)) ;
 		public static Axe quo( this int dif , Axe x , Axe y ) => dif==0 ? x/y : (x%dif)/(y%dif) ;
 		public static Axe quo( this Lap dif , Axe x , Axe y ) => (x/dif)/(y/dif) ;
-		public static Axe quo( this Lap.Axe dif , Axe x , Axe y ) => dif.Arg.quo(x,y) ;
+		public static Axe quo( this Axe dif , Axe x , Axe y ) => dif is Lap.Axe a ? a.Arg.quo(x,y) : Axe.No ;
 		public static Axe d( this int dif , Axe x , Axe y ) => dif.quo(x,y) ;
 		public static Axe d( this Lap dif , Axe x , Axe y ) => dif.quo(x,y) ;
-		public static Axe d( this Lap.Axe dif , Axe x , Axe y ) => dif.quo(x,y) ;
+		public static Axe d( this Axe dif , Axe x , Axe y ) => dif.quo(x,y) ;
 		public static IEnumerable<Quant> Refine( this IEnumerable<Quant?> source ) => source?.OfType<Quant>().Distinct().OrderBy(q=>q) ;
 		/// <summary>
 		/// Seeks last continualpredecessor (subsequent) in <paramref name="file"/> of <paramref name="at"/> position . 
