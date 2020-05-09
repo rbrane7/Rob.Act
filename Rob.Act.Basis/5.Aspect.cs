@@ -14,7 +14,7 @@ namespace Rob.Act
 	using Quant = Double ;
 	public interface Contextable { [LambdaContext.Dominant] Axe this[ string key ] { get; } Axe.Support this[ IEnumerable<int> fragment ] { get; } Path Raw { get; } Aspect.Traits Trait { get; } }
 	public interface Contextables { [LambdaContext.Dominant] Axe this[ string key ] { get; } Axe.Support this[ IEnumerable<int> fragment ] { get; } Aspectable this[ int at ] { get; } Path Raw( int at = 0 ) ; }
-	public interface Aspectable : Aid.Gettable<int,Axe> , Contextable , Resourcable , Aid.Countable<Axe> { string Spec { get; } }
+	public interface Aspectable : Aid.Gettable<int,Axe> , Contextable , Resourcable , Aid.Countable<Axe> { string Spec { get; } Aspect Base { get; } }
 	public interface Resourcable { Aspectable Source { set; } Aspectable[] Sources { set; } Aspect.Point.Iterable Points { get; } }
 	public struct Aspectables : Aid.Gettable<int,Aspectable> , Aid.Gettable<Aspectable> , Aid.Countable<Aspectable> , Resourcable
 	{
@@ -60,6 +60,7 @@ namespace Rob.Act
 		public virtual Point.Iterable Points => new Point.Iterator{ Context = this } ;
 		public int Index( string axe ) => IndexOf(this[axe]) ;
 		public virtual Path Raw => Source?.Raw ;
+		public Aspect Base => Raw?.Spectrum ;
 		public bool Orphan => Source==null && Sources==null ;
 		#region Operations
 		public Axe.Support this[ IEnumerable<int> fragment ] => Axe.One[fragment] ;
