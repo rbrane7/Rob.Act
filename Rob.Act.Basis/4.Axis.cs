@@ -12,7 +12,7 @@ namespace Rob.Act
 	using System.ComponentModel ;
 	using Quant = Double ;
 	using Aid.Math ;
-	public interface Axable : Aid.Gettable<int,Quant?> , Aid.Gettable<Quant,Quant> , IEnumerable<Quant?> { string Spec { get; } }
+	public interface Axable : Aid.Gettable<int,Quant?> , Aid.Gettable<Quant,Quant> , Aid.Countable<Quant?> { string Spec { get; } }
 	public class Axe : Axable , INotifyPropertyChanged
 	{
 		public readonly static Support No = new Support(null){resolver=i=>null as Quant?} , One = new Support(null){resolver=i=>1} ;
@@ -50,14 +50,16 @@ namespace Rob.Act
 		/// <summary> Never null . If nul than always throws . </summary>
 		protected Func<int,Quant?> Resolver { private get => resolver ??( resolver = (Coaxe??No).Resolver ) ; set { if( resolver==value ) return ; resolver = value ; propertyChanged.On(this,"Resolver") ; } } Func<int,Quant?> resolver ;
 		public string Resolvelet { get => resolvelet ; set { if( value==resolvelet ) return ; resolvelet = value ; Resolver = null ; propertyChanged.On(this,"Resolvelet") ; } } string resolvelet ;
-		Func<Axe,IEnumerable<Quant>> Distributor { get => distributor ?? ( distributor = distribulet.Compile<Func<Axe,IEnumerable<Quant>>>() ?? (a=>null) ) ; set { if( distributor==value ) return ; distributor = value ; propertyChanged.On(this,"Distributor,Quantile") ; } } Func<Axe,IEnumerable<Quant>> distributor ;
+		public IEnumerator<Quant?> GetEnumerator() { for( int i=0 , count=Count ; i<count ; ++i ) yield return this[i] ; } IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
+		#region Quantile
+		Func<Axe,IEnumerable<Quant>> Distributor { get => distributor ??( distributor = distribulet.Compile<Func<Axe,IEnumerable<Quant>>>() ?? (a=>null) ) ; set { if( distributor==value ) return ; distributor = value ; quantile.Set(q=> Quantile = new Quantile(this,q.Quantizer) ) ; propertyChanged.On(this,"Distributor") ; } } Func<Axe,IEnumerable<Quant>> distributor ;
 		public IEnumerable<Quant> Distribution => Distributor?.Invoke(this) ?? DefaultDistribution ;
 		protected virtual IEnumerable<Quant> DefaultDistribution => this.Refine().ToArray().Null(d=>d.Length<=0) ;
 		public string Distribulet { get => distribulet ; set { if( value==distribulet ) return ; distribulet = value ; Distributor = null ; propertyChanged.On(this,"Distribulet") ; } } string distribulet ;
-		public IEnumerator<Quant?> GetEnumerator() { for( int i=0 , count=Count ; i<count ; ++i ) yield return this[i] ; } IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
-		public Quantile Quantile { get => quantile ??( quantile = new Quantile(this) ) ; private set => quantile = value ; } Quantile quantile ;
-		public Func<Quantile,IEnumerable<Quant>> Quantizer { get => Quantile.Quantizer ; set { if( value!=quantile?.Quantizer ) propertyChanged.On(this,"Quantizer,Quantile",Quantile=new Quantile(this,value)) ; } }
+		public Quantile Quantile { get => quantile ??( quantile = new Quantile(this) ) ; private set => propertyChanged.On(this,"Quantile", quantile = value ) ; } Quantile quantile ;
+		public Func<Quantile,IEnumerable<Quant>> Quantizer { get => Quantile.Quantizer ; set { if( value!=quantile?.Quantizer ) propertyChanged.On(this,"Quantizer", Quantile = new Quantile(this,value) ) ; } }
 		public string Quantlet { get => quantlet ; set => propertyChanged.On(this,"Quantlet",Quantizer=(quantlet=value).Compile<Func<Quantile,IEnumerable<Quant>>>()) ; } string quantlet ;
+		#endregion
 		#region Operations
 		/// <summary> Restricts axe to given subset of points , null elsewhere . </summary>
 		/// <param name="fragment"> Points subset to restrict axe on . </param>
@@ -221,8 +223,7 @@ namespace Rob.Act
 	}
 	public class Quantile : Aid.Gettable<int,Quant> , Aid.Countable<Quant>
 	{
-		static readonly Quant[] EmptyDis = new Quant[0] ;
-		static Quant Zero = 0.0017 ;
+		static readonly Quant[] EmptyDis = new Quant[0] ; static Quant Zero = 0.0017 ;
 		public Axe Ax => Axe ?? Context?.Ax ; readonly Quantile Context ; readonly Axe Axe ;
 		internal Func<Quantile,IEnumerable<Quant>> Quantizer ;
 		Quant[] Distribution { get { if( distribution==null ) try { distribution = Source ?? EmptyDis ; distribution = Quantizer?.Invoke(this)?.ToArray() ?? distribution ; } catch( System.Exception e ) { System.Diagnostics.Trace.TraceWarning(e.Stringy()) ; } return distribution ; } } Quant[] distribution ;
