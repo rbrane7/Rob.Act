@@ -56,6 +56,7 @@ namespace Rob.Act
 		public string Tags { get => tag ??( tag = Tag.Stringy() ) ; set { if( value==tag ) return ; tag = null ; Tag[value.ExtractTags()] = true ; Score = value ; } } string tag ;
 		public virtual Aspectable Source { get => source ; set { source = value ; this.Where(a=>!a.Multi).Each(a=>a.Source=value) ; Spec += $" {value?.Spec}" ; } } Aspectable source ;
 		public virtual Aspectable[] Sources { get => sources ; set { sources = value ; this.Where(a=>a.Multi).Each(a=>a.Sources=value) ; } } Aspectable[] sources ;
+		public bool Regular => this.All(a=>a.Regular) ;
 		IEnumerable<Aspectable> Resources => this.SelectMany(a=>a.Resources).Distinct() ;
 		public virtual Point.Iterable Points => new Point.Iterator{ Context = this } ;
 		public int Index( string axe ) => IndexOf(this[axe]) ;

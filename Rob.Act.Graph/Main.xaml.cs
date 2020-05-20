@@ -87,11 +87,11 @@ namespace Rob.Act.Analyze
 		void SaveBook() { if( ActionFilterGrid.SelectedItems.Count==1 && (ActionFilterGrid.SelectedItem as Filter.Entry)?.Matter.Null(v=>v.Void()) is string matter && Book.Count>0 && Setup?.WorkoutsPath is string path ) try{Book.Save(path,matter);}catch(System.Exception e){Trace.TraceError("Save Book failed on {0}:{1} : {2}",path,matter,e);} }
 
 		#region Core
-		public Aid.Collections.ObservableList<Axe> Axes { get ; private set ; } = new Aid.Collections.ObservableList<Axe>() ; public bool Multiaspected => Aspect.Any(b=>b.Multi) ;
+		public Aid.Collections.ObservableList<Axe> Axes { get ; private set ; } = new Aid.Collections.ObservableList<Axe>() ;
 		/// <summary> Aspect is never null , either Spectrum , or aspect ready for projection . If without selection then set to <see cref="Laboratory"/> . </summary>
-		public Aspect Aspect { get => Respect ; protected set { if( (value??Laboratory)==Aspect ) return ; Aspect.Set(a=>{a.CollectionChanged-=OnAspectChanged;a.PropertyChanged-=OnAspectChanged;}) ; (Respect=value??Laboratory).Set(a=>{a.CollectionChanged+=OnAspectChanged;a.PropertyChanged+=OnAspectChanged;}) ; AspectAxisGrid.CanUserAddRows = AspectAxisGrid.CanUserDeleteRows = AspectTraitsGrid.CanUserAddRows = AspectTraitsGrid.CanUserDeleteRows = AspectsGrid.SelectedItems.Count<=1 ; Sources = null ; } } Aspect Respect = Laboratory ;
-		public IEnumerable<Aspect> Sources { get => Resources.Issue(Sourcer) ; set => PropertyChangedOn("Aspect,Sources",sources=value) ; } (Func<Aspect,bool> Filter,Func<IEnumerable<Aspect>,IEnumerable<Aspect>> Query)[] Sourcer ;
-		new IEnumerable<Aspect> Resources => sources ??( sources = new Aid.Collections.ObservableList<Aspect>(ActionsProjection) ) ; IEnumerable<Aspect> sources ;
+		public Aspect Aspect { get => Respect ; protected set { if( (value??Laboratory)==Aspect ) return ; Aspect.Set(a=>{a.CollectionChanged-=OnAspectChanged;a.PropertyChanged-=OnAspectChanged;}) ; (Respect=value??Laboratory).Set(a=>{a.CollectionChanged+=OnAspectChanged;a.PropertyChanged+=OnAspectChanged;}) ; AspectAxisGrid.CanUserAddRows = AspectAxisGrid.CanUserDeleteRows = AspectTraitsGrid.CanUserAddRows = AspectTraitsGrid.CanUserDeleteRows = AspectsGrid.SelectedItems.Count<=1 ; Resources = null ; PropertyChangedOn("Aspect",value) ; } } Aspect Respect = Laboratory ;
+		public IEnumerable<Aspect> Sources { get => Resources.Issue(Sourcer) ; set => PropertyChangedOn("Sources",value) ; } (Func<Aspect,bool> Filter,Func<IEnumerable<Aspect>,IEnumerable<Aspect>> Query)[] Sourcer ;
+		new IEnumerable<Aspect> Resources { get => sources ??( sources = new Aid.Collections.ObservableList<Aspect>(ActionsProjection) ) ; set { PropertyChangedOn("Resources", GraphingResources = sources = value ) ; Sources = value ; } } IEnumerable<Aspect> sources ;
 		Aspect Projection( Pathable path ) => new Aspect(Aspect){Source=path.Spectrum} ;
 		IEnumerable<Aspect> Projection( IEnumerable<Pathable> p ) => p.Select(Projection).ToArray().Reprojection() ;
 		IEnumerable<Aspect> ActionsProjection => Presources.Get( p => Aspect is Path.Aspect ? p.Select(s=>s.Spectrum) : Projection(p) ) ;
@@ -101,18 +101,18 @@ namespace Rob.Act.Analyze
 		#endregion
 
 		void SourcesGrid_SelectionChanged( object sender , SelectionChangedEventArgs e ) => Sources = sources ;
-		void AspectTraitsGrid_SelectionChanged( object sender, SelectionChangedEventArgs e ) => new HashSet<string>(AspectTraitsGrid.SelectedItems.OfType<Aspect.Traitlet>().Select(t=>t.Spec)).Set(t=>SourcesGrid.Columns.Skip(1).Each(c=>c.Visibility=t.Contains(c.Header)?Visibility.Hidden:Visibility.Visible)) ;
+		void AspectTraitsGrid_SelectionChanged( object sender , SelectionChangedEventArgs e ) => new HashSet<string>(AspectTraitsGrid.SelectedItems.OfType<Aspect.Traitlet>().Select(t=>t.Spec)).Set(t=>SourcesGrid.Columns.Skip(1).Each(c=>c.Visibility=t.Contains(c.Header)?Visibility.Hidden:Visibility.Visible)) ;
 		void CoordinatesGrid_SelectionChanged( object sender , SelectionChangedEventArgs e ) { if( MapTab.IsSelected ) Map_Draw(this) ; }
-		void OnAspectChanged( object subject , NotifyCollectionChangedEventArgs arg=null ) { var sub = Aspect is Path.Aspect ? SpectrumTabs : AspectTabs ; Revoke : var six = sub.SelectedIndex ; if( sub==AspectTabs || sub==QuantileTabs ) Sources = null ; sub.SelectedIndex = -1 ; sub.SelectedIndex = six ; if( sub==AspectTabs ) { sub = QuantileTabs ; goto Revoke ; } }
+		void OnAspectChanged( object subject , NotifyCollectionChangedEventArgs arg=null ) { var sub = Aspect is Path.Aspect ? SpectrumTabs : AspectTabs ; Revoke : var six = sub.SelectedIndex ; if( sub==AspectTabs || sub==QuantileTabs ) Resources = null ; sub.SelectedIndex = -1 ; sub.SelectedIndex = six ; if( sub==AspectTabs ) { sub = QuantileTabs ; goto Revoke ; } }
 		void OnAspectChanged( object subject , PropertyChangedEventArgs arg ) => OnAspectChanged(subject) ;
-		void BookGrid_SelectionChanged( object sender , SelectionChangedEventArgs e ) { if( BlockSourcesUpdate ) return ; Sources_Update(e) ; Grid_Coloring(sender) ; }
-		void Sources_Update( SelectionChangedEventArgs e )
+		void BookGrid_SelectionChanged( object sender , SelectionChangedEventArgs e ) { if( BlockSourcesUpdate ) return ; Resources_Update(e) ; Grid_Coloring(sender) ; }
+		void Resources_Update( SelectionChangedEventArgs e )
 		{
 			//if( Multiaspected ) { Sources = null ; return ; } // inoptimal solution
 			if( sources is IList<Aspect> sl ); else return ;
 			foreach( Pathable path in e.RemovedItems ) sl.IndexIf(a=>a.Raw==path).Use(sl.RemoveAt) ; foreach( Pathable path in e.AddedItems ) if( !sl.Any(a=>a.Raw==path) ) Resource(path).Set(sl.Add) ; // Individual aspect perspective update .
-			if( Multiaspected ) sl.Reprojection() ; // Update of multi-sources for each aspect .
-			Sources = sources ;
+			if( !Aspect.Regular ) sl.Reprojection() ; // Update of multi-sources for each aspect .
+			Resources = sources ;
 		}
 		async internal void Grid_Coloring( object sender ) { for( var success = RecolorGrid(sender)?0:10 ; success>0 ; success -= RecolorGrid(sender)?success:1 ) await Task.Delay(100) ; }
 		bool RecolorGrid( object sender ) { var success = true ; if( sender is DataGrid bg ); else return success ; var gen = bg.ItemContainerGenerator ; foreach( var item in bg.Items ) if( gen.ContainerFromItem(item) is DataGridRow row ) if( row.Cell(0) is DataGridCell cell && cell.Foreground is SolidColorBrush b && Coloring(item) is Color c && b.Color!=c ) cell.Foreground = new SolidColorBrush(c) ; else success = false ; return success ; }
@@ -157,13 +157,38 @@ namespace Rob.Act.Analyze
 		#region Graphing
 		void Graph_Draw( object sender , RoutedEventArgs e = null ) { ViewPanel = GraphPanel ; GraphPanel.Children.Clear() ; switch( ViewType ) { case "Aspect" : case "Spectrum" : GraphDrawAspect() ; return ; case "Quantile" : GraphDrawQuantile() ; return ; } }
 		void Map_Draw( object sender , RoutedEventArgs e = null ) { ViewPanel = MapPanel ; MapPanel.Children.Clear() ; switch( ViewType ) { case "Aspect" : case "Spectrum" : MapDrawAspect() ; return ; case "Quantile" : GraphDrawQuantile() ; return ; } }
+		#region State
 		string ViewType ; Canvas ViewPanel ; Dictionary<string,AxedEnumerable> QuantileData = new Dictionary<string,AxedEnumerable>() ;
 		(double Width,double Height) MainFrameSize => (MainFrame.ColumnDefinitions[1].ActualWidth-ViewScreenBorder.Width,MainFrame.RowDefinitions[1].ActualHeight-ViewScreenBorder.Height) ;
 		IEnumerable<Aspect> GraphingSources => Sources.Except(SourcesGrid.SelectedItems.OfType<Aspect>()) ;
+		IEnumerable<Aspect> GraphingResources { get => Resources ; set { if( GraphingSourcesUpdate = value!=null ); else GraphingValue = null ; } }
+		IEnumerable<Axe> GraphingAxes => AspectAxisGrid.SelectedItems.OfType<Axe>().ToArray() ;
+		List<(string Aspect,List<(string Spec,double?[] Val)> Axes)> GraphingValue { get => graval.Set(_=>UpdateGraphingAxes()).Set(_=>UpdateGraphingSources()).Get(_=>graval) ; set { graval = value ; GraphingRange = null ; } } List<(string Aspect,List<(string Spec,double?[] Val)> Axes)> graval ;
+		Dictionary<string,(double Min,double Max)> GraphingRange ; (IList Added,IList Removed) GraphingAxesUpdate ; bool GraphingSourcesUpdate ;
+		void UpdateGraphingAxes()
+		{
+			var (added,removed) = GraphingAxesUpdate ; foreach( var asp in graval )
+			{
+				//if( removed?.Count>0 ) foreach( var axe in removed ) asp.Axes.IndexWhere(a=>a.Spec==axe.Spec).nil(i=>i<0).Use(asp.Axes.RemoveAt) ; // removing is not applied to optimize reuse of axe
+				if( added?.Count>0 ) { var asv = GraphingResources.One(a=>a.Spec==asp.Aspect) ; foreach( Axe axe in added ) if( asp.Axes.Any(a=>a.Spec==axe.Spec) ); else asp.Axes.Add((axe.Spec,asv[axe.Spec].ToArray())) ; }
+			}
+			GraphingAxesUpdate = (null,null) ; if( added?.Count>0 ) GraphingRange = null ;
+		}
+		void UpdateGraphingSources()
+		{
+			if( GraphingSourcesUpdate && GraphingResources is IEnumerable<Aspect> sources ) if( graval.Count<=0 || sources.Any(s=>!s.Regular) ) GraphingValue = null ; else
+			{
+				sources.Except(s=>s.Spec,graval.Select(s=>s.Aspect)).ToArray().Each(source=>graval.Add((source.Spec,source.Intersect(a=>a.Spec,graval[0].Axes.Select(x=>x.Spec)).Select(a=>(a.Spec,a.ToArray())).ToList()))) ;
+				graval.Except(s=>s.Aspect,sources.Select(s=>s.Spec)).ToArray().Each(a=>graval.Remove(a)) ;
+				GraphingRange = null ;
+			}
+			GraphingSourcesUpdate = false ;
+		}
+		#endregion
 		void GraphDrawAspect()
 		{
-			var axes = AspectAxisGrid.SelectedItems.OfType<Axe>().ToArray() ; var yaxes = axes.Skip(1).Select(a=>a.Spec).ToArray() ; if( yaxes.Length<1 || !( AspectAxisGrid.SelectedItem is Axe xaxe ) ) return ;
-			(var width,var height) = ViewFrame = MainFrameSize ; var sources = GraphingSources ;
+			var axes = GraphingAxes ; var yaxes = axes.Skip(1).Select(a=>a.Spec).ToArray() ; if( yaxes.Length<1 ||!( AspectAxisGrid.SelectedItem is Axe xaxe ) ) return ;
+			(var width,var height) = ViewFrame = MainFrameSize ;
 			{
 				var brush = new SolidColorBrush(new Color{A=127,R=200,G=200,B=200}) ; var dash = new DoubleCollection{4} ;
 				for( var m=0 ; m<=width ; m+=50 ) GraphPanel.Children.Add( new Line{ X1 = m , Y1 = 0 , X2 = m , Y2 = height , Stroke = brush , StrokeDashArray = dash } ) ;
@@ -172,8 +197,14 @@ namespace Rob.Act.Analyze
 				for( var m=0 ; m<=width ; m+=10 ) GraphPanel.Children.Add( new Line{ X1 = m , Y1 = 0 , X2 = m , Y2 = height , Stroke = brush , StrokeDashArray = dash } ) ;
 				for( var m=height ; m>=0 ; m-=10 ) GraphPanel.Children.Add( new Line{ X1 = 0 , Y1 = m , X2 = width , Y2 = m , Stroke = brush , StrokeDashArray = dash } ) ;
 			}
-			var rng = new Dictionary<string,(double Min,double Max)>() ;
-			sources.SelectMany(s=>s).Each(a=>{if(a.Any(q=>q!=null))if(!rng.ContainsKey(a.Spec))rng[a.Spec]=(a.Min().Value,a.Max().Value);else{rng[a.Spec]=(Math.Min(rng[a.Spec].Min,a.Min().Value),Math.Max(rng[a.Spec].Max,a.Max().Value));}}) ; if( !rng.ContainsKey(xaxe.Spec) ) return ;
+			var val = GraphingValue ??( GraphingValue = GraphingResources.Select(asp=>(asp.Spec,asp.Where(a=>a.Spec==xaxe.Spec||yaxes.Contains(a.Spec)).Select(a=>(a.Spec,a.ToArray())).ToList())).ToList() ) ;
+			var rng = GraphingRange ; if( rng==null )
+			{
+				GraphingRange = rng = new Dictionary<string,(double Min,double Max)>() ;
+				foreach( var vax in val.SelectMany(s=>s.Axes) ) if( vax.Val.Where(v=>v!=null).Cast<double>().ToArray() is double[] a && a.Length>0 )
+					rng[vax.Spec] = rng.ContainsKey(vax.Spec) ? rng[vax.Spec] = (Math.Min(rng[vax.Spec].Min,a.Min()),Math.Max(rng[vax.Spec].Max,a.Max())) : (a.Min(),a.Max()) ;
+			}
+			if( !rng.ContainsKey(xaxe.Spec) ) return ;
 			{
 				var x = rng[xaxe.Spec] ; var axe = xaxe ; Filter.Entry.Binding axb = axe.Binder ; string format( double v ) => axe.Binder.No() ? Format(v) : axb.Of(v) ;
 				for( var m=0 ; m<=width ; m+=100 ) GraphPanel.Children.Add( new Label{ Content=format(ScreenX(x.Min+m*(x.Max-x.Min)/width,x)) , Foreground=Brushes.Gray }.Set(l=>{Canvas.SetLeft(l,m-5);Canvas.SetTop(l,height-20);}) ) ;
@@ -186,20 +217,19 @@ namespace Rob.Act.Analyze
 					if( y.Min<0 && y.Max>0 ) { var yZero = ScreenY(y.Max/(y.Max-y.Min)*height) ; GraphPanel.Children.Add( new Line{ X1 = 0 , Y1 = yZero , X2 = width , Y2 = yZero , Stroke = Brushes.Gray } ) ; }
 				}
 			}
-			foreach( var asp in sources )
+			foreach( var asp in GraphingSources )
 			{
-				var xax = asp[xaxe.Spec] ; var color = new SolidColorBrush(Coloring(asp)) ; foreach( var ax in asp ) if( yaxes.Contains(ax.Spec) ) try
+				var asv = val.One(a=>a.Aspect==asp.Spec) ; var xax = asv.Axes.One(a=>a.Spec==xaxe.Spec) ; var color = new SolidColorBrush(Coloring(asp)) ; foreach( var ax in asv.Axes ) if( yaxes.Contains(ax.Spec) ) try
 				{
 					var ptss = new List<(int Count,int From)>() ;
 					{
-						int c,i,ac ; for( i=0 , c=0 , ac=ax.Count ; i<ac ; ++i ) try
-						{ var stop = false ; if( xax[i]!=null&&ax[i]!=null ) ++c ; else stop = true ; if( stop||asp.Raw?[i]?.Mark==Mark.Stop ) { if( c>0 ) ptss.Add((c,i-c+(stop?0:1))) ; c = 0 ; } }
+						int c,i,ac ; for( i=0 , c=0 , ac=ax.Val.Length ; i<ac ; ++i ) try { var stop = false ; if( xax.Val.At(i)!=null&&ax.Val.At(i)!=null ) ++c ; else stop = true ; if( stop||asp.Raw?[i]?.Mark==Mark.Stop ) { if( c>0 ) ptss.Add((c,i-c+(stop?0:1))) ; c = 0 ; } }
 						catch( System.Exception e ) { Trace.TraceWarning($"Points calculation problem at {i}/{c}/{ac} : {e}") ; }
 						if( c>0 ) ptss.Add((c,i-c)) ;
 					}
 					foreach( var pts in ptss ) GraphPanel.Children.Add( new Polyline{
 						Stroke = color , StrokeDashArray = Array.IndexOf(yaxes,ax.Spec).Get(j=>j<1?null:new DoubleCollection{j}) ,
-						Points = new PointCollection(pts.Count.Steps(pts.From).Select(i=>ScreenPoint(((xax[i].Value-rng[xax.Spec].Min)/(rng[xax.Spec].Max-rng[xax.Spec].Min).nil()*width??0)+asp.Offset,height-(ax[i].Value-rng[ax.Spec].Min)/(rng[ax.Spec].Max-rng[ax.Spec].Min).nil()*height??0)))
+						Points = new PointCollection(pts.Count.Steps(pts.From).Select(i=>ScreenPoint(((xax.Val[i].Value-rng[xax.Spec].Min)/(rng[xax.Spec].Max-rng[xax.Spec].Min).nil()*width??0)+asp.Offset,height-(ax.Val[i].Value-rng[ax.Spec].Min)/(rng[ax.Spec].Max-rng[ax.Spec].Min).nil()*height??0)))
 					} ) ;
 				}
 				catch( System.Exception ex ) { Trace.TraceWarning(ex.Stringy()) ; }
@@ -209,7 +239,7 @@ namespace Rob.Act.Analyze
 		}
 		void MapDrawAspect()
 		{
-			var axes = AspectAxisGrid.SelectedItems.OfType<Axe>().ToArray() ; var yaxes = axes.Skip(1).Select(a=>a.Spec).ToArray() ; if( yaxes.Length<1 || !( AspectAxisGrid.SelectedItem is Axe xaxe ) ) return ;
+			var axes = GraphingAxes ; var yaxes = axes.Skip(1).Select(a=>a.Spec).ToArray() ; if( yaxes.Length<1 || !( AspectAxisGrid.SelectedItem is Axe xaxe ) ) return ;
 			(var width,var height) = ViewFrame = MainFrameSize ;
 			{
 				var brush = new SolidColorBrush(new Color{A=127,R=200,G=200,B=200}) ; var dash = new DoubleCollection{4} ;
@@ -220,7 +250,8 @@ namespace Rob.Act.Analyze
 				for( var m=height ; m>=0 ; m-=10 ) MapPanel.Children.Add( new Line{ X1 = 0 , Y1 = m , X2 = width , Y2 = m , Stroke = brush , StrokeDashArray = dash } ) ;
 			}
 			var rng = new Dictionary<string,(double Min,double Max)>() ; var sources = GraphingSources ;
-			sources.SelectMany(s=>s).Each(a=>{if(a.Any(q=>q!=null))if(!rng.ContainsKey(a.Spec))rng[a.Spec]=(a.Min().Value,a.Max().Value);else{rng[a.Spec]=(Math.Min(rng[a.Spec].Min,a.Min().Value),Math.Max(rng[a.Spec].Max,a.Max().Value));}}) ; if( !rng.ContainsKey(xaxe.Spec) ) return ;
+			sources.SelectMany(s=>s).Each(a=>{if(a.Any(q=>q!=null))if(!rng.ContainsKey(a.Spec))rng[a.Spec]=(a.Min().Value,a.Max().Value);else{rng[a.Spec]=(Math.Min(rng[a.Spec].Min,a.Min().Value),Math.Max(rng[a.Spec].Max,a.Max().Value));}}) ;
+			if( !rng.ContainsKey(xaxe.Spec) ) return ;
 			{
 				var x = rng[xaxe.Spec] ; var axe = xaxe ; Filter.Entry.Binding axb = axe.Binder ; string format( double v , int p ) => axe.Binder.No() ? Format(v,p) : axb.Of(v) ;
 				for( var m=0 ; m<=width ; m+=100 ) MapPanel.Children.Add( new Label{ Content=format(ScreenX(x.Min+m*(x.Max-x.Min)/width,x),5) , Foreground=Brushes.Gray }.Set(l=>{Canvas.SetLeft(l,m-5);Canvas.SetTop(l,height-20);}) ) ;
@@ -278,7 +309,7 @@ namespace Rob.Act.Analyze
 		}
 		void GraphDrawQuantile()
 		{
-			var axes = AspectAxisGrid.SelectedItems.OfType<Axe>().ToArray() ; var yaxes = axes.Skip(1).Select(a=>a.Spec).ToArray() ; var selasps = GraphingSources.ToArray() ;//SourcesGrid.SelectedItems.Null(s=>s.Count<=0) ;
+			var axes = GraphingAxes ; var yaxes = axes.Skip(1).Select(a=>a.Spec).ToArray() ; var selasps = GraphingSources.ToArray() ;//SourcesGrid.SelectedItems.Null(s=>s.Count<=0) ;
 			(var width,var height) = ViewFrame = MainFrameSize ;
 			{
 				var brush = new SolidColorBrush(new Color{A=127,R=127,G=127,B=127}) ; var dash = new DoubleCollection{4} ;
@@ -320,7 +351,7 @@ namespace Rob.Act.Analyze
 		static readonly FontStretch[] Fostres = new[]{ FontStretches.UltraExpanded , FontStretches.ExtraExpanded , FontStretches.Expanded , FontStretches.SemiExpanded , FontStretches.Normal , FontStretches.SemiCondensed , FontStretches.Condensed , FontStretches.ExtraCondensed , FontStretches.UltraCondensed } ;
 		static readonly FontWeight[] Foweis = new[]{ /*FontWeights.ExtraBlack , FontWeights.Black ,*/ FontWeights.ExtraBold , FontWeights.Bold , FontWeights.SemiBold , FontWeights.Medium , FontWeights.Normal , FontWeights.Light , FontWeights.ExtraLight , FontWeights.Thin } ;
 		Color Coloring( int index ) => index<0 ? Colors.Black : Colos[index%Colos.Length] ;
-		void AspectAxisGrid_SelectionChanged( object sender , SelectionChangedEventArgs e ) { var success = RefontAxes(sender) ; if( GraphTab.IsSelected ) Graph_Draw(this) ; if( MapTab.IsSelected ) Map_Draw(this) ; /*while( !success ) { await Task.Delay(100) ; success = RefontAxes(sender) ; }*/ }
+		void AspectAxisGrid_SelectionChanged( object sender , SelectionChangedEventArgs e ) { var success = RefontAxes(sender) ; GraphingAxesUpdate = (e.AddedItems,e.RemovedItems) ; if( GraphTab.IsSelected ) Graph_Draw(this) ; if( MapTab.IsSelected ) Map_Draw(this) ; /*while( !success ) { await Task.Delay(100) ; success = RefontAxes(sender) ; }*/ }
 		bool RefontAxes( object sender )
 		{
 			var success = true ; if( sender is DataGrid grid );else return success ; var gen = grid.ItemContainerGenerator ; var sel = grid.SelectedItem ; int ix = 0 ; var sels = grid.SelectedItems.OfType<Axe>().ToArray() ;
