@@ -199,7 +199,7 @@ namespace Rob.Act
 		#endregion
 
 		public override string ToString() => $"{Action} {Sign} {Distance/1000:0.00}km {Exposion} {"\\ {0} /".Comb(MaxExposion)} {MinEffort.Get(e=>$"{e}W\\")}{MinMaxEffort.Get(e=>$"{e}W")}:{AeroEffort.Get(a=>$"{a:#W}")} {Trace} {Tags}" ;
-		public override string Sign => Dominant ? Date.ToString() : base.Sign ;
+		public override string Sign => Dominant ? Date.ToString() : base.Sign ; // Parallel accessor of points . Can be made resistent if adequate updates are satisfied to make it relevant . 
 
 		#region Implementation
 		public void Rely( Path lead )
@@ -275,6 +275,7 @@ namespace Rob.Act
 		#endregion
 
 		public override Metax Metax { set { if( Dominant && Metax!=null ) Metax.Basis = value ; else base.Metax = value ; } }
+		public IEnumerable<Point> Pointes => new Aid.Collections.ObservableList<Point>().Set(p=>Task.Factory.StartNew(()=>this.Each(p.Add))) ;
 
 		#region Comparation
 		public virtual bool Equals( Pathable path ) => path is Path p && (this as Point).Equals(p) && Content.SequenceEquate(p.Content,(x,y)=>x.EqualsRestricted(y)) && Metax?.Equals(p.Metax)!=false ;

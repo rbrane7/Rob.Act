@@ -12,7 +12,7 @@ namespace Rob.Act
 	using System.ComponentModel ;
 	using Quant = Double ;
 	using Aid.Math ;
-	public interface Axable : Aid.Gettable<int,Quant?> , Aid.Gettable<Quant,Quant> , Aid.Countable<Quant?> { string Spec { get; } }
+	public interface Axable : Aid.Gettable<int,Quant?> , Aid.Gettable<Quant,Quant> , Aid.Countable<Quant?> { string Spec {get;} }
 	public class Axe : Axable , INotifyPropertyChanged
 	{
 		public readonly static Support No = new Support(null){resolver=i=>null as Quant?} , One = new Support(null){resolver=i=>1} ;

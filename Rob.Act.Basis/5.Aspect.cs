@@ -12,10 +12,10 @@ using Aid.Extension;
 namespace Rob.Act
 {
 	using Quant = Double ;
-	public interface Contextable { [LambdaContext.Dominant] Axe this[ string key ] { get; } Axe.Support this[ IEnumerable<int> fragment ] { get; } Path Raw { get; } Aspect.Traits Trait { get; } }
-	public interface Contextables { [LambdaContext.Dominant] Axe this[ string key ] { get; } Axe.Support this[ IEnumerable<int> fragment ] { get; } Aspectable this[ int at ] { get; } Path Raw( int at = 0 ) ; }
-	public interface Aspectable : Aid.Gettable<int,Axe> , Contextable , Resourcable , Aid.Countable<Axe> { string Spec { get; } Aspect Base { get; } }
-	public interface Resourcable { Aspectable Source { set; } Aspectable[] Sources { set; } Aspect.Point.Iterable Points { get; } }
+	public interface Contextable { [LambdaContext.Dominant] Axe this[ string key ] {get;} Axe.Support this[ IEnumerable<int> fragment ] {get;} Path Raw {get;} Aspect.Traits Trait {get;} }
+	public interface Contextables { [LambdaContext.Dominant] Axe this[ string key ] {get;} Axe.Support this[ IEnumerable<int> fragment ] {get;} Aspectable this[ int at ] {get;} Path Raw( int at = 0 ) ; }
+	public interface Aspectable : Aid.Gettable<int,Axe> , Contextable , Resourcable , Aid.Countable<Axe> { string Spec {get;} Aspect Base {get;} }
+	public interface Resourcable { Aspectable Source {set;} Aspectable[] Sources {set;} Aspect.Point.Iterable Points {get;} }
 	public struct Aspectables : Aid.Gettable<int,Aspectable> , Aid.Gettable<Aspectable> , Aid.Countable<Aspectable> , Resourcable
 	{
 		public static Func<IEnumerable<Aspectable>> The ;
@@ -59,6 +59,7 @@ namespace Rob.Act
 		public bool Regular => this.All(a=>a.Regular) ;
 		IEnumerable<Aspectable> Resources => this.SelectMany(a=>a.Resources).Distinct() ;
 		public virtual Point.Iterable Points => new Point.Iterator{ Context = this } ;
+		public virtual IEnumerable<Point> Pointes => new Point.Iterator.Para(this) ; // Parallel accessor of points . Can be made resistent if adequate updates are satisfied to make it relevant . 
 		public int Index( string axe ) => IndexOf(this[axe]) ;
 		public virtual Path Raw => Source?.Raw ;
 		public Aspect Base => Raw?.Spectrum ;
@@ -68,7 +69,7 @@ namespace Rob.Act
 		#endregion
 		public struct Point : Quantable , IEnumerable<Quant?>
 		{
-			public interface Iterable : IEnumerable<Point> { int Count { get; } Aspectable Context { get; } Point this[ int at ] { get; } }
+			public interface Iterable : IEnumerable<Point> { int Count {get;} Aspectable Context {get;} Point this[ int at ] {get;} }
 			readonly Aspect Context ; readonly Quant?[] Content ;
 			public Point( Aspect context , int at ) { Context = context ; Content = context.Select(a=>a[at]).ToArray() ; var raw = context.Raw?[at] ; Mark = raw?.Mark??Mark.No ; Tags = raw?.Tags ; }
 			public Quant? this[ uint key ] => Content.At((int)key) ;
@@ -76,13 +77,19 @@ namespace Rob.Act
 			public IEnumerator<Quant?> GetEnumerator() => Content.Cast<Quant?>().GetEnumerator() ; IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
 			public Mark Mark { get ; set ; }
 			public Mark? Marklet => Mark.nil() ;
-			public string Tags { get ; set ; }
+			public string Tags {get;set;}
 			public struct Iterator : Iterable
 			{
-				public Aspectable Context { get; set; }
+				public Aspectable Context {get;set;}
 				public int Count => Context?.Count>0 ? Context.Max(a=>a.Count) : 0 ;
 				public IEnumerator<Point> GetEnumerator() { for( int i=0 , count=Count ; i<count ; ++i ) yield return this[i] ; } IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
 				public Point this[ int at ] => new Point(Context as Aspect,at) ;
+				public class Para : Aid.Collections.ObservableList<Point> , Iterable
+				{
+					public Aspectable Context => Source.Context ; Iterator Source ;
+					public Para( Aspectable context ) => Source = new Iterator{ Context = context } ;
+					public override IEnumerator<Point> GetEnumerator() { Task.Factory.StartNew(()=>Source.Each(Add)) ; return base.GetEnumerator() ; }
+				}
 			}
 		}
 		public event NotifyCollectionChangedEventHandler CollectionChanged { add => collectionChanged += value.DispatchResolve() ; remove => collectionChanged -= value.DispatchResolve() ; } NotifyCollectionChangedEventHandler collectionChanged ;
@@ -203,7 +210,7 @@ namespace Rob.Act
 			public override Path Raw => Context ;
 			public class Iterator : Point.Iterable
 			{
-				public Aspectable Context { get; set; }
+				public Aspectable Context {get;set;}
 				public int Count => Context?.Raw?.Count ?? 0 ; //Math.Max((Context as Aspect)?.Context.Count??0,Context.Where(a=>!(a is Axe)&&a.Counts).Null(e=>e.Count()<=0)?.Max(a=>a.Count)??0) ;
 				public IEnumerator<Point> GetEnumerator() { for( int i=0 , count=Count ; i<count ; ++i ) yield return this[i] ; } IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
 				public Point this[ int at ] => new Point(Context as Aspect,at) ;
