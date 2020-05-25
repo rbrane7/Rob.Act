@@ -101,6 +101,7 @@ namespace Rob.Act.Analyze
 		public Aid.Collections.ObservableList<Axe> Axes { get ; private set ; } = new Aid.Collections.ObservableList<Axe>() ;
 		/// <summary> Aspect is never null , either Spectrum , or aspect ready for projection . If without selection then set to <see cref="Laboratory"/> . </summary>
 		public Aspect Aspect { get => Respect ; protected set { if( (value??Laboratory)==Aspect ) return ; Aspect.Set(a=>{a.CollectionChanged-=OnAspectChanged;a.PropertyChanged-=OnAspectChanged;}) ; (Respect=value??Laboratory).Set(a=>{a.CollectionChanged+=OnAspectChanged;a.PropertyChanged+=OnAspectChanged;}) ; AspectAxisGrid.CanUserAddRows = AspectAxisGrid.CanUserDeleteRows = AspectTraitsGrid.CanUserAddRows = AspectTraitsGrid.CanUserDeleteRows = AspectsGrid.SelectedItems.Count<=1 ; Resources = null ; PropertyChangedOn("Aspect",value) ; } } Aspect Respect = Laboratory ;
+		public IEnumerable<Axe> Quantiles { get => quantiles??Enumerable.Empty<Axe>() ; private set { if( !quantiles.SequenceEquate(value) ) PropertyChangedOn("Quantiles",quantiles=value?.ToArray()) ; } } Axe[] quantiles ;
 		public IEnumerable<Aspect> Sources { get => Resources.Issue(Sourcer) ; set => PropertyChangedOn("Sources",value) ; } (Func<Aspect,bool> Filter,Func<IEnumerable<Aspect>,IEnumerable<Aspect>> Query)[] Sourcer ;
 		public new IEnumerable<Aspect> Resources { get => sources ??( sources = new Aid.Collections.ObservableList<Aspect>(ActionsProjection) ) ; set { PropertyChangedOn("Resources", DrawingResources = sources = value ) ; Sources = value ; } } IEnumerable<Aspect> sources ;
 		Aspect Projection( Pathable path ) => new Aspect(Aspect){Source=path.Spectrum} ;
@@ -144,7 +145,7 @@ namespace Rob.Act.Analyze
 			var grid = sender as DataGrid ; var src = Sources ; grid.Columns.Clear() ; if( grid.ItemsSource is Quantilable axe )
 			{
 				QuantileData[axe.Ax.Spec] = axe ; Filter.Entry.Binding b = axe.Ax.Binder , cb = axe.Axon?.Binder ;
-				grid.Columns.Add(new DataGridTextColumn{Header=b.Of(axe.Ax.Distribution?.FirstOrDefault()),Binding=new Binding("[0]"){StringFormat=b.Form,Converter=b.Converter}}) ;
+				grid.Columns.Add(new DataGridTextColumn{Header=b.Of(axe.Ax.Distribution.One()),Binding=new Binding("[0]"){StringFormat=b.Form,Converter=b.Converter}}) ;
 				uint i=1 ; foreach( var asp in src ) grid.Columns.Add(new DataGridTextColumn{Header=asp.Spec,Binding=new Binding($"[{i++}]"){StringFormat=cb.Form,Converter=cb.Converter}}) ;
 			}
 		}
@@ -186,9 +187,9 @@ namespace Rob.Act.Analyze
 		{
 			var tab = e.AddedItems.Count>0 ? e.AddedItems[0] as TabItem : null ; switch( tab?.Header as string )
 			{
-				case "Aspect" : QuantileTabs.ItemsSource = null ; ViewType = "Aspect" ; Aspect = AspectSelection ; break ;
-				case "Spectrum" : QuantileTabs.ItemsSource = null ; ViewType = "Spectrum" ; Aspect = (((SpectrumTabs.SelectedItem as TabItem)?.Content as DataGrid)?.ItemsSource as Pathable??SpectrumTabs.ItemsSource.OfType<Pathable>().One())?.Spectrum ; break ;
-				case "Quantile" : ViewType = "Quantile" ; QuantileTabs.ItemsSource = Aspect ; break ;
+				case "Aspect" : ViewType = "Aspect" ; /*QuantileTabs.ItemsSource = null ;*/ Aspect = AspectSelection ; break ;
+				case "Spectrum" : ViewType = "Spectrum" ; /*QuantileTabs.ItemsSource = null ;*/ Aspect = (((SpectrumTabs.SelectedItem as TabItem)?.Content as DataGrid)?.ItemsSource as Pathable??SpectrumTabs.ItemsSource.OfType<Pathable>().One())?.Spectrum ; break ;
+				case "Quantile" : ViewType = "Quantile" ; Quantiles = Aspect ; /*QuantileTabs.ItemsSource = Quantiles ;*/ break ;
 				case "Graph" : ViewPanel = GraphPanel ; break ;
 				case "Map" : ViewPanel = MapPanel ; break ;
 			}
@@ -353,7 +354,6 @@ namespace Rob.Act.Analyze
 		}
 		void GraphDrawQuantile()
 		{
-			var axes = DrawingAxes ; var yaxes = axes.Skip(1).Select(a=>a.Spec).ToArray() ; var selas = DrawingSources.ToArray() ; var relas = DrawingResources.ToArray() ;
 			(var width,var height) = ViewFrame = MainFrameSize ;
 			{
 				var brush = new SolidColorBrush(new Color{A=127,R=127,G=127,B=127}) ; var dash = new DoubleCollection{4} ;
@@ -363,8 +363,8 @@ namespace Rob.Act.Analyze
 				for( var m=0 ; m<=width ; m+=10 ) GraphPanel.Children.Add( new Line{ X1 = m , Y1 = 0 , X2 = m , Y2 = height , Stroke = brush , StrokeDashArray = dash } ) ;
 				for( var m=height ; m>=0 ; m-=10 ) GraphPanel.Children.Add( new Line{ X1 = 0 , Y1 = m , X2 = width , Y2 = m , Stroke = brush , StrokeDashArray = dash } ) ;
 			}
-			var rng = new List<KeyValuePair<string,(double Min,double Max)>>() ;
-			var k = 0 ; foreach( var axe in Aspect ) if( axe.Spec!=null && QuantileData.At(axe.Spec) is AxeQuantiles ax && ax.Count()>0 && yaxes.Contains(axe.Spec) )
+			var axes = DrawingAxes ; var yaxes = axes.Skip(1).Select(a=>a.Spec).ToArray() ; var selas = DrawingSources.ToArray() ; var relas = DrawingResources.ToArray() ; var rng = new List<KeyValuePair<string,(double Min,double Max)>>() ; var k = 0 ;
+			foreach( var axe in Quantiles ) if( axe.Spec!=null && QuantileData.At(axe.Spec) is Quantilable ax && ax.Count>0 && yaxes.Contains(axe.Spec) )
 			{
 				var axa = ax.Ax ; Filter.Entry.Binding axb = axa.Binder ; string format( double v ) => (axa?.Binder).No() ? Format(v) : axb.Of(v) ;
 				var val = ax.SelectMany(v=>v.Skip(1)) ; ((double Min,double Max) x,(double Min,double Max) y) = ((ax.Min(a=>a[0]),ax.Max(a=>a[0])),(val.Min(),val.Max())) ;
@@ -523,11 +523,15 @@ namespace Rob.Act.Analyze
 		public object Convert( object[] values , Type targetType , object parameter , CultureInfo culture )
 		{
 			if( values.At(0) is Axe ax && values.At(1) is IEnumerable<Aspect> srcs ); else return null ;
+#if true	// Parallel
+			return new AxeQuantiles.Para(ax,values.At(2) as Axe,srcs.ToArray()) ;
+#else
 			//var srcf = (values.At(3) as IEnumerable)?.OfType<Aspect>() ; var srcs = src.Except(srcf).Where(a=>a[ax.Spec]!=null) ;
 			var dis = (ax.Distribution??srcs.SelectMany(s=>s[ax.Spec].Distribution??Enumerable.Empty<double>()).Distinct().OrderBy(v=>v)).ToArray() ;
 			var axon = values.At(2) as Axe ; var res = srcs.Select(a=>a[ax.Spec].Quantile[dis,a[axon?.Spec]].ToArray()).ToArray() ;
 			try { return new AxeQuantiles{ Ax = ax , Axon = axon , Content = res.Length>0 && res[0].Length>0 ? res[0].Length.Steps().Select(i=>res.Length.Steps().Select(j=>res[j][i]).Prepend(dis[i+(dis.Length>res[0].Length?1:0)]).ToArray()) : Enumerable.Empty<double[]>() } ; }
 			catch( System.Exception e ) { Trace.TraceWarning(e.Stringy()) ; return new AxeQuantiles{ Ax = ax , Axon = axon , Content = Enumerable.Empty<double[]>() } ; }
+#endif
 		}
 		public object[] ConvertBack( object value , Type[] targetTypes , object parameter , CultureInfo culture ) => null ;
 	}
@@ -538,16 +542,23 @@ namespace Rob.Act.Analyze
 		public object Convert( object value , Type targetType , object parameter , CultureInfo culture ) => value is Aspect.Traits t ? t[(int)parameter].Get(r=>Bind(r.Bond).Of(r.Value)) : null ;
 		public object ConvertBack( object value , Type targetType , object parameter , CultureInfo culture ) => null ;
 	}
-	interface Quantilable : IEnumerable<double[]> { Axe Ax {get;} Axe Axon {get;} }
+	interface Quantilable : Aid.Countable<double[]> { Axe Ax {get;} Axe Axon {get;} }
 	struct AxeQuantiles : Quantilable
 	{
-		public Axe Ax { get; internal set; } public Axe Axon { get; internal set; } internal IEnumerable<double[]> Content ;
+		public Axe Ax {get;internal set;} public Axe Axon {get;internal set;} internal IEnumerable<double[]> Content ; public int Count => Content?.Count()??0 ;
 		public IEnumerator<double[]> GetEnumerator() => Content?.GetEnumerator()??Enumerable.Empty<double[]>().GetEnumerator() ; IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
 		public class Para : Aid.Collections.ObservableList<double[]> , Quantilable
 		{
-			AxeQuantiles Source ;
-			public Axe Ax => Source.Ax ;
-			public Axe Axon => Source.Axon ;
+			public Axe Ax {get;} public Axe Axon {get;} IEnumerable<Aspect> Source ;
+			public Para( Axe ax , Axe axon , params Aspect[] source ) { Ax = ax ; Axon = axon ; Source = source ; }
+			public override IEnumerator<double[]> GetEnumerator()
+			{
+				if( Count<=0 ) Task.Factory.StartNew(()=>{
+					var dis = (Ax.Distribution??Source.SelectMany(s=>s[Ax.Spec].Distribution??Enumerable.Empty<double>()).Distinct().OrderBy(v=>v)).ToArray() ; var res = Source.Select(a=>a[Ax.Spec].Quantile[dis,a[Axon?.Spec]].ToArray()).ToArray() ;
+					if( res.Length>0 && res[0].Length>0 ) res[0].Length.Steps().Select(i=>res.Length.Steps().Select(j=>res[j][i]).Prepend(dis[i+(dis.Length>res[0].Length?1:0)]).ToArray()).Each(Add) ;
+				}) ;
+				return base.GetEnumerator() ;
+			}
 		}
 	}
 	public class Filter : Aid.Collections.ObservableList<Filter.Entry>
