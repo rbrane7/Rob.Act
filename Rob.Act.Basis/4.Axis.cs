@@ -258,14 +258,14 @@ namespace Rob.Act
 		public struct Duo { public Quant? X , Y ; public static Duo operator+( Duo a , Duo b ) => new Duo{ X = a.X+b.X , Y = a.Y+b.Y } ; public static Duo operator/( Duo a , Quant b ) => new Duo{ X = a.X/b.nil() , Y = a.Y/b.nil() } ; public static Duo operator|( Duo a , Duo b ) => (a+b)/2 ; }
 		public struct Measure
 		{
-			readonly Axable Of , On ; BinMaplet<Quant,Quant> Cash ;
+			readonly Axable Of , On ; Mappable<Quant,Quant> Cash ;
 			public Measure( Axable of , Axable on = null ) { Of = of ; On = on ; Cash = null ; } 
-			public Quant this[ Quant at ] => (Cash??(Cash=New()))[at,true] ;
+			public Quant this[ Quant at ] => (Cash??(Cash=New()))[at,1] ;
 			Quant M( int i ) => On is Axable m ? m[i+1]-m[i]??0 : 1 ;
-			BinMaplet<Quant,Quant> New()
+			Mappable<Quant,Quant> New()
 			{
 				if( Of==null ) return null ;
-				var value = new BinMaplet<Quant,Quant>{Nil=()=>0} ; for( int i = 0 , c = Math.Max(Of.Count,On?.Count??0) ; i<c ; ++i ) if( Of[i] is Quant val ) value[val] += M(i) ;
+				var value = new Bin.Maplet<Quant,Quant>{Nil=()=>0} ; for( int i = 0 , c = Math.Max(Of.Count,On?.Count??0) ; i<c ; ++i ) if( Of[i] is Quant val ) value[val] += M(i) ;
 				Quant pre = 0 ; foreach( var entry in value.Entries(false) ) { entry.Value += pre ; pre = entry.Value ; }
 				return value ;
 			}
