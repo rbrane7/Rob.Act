@@ -129,8 +129,8 @@ namespace Rob.Act.Analyze
 		async internal void Grid_Coloring( object sender ) { for( var success = RecolorGrid(sender)?0:10 ; success>0 ; success -= RecolorGrid(sender)?success:1 ) await Task.Delay(100) ; }
 		bool RecolorGrid( object sender )
 		{
-			var success = true ; if( sender is DataGrid bg ); else return success ; var gen = bg.ItemContainerGenerator ;
-			foreach( var item in bg.Items ) if( gen.ContainerFromItem(item) is DataGridRow row )
+			var success = true ; if( sender is DataGrid bg ); else return success ;
+			var gen = bg.ItemContainerGenerator ; foreach( var item in bg.Items ) if( gen.ContainerFromItem(item) is DataGridRow row )
 				if( row.Cell(0) is DataGridCell cell && cell.Foreground is SolidColorBrush b && Coloring(item) is Color c && b.Color!=c ) cell.Foreground = new SolidColorBrush(c) ; else success = false ;
 			return success ;
 		}
@@ -185,17 +185,17 @@ namespace Rob.Act.Analyze
 		Aspect AspectSelection => AspectsGrid.SelectedItems.Count>1 ? new Aspect(AspectsGrid.SelectedItems.OfType<Aspect>()) : AspectsGrid.SelectedItem as Aspect ;
 		void DisplayTable_SelectionChanged( object sender , SelectionChangedEventArgs e )
 		{
-			var tab = e.AddedItems.Count>0 ? e.AddedItems[0] as TabItem : null ; switch( tab?.Header as string )
+			switch( (e.AddedItems.Count>0?e.AddedItems[0]as TabItem:null)?.Header as string )
 			{
-				case "Aspect" : ViewType = "Aspect" ; /*QuantileTabs.ItemsSource = null ;*/ Aspect = AspectSelection ; break ;
-				case "Spectrum" : ViewType = "Spectrum" ; /*QuantileTabs.ItemsSource = null ;*/ Aspect = (((SpectrumTabs.SelectedItem as TabItem)?.Content as DataGrid)?.ItemsSource as Pathable??SpectrumTabs.ItemsSource.OfType<Pathable>().One())?.Spectrum ; break ;
-				case "Quantile" : ViewType = "Quantile" ; Quantiles = Aspect ; /*QuantileTabs.ItemsSource = Quantiles ;*/ break ;
+				case "Aspect" : ViewType = "Aspect" ; Aspect = AspectSelection ; break ;
+				case "Spectrum" : ViewType = "Spectrum" ; Aspect = (((SpectrumTabs.SelectedItem as TabItem)?.Content as DataGrid)?.ItemsSource as Pathable??SpectrumTabs.ItemsSource.OfType<Pathable>().One())?.Spectrum ; break ;
+				case "Quantile" : ViewType = "Quantile" ; Quantiles = Aspect ; break ;
 				case "Graph" : ViewPanel = GraphPanel ; break ;
 				case "Map" : ViewPanel = MapPanel ; break ;
 			}
 		}
 		void DataGridDeleteCommandBinding_Executed( object sender , ExecutedRoutedEventArgs e ) => ((sender as DataGrid)?.ItemsSource as IList).Set(l=>(sender as DataGrid)?.SelectedItems.OfType<object>().ToArray().Each(l.Remove)) ;
-		void SourcesGridDeleteCommandBinding_Executed( object sender , ExecutedRoutedEventArgs e ) { (sources as IList).Set(l=>(sender as DataGrid)?.SelectedItems.OfType<Aspect>().ToArray().Each(a=>{l.Remove(a);Presources.Remove(a.Raw);})) ; }
+		void SourcesGridDeleteCommandBinding_Executed( object sender , ExecutedRoutedEventArgs e ) => (sources as IList).Set(l=>(sender as DataGrid)?.SelectedItems.OfType<Aspect>().ToArray().Each(a=>{l.Remove(a);Presources.Remove(a.Raw);})) ;
 
 		#region Graphing
 		void Graph_Draw( object sender , RoutedEventArgs e = null ) { ViewPanel = GraphPanel ; GraphPanel.Children.Clear() ; switch( ViewType ) { case "Aspect" : case "Spectrum" : GraphDrawAspect() ; return ; case "Quantile" : GraphDrawQuantile() ; return ; } }
@@ -352,7 +352,7 @@ namespace Rob.Act.Analyze
 			Hypercube = rng.Where(a=>xaxe.Spec==a.Key||yaxes.Contains(a.Key)).OrderBy(e=>e.Key==xaxe.Spec?0:Array.IndexOf(yaxes,e.Key)+1).ToArray() ; var co = Coordinates.ToLookup(c=>c.Axe) ; Coordinates.Clear() ;
 			Hypercube.Each(e=>Coordinates+=co[e.Key].One().Set(c=>{c.Range=e.Value;c.Bond=axes.FirstOrDefault(a=>a.Spec==e.Key)?.Binder;})??new Coordinate(this,e.Key){Range=e.Value,Bond=axes.FirstOrDefault(a=>a.Spec==e.Key)?.Binder}) ;
 		}
-		void GraphDrawQuantile()
+		async void GraphDrawQuantile()
 		{
 			(var width,var height) = ViewFrame = MainFrameSize ;
 			{
@@ -364,7 +364,7 @@ namespace Rob.Act.Analyze
 				for( var m=height ; m>=0 ; m-=10 ) GraphPanel.Children.Add( new Line{ X1 = 0 , Y1 = m , X2 = width , Y2 = m , Stroke = brush , StrokeDashArray = dash } ) ;
 			}
 			var axes = DrawingAxes ; var yaxes = axes.Skip(1).Select(a=>a.Spec).ToArray() ; var selas = DrawingSources.ToArray() ; var relas = DrawingResources.ToArray() ; var rng = new List<KeyValuePair<string,(double Min,double Max)>>() ; var k = 0 ;
-			foreach( var axe in Quantiles ) if( axe.Spec!=null && QuantileData.At(axe.Spec) is Quantilable ax && ax.Count>0 && yaxes.Contains(axe.Spec) )
+			foreach( var axe in Quantiles ) if( axe.Spec!=null && QuantileData.At(axe.Spec) is Quantilable ax && await ax.Count()>0 && yaxes.Contains(axe.Spec) )
 			{
 				var axa = ax.Ax ; Filter.Entry.Binding axb = axa.Binder ; string format( double v ) => (axa?.Binder).No() ? Format(v) : axb.Of(v) ;
 				var val = ax.SelectMany(v=>v.Skip(1)) ; ((double Min,double Max) x,(double Min,double Max) y) = ((ax.Min(a=>a[0]),ax.Max(a=>a[0])),(val.Min(),val.Max())) ;
@@ -466,7 +466,7 @@ namespace Rob.Act.Analyze
 		System.Windows.Point? ScreenMouse { get { if( ScreenRect==null || MousePoint==null ) return MousePoint ; (var width,var height) = MainFrameSize ; var p = MousePoint.Value ; var r = ScreenRect.Value ; return new System.Windows.Point(p.X*r.Size.Width/width+r.Location.X,p.Y*r.Size.Height/height+r.Location.Y) ; } }
 		void ViewPanel_MouseDown( object sender, MouseButtonEventArgs e ) => ScreenOrigin = MousePoint ;
 		void DisplayTable_MouseUp( object sender, MouseButtonEventArgs e ) { if( ScreenMouse==ScreenOrigin ) return ; var scr = ScreenOrigin.Get(s=>ScreenMouse.use(p=>new Rect(s,p))) ; if( scr==ScreenRect ) return ; ScreenRect = scr ; if( GraphTab.IsSelected ) Graph_Draw(sender) ; if( MapTab.IsSelected ) Map_Draw(sender) ; }
-		void DisplayTable_MouseDoubleClick( object sender, MouseButtonEventArgs e ) { /*var draw = ScreenRect!=null ;*/ ScreenOrigin = null ; ScreenRect = null ; /*if( draw )*/ if( GraphTab.IsSelected ) Graph_Draw(sender,e) ; else if( MapTab.IsSelected ) Map_Draw(sender,e) ; }
+		void DisplayTable_MouseDoubleClick( object sender, MouseButtonEventArgs e ) { ScreenOrigin = null ; ScreenRect = null ; if( GraphTab.IsSelected ) Graph_Draw(sender,e) ; else if( MapTab.IsSelected ) Map_Draw(sender,e) ; }
 		System.Windows.Point ScreenPoint( double x , double y ) => new System.Windows.Point(ScreenX(x),ScreenY(y)) ;
 		double ScreenX( double x ) { if( ScreenRect==null ) return x ; var r = ScreenRect.Value ; return (x-r.Location.X)*ViewFrame.Width/r.Size.Width ; }
 		double ScreenY( double y ) { if( ScreenRect==null ) return y ; var r = ScreenRect.Value ; return (y-r.Location.Y)*ViewFrame.Height/r.Size.Height ; }
@@ -542,23 +542,27 @@ namespace Rob.Act.Analyze
 		public object Convert( object value , Type targetType , object parameter , CultureInfo culture ) => value is Aspect.Traits t ? t[(int)parameter].Get(r=>Bind(r.Bond).Of(r.Value)) : null ;
 		public object ConvertBack( object value , Type targetType , object parameter , CultureInfo culture ) => null ;
 	}
-	interface Quantilable : Aid.Countable<double[]> { Axe Ax {get;} Axe Axon {get;} }
+	interface Quantilable : Aid.Countable<double[]> { Axe Ax {get;} Axe Axon {get;} Task<int> Count() ; }
 	struct AxeQuantiles : Quantilable
 	{
 		public Axe Ax {get;internal set;} public Axe Axon {get;internal set;} internal IEnumerable<double[]> Content ; public int Count => Content?.Count()??0 ;
 		public IEnumerator<double[]> GetEnumerator() => Content?.GetEnumerator()??Enumerable.Empty<double[]>().GetEnumerator() ; IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
+		async Task<int> Quantilable.Count() => Count ;
 		public class Para : Aid.Collections.ObservableList<double[]> , Quantilable
 		{
+			public bool Ready ; int ready ;
 			public Axe Ax {get;} public Axe Axon {get;} IEnumerable<Aspect> Source ;
 			public Para( Axe ax , Axe axon , params Aspect[] source ) { Ax = ax ; Axon = axon ; Source = source ; }
-			public override IEnumerator<double[]> GetEnumerator()
+			void Insure()
 			{
-				if( Count<=0 ) Task.Factory.StartNew(()=>{
+				if( System.Threading.Interlocked.CompareExchange(ref ready,1,0)==0 ) Task.Factory.StartNew(()=>{
 					var dis = (Ax.Distribution??Source.SelectMany(s=>s[Ax.Spec].Distribution??Enumerable.Empty<double>()).Distinct().OrderBy(v=>v)).ToArray() ; var res = Source.Select(a=>a[Ax.Spec].Quantile[dis,a[Axon?.Spec]].ToArray()).ToArray() ;
 					if( res.Length>0 && res[0].Length>0 ) res[0].Length.Steps().Select(i=>res.Length.Steps().Select(j=>res[j][i]).Prepend(dis[i+(dis.Length>res[0].Length?1:0)]).ToArray()).Each(Add) ;
+					Ready = true ;
 				}) ;
-				return base.GetEnumerator() ;
 			}
+			public override IEnumerator<double[]> GetEnumerator() { Insure() ; return base.GetEnumerator() ; }
+			async Task<int> Quantilable.Count() { if( !Ready ) await Task.Factory.StartNew(()=>System.Threading.SpinWait.SpinUntil(()=>Ready)) ; return base.Count ; }
 		}
 	}
 	public class Filter : Aid.Collections.ObservableList<Filter.Entry>
