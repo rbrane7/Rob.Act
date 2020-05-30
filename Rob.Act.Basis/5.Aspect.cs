@@ -18,7 +18,7 @@ namespace Rob.Act
 	public interface Resourcable { Aspectable Source {set;} Aspectable[] Sources {set;} Aspect.Point.Iterable Points {get;} }
 	public struct Aspectables : Aid.Gettable<int,Aspectable> , Aid.Gettable<Aspectable> , Aid.Countable<Aspectable> , Resourcable
 	{
-		public static Func<IEnumerable<Aspectable>> The ;
+		public static (Func<IEnumerable<Aspectable>> All,Func<IEnumerable<Aspectable>> Def) The ;
 		readonly Aspectable[] Content ;
 		public bool No => Content==null ;
 		public Aspectables( params Aspectable[] content ) => Content = content ;
@@ -40,12 +40,13 @@ namespace Rob.Act
 	}
 	public class Aspect : List<Axe> , IList , Aspectable , INotifyCollectionChanged , INotifyPropertyChanged
 	{
+		public static IEnumerable<Aspectable> Set => Aspectables.The.Def.Of() ;
 		public event PropertyChangedEventHandler PropertyChanged { add => propertyChanged += value.DispatchResolve() ; remove => propertyChanged -= value.DispatchResolve() ; } protected PropertyChangedEventHandler propertyChanged ;
-		public Aspect( IEnumerable<Aspect> sources ) : this(sources?.SelectMany(s=>s).Distinct(a=>a.Spec).Select(a=>new Axe(a))) { spec = sources?.Select(s=>s.Spec).Stringy(' ') ; sources?.SelectMany(s=>s.Trait).Distinct(t=>t.Spec).Each(t=>Trait.Add(new Traitlet(t))) ; }
-		public Aspect( Aspect source ) : this(source?.Select(a=>new Axe(a))) { spec = source?.Spec ; source.Trait.Each(t=>Trait.Add(new Traitlet(t))) ; taglet = source?.taglet ; }
+		public Aspect( IEnumerable<Aspect> sources ) : this(sources?.SelectMany(s=>s).Distinct(a=>a.Spec).Select(a=>new Axe(a,Set))) { spec = sources?.Select(s=>s.Spec).Stringy(' ') ; sources?.SelectMany(s=>s.Trait).Distinct(t=>t.Spec).Each(t=>Trait.Add(new Traitlet(t))) ; }
+		public Aspect( Aspect source ) : this(source?.Select(a=>new Axe(a,Set))) { spec = source?.Spec ; source.Trait.Each(t=>Trait.Add(new Traitlet(t))) ; taglet = source?.taglet ; }
 		public Aspect( IEnumerable<Axe> axes = null , Traits trait = null ) : base(axes??Enumerable.Empty<Axe>()) { foreach( var ax in this ) { ax.Own = this ; ax.PropertyChanged += OnChanged ; } Trait = (trait??new Traits()).Set(t=>t.Context=this) ; }
 		public Aspect() : this(axes:null) {} // Default constructor must be present to enable DataGrid implicit Add .
-		[LambdaContext.Dominant] public Axe this[ string key ] => this.FirstOrDefault(a=>a.Spec==key) /*?? Resources.Select(a=>a[key]).SingleOrNo()*/ ;
+		[LambdaContext.Dominant] public Axe this[ string key ] => this.One(a=>a.Spec==key) ?? Base.Null(b=>b==this)?[key] ;
 		public virtual string Spec { get => spec ; set { if( value==spec ) return ; spec = value ; propertyChanged.On(this,"Spec") ; Dirty = true ; } } string spec ;
 		public string Origin { get => origin ; set { origin = value.Set(v=>Spec=System.IO.Path.GetFileNameWithoutExtension(v).LeftFrom('?',all:true)) ; Dirty = true ; } } string origin ;
 		public string Score { get => $"{Spec} {Trait} {Tags}" ; set => propertyChanged.On(this,"Score") ; }
@@ -127,7 +128,7 @@ namespace Rob.Act
 			public string Bond { get => bond ; set => Changed("Bond",bond=value) ; } string bond ;
 			public string Lex { get => lex ; set => Changed("Lex,Value",Resolver=(lex=value).Compile<Func<Contextable,Quant?>>()) ; } Func<Contextable,Quant?> Resolver ; string lex ;
 			void Changed<Value>( string properties , Value value ) { propertyChanged.On(this,properties,value) ; Dirty = true ; }
-			public Quant? Value => Orphan ? null : Resolver?.Invoke(Context) ;
+			public Quant? Value { get { try { return Orphan ? null : Resolver?.Invoke(Context) ; } catch( System.Exception e ) { throw new InvalidOperationException($"Failed evaluating Trait {Spec} = {Lex} !",e) ; } } }
 			public override string ToString() => Orphan ? null : $"{Spec.Null(n=>n.No()).Get(s=>s+'=')}{new Basis.Binding(Bond).Of(Value)}" ;
 			public Traitlet() {} // Default constructor must be present to enable DataGrid implicit Add .
 			internal Traitlet( Traitlet source ) { name = source?.Spec ; bond = source?.Bond ; lex = source?.Lex ; Resolver = source?.Resolver ; }

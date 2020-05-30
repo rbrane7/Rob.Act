@@ -48,7 +48,7 @@ namespace Rob.Act.Analyze
 		public Main()
 		{
 			InitializeComponent() ; Presources = new Presources(BookGrid,this) ; AppDomain.CurrentDomain.Load(typeof(AxeOperations).Assembly.FullName) ; ViewPanel = GraphPanel ; DataContext = this ;
-			Doct += (this,"Main") ; Aspectables.The = ()=>Book.Select(p=>p.Spectrum).Union(Aspects) ; SourcesGrid.ItemContainerGenerator.ItemsChanged += SourcesGrid_ItemsChanged ; Task.Factory.StartNew(Load) ;
+			Doct += (this,"Main") ; Aspectables.The = (()=>Book.Entries.Select(p=>p.Spectrum).Union(Aspects.Entries),()=>Aspects.Entries) ; SourcesGrid.ItemContainerGenerator.ItemsChanged += SourcesGrid_ItemsChanged ; Task.Factory.StartNew(Load) ;
 		}
 		void Load()
 		{
@@ -170,7 +170,11 @@ namespace Rob.Act.Analyze
 		}
 		void AspectTabs_Selected( object sender , SelectionChangedEventArgs e )
 		{
-			var asp = e.AddedItems.Count>0 ? e.AddedItems[0] : null ; switch( (DisplayTable.SelectedItem as TabItem)?.Header ) { case "Aspect" : Aspect = AspectSelection ; break ; case "Spectrum" : (asp as Pathable)?.Spectrum.Set(a=>Aspect=a) ; break ; }
+			var asp = e.AddedItems.Count>0 ? e.AddedItems[0] : null ; switch( (DisplayTable.SelectedItem as TabItem)?.Header )
+			{
+				case "Aspect" : Aspect = AspectSelection ; break ; case "Spectrum" : (asp as Pathable)?.Spectrum.Set(a=>Aspect=a) ; break ;
+				case "Graph" : case "Map" : case "Quantile" : if( asp is Path.Aspect ) goto case "Spectrum" ; else goto case "Aspect" ;
+			}
 		}
 
 		#region Hidden

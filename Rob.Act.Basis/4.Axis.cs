@@ -20,7 +20,12 @@ namespace Rob.Act
 		public event PropertyChangedEventHandler PropertyChanged { add => propertyChanged += value.DispatchResolve() ; remove => propertyChanged -= value.DispatchResolve() ; } PropertyChangedEventHandler propertyChanged ;
 		public Axe() : this(null,null) {} // Default constructor must be present to enable DataGrid implicit Add .
 		public Axe( Func<int,Quant?> resolver = null , Axe source = null ) { this.resolver = resolver ; aspect = source?.Aspect ; aspects = source?.Aspects??default ; rex = source?.rex??default ; selectlet = source?.selectlet ; selector = source?.selector ; multi = source?.multi??default ; }
-		public Axe( Axe source ) { spec = source?.spec ; aspect = source?.aspect ; resolvelet = source?.resolvelet ; resolver = source?.resolver ; rex = source?.rex??default ; selectlet = source?.selectlet ; selector = source?.selector ; distribulet = source?.distribulet ; distributor = source?.distributor ; quantlet = source?.quantlet ; multi = source?.multi??default ; bond = source?.bond ; Quantizer = source?.quantile?.Quantizer ; }
+		public Axe( Axe source , IEnumerable<Aspectable> set = null )
+		{
+			var dax = source?.Deref(set) ; spec = source?.spec ; aspect = source?.aspect ; resolvelet = dax?.resolvelet ; resolver = dax?.resolver ; multi = dax?.multi??default ; bond = source?.bond.Null(v=>v.No())??dax?.bond ;
+			var ses = selectlet.No() ? dax : source ; rex = ses?.rex??default ; selectlet = ses?.selectlet ; selector = ses?.selector ;
+			if( source?.distribulet.No()!=false && source?.quantlet.No()!=false ) source = dax ; distribulet = source?.distribulet ; distributor = source?.distributor ; quantlet = source?.quantlet ; Quantizer = source?.quantile?.Quantizer ;
+		}
 		public virtual string Spec { get => spec ; set { if( value==spec ) return ; spec = value ; propertyChanged.On(this,"Spec") ; } } string spec ;
 		public string Binder { get => bond ; set { if( value==bond ) return ; bond = value ; propertyChanged.On(this,"Binder") ; } } string bond ;
 		public Aspectable Source { set { if( Selector==null && DefaultAspect==null ) Aspect = value ; else Resource.Source = value ; } }
@@ -28,17 +33,18 @@ namespace Rob.Act
 		public bool Multi { get => multi ; set { if( value==multi ) return ; multi = value ; Aspect = null ; propertyChanged.On(this,"Multi,Aspects") ; } } bool multi ;
 		public bool Regular => !Multi || Selector!=null ;
 		public bool Asrex { get => rex ; set { if( value==rex ) return ; rex = value ; Selectlet = selectlet ; propertyChanged.On(this,"Asrex,Aspects") ; } } bool rex ;
+		Axe Deref( IEnumerable<Aspectable> aspects ) => IsRef ? Spec.RightFrom('\\',all:true).Get(s=>(Spec.LeftFromLast('\\')is string asp?aspects?.Where(a=>asp==a.Spec):aspects)?.SelectMany(a=>a).One(x=>x.Spec==s&&!x.IsRef))??this : this ; bool IsRef => (resolver==null||resolver==No.resolver) && resolvelet.No() ;
 		protected virtual Aspectable DefaultAspect => Multi ? null : Selection?.SingleOrNo() ;
 		protected virtual Aspectable[] DefaultAspects => Multi ? Selection?.ToArray() : null ;
 		/// <summary> Cant' be null . </summary>
 		protected internal Resourcable Resource => Aspect ?? Aspects as Resourcable ;
-		public IEnumerable<Aspectable> Resources => (Regular?Multi?aspects:aspect?.Times():null)??Enumerable.Empty<Aspectable>() ;
+		public IEnumerable<Aspectable> Resources => (Regular?Multi?aspects:aspect?.Times():null) ?? Enumerable.Empty<Aspectable>() ;
 		protected virtual Aspectables Aspects { get => aspects.No ? aspects = new Aspectables(DefaultAspects) : aspects ; set { aspects = value ; Resolver = null ; propertyChanged.On(this,"Aspects,Aspect") ; } } Aspectables aspects ;
 		public virtual Aspectable Aspect { get => aspect ??( aspect = DefaultAspect ) ; set { if( aspect==value ) return ; aspect = value ; Resolver = null ; propertyChanged.On(this,"Aspect") ; } } protected Aspectable aspect ;
 		public virtual int Count => Counter?.Invoke() ?? Resource.Points.Count ;
 		protected virtual Func<int> Counter { get => counter ?? Resolver.Get(_=>counter) ; set => counter = value ; } Func<int> counter ;
 		internal Aspectable Own ;
-		IEnumerable<Aspectable> Selection => Selector?.Invoke(Aspectables.The?.Invoke()) ;
+		IEnumerable<Aspectable> Selection => Selector?.Invoke(Aspectables.The.All?.Invoke()) ;
 		Func<IEnumerable<Aspectable>,IEnumerable<Aspectable>> Selector { get => selector ; set { if( selector==value ) return ; selector = value ; Aspect = null ; propertyChanged.On(this,"Selector") ; } } Func<IEnumerable<Aspectable>,IEnumerable<Aspectable>> selector ;
 		string Aspectlet { get => selectlet ?? Aspect?.Spec ; set { if( value==Aspectlet ) return ; Selectlet = value ; propertyChanged.On(this,"Aspectlet") ; } } string selectlet ;
 		string Selectlet { set { selectlet = value.Null(s=>s.No()) ; var aspectlet = Asrex ? value.Null(s=>s.No()).Get(v=>new Regex(v)) : null ; Selector = aspectlet==null ? selectlet.Compile<Func<IEnumerable<Aspectable>,IEnumerable<Aspectable>>>() : s=>s.Where(a=>aspectlet.Match(a.Spec).Success) ; } }
