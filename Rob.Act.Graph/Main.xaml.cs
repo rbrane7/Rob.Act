@@ -574,7 +574,7 @@ namespace Rob.Act.Analyze
 		public class Entry
 		{
 			const string Separator = " \x1 Filet \x2 " ;
-			public bool Rex { get => rex && !Filter.Void() ; set => rex = value ; } bool rex ;
+			public bool Rex { get => rex && !Filter.Void() ; set { if( value==rex ) return ; rex = value ; Dirty = true ; } } bool rex ;
 			public string Filter { get => filter ; set { if( (value=value.Null(v=>v.Void()))==filter ) return ; filter = value ; Dirty = true ; } } string filter ;
 			public string Traits { get => traits ; set { if( (value=value.Null(v=>v.Void()))==traits ) return ; traits = value ; Dirty = true ; } } string traits ;
 			public string Matrix { get => matrix ; set { if( (value=value.Null(v=>v.Void()))==matrix ) return ; matrix = value ; Dirty = true ; } } string matrix ;
