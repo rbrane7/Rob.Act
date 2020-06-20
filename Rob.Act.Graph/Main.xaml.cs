@@ -86,7 +86,7 @@ namespace Rob.Act.Analyze
 		void FilterGrid_SelectionChanged<Objective,Enhancer>( object sender , Action<(Func<Objective,bool> Filter,Func<Enhancer,bool> Associer,Func<IEnumerable<Objective>,IEnumerable<Objective>> Query)[]> doing )
 		=> Refiner<Objective,Enhancer>(sender as DataGrid).ToArray().Set(r=>ActiveRefiner=r as (Func<Pathable,bool> Filter,Func<Associable,bool> Associer,Func<IEnumerable<Pathable>,IEnumerable<Pathable>> Query)[]).Set(doing) ;
 		public Aid.Collections.ObservableList<Aspect>.Filtered Aspects { get ; private set ; } = new Aid.Collections.ObservableList<Aspect>.Filtered{Sensible=true} ;
-		void ActionsEnhancing( params (Func<Pathable,bool> Filter,Func<Associable,bool> Associer,Func<IEnumerable<Pathable>,IEnumerable<Pathable>> Query)[] refiner ) { ActiveMetax = null ; foreach( var path in Book ) ActionEnhancing(path,refiner) ; Dispatcher.Invoke(SaveBook) ; }
+		void ActionsEnhancing( params (Func<Pathable,bool> Filter,Func<Associable,bool> Associer,Func<IEnumerable<Pathable>,IEnumerable<Pathable>> Query)[] refiner ) { ActiveMetax = null ; foreach( var path in Book.ToArray() ) ActionEnhancing(path,refiner) ; Dispatcher.Invoke(SaveBook) ; }
 		void ActionEnhancing( Pathable path , params (Func<Pathable,bool> Filter,Func<Associable,bool> Associer,Func<IEnumerable<Pathable>,IEnumerable<Pathable>> Query)[] refiner )
 		{
 			if( refiner==null || path==null ) return ; path.Spectrum.Trait.Clean() ;
@@ -209,7 +209,7 @@ namespace Rob.Act.Analyze
 		(double Width,double Height) MainFrameSize => (MainFrame.ColumnDefinitions[1].ActualWidth-ViewScreenBorder.Width,MainFrame.RowDefinitions[1].ActualHeight-ViewScreenBorder.Height) ;
 		IEnumerable<Aspect> DrawingSources => Sources.Except(SourcesGrid.SelectedItems.OfType<Aspect>()) ;
 		IEnumerable<Aspect> DrawingResources { get => Resources ; set { if( DrawingSourcesUpdate = value!=null ); else DrawingValue = null ; } }
-		IEnumerable<Axe> DrawingAxes => AspectAxisGrid.SelectedItems.OfType<Axe>().ToArray() ;
+		IEnumerable<Axe> DrawingAxes => AspectAxisGrid.SelectedItems.OfType<Axe>().Select(a=>a.DeRef).ToArray() ;
 		List<(string Aspect,List<(string Spec,double?[] Val)> Axes)> DrawingValue { get => draval.Set(_=>UpdateDrawingAxes()).Set(_=>UpdateDrawingSources()).Get(_=>draval) ; set { draval = value ; DrawingRange = null ; } } List<(string Aspect,List<(string Spec,double?[] Val)> Axes)> draval ;
 		Dictionary<string,(double Min,double Max)> DrawingRange ; (IList Added,IList Removed) DrawingAxesUpdate ; bool DrawingSourcesUpdate ;
 		void UpdateDrawingAxes()

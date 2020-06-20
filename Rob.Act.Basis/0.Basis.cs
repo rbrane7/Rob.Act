@@ -199,7 +199,7 @@ namespace Rob.Act
 		#endregion
 		Metax( string text ) : this(text.LeftFrom(Serialization.Separator,all:true).Parse<uint>()??0)
 		{
-			foreach( var e in text.RightFromFirst(Serialization.Separator).SeparateTrim(Serialization.Separator) )
+			foreach( var e in text.RightFromFirst(Serialization.Separator).SeparateTrim(Serialization.Separator,false) )
 				Map.Add(e.LeftFrom(Serialization.Infix),e.RightFromFirst(Serialization.Infix).get(v=>(v.LeftFrom(Serialization.Infix).Parse<uint>()??0,v.RightFrom(Serialization.Infix).Null(f=>f.No())))??default) ;
 		}
 		public Metax( uint zero = 0 ) => Base = zero ;

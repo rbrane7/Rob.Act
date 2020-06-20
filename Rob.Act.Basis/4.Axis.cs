@@ -34,7 +34,8 @@ namespace Rob.Act
 		public bool Multi { get => multi ; set { if( value==multi ) return ; multi = value ; Aspect = null ; propertyChanged.On(this,"Multi,Aspects") ; } } bool multi ;
 		public bool Regular => !Multi || Selector!=null ;
 		public bool Asrex { get => rex ; set { if( value==rex ) return ; rex = value ; Selectlet = selectlet ; propertyChanged.On(this,"Asrex,Aspects") ; } } bool rex ;
-		Axe Deref( IEnumerable<Aspectable> aspects ) => IsRef ? Spec.RightFrom('\\',all:true).Get(s=>(Spec.LeftFromLast('\\')is string asp?aspects?.Where(a=>asp==a.Spec):aspects)?.SelectMany(a=>a).One(x=>x.Spec==s&&!x.IsRef)) : null ; bool IsRef => (resolver==null||resolver==No.resolver) && resolvelet.No() ;
+		Axe Deref( IEnumerable<Aspectable> aspects ) => IsRef ? Spec.RightFrom('\\',all:true).Get(s=>(Spec.LeftFromLast('\\')is string asp?aspects?.Where(a=>asp==a.Spec):aspects)?.SelectMany(a=>a).One(x=>x.Spec==s&&!x.IsRef)) : null ;
+		public Axe DeRef => Deref(Act.Aspect.Set)??this ; public bool IsRef => (resolver==null||resolver==No.resolver) && resolvelet.No() ;
 		protected virtual Aspectable DefaultAspect => Multi ? null : Selection?.SingleOrNo() ;
 		protected virtual Aspectable[] DefaultAspects => Multi ? Selection?.ToArray() : null ;
 		/// <summary> Cant' be null . </summary>

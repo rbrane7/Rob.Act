@@ -42,8 +42,9 @@ namespace Rob.Act
 	{
 		public static IEnumerable<Aspectable> Set => Aspectables.The.Def.Of() ;
 		public event PropertyChangedEventHandler PropertyChanged { add => propertyChanged += value.DispatchResolve() ; remove => propertyChanged -= value.DispatchResolve() ; } protected PropertyChangedEventHandler propertyChanged ;
-		public Aspect( IEnumerable<Aspect> sources ) : this(sources?.SelectMany(s=>s).Distinct(a=>a.Spec).Select(a=>new Axe(a,Set))) { spec = sources?.Select(s=>s.Spec).Stringy(' ') ; sources?.SelectMany(s=>s.Trait).Distinct(t=>t.Spec).Each(t=>Trait.Add(new Traitlet(t))) ; }
-		public Aspect( Aspect source ) : this(source?.Select(a=>new Axe(a,Set))) { spec = source?.Spec ; source.Trait.Each(t=>Trait.Add(new Traitlet(t))) ; taglet = source?.taglet ; }
+		public Aspect( IEnumerable<Aspect> sources ) : this(sources?.SelectMany(s=>s).Distinct(a=>a.Spec).Select(a=>new Axe(a,Set))) { spec = sources?.Select(s=>s.Spec).Stringy(' ') ; sources?.SelectMany(s=>s.Trait).Distinct(t=>t.Spec).Each(t=>Trait.Add(new Traitlet(t,Set),Set)) ; }
+		public Aspect( Aspect source ) : this(source?.Select(a=>new Axe(a,Set))) { spec = source?.Spec ; source.Trait.Each(t=>Trait.Add(new Traitlet(t,Set),Set)) ; taglet = source?.taglet ; }
+		void Join( IEnumerable<Axe> source , IEnumerable<Aspectable> set = null ) => source?.Except(this,a=>a.Spec)?.Select(a=>new Axe(a,set)) ;
 		public Aspect( IEnumerable<Axe> axes = null , Traits trait = null ) : base(axes??Enumerable.Empty<Axe>()) { foreach( var ax in this ) { ax.Own = this ; ax.PropertyChanged += OnChanged ; } Trait = (trait??new Traits()).Set(t=>t.Context=this) ; }
 		public Aspect() : this(axes:null) {} // Default constructor must be present to enable DataGrid implicit Add .
 		[LambdaContext.Dominant] public Axe this[ string key ] => this.One(a=>a.Spec==key) ?? Base.Null(b=>b==this)?[key] ;
@@ -131,7 +132,9 @@ namespace Rob.Act
 			public Quant? Value { get { try { return Orphan ? null : Resolver?.Invoke(Context) ; } catch( System.Exception e ) { throw new InvalidOperationException($"Failed evaluating Trait {Spec} = {Lex} !",e) ; } } }
 			public override string ToString() => Orphan ? null : $"{Spec.Null(n=>n.No()).Get(s=>s+'=')}{new Basis.Binding(Bond).Of(Value)}" ;
 			public Traitlet() {} // Default constructor must be present to enable DataGrid implicit Add .
-			internal Traitlet( Traitlet source ) { name = source?.Spec ; bond = source?.Bond ; lex = source?.Lex ; Resolver = source?.Resolver ; }
+			internal Traitlet( Traitlet source , IEnumerable<Aspectable> set = null ) { name = source?.Spec ; var det = source?.Deref(set) ; bond = source?.Bond??det?.Bond ; lex = source?.Lex??det?.lex ; Resolver = source?.Resolver??det?.Resolver ; Context = det?.Context ; }
+			Traitlet Deref( IEnumerable<Aspectable> aspects ) => IsRef ? Spec.RightFrom('\\',all:true).Get(s=>(Spec.LeftFromLast('\\')is string asp?aspects?.Where(a=>asp==a.Spec):aspects)?.SelectMany(a=>a.Trait).One(x=>x.Spec==s&&!x.IsRef)) : null ;
+			public bool IsRef => Resolver==null && lex.No() ;
 			public event PropertyChangedEventHandler PropertyChanged { add => propertyChanged += value.DispatchResolve() ; remove => propertyChanged -= value.DispatchResolve() ; } protected PropertyChangedEventHandler propertyChanged ;
 			#region De/Serialization
 			/// <summary>
@@ -152,7 +155,7 @@ namespace Rob.Act
 			internal Aspect Context { get => context ; set { this.Each(t=>{if(t.Context==context)t.Context=value;}) ; context = value ; } } Aspect context ;
 			public IEnumerable<Aspect> Contexts => this.Select(t=>t.Context).Distinct() ;
 			public Quant? this[ string rek ] => this[rek,t=>t.Spec]?.Value ;
-			public override void Add( Traitlet trait ) => base.Add(trait.Set(t=>{if(t.Context==null){t.Context=Context;Dirty=true;}t.PropertyChanged+=ChangedItem;Spec=null;})) ;
+			public void Add( Traitlet trait , IEnumerable<Aspectable> set = null ) => base.Add(trait.Set(t=>{if(set!=null||t.Context==null){t.Context=Context.Set(c=>c.Join(t.Context,set));Dirty=true;}t.PropertyChanged+=ChangedItem;Spec=null;})) ;
 			public new void Add( IEnumerable<Traitlet> traits ) => traits.Each(Add) ;
 			public static Traits operator+( Traits traits , Traitlet trait ) => traits.Set(t=>t.Add(trait)) ;
 			public override bool Remove( Traitlet item ) => base.Remove(item).Set(r=>{if(item.Context==context){item.Context=null;Dirty=true;}item.PropertyChanged-=ChangedItem;Spec=null;}) ;

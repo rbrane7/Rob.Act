@@ -112,16 +112,18 @@ namespace Rob.Act
 			for( var i=1 ; i<Count ; ++i )
 			{
 				if( cord!=0 ) this[i].Dist += cord ; if( cora!=0 ) this[i].Alti += cora ;
-				if( this[i].IsGeo )
+				if( this[i].IsGeo && !this[i-1].Mark.HasFlag(Mark.Stop) )
 				{
-					if( !this[i-1].Mark.HasFlag(Mark.Stop) )
-					{
-						if( DifKo(i) ) { var lad = this[i].Dist ; var di = Dif(i-1) ; var ds = OkDif(i) ; this[i].Dist = this[i-1].Dist + ((di+ds)/2??di??ds??0) ; cord += this[i].Dist-lad ?? 0 ; }
-						if( AldKo(i) ) { var lad = this[i].Alti ; var di = Ald(i-1) ; var ds = OkAld(i) ; this[i].Alti = this[i-1].Alti + ((di+ds)/2??di??ds??0) ; cora += this[i].Alti-lad ?? 0 ; }
-					}
+					if( DifKo(i) ) { var lad = this[i].Dist ; var di = Dif(i-1) ; var ds = OkDif(i) ; this[i].Dist = this[i-1].Dist + ((di+ds)/2??di??ds??0) ; cord += this[i].Dist-lad ?? 0 ; }
+					if( AldKo(i) ) { var lad = this[i].Alti ; var di = Ald(i-1) ; var ds = OkAld(i) ; this[i].Alti = this[i-1].Alti + ((di+ds)/2??di??ds??0) ; cora += this[i].Alti-lad ?? 0 ; }
 				}
 			}
 			if( cord!=0 ) Dist += cord ;
+			if( IsGeo && Locus.LeftFrom('^').RightFrom('.',all:true).Null(s=>s.Length!=5).Parse<double>() is double dist )
+			{
+				Correct(Axis.Dist,0,dist=Math.Pow(2,dist/10000)*1000) ;
+				if( Locus.RightFrom('^').LeftFrom('.',all:true).Null(s=>s.Length!=6||s[0]!='+'&&s[0]!='-').Parse<double>() is double ald && this[0][Axis.Alt] is Quant alt ) Correct(Axis.Alt,alt,alt+ald/100000*dist) ;
+			}
 			return this ;
 		}
 		public Path Altify() { if( AltOf is Altiplane alp ) { alp.Include(this) ; for( var i=1 ; i<Count ; ++i ) if( alp[this[i].Geo] is Quant a ) this[i].Alti = a ; } return this ; }
@@ -140,6 +142,39 @@ namespace Rob.Act
 		}
 		#endregion
 
+		#region Correction
+		public void Correct( Axis axe , params KeyValuePair<int,Quant>[] cor )
+		{
+			var bas = 0D ; if( cor==null ) return ;
+			for( var i=0 ; i<cor.Length ; ++i ) if( cor[i].Key is int k && k>=0 && k<Count )
+			if( this[k][axe] is double to )
+			{
+				if( to==cor[i].Value ); else if( k<=0 ) this[k][axe] = cor[i].Value ;
+				else { var f = cor.At(i-1) ; if( (cor[i].Value-f.Value)/(to-bas) is double q ) for( var j=f.Key+1 ; j<=k ; ++j ) this[j][axe] = f.Value + (this[j][axe]-bas)*q ; }
+				bas = to ;
+			}
+			else this[k][axe] = cor[i].Value ;
+			this[axe] = this[Count-1][axe]-this[0][axe] ;
+		}
+		public void Correct( string axe , params KeyValuePair<int,Quant>[] cor )
+		{
+			var bas = 0D ; if( cor==null ) return ;
+			for( var i=0 ; i<cor.Length ; ++i ) if( cor[i].Key is int k && k>=0 && k<Count )
+			if( this[k][axe] is double to )
+			{
+				if( to==cor[i].Value ); else if( k<=0 ) this[k][axe] = cor[i].Value ;
+				else { var f = cor.At(i-1) ; if( (cor[i].Value-f.Value)/(to-bas) is double q ) for( var j=f.Key+1 ; j<=k ; ++j ) this[j][axe] = f.Value + (this[j][axe]-bas)*q ; }
+				bas = to ;
+			}
+			else this[k][axe] = cor[i].Value ;
+			this[axe] = this[Count-1][axe]-this[0][axe] ;
+		}
+		public void Correct( Axis axe , IEnumerable<(double at,Quant value)> cor ) => Correct(axe,cor?.Select(c=>new KeyValuePair<int,Quant>((int)Math.Round(c.at*(Count-1)),c.value)).ToArray()) ;
+		public void Correct( string axe , IEnumerable<(double at,Quant value)> cor ) => Correct(axe,cor?.Select(c=>new KeyValuePair<int,Quant>((int)Math.Round(c.at*(Count-1)),c.value)).ToArray()) ;
+		public void Correct( Axis axe , params Quant[] cor ) => Correct(axe,cor?.Length.Steps().Select(i=>((double)i/(cor.Length-1),cor[i]))) ;
+		public void Correct( string axe , params Quant[] cor ) => Correct(axe,cor?.Length.Steps().Select(i=>((double)i/(cor.Length-1),cor[i]))) ;
+		#endregion
+
 		#region State
 		int Depth = 1 ;
 		readonly List<Point> Content = new List<Point>() ;
@@ -153,8 +188,9 @@ namespace Rob.Act
 		public Quant? MaxPower => MaxEffort is Quant x && MaxPerform.Nil(e=>e>x*1.1) is Quant y ? Math.Max(x,y) : MaxEffort??MaxPerform ;
 		public Quant? MaxEffort => (Count-1).Steps().Max(i=>(Content[i+1].Energy-Content[i].Energy).Quotient(Content[i+1].Time.TotalSeconds-Content[i].Time.TotalSeconds)) ;
 		public Quant? MaxPerform => (Count-1).Steps().Max(i=>(Content[i+1].Energy-Content[i].Energy).Quotient(Content[i+1].Time.TotalSeconds-Content[i].Time.TotalSeconds)) ;
-		public Quant? MinEffort => (Count-1).Steps().Select(i=>(Content[i+1].Energy-Content[i].Energy).Quotient(Content[i+1].Time.TotalSeconds-Content[i].Time.TotalSeconds)).Skip(5).ToArray().Get(a=>(a.Length-2).Steps(1).Min(i=>9.Steps(1).All(j=>i-j>=0&&a[i-j]>=a[i]&&i+j<a.Length&&a[i]<=a[i+j])?a[i]:null)) ;
-		public Quant? MinMaxEffort => (Count-1).Steps().Select(i=>(Content[i+1].Energy-Content[i].Energy).Quotient(Content[i+1].Time.TotalSeconds-Content[i].Time.TotalSeconds)).Skip(5).ToArray().Get(a=>(a.Length-2).Steps(1).Min(i=>9.Steps(1).All(j=>i-j>=0&&a[i-j]<=a[i]&&i+j<a.Length&&a[i]>=a[i+j])?a[i]:null)) ;
+		public Quant? MinEffort => (Count-1).Steps().Select(i=>(Content[i+1].Energy-Content[i].Energy).Quotient(Content[i+1].Time.TotalSeconds-Content[i].Time.TotalSeconds)).Skip(5).ToArray().Get(a=>(a.Length-2).Steps(1).Min(i=>9.Steps(1).All(j=>(a.At(i-j)??Quant.MaxValue)>=a[i]&&a[i]<=(a.At(i+j)??Quant.MaxValue))?a[i]:null)) ;
+		public Quant? MinMaxEffort => MinMaxPower(9) ;
+		public Quant? MinMaxPower( int ext ) => (Count-1).Steps().Select(i=>(Content[i+1].Energy-Content[i].Energy).Quotient(Content[i+1].Time.TotalSeconds-Content[i].Time.TotalSeconds)).Skip(5).ToArray().Get(a=>(a.Length-2).Steps(1).Min(i=>ext.Steps(1).All(j=>(a.At(i-j)??Quant.MinValue)<=a[i]&&a[i]>=(a.At(i+j)??Quant.MinValue))?a[i]:null)) ;
 		public Quant? AeroEffort { get { var min = MinEffort ; var max = MinMaxEffort ; var mav = (Count-1).Steps().Count(i=>(Content[i+1].Energy-Content[i].Energy).Quotient(Content[i+1].Time.TotalSeconds-Content[i].Time.TotalSeconds)>=max*0.9) ; var miv = (Count-1).Steps().Count(i=>(Content[i+1].Energy-Content[i].Energy).Quotient(Content[i+1].Time.TotalSeconds-Content[i].Time.TotalSeconds)<=min*1.2) ; return (min*miv+max*mav)/(miv+mav)*Durability ; } } // => (Meta.By(Action).At(0)*MinEffort+Meta.By(Action).At(1)*MinMaxEffort)/(Meta.By(Action).At(0)+Meta.By(Action).At(1)) ;
 		public Quant? MaxBeat => (Count-1).Steps().Max(i=>(Content[i+1].Beat-Content[i].Beat).Quotient((Content[i+1].Time-Content[i].Time).TotalSeconds)) ;
 		public Quant? MaxExposure => MaxEffort/MaxBeat ;

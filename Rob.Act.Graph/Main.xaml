@@ -15,6 +15,8 @@
         <converters:LambdaConverter x:Key="StringsConcatConvert" Forward="Stringy(' ')"/>
         <local:QuantileSubversion x:Key="QuantitieConversion"/>
         <converters:LambdaConverter x:Key="PartitionerVisibilityConverter" Forward=".==true?System.Windows.Visibility.Visible:System.Windows.Visibility.Collapsed"/>
+        <Style TargetType="DataGridColumnHeader"><Setter Property="FontSize" Value="9"/></Style>
+        <Style TargetType="TabItem"><Setter Property="FontSize" Value="9"/></Style>
     </Window.Resources>
     <Grid Name="MainFrame">
         <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="7*"/><ColumnDefinition Width="2*"/></Grid.ColumnDefinitions>

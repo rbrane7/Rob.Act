@@ -21,18 +21,13 @@ namespace Rob.Act
 		{
 			Path path = null ;
 			if( p.Sequence.Count+p.Correction.Count>0 && p.Object.get(System.IO.File.Exists)==true ) path = p.Object.Reconcile().Internalize() ;
-			var o = 0U ; foreach( var (min,max) in p.Sequence ) { if( min is uint m ) path[(int)(m-o)].Mark |= Mark.Stop ; var a = (int?)min+1-(int)o??0 ; var c = (max??(uint)path.Count)-(min??0U) ; for( o+=c ; c>0 ; --c ) path.RemoveAt(a) ; }
-			path.Set(s=>s.Reset()).Set(s=>s.Tag.Add(p.Name)) ;
-			foreach( var axe in p.Correction )
+			var o = 0U ; foreach( var (min,max) in p.Sequence )
 			{
-				var cor = axe.Value.ToArray() ; var bas = 0D ; for( var i=0 ; i<cor.Length ; ++i )
-				{
-					var to = path[cor[i].Key]?[axe.Key] ; if( to==cor[i].Value ) continue ; var f = cor.At(i-1).Value ;
-					if( (cor[i].Value-f)/(to-bas) is double q ) for( var j=cor.At(i-1).Key+1 ; j<=cor[i].Key ; ++j ) path[j][axe.Key] = f + (path[j][axe.Key]-bas)*q ;
-					bas = to.Value ;
-				}
-				path[axe.Key] = path.Last()[axe.Key]-path.First()[axe.Key] ;
+				if( min is uint m ) path[(int)(m-o)].Mark |= Mark.Stop ;
+				var a = (int?)min+1-(int)o??0 ; var c = (max??(uint)path.Count)-(min??0U) ; for( o+=c ; c>0 ; --c ) path.RemoveAt(a) ;
 			}
+			path.Set(s=>s.Reset()).Set(s=>s.Tag.Add(p.Name)) ;
+			foreach( var axe in p.Correction ) path.Correct(axe.Key,axe.Value.ToArray()) ;
 			return path ;
 		}
 		readonly string Object , Name ; readonly IList<(uint?Min,uint?Max)> Sequence = new List<(uint?Min,uint?Max)>() ;
