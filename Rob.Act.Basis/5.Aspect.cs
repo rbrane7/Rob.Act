@@ -44,7 +44,7 @@ namespace Rob.Act
 		public event PropertyChangedEventHandler PropertyChanged { add => propertyChanged += value.DispatchResolve() ; remove => propertyChanged -= value.DispatchResolve() ; } protected PropertyChangedEventHandler propertyChanged ;
 		public Aspect( IEnumerable<Aspect> sources ) : this(sources?.SelectMany(s=>s).Distinct(a=>a.Spec).Select(a=>new Axe(a,Set))) { spec = sources?.Select(s=>s.Spec).Stringy(' ') ; sources?.SelectMany(s=>s.Trait).Distinct(t=>t.Spec).Each(t=>Trait.Add(new Traitlet(t,Set),Set)) ; }
 		public Aspect( Aspect source ) : this(source?.Select(a=>new Axe(a,Set))) { spec = source?.Spec ; source.Trait.Each(t=>Trait.Add(new Traitlet(t,Set),Set)) ; taglet = source?.taglet ; }
-		void Join( IEnumerable<Axe> source , IEnumerable<Aspectable> set = null ) => source?.Except(this,a=>a.Spec)?.Select(a=>new Axe(a,set)) ;
+		void Join( IEnumerable<Axe> source , IEnumerable<Aspectable> set = null ) => source?.Except(this,a=>a.Spec)?.Select(a=>new Axe(a,set)).Set(AddRange) ;
 		public Aspect( IEnumerable<Axe> axes = null , Traits trait = null ) : base(axes??Enumerable.Empty<Axe>()) { foreach( var ax in this ) { ax.Own = this ; ax.PropertyChanged += OnChanged ; } Trait = (trait??new Traits()).Set(t=>t.Context=this) ; }
 		public Aspect() : this(axes:null) {} // Default constructor must be present to enable DataGrid implicit Add .
 		[LambdaContext.Dominant] public Axe this[ string key ] => this.One(a=>a.Spec==key) ?? Base.Null(b=>b==this)?[key] ;
@@ -112,7 +112,7 @@ namespace Rob.Act
 		/// <summary>
 		/// Deserializes aspect from string .
 		/// </summary>
-		public static explicit operator Aspect( string text ) => text.Get(t=>new Aspect(t.LeftFromLast(Serialization.Separator).Separate(Serialization.Separator,braces:null)?.Select(a=>(Axe)a),(Traits)t.RightFrom(Serialization.Separator).LeftFromLast(Serialization.Postseparator,all:true)){taglet=t.LeftFromLast(Serialization.Postseparator).RightFrom('\n').Null(v=>v.Void())}) ;
+		public static explicit operator Aspect( string text ) => text.Get(t=>new Aspect(t.LeftFromLast(Serialization.Separator).Separate(Serialization.Separator,braces:null)?.Select(a=>(Axe)a),(Traits)t.RightFrom(Serialization.Separator,all:true).LeftFromLast(Serialization.Postseparator,all:true)){taglet=t.LeftFromLast(Serialization.Postseparator).RightFrom('\n').Null(v=>v.Void())}) ;
 		/// <summary>
 		/// Serializes aspect from string .
 		/// </summary>
@@ -122,18 +122,19 @@ namespace Rob.Act
 		public Quant Offset { get => offset ; set { if( value!=offset ) propertyChanged.On(this,"Offset",offset=value) ; } } Quant offset ;
 		public class Traitlet : INotifyPropertyChanged
 		{
+			public const string Extern = Axe.Extern ;
 			internal Aspect Context ;
 			public bool Orphan => Context?.Orphan!=false ;
 			public bool Dirty { set => Context.Set(c=>c.Dirty=value) ; }
-			public string Spec { get => name ; set => Changed("Spec",name=value) ; } string name ;
+			public string Spec { get => name ; set => Changed("Spec",name=value) ; } string name ; public string Name => name.RightFrom(Extern,all:true) ;
 			public string Bond { get => bond ; set => Changed("Bond",bond=value) ; } string bond ;
 			public string Lex { get => lex ; set => Changed("Lex,Value",Resolver=(lex=value).Compile<Func<Contextable,Quant?>>()) ; } Func<Contextable,Quant?> Resolver ; string lex ;
 			void Changed<Value>( string properties , Value value ) { propertyChanged.On(this,properties,value) ; Dirty = true ; }
 			public Quant? Value { get { try { return Orphan ? null : Resolver?.Invoke(Context) ; } catch( System.Exception e ) { throw new InvalidOperationException($"Failed evaluating Trait {Spec} = {Lex} !",e) ; } } }
 			public override string ToString() => Orphan ? null : $"{Spec.Null(n=>n.No()).Get(s=>s+'=')}{new Basis.Binding(Bond).Of(Value)}" ;
 			public Traitlet() {} // Default constructor must be present to enable DataGrid implicit Add .
-			internal Traitlet( Traitlet source , IEnumerable<Aspectable> set = null ) { name = source?.Spec ; var det = source?.Deref(set) ; bond = source?.Bond??det?.Bond ; lex = source?.Lex??det?.lex ; Resolver = source?.Resolver??det?.Resolver ; Context = det?.Context ; }
-			Traitlet Deref( IEnumerable<Aspectable> aspects ) => IsRef ? Spec.RightFrom('\\',all:true).Get(s=>(Spec.LeftFromLast('\\')is string asp?aspects?.Where(a=>asp==a.Spec):aspects)?.SelectMany(a=>a.Trait).One(x=>x.Spec==s&&!x.IsRef)) : null ;
+			internal Traitlet( Traitlet source , IEnumerable<Aspectable> set = null ) { var det = source?.Deref(set) ; name = (det??source)?.Spec ; bond = source?.Bond.Null(b=>b.No())??det?.Bond ; lex = (det??source)?.Lex ; Resolver = (det??source)?.Resolver ; Context = det?.Context ; }
+			Traitlet Deref( IEnumerable<Aspectable> aspects ) => IsRef ? Spec.RightFrom(Extern,all:true).Get(s=>(Spec.LeftFromLast(Extern)is string asp?aspects?.Where(a=>asp==a.Spec):aspects)?.SelectMany(a=>a.Trait).One(x=>x.Spec==s&&!x.IsRef)) : null ;
 			public bool IsRef => Resolver==null && lex.No() ;
 			public event PropertyChangedEventHandler PropertyChanged { add => propertyChanged += value.DispatchResolve() ; remove => propertyChanged -= value.DispatchResolve() ; } protected PropertyChangedEventHandler propertyChanged ;
 			#region De/Serialization
@@ -154,7 +155,7 @@ namespace Rob.Act
 			public bool Dirty { get => Context?.Dirty==true ; set => Context.Set(c=>c.Dirty=value) ; }
 			internal Aspect Context { get => context ; set { this.Each(t=>{if(t.Context==context)t.Context=value;}) ; context = value ; } } Aspect context ;
 			public IEnumerable<Aspect> Contexts => this.Select(t=>t.Context).Distinct() ;
-			public Quant? this[ string rek ] => this[rek,t=>t.Spec]?.Value ;
+			public Quant? this[ string rek ] => this[rek,t=>rek.Contains(Traitlet.Extern)?t.Spec:t.Name]?.Value ;
 			public void Add( Traitlet trait , IEnumerable<Aspectable> set = null ) => base.Add(trait.Set(t=>{if(set!=null||t.Context==null){t.Context=Context.Set(c=>c.Join(t.Context,set));Dirty=true;}t.PropertyChanged+=ChangedItem;Spec=null;})) ;
 			public new void Add( IEnumerable<Traitlet> traits ) => traits.Each(Add) ;
 			public static Traits operator+( Traits traits , Traitlet trait ) => traits.Set(t=>t.Add(trait)) ;
@@ -167,7 +168,7 @@ namespace Rob.Act
 			public string Spec { get => Orphan ? null : this.Stringy(',').Null(v=>v.No()) ; protected set { if( Propagate() ) propertyChanged.On(this,"Spec",Context.Set(c=>c.Score=value)) ; } }
 			void ChangedItem( object subject , PropertyChangedEventArgs prop ) { Spec = null ; Context?.propertyChanged.On(Context,"Trait") ; }
 			public event PropertyChangedEventHandler PropertyChanged { add => propertyChanged += value.DispatchResolve() ; remove => propertyChanged -= value.DispatchResolve() ; } protected PropertyChangedEventHandler propertyChanged ;
-			protected override void Refresh( IEnumerable<Traitlet> add = null, IEnumerable<Traitlet> rem = null ) { base.Refresh( add, rem ) ; if( add==null && rem==null ) Spec = null ; }
+			protected override void Refresh( IEnumerable<Traitlet> add = null, IEnumerable<Traitlet> rem = null ) { base.Refresh(add,rem) ; if( add==null && rem==null ) Spec = null ; }
 			#region De/Serialization
 			/// <summary>
 			/// Deserializes aspect from string .

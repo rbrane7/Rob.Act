@@ -16,6 +16,7 @@ namespace Rob.Act
 	public interface Axable : Aid.Gettable<int,Quant?> , Aid.Gettable<double,Quant?> , Aid.Countable<Quant?> { string Spec {get;} }
 	public class Axe : Axable , INotifyPropertyChanged
 	{
+		public const string Extern = LambdaContext.Act.Extern ;
 		public readonly static Support No = new Support(null){resolver=i=>null as Quant?} , One = new Support(null){resolver=i=>1} ;
 		public event PropertyChangedEventHandler PropertyChanged { add => propertyChanged += value.DispatchResolve() ; remove => propertyChanged -= value.DispatchResolve() ; } PropertyChangedEventHandler propertyChanged ;
 		public Axe() : this(null,null) {} // Default constructor must be present to enable DataGrid implicit Add .
@@ -23,7 +24,7 @@ namespace Rob.Act
 		public Axe( Axe source , IEnumerable<Aspectable> primary = null , IEnumerable<Aspectable> secondary = null )
 		{
 			var dax = source?.Deref(primary)??source?.Deref(secondary)??source ;
-			spec = source?.spec ; aspect = source?.aspect ; resolvelet = dax?.resolvelet ; resolver = dax?.resolver ; multi = dax?.multi??default ; bond = source?.bond.Null(v=>v.No())??dax?.bond ;
+			spec = dax?.spec ; aspect = source?.aspect ; resolvelet = dax?.resolvelet ; resolver = dax?.resolver ; multi = dax?.multi??default ; bond = source?.bond.Null(v=>v.No())??dax?.bond ;
 			var ses = selectlet.No() ? dax : source ; rex = ses?.rex??default ; selectlet = ses?.selectlet ; selector = ses?.selector ;
 			if( source?.distribulet.No()!=false && source?.quantlet.No()!=false ) source = dax ; distribulet = source?.distribulet ; distributor = source?.distributor ; quantlet = source?.quantlet ; Quantizer = source?.quantile?.Quantizer ;
 		}
@@ -34,7 +35,7 @@ namespace Rob.Act
 		public bool Multi { get => multi ; set { if( value==multi ) return ; multi = value ; Aspect = null ; propertyChanged.On(this,"Multi,Aspects") ; } } bool multi ;
 		public bool Regular => !Multi || Selector!=null ;
 		public bool Asrex { get => rex ; set { if( value==rex ) return ; rex = value ; Selectlet = selectlet ; propertyChanged.On(this,"Asrex,Aspects") ; } } bool rex ;
-		Axe Deref( IEnumerable<Aspectable> aspects ) => IsRef ? Spec.RightFrom('\\',all:true).Get(s=>(Spec.LeftFromLast('\\')is string asp?aspects?.Where(a=>asp==a.Spec):aspects)?.SelectMany(a=>a).One(x=>x.Spec==s&&!x.IsRef)) : null ;
+		Axe Deref( IEnumerable<Aspectable> aspects ) => IsRef ? Spec.RightFrom(Extern,all:true).Get(s=>(Spec.LeftFromLast(Extern)is string asp?aspects?.Where(a=>asp==a.Spec):aspects)?.SelectMany(a=>a).One(x=>x.Spec==s&&!x.IsRef)) : null ;
 		public Axe DeRef => Deref(Act.Aspect.Set)??this ; public bool IsRef => (resolver==null||resolver==No.resolver) && resolvelet.No() ;
 		protected virtual Aspectable DefaultAspect => Multi ? null : Selection?.SingleOrNo() ;
 		protected virtual Aspectable[] DefaultAspects => Multi ? Selection?.ToArray() : null ;
@@ -105,7 +106,7 @@ namespace Rob.Act
 		public static Axe operator*( Axe x , Axe y ) => x==null||y==null ? No : new Axe( i=>x.Resolve(i)*y.Resolve(i) , x ) ;
 		public static Axe operator*( Axe x , Quant y ) => x==null ? No : new Axe( i=>x.Resolve(i)*y , x ) ;
 		public static Axe operator*( Quant x , Axe y ) => y==null ? No : new Axe( i=>x*y.Resolve(i) , y ) ;
-		public static Axe operator/( Axe x , Axe y ) => x==null||y==null ? No : y.Solver is Lap.Axe lap ? x/lap.Arg : new Axe( i=>x.Resolve(i)/y.Resolve(i).Nil() , x ) ;
+		public static Axe operator/( Axe x , Axe y ) => x==null||y==null ? No : (y as Lap.Axe??y.Solver as Lap.Axe).Get(l=>x/l.Arg) ?? new Axe( i=>x.Resolve(i)/y.Resolve(i).Nil() , x ) ;
 		public static Axe operator/( Axe x , Quant y ) => x==null ? No : new Axe( i=>x.Resolve(i)/y.nil() , x ) ;
 		public static Axe operator/( Quant x , Axe y ) => y==null ? No : new Axe( i=>x/y.Resolve(i).Nil() , y ) ;
 		public static Axe operator/( bool _ , Axe y ) => y==null ? No : new Axe( i=>1D/y.Resolve(i).Nil() , y ) ;
