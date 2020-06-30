@@ -25,13 +25,19 @@ namespace Rob.Act
 			var data = file.ReadAllText(false) ; if( data==null ) return null ;
 			if( (cofile??(cofile=file.Replace("result","logbook-workout").Replace(".csv",".tcx")))!=file && System.IO.File.Exists(cofile) )
 			{
-				var rest = cofile.ReadAllText(false) ; var text = rest.Get(t=>t.LeftFrom("<Track") ?? t.LeftFrom("</Lap>")) ;
+				var rest = cofile.ReadAllText(false) ; var text = rest.Get(t=>t.LeftFrom("<Track")??t.LeftFrom("</Lap>")) ;
 				var date = text.RightFromFirst("<Lap StartTime=\"").LeftFrom("\"") ; var spec = text.RightFromFirst("<Id>").LeftFrom("</Id>") ;
 				var time = text.RightFromFirst("<TotalTimeSeconds>").LeftFrom("</TotalTimeSeconds>") ; var dist = text.RightFrom("<DistanceMeters>").LeftFrom("</DistanceMeters>") ;
 				var drag = text.RightFrom("<DragFactor>").LeftFrom("</DragFactor>") ?? text.RightFrom("<Drag>").LeftFrom("</Drag>") ?? "100" ;
 				var action = text.RightFrom("<Action>").LeftFrom("</Action>") ; var subject = text.RightFrom("<Subject>").LeftFrom("</Subject>") ; var locus = text.RightFrom("<Locus>").LeftFrom("</Locus>") ; var refine = text.RightFrom("<Refine>").LeftFrom("</Refine>") ;
-				if( !rest.Substring(text.Length+6).Consists("<Lap") ) { var lavs = data.Trim().RightFrom(Environment.NewLine).Separate(',') ; lavs[0] = (lavs[0].Trim('"').Parse<uint>()+1).Stringy() ?? lavs[0] ; lavs[1] = time ; lavs[2] = dist ; data += lavs.Stringy(',') ; data += $",\"{drag}\"{Environment.NewLine}" ; } // append of final misssing line
-				var first = data.LeftFrom(Environment.NewLine) ; var nef = first+$",\"Refine={refine}\",\"Locus={locus}\",\"Subject={subject}\",\"Drag Factor={drag}\",\"Date={date}\",\"Spec={action??spec}\"" ; data = data.Replace(first,nef) ;
+				string laps = null ; if( (rest=rest.Substring(text.Length+6)).Consists("<Lap") ) for( var (tacu,dacu) = (time.Parse(0D),dist.Parse(0D)) ; (text=rest.Get(t=>t.LeftFrom("<Track")??t.LeftFrom("</Lap>")))!=null ; rest = rest.Substring(text.Length+6) )
+				{
+					if( laps==null ) laps = $"{tacu},{dacu};" ; // first element if we add active ones
+					tacu += text.RightFromFirst("<TotalTimeSeconds>").LeftFrom("</TotalTimeSeconds>").Parse(0D) ; dacu += text.RightFrom("<DistanceMeters>").LeftFrom("</DistanceMeters>").Parse(0D) ;
+					/*if( text.Contains("<Intensity>Resting</Intensity>") )*/ laps += $"{tacu},{dacu};" ;
+				}
+				else { var lavs = data.Trim().RightFrom(Environment.NewLine).Separate(',') ; lavs[0] = (lavs[0].Trim('"').Parse<uint>()+1).Stringy() ?? lavs[0] ; lavs[1] = time ; lavs[2] = dist ; data += lavs.Stringy(',') ; data += $",\"{drag}\"{Environment.NewLine}" ; } // append of final misssing line
+				var first = data.LeftFrom(Environment.NewLine) ; var nef = first+$",\"Refine={refine}\",\"Locus={locus}\",\"Subject={subject}\",\"Drag Factor={drag}\",\"Date={date}\",\"Spec={action??spec}\"{laps.Get(l=>$",\"Laps={laps}\"")}" ; data = data.Replace(first,nef) ;
 			}
 			else if( file.EndsWith(".par") ) data = $"{Partitioner.Sign}{file.LeftFromLast(".par")}{Environment.NewLine}{data}" ;
 			return data ;
