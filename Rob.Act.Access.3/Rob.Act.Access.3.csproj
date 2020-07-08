@@ -1,0 +1,38 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <RootNamespace>Rob.Act.Access._3</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Rob.Act.Access\Schema\Gpx.cs" Link="Schema\Gpx.cs" />
+    <Compile Include="..\Rob.Act.Access\Schema\Gpx.Trans.cs" Link="Schema\Gpx.Trans.cs" />
+    <Compile Include="..\Rob.Act.Access\Schema\Partitioner.cs" Link="Schema\Partitioner.cs" />
+    <Compile Include="..\Rob.Act.Access\Schema\Skierg,csv.cs" Link="Schema\Skierg,csv.cs" />
+    <Compile Include="..\Rob.Act.Access\Schema\Tcx.cs" Link="Schema\Tcx.cs" />
+    <Compile Include="..\Rob.Act.Access\Schema\Tcx.Trans.cs" Link="Schema\Tcx.Trans.cs" />
+    <Compile Include="..\Rob.Act.Access\Serialization.cs" Link="Serialization.cs" />
+    <Compile Include="..\Rob.Act.Access\Translation.cs" Link="Translation.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Schema\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\Rob.Act.Access\Schema\Gpx.xsd" Link="Schema\Gpx.xsd" />
+    <None Include="..\Rob.Act.Access\Schema\Tcx.xsd" Link="Schema\Tcx.xsd" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Rob.Act.Base.3\Rob.Act.Base.3.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Aid.Core.3">
+      <HintPath>..\..\..\..\Aid\Bin\Release\Aid.Core.3.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>

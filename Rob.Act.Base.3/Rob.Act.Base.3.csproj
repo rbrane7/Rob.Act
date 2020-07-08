@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <RootNamespace>Rob.Act.Base._3</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Rob.Act.Basis\0.Basis.cs" Link="0.Basis.cs" />
+    <Compile Include="..\Rob.Act.Basis\1.Point.cs" Link="1.Point.cs" />
+    <Compile Include="..\Rob.Act.Basis\2.Path.cs" Link="2.Path.cs" />
+    <Compile Include="..\Rob.Act.Basis\3.Book.cs" Link="3.Book.cs" />
+    <Compile Include="..\Rob.Act.Basis\4.Axis.cs" Link="4.Axis.cs" />
+    <Compile Include="..\Rob.Act.Basis\5.Aspect.cs" Link="5.Aspect.cs" />
+    <Compile Include="..\Rob.Act.Basis\Altiplane.cs" Link="Altiplane.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Aid.Core.3">
+      <HintPath>..\..\..\..\Aid\Bin\Release\Aid.Core.3.dll</HintPath>
+    </Reference>
+    <Reference Include="Aid.Math.Standard">
+      <HintPath>..\..\..\..\Aid\Bin\Release\Aid.Math.Standard.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>

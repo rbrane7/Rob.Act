@@ -9,7 +9,6 @@ using Aid.Extension;
 
 namespace Rob.Act
 {
-	using Configer = System.Configuration.ConfigurationManager ;
 	using Quant = Double ;
 	/// <summary>
 	/// Kind of separation marks .
@@ -100,7 +99,7 @@ namespace Rob.Act
 		/// <param name="vect"> Vector of distance from at point .</param>
 		/// <param name="axis"> Axis to calculate .</param>
 		/// <param name="at"> Point at absolute coordinates to relate to .</param>
-		public static int GradeAccu = Configer.AppSettings["Grade.Accumulation"].Parse(7) , VeloAccu = Configer.AppSettings["Speed.Accumulation"].Parse(1) ;
+		public static int GradeAccu = 7 , VeloAccu = 1 ;
 		static Quant Sqr( this Quant value ) => value*value ;
 		static Quant? Sqr( this Quant? value ) => value.use(Sqr) ;
 		/// <summary>

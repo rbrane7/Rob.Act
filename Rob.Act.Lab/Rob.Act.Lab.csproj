@@ -1,0 +1,46 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <ApplicationIcon>C:\Base\Studio\Project\Rob\App\Rob.Act\Rob.Act.Graph\Anico.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Rob.Act.Graph\Setup.cs" Link="Setup.cs" />
+    <Compile Include="..\Rob.Act.Graph\Support.cs" Link="Support.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\Rob.Act.Graph\Anico.ico" Link="Anico.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Rob.Act.Access.3\Rob.Act.Access.3.csproj" />
+    <ProjectReference Include="..\Rob.Act.Base.3\Rob.Act.Base.3.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Aid.Core.3">
+      <HintPath>..\..\..\..\Aid\Bin\Release\Aid.Core.3.dll</HintPath>
+    </Reference>
+    <Reference Include="Aid.Presentation.3">
+      <HintPath>..\..\..\..\Aid\Bin\Release\Aid.Presentation.3.dll</HintPath>
+    </Reference>
+    <Reference Include="Aid.Prog.3">
+      <HintPath>..\..\..\..\Aid\Bin\Release\Aid.Prog.3.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Rob.Act.Lab.setup">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="del C:\Base\Soft\Rob.Act\Lab\*.exe&#xD;&#xA;del C:\Base\Soft\Rob.Act\Lab\*.dll&#xD;&#xA;del C:\Base\Soft\Rob.Act\Lab\*.pdb&#xD;&#xA;del C:\Base\Soft\Rob.Act\Lab\*.json&#xD;&#xA;copy $(TargetDir)*.exe C:\Base\Soft\Rob.Act\Lab\&#xD;&#xA;copy $(TargetDir)*.dll C:\Base\Soft\Rob.Act\Lab\&#xD;&#xA;copy $(TargetDir)*.pdb C:\Base\Soft\Rob.Act\Lab\&#xD;&#xA;copy $(TargetDir)*.json C:\Base\Soft\Rob.Act\Lab\&#xD;&#xA;" />
+  </Target>
+
+</Project>

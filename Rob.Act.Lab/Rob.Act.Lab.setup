@@ -1,0 +1,18 @@
+﻿/*@ Rob.Act.Analyze.Settings @*/ type
+{
+	Doctee = 'doctee://localhost:43202/Action/Analyze?Name=Rana' ,
+	WorkoutsPaths = @'C:\Users\teplyr\Downloads\concept2*.tcx,C:\Users\teplyr\Downloads\*.gpx,C:\Users\teplyr\Downloads\*.par,C:\Users\teplyr\Downloads\*.path' , WorkoutsPath = @'C:\Users\teplyr\Downloads\*.path' ,
+	AspectsPaths = @'C:\Users\robin\OneDrive\Documents\Action\Base\*.asp' , AspectsPath = @'C:\Users\robin\OneDrive\Documents\Action\Base\*.asp' ,
+	StatePath = @'C:\Users\robin\OneDrive\Documents\Action\Base\' , /*WorkoutsFilter = =>Action=='AeT' , AspectsFilter = =>Spec!='Test' ,*/
+	ActionTraits = []{ 'Action' , 'Refine' , 'Date:yyyy-MM-dd HH:mm:ss' , 'Time:hh\\:mm\\:ss' , 'Dist:0m' , 'Power/☼:0W' , '(1000*60/Beatrate)/⅟♥:0‴' , '(1000/MaxBeat)/⅟♥↓:0‴' , 'Beatage/☼∕♥:0.0♥W' , '(((Power+Beatage)*3+1000*60/Beatrate+1000/MaxBeat)/3)/∑:0' , 'Drift,5:.000' , 'xDrift,5:.000' , 'Draglet/Drag:0.00' , 'Tags' } ,
+	MatrixTraits = []{ 'Date:yyyy-MM-dd HH:mm:ss' , 'Time:hh\\:mm\\:ss\\.ff' , 'Distance/Dist:0.0m' , 'Alt/Alt:0.0m' , 'Asc/Asc:0.0m' , 'Dev/Dev:0.0m' , 'Energy:0J' , 'Effort:0J' , 'Beat:0♥' , 'Bit:0' , 'Draglet/ØDrag:0.00' , 'Gradelet/ØGrade:.000' , 'Bendlet/ØBend:.000' , 'Speed/ØSpeed:0.00m/s' , 'Power/ØPower:0W' , 'Force/ØForce:0N' , 'Beatage/ØWork/Beat:0J/♥' , 'Bitage/ØWork/Bit:0J/●' , 'Beatrate/ØBeat:0♥/min' , 'Bitrate/ØBit:0●/min' , 'Marklet/Mark' , 'Tags' } ,
+	SpectrumBinds = []{ string.Empty , string.Empty , ':0.0m' , ':0.0m' , ':0.00m' , string.Empty , ':0♥' , string.Empty , ':0J' , ':0.00m' , '(time.FromSeconds(.)):h\:mm\:ss\.f' , '(date.MinValue.AddSeconds(.)):yy-MM-dd\.HH\:mm\:ss\.f' } ,
+	ActionAssocier = (p,a)=>p.Action==a.Spec ,
+	Altiplane = (0.0D,10D,4B) ,
+}
+;
+System.Diagnostics.{ Trace.Listeners.Add(Aid.Diagnostics.StoreListener(@"Destiny=Run\Local.log"){TraceOutputOptions=type.DateTime}) ; Trace.AutoFlush = true ; Trace.TraceInformation('Started') } ;
+Aid.Extension.LambdaContext.MultipletGenAssembly = 'System.ValueTuple, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51' ;
+Rob.Act.Path.{ Corrects = /*Altismooths =*/ true } ;
+Rob.Act.Altiplane.{ VicinityRad = 1 ; HitWeight = 100 } ;
+(Rob.Act.AxeOperations) ;

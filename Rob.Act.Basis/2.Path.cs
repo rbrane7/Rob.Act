@@ -12,7 +12,6 @@ using Aid.Extension;
 namespace Rob.Act
 {
 	using Quant = Double ;
-	using Configer = System.Configuration.ConfigurationManager ;
 	public class Profile
 	{
 		public static string The { get => the ; set { the = value ; dflt = null ; } } static string the ;
@@ -22,8 +21,8 @@ namespace Rob.Act
 	}
 	public partial class Path : Point , IList<Point> , Gettable<DateTime,Point> , INotifyCollectionChanged , Pathable
 	{
-		public static bool Dominancy = Configer.AppSettings["Path.Dominancy"]!=null , Corrects , Altismooths ;
-		public static double Margin = Configer.AppSettings["Path.Margin"].Parse<double>()??0 ;
+		public static bool Dominancy , Corrects , Altismooths ;
+		public static double Margin ;
 		public static readonly Dictionary<string,Quant?[]> Meta = new Dictionary<string,Quant?[]>{ ["Tabata"]=new Quant?[]{1,2} } ;
 		public static readonly Dictionary<string,(Quant Grade,Quant Devia,Quant Velo,byte Rad)> Tolerancy = new Dictionary<string,(Quant Grade,Quant Devia,Quant Velo,byte Rad)>{ ["Polling"]=(.20,.25,20,5) , ["ROLLER_SKIING"]=(.20,3,25,5) , ["SKIING_CROSS_COUNTRY"]=(.20,3,20,5) } ;
 		public static readonly IDictionary<string,Profile> SubjectProfile = new Dictionary<string,Profile>{ ["Rob"]=new Profile{Mass=76,Span=1.92,Tranq=4} } ;
