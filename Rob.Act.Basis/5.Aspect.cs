@@ -38,7 +38,7 @@ namespace Rob.Act
 			public Aspect.Point this[ int at ] => throw new NotSupportedException("Points not supported on multi-context version !") ;
 		}
 	}
-	public class Aspect : List<Axe> , IList , Aspectable , INotifyCollectionChanged , INotifyPropertyChanged
+	public class Aspect : List<Axe> , IList , Aspectable , INotifyCollectionChanged , INotifyPropertyChanged , ICollection<Axe>
 	{
 		public static IEnumerable<Aspectable> Set => Aspectables.The.Def.Of() ;
 		public event PropertyChangedEventHandler PropertyChanged { add => propertyChanged += value.DispatchResolve() ; remove => propertyChanged -= value.DispatchResolve() ; } protected PropertyChangedEventHandler propertyChanged ;
@@ -101,6 +101,7 @@ namespace Rob.Act
 		public new virtual void Remove( Axe ax ) { base.Remove(ax) ; ax.Own = null ; ax.PropertyChanged -= OnChanged ; OnChanged(NotifyCollectionChangedAction.Remove,ax) ; }
 		void IList.Remove( object value ) => Remove( value as Axe ) ;
 		int IList.Add( object value ) { Add( value as Axe ) ; return Count-1 ; }
+		void ICollection<Axe>.Add( Axe axe ) => Add(axe) ;
 		internal Quant Resistance( Quant? resi ) => Raw.Object==Basis.Device.Skierg.Code ? Basis.Device.Skierg.Draw : (Raw?.Resister).use(d=>resi??d)??0 ;
 		internal Quant Gradient( Quant grad ) => Raw.Object==Basis.Device.Skierg.Code ? 0 : Path.Tolerancy.On(Raw?.Object)?.Grade is Quant v && v<Math.Abs(grad) ? -.01 : grad ;
 		public override string ToString() => Score ;

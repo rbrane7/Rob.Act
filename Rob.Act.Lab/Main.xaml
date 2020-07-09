@@ -42,6 +42,7 @@
                 </DataGrid.Columns>
                 <DataGrid.CommandBindings>
                     <CommandBinding Command="Delete" Executed="DataGridDeleteCommandBinding_Executed"/>
+                    <CommandBinding Command="Paste" Executed="AspectAxes_DataGrid_Paste_CommandBinding_Executed"/>
                 </DataGrid.CommandBindings>
             </DataGrid>
             <DataGrid Name="AspectTraitsGrid" Grid.Column="1" ItemsSource="{Binding Aspect.Trait}" AutoGenerateColumns="False" Margin="2" SelectionChanged="AspectTraitsGrid_SelectionChanged">
@@ -52,6 +53,7 @@
                 </DataGrid.Columns>
                 <DataGrid.CommandBindings>
                     <CommandBinding Command="Delete" Executed="DataGridDeleteCommandBinding_Executed"/>
+                    <CommandBinding Command="Paste" Executed="AspectTraits_DataGrid_Paste_CommandBinding_Executed"/>
                 </DataGrid.CommandBindings>
             </DataGrid>
             <!--<DataGrid Name="PartitionerGrid" Grid.ColumnSpan="2" ItemsSource="{Binding Aspect.Trait}" AutoGenerateColumns="False" Margin="2" Visibility="{Binding IsSelected,ElementName=MatrixTab,Converter={StaticResource PartitionerVisibilityConverter}}" Panel.ZIndex="1">
