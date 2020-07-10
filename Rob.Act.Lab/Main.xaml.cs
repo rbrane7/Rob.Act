@@ -198,8 +198,8 @@ namespace Rob.Act.Analyze
 				case "Map" : ViewPanel = MapPanel ; break ;
 			}
 		}
-		void DataGridDeleteCommandBinding_Executed( object sender , ExecutedRoutedEventArgs e ) => ((sender as DataGrid)?.ItemsSource as IList).Set(l=>(sender as DataGrid)?.SelectedItems.OfType<object>().ToArray().Each(l.Remove)) ;
-		void SourcesGridDeleteCommandBinding_Executed( object sender , ExecutedRoutedEventArgs e ) => (sources as IList).Set(l=>(sender as DataGrid)?.SelectedItems.OfType<Aspect>().ToArray().Each(a=>{l.Remove(a);Presources.Remove(a.Raw);})) ;
+		void DataGridDeleteCommandBinding_Executed( object sender , ExecutedRoutedEventArgs _=null ) => ((sender as DataGrid)?.ItemsSource as IList).Set(l=>(sender as DataGrid)?.SelectedItems.OfType<object>().ToArray().Each(l.Remove)) ;
+		void SourcesGridDeleteCommandBinding_Executed( object sender , ExecutedRoutedEventArgs _=null ) => (sources as IList).Set(l=>(sender as DataGrid)?.SelectedItems.OfType<Aspect>().ToArray().Each(a=>{l.Remove(a);Presources.Remove(a.Raw);})) ;
 
 		#region Graphing
 		void Graph_Draw( object sender , RoutedEventArgs e = null ) { ViewPanel = GraphPanel ; GraphPanel.Children.Clear() ; switch( ViewType ) { case "Aspect" : case "Spectrum" : GraphDrawAspect() ; return ; case "Quantile" : GraphDrawQuantile() ; return ; } }
@@ -521,13 +521,21 @@ namespace Rob.Act.Analyze
 		void SourceDriftMove( double step ) { var sel = SourcesOffset.SelectedItems.Cast<Aspect>().ToArray() ; sel.Each(s=>s.Offset+=step) ; if( GraphTab.IsSelected ) Graph_Draw(this) ; if( MapTab.IsSelected ) Map_Draw(this) ; GridFocusHold(SourcesOffset,sel) ; }
 		void SourceDriftSet( double step ) { var sel = SourcesOffset.SelectedItems.Cast<Aspect>().ToArray() ; sel.Each(s=>s.Offset=step) ; if( GraphTab.IsSelected ) Graph_Draw(this) ; if( MapTab.IsSelected ) Map_Draw(this) ; GridFocusHold(SourcesOffset,sel) ; }
 		#endregion
-		void AspectAxes_DataGrid_Paste_CommandBinding_Executed( object sender, ExecutedRoutedEventArgs e ) => DataGrid_Paste_CommandBinding_Executed(sender,a=>new Axe{Spec=a.At(0),Resolvelet=a.At(1),Binder=a.At(2),Quantlet=a.At(3),Asrex=a.At(4).Parse(false),Aspectlet=a.At(5),Multi=a.At(6).Parse(false)}) ;
-		void AspectTraits_DataGrid_Paste_CommandBinding_Executed( object sender, ExecutedRoutedEventArgs e ) => DataGrid_Paste_CommandBinding_Executed(sender,a=>new Aspect.Traitlet{Spec=a.At(0),Lex=a.At(1),Bond=a.At(2)}) ;
+		void DataGrid_Paste_CommandBinding_Executed( object sender, ExecutedRoutedEventArgs _=null )
+		{
+			if( sender==AspectAxisGrid ) DataGrid_Paste_CommandBinding_Executed(sender,a=>new Axe{Spec=a.At(0),Resolvelet=a.At(1),Binder=a.At(2),Quantlet=a.At(3),Asrex=a.At(4).Parse(false),Aspectlet=a.At(5),Multi=a.At(6).Parse(false)}) ;
+			if( sender==AspectTraitsGrid ) DataGrid_Paste_CommandBinding_Executed(sender,a=>new Aspect.Traitlet{Spec=a.At(0),Lex=a.At(1),Bond=a.At(2)}) ;
+			if( sender==AspectsGrid ) DataGrid_Paste_CommandBinding_Executed(sender,a=>new Aspect{Spec=a.At(0),Taglet=a.At(1)}) ;
+			if( sender==ActionFilterGrid ) DataGrid_Paste_CommandBinding_Executed(sender,a=>new Filter.Entry{Filter=a.At(0),Traits=a.At(1),Matrix=a.At(2),Associer=a.At(3),Matter=a.At(4),Query=a.At(5)}) ;
+			if( sender==SourceFilterGrid ) DataGrid_Paste_CommandBinding_Executed(sender,a=>new Filter.Entry{Rex=a.At(0).Parse(false),Filter=a.At(1),Query=a.At(2)}) ;
+			if( sender==AspectFilterGrid ) DataGrid_Paste_CommandBinding_Executed(sender,a=>new Filter.Entry{Rex=a.At(0).Parse(false),Filter=a.At(1)}) ;
+		}
 		void DataGrid_Paste_CommandBinding_Executed( object sender , Func<string[],object> item )
 		{
 			if( sender as DataGrid is DataGrid grid && grid.ItemsSource is IList items ); else return ; var seli = grid.SelectedIndex.nil(i=>i<0)??items.Count ;
 			foreach( var line in Clipboard.GetText().SeparateTrim(Environment.NewLine,voids:false) ) if( line.Separate('\t') is string[] traits ) item?.Invoke(traits).Set(i=>items.Insert(seli,i)) ;
 		}
+		void DataGrid_Cut_CommandBinding_Executed( object sender, ExecutedRoutedEventArgs _=null ) { if( sender is DataGrid grid ); else return ; ApplicationCommands.Copy.Execute(null,grid) ; ApplicationCommands.Delete.Execute(null,grid) ; }
 	}
 	class Presources : IEnumerable<Pathable>
 	{
