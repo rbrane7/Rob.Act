@@ -97,11 +97,13 @@ namespace Rob.Act
 		public event NotifyCollectionChangedEventHandler CollectionChanged { add => collectionChanged += value.DispatchResolve() ; remove => collectionChanged -= value.DispatchResolve() ; } NotifyCollectionChangedEventHandler collectionChanged ;
 		internal void OnChanged( NotifyCollectionChangedAction act , Axable item ) { collectionChanged?.Invoke(this,new NotifyCollectionChangedEventArgs(act,item)) ; Dirty = true ; }
 		internal void OnChanged( object subject = null , PropertyChangedEventArgs item = null ) { collectionChanged?.Invoke(this,new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset)) ; Dirty = true ; }
-		public new virtual void Add( Axe ax ) { base.Add(ax) ; ax.Own = this ; ax.PropertyChanged += OnChanged ; OnChanged(NotifyCollectionChangedAction.Add,ax) ; }
+		public new virtual void Add( Axe ax ) => Insert(Count,ax) ;
+		public new virtual void Insert( int at , Axe ax ) { if( (uint)at<Count ) base.Insert(at,ax) ; else base.Add(ax) ; ax.Own = this ; ax.PropertyChanged += OnChanged ; OnChanged(NotifyCollectionChangedAction.Add,ax) ; }
 		public new virtual void Remove( Axe ax ) { base.Remove(ax) ; ax.Own = null ; ax.PropertyChanged -= OnChanged ; OnChanged(NotifyCollectionChangedAction.Remove,ax) ; }
 		void IList.Remove( object value ) => Remove( value as Axe ) ;
 		int IList.Add( object value ) { Add( value as Axe ) ; return Count-1 ; }
 		void ICollection<Axe>.Add( Axe axe ) => Add(axe) ;
+		void IList.Insert( int at , object value ) => Insert(at,value as Axe) ;
 		internal Quant Resistance( Quant? resi ) => Raw.Object==Basis.Device.Skierg.Code ? Basis.Device.Skierg.Draw : (Raw?.Resister).use(d=>resi??d)??0 ;
 		internal Quant Gradient( Quant grad ) => Raw.Object==Basis.Device.Skierg.Code ? 0 : Path.Tolerancy.On(Raw?.Object)?.Grade is Quant v && v<Math.Abs(grad) ? -.01 : grad ;
 		public override string ToString() => Score ;

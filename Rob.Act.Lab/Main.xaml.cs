@@ -523,10 +523,10 @@ namespace Rob.Act.Analyze
 		#endregion
 		void AspectAxes_DataGrid_Paste_CommandBinding_Executed( object sender, ExecutedRoutedEventArgs e ) => DataGrid_Paste_CommandBinding_Executed(sender,a=>new Axe{Spec=a.At(0),Resolvelet=a.At(1),Binder=a.At(2),Quantlet=a.At(3),Asrex=a.At(4).Parse(false),Aspectlet=a.At(5),Multi=a.At(6).Parse(false)}) ;
 		void AspectTraits_DataGrid_Paste_CommandBinding_Executed( object sender, ExecutedRoutedEventArgs e ) => DataGrid_Paste_CommandBinding_Executed(sender,a=>new Aspect.Traitlet{Spec=a.At(0),Lex=a.At(1),Bond=a.At(2)}) ;
-		void DataGrid_Paste_CommandBinding_Executed<Item>( object sender , Func<string[],Item> item )
+		void DataGrid_Paste_CommandBinding_Executed( object sender , Func<string[],object> item )
 		{
-			var items = (sender as DataGrid)?.ItemsSource as ICollection<Item> ;
-			foreach( var line in Clipboard.GetText().SeparateTrim(Environment.NewLine,voids:false) ) if( line.Separate('\t') is string[] traits ) item?.Invoke(traits).Set(items.Add) ;
+			if( sender as DataGrid is DataGrid grid && grid.ItemsSource is IList items ); else return ; var seli = grid.SelectedIndex.nil(i=>i<0)??items.Count ;
+			foreach( var line in Clipboard.GetText().SeparateTrim(Environment.NewLine,voids:false) ) if( line.Separate('\t') is string[] traits ) item?.Invoke(traits).Set(i=>items.Insert(seli,i)) ;
 		}
 	}
 	class Presources : IEnumerable<Pathable>

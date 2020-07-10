@@ -39,8 +39,4 @@
     </None>
   </ItemGroup>
 
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="del C:\Base\Soft\Rob.Act\Lab\*.exe&#xD;&#xA;del C:\Base\Soft\Rob.Act\Lab\*.dll&#xD;&#xA;del C:\Base\Soft\Rob.Act\Lab\*.pdb&#xD;&#xA;del C:\Base\Soft\Rob.Act\Lab\*.json&#xD;&#xA;copy $(TargetDir)*.exe C:\Base\Soft\Rob.Act\Lab\&#xD;&#xA;copy $(TargetDir)*.dll C:\Base\Soft\Rob.Act\Lab\&#xD;&#xA;copy $(TargetDir)*.pdb C:\Base\Soft\Rob.Act\Lab\&#xD;&#xA;copy $(TargetDir)*.json C:\Base\Soft\Rob.Act\Lab\&#xD;&#xA;" />
-  </Target>
-
 </Project>
