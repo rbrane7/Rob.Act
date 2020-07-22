@@ -22,15 +22,21 @@ namespace Rob.Act
 	public partial class Path : Point , IList<Point> , Gettable<DateTime,Point> , INotifyCollectionChanged , Pathable
 	{
 		public static bool Dominancy , Corrects , Altismooths ;
-		public static double Margin ;
+		public static double Margin ; public static string Filext = "path" ;
 		public static readonly Dictionary<string,Quant?[]> Meta = new Dictionary<string,Quant?[]>{ ["Tabata"]=new Quant?[]{1,2} } ;
 		public static readonly Dictionary<string,(Quant Grade,Quant Devia,Quant Velo,byte Rad)> Tolerancy = new Dictionary<string,(Quant Grade,Quant Devia,Quant Velo,byte Rad)>{ ["Polling"]=(.20,.25,20,5) , ["ROLLER_SKIING"]=(.20,3,25,5) , ["SKIING_CROSS_COUNTRY"]=(.20,3,20,5) } ;
 		public static readonly IDictionary<string,Profile> SubjectProfile = new Dictionary<string,Profile>{ ["Rob"]=new Profile{Mass=76,Span=1.92,Tranq=4} } ;
 		public static IList<Altiplane> Altiplanes ;
 		Altiplane AltOf => Altiplanes.Get(ap=>Tolerancy.On(Object).Get(m=>ap.FirstOrDefault(a=>a.Grade>=m.Grade)??new Altiplane(m.Grade){Radius=m.Rad}.Set(ap.Add))) ;
+		public static bool Persistent => Filext?.Length>0 ;
 
 		#region Construct
 		public Path( DateTime date , IEnumerable<Point> points = null ) : base(date) { Borrow(points) ; Impose() ; }
+		/// <summary> Transform beat to potential . </summary>
+		public Path( DateTime date , bool close , IEnumerable<Point> points = null ) : this(date,points) { if( close && Beat==null ) { this[0].Beat = 0 ; Quant lb = 0 ; for( var i=1 ; i<Count ; ++i ) this[i].Beat = ((this[i-1].Beat??lb)+this[i].Beat/60*(this[i].Time-this[i-1].Time).TotalSeconds).use(b=>lb=b) ; Beat = lb ; } }
+		#endregion
+
+		#region Setup
 		void Impose()
 		{
 			Preclude() ;
@@ -63,16 +69,15 @@ namespace Rob.Act
 		}
 		void Preclude() { if( Alti==null ) Alti = this.Average(p=>p.Alti) ; if( this[Axis.Lon]==null ) this[Axis.Lon] = this.Average(p=>p[Axis.Lon]) ; if( this[Axis.Lat]==null ) this[Axis.Lat] = this.Average(p=>p[Axis.Lat]) ; }
 		void Conclude( Point point ) => point.Set(p=>{var z=this[0];if(Bit==null)Bit=p.Bit-z.Bit;if(Time==default)Time=p.Time-z.Time;if(Dist==null)Dist=p.Dist-z.Dist;if(Asc==null)Asc=p.Asc-z.Asc;if(Dev==null)Dev=p.Dev-z.Dev;}) ;
-		void Depose() { for( var i=0 ; i<Count ; ++i ) { this[i].Time = default ; this[i].Bit = this[i].Dist = null ; this[i].Asc = this[i].Dev = null ; this[i].Owner = null ; } }
+		protected internal override void Depose() { base.Depose() ; for( var i=0 ; i<Count ; ++i ) this[i].Depose() ; }
 		public void Reset() { Depose() ; Impose() ; }
-		public Path( DateTime time , bool close , IEnumerable<Point> points = null ) : this(time,points) { if( close ) { if( Beat==null ) { this[0].Beat = 0 ; Quant lb = 0 ; for( var i=1 ; i<Count ; ++i ) this[i].Beat = ((this[i-1].Beat??lb)+this[i].Beat/60*(this[i].Time-this[i-1].Time).TotalSeconds).use(b=>lb=b) ; Beat = lb ; } } }
-		protected virtual void Adopt( Path path )
+		protected virtual void Adapt( Path path=null )
 		{
-			Depose() ; base.Adopt(path) ;
-			if( Count>path.Count ) Content.RemoveRange(path.Count,Count-path.Count) ; for( var i=0 ; i<Count ; ++i ) this[i].Adopt(path[i]) ; if( Count<path.Count ) Content.AddRange(path.Content.Skip(Count)) ;
-			Impose() ; propertyChanged.On(this,"Spec,Spectrum") ; collectionChanged?.Invoke(this,new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset)) ;
+			Depose() ; path.Set(base.Adapt) ;
+			if( Count>path?.Count ) Content.RemoveRange(path.Count,Count-path.Count) ; if( path!=null ) for( var i=0 ; i<Count ; ++i ) this[i].Adapt(path[i]) ; if( Count<path?.Count ) Content.AddRange(path.Content.Skip(Count)) ;
+			Impose() ; Spectrum.Pointes = null ; Pointes = null ; propertyChanged.On(this,"Spec,Spectrum") ; collectionChanged?.Invoke(this,new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset)) ;
 		}
-		void Pointable.Adopt( Pointable path ) => (path as Path).Set(Adopt) ;
+		void Pointable.Adapt( Pointable path ) => (path as Path).Set(Adapt) ;
 		public void Populate() { Metax.Reset(Spectrum.Trait) ; Spectrum.Trait.Each(t=>this[t.Spec]=t.Value) ; Spectrum.Tags.Set(Tag.Add) ; }
 		void Borrow( IEnumerable<Point> points ) { points.Set(p=>Content.AddRange(p.OrderBy(t=>t.Date))) ; if( Metax==null ) Metax = points?.FirstOrDefault(p=>p.Metax!=null)?.Metax ; }
 		internal Path On( IEnumerable<Point> points )
@@ -175,10 +180,14 @@ namespace Rob.Act
 		#endregion
 
 		#region State
-		int Depth = 1 ;
+		int Depth = 1 ; // Defines the size of vicinity of points .
 		readonly List<Point> Content = new List<Point>() ;
-		public bool Dominant = Dominancy ;
+		/// <summary> Dominancy causes this path to be dominant to it's point sub-pathhes and is used as base of <see cref="Metax"/> attribute . </summary>
+		public bool Dominant = Dominancy , Editable = Persistent ;
 		protected override void SpecChanged( string value ) { base.SpecChanged(value) ; aspect.Set(a=>a.Spec=value) ; }
+		/// <summary>
+		/// Profile of the path derived from Subject property . 
+		/// </summary>
 		public Profile Profile => SubjectProfile.By(Subject) ;
 		public event NotifyCollectionChangedEventHandler CollectionChanged { add => collectionChanged += value.DispatchResolve() ; remove => collectionChanged -= value.DispatchResolve() ; } NotifyCollectionChangedEventHandler collectionChanged ;
 		#endregion
@@ -193,7 +202,7 @@ namespace Rob.Act
 		public Quant? AeroEffort { get { var min = MinEffort ; var max = MinMaxEffort ; var mav = (Count-1).Steps().Count(i=>(Content[i+1].Energy-Content[i].Energy).Quotient(Content[i+1].Time.TotalSeconds-Content[i].Time.TotalSeconds)>=max*0.9) ; var miv = (Count-1).Steps().Count(i=>(Content[i+1].Energy-Content[i].Energy).Quotient(Content[i+1].Time.TotalSeconds-Content[i].Time.TotalSeconds)<=min*1.2) ; return (min*miv+max*mav)/(miv+mav)*Durability ; } } // => (Meta.By(Action).At(0)*MinEffort+Meta.By(Action).At(1)*MinMaxEffort)/(Meta.By(Action).At(0)+Meta.By(Action).At(1)) ;
 		public Quant? MaxBeat => (Count-1).Steps().Max(i=>(Content[i+1].Beat-Content[i].Beat).Quotient((Content[i+1].Time-Content[i].Time).TotalSeconds)) ;
 		public Quant? MaxExposure => MaxEffort/MaxBeat ;
-		public string MaxExposion => "{0}={1}".Comb("{0}/{1}".Comb(MaxEffort.Get(e=>$"{e}W"),MaxBeat.Get(v=>$"{Math.Round(v*60)}`b")),MaxExposure.Get(e=>$"{Math.Round(e)}bW")) ;
+		public string MaxExposion => "{0}={1}".Comb("{0}/{1}".Comb(MaxEffort.Get(e=>$"{e:0}W"),MaxBeat.Get(v=>$"{Math.Round(v*60)}′♥")),MaxExposure.Get(e=>$"{Math.Round(e)}♥W")) ;
 		Quant Durability => Math.Max(0,1.1-20/Time.TotalSeconds) ;
 		public Quant? Drift => ((Spectrum[Axis.Energy] as Axe)^(Spectrum[Axis.Beat] as Axe))?.LastOrDefault() is Quant v ? Math.Log(v) : null as Quant? ;
 		public Quant? xDrift => ((Spectrum[Axis.Energy] as Axe)^(Spectrum[Axis.Beat] as Axe)).Skip(150)?.Min() is Quant v ? Math.Log(v) : null as Quant? ;
@@ -233,8 +242,8 @@ namespace Rob.Act
 		public IEnumerable<Point> Inte { get { Point point = null ; for( var i=0 ; i<Count ; ++i ) yield return point = new Point(this[i]) + point ; } }
 		#endregion
 
-		public override string ToString() => $"{Action} {Sign} {Distance/1000:0.00}km {Exposion} {"\\ {0} /".Comb(MaxExposion)} {MinEffort.Get(e=>$"{e}W\\")}{MinMaxEffort.Get(e=>$"{e}W")}:{AeroEffort.Get(a=>$"{a:#W}")} {Trace} {Tags}" ;
-		public override string Sign => Dominant ? Date.ToString() : base.Sign ; // Parallel accessor of points . Can be made resistent if adequate updates are satisfied to make it relevant . 
+		public override string ToString() => $"{Action} {Sign} {Distance/1000:0.00}km {Exposion} {"\\ {0:0} /".Comb(MaxExposion)} {MinEffort.Get(e=>$"{e:0}W\\")}{MinMaxEffort.Get(e=>$"{e:0}W")}:{AeroEffort.Get(a=>$"{a:#W}")} {Trace} {Tags}" ;
+		public override string Sign => Dominant ? Date.ToString() : base.Sign ;
 
 		#region Implementation
 		public void Rely( Path lead )
@@ -301,8 +310,8 @@ namespace Rob.Act
 		#region De/Serialization
 		Path( string text ) : base(text.LeftFrom(Serialization.Separator,all:true).Get(t=>t.StartsBy(Serialization.Domimator)?t.RightFromFirst(Serialization.Domimator):t))
 		{
-			text.RightFromFirst(Serialization.Separator).Separate(Serialization.Separator,false).Set(e=>Content.AddRange(e.Select(p=>((Point)p).Set(a=>{if(a.Metax==null)a.Metax=Metax;})))) ; if( Dominant = text.StartsBy(Serialization.Domimator) );else return ;
-			for( var ax=Axis.Dist ; ax<=Axis.Time ; ++ax ) { Quant lval = 0 ; for( var i=0 ; i<Count ; ++i ) { this[i][ax] += lval ; this[i][ax].Use(v=>lval=v) ; } }
+			text.RightFromFirst(Serialization.Separator).Separate(Serialization.Separator,false).Set(e=>Content.AddRange(e.Select(p=>((Point)p).Set(a=>{if(a.Metax==null)a.Metax=Metax;})))) ;
+			if( Dominant = text.StartsBy(Serialization.Domimator) ) for( var ax=Axis.Dist ; ax<=Axis.Time ; ++ax ) { Quant lval = 0 ; for( var i=0 ; i<Count ; ++i ) { this[i][ax] += lval ; this[i][ax].Use(v=>lval=v) ; } }
 		}
 		public static explicit operator string( Path path ) => path.Get(a=>$"{(path.Dominant?Serialization.Domimator:null)}{(string)(a as Point)}{(string)a.Metax}{Serialization.Separator}{(string.Join(null,a.Content.Select(p=>(string)p+(string)p.Metax.Null(m=>m==a.Metax)+Serialization.Separator)))}") ;
 		public static explicit operator Path( string text ) => text.Null(v=>v.No()).Get(t=>new Path(t)) ;
@@ -310,7 +319,14 @@ namespace Rob.Act
 		#endregion
 
 		public override Metax Metax { set { if( Dominant && Metax!=null ) Metax.Basis = value ; else base.Metax = value ; } }
-		public IEnumerable<Point> Pointes => new Aid.Collections.ObservableList<Point>().Set(p=>Task.Factory.StartNew(()=>this.Each(p.Add))) ;
+		public IList<Point> Pointes { get => pointes ??= new Aid.Collections.ObservableList<Point>().Set(p=>Task.Factory.StartNew(()=>{this.Each(p.Add);p.CollectionChanged+=PathEdited;})) ; set { if( value==pointes ) return ; pointes = value ; propertyChanged.On(this,"Pointes,Points") ; } } IList<Point> pointes ;
+		internal async void PathEdited( object subject , NotifyCollectionChangedEventArgs arg )
+		{
+			if( arg.Action==NotifyCollectionChangedAction.Remove && arg.OldStartingIndex>=0 && arg.OldItems is IList olds && olds.Count>0 ); else return ;
+			for( var i=0 ; i<olds.Count ; ++i ) { if( this[arg.OldStartingIndex+i]?.Mark==Mark.Stop && arg.OldStartingIndex+i>0 ) this[arg.OldStartingIndex+i-1].Mark |= Mark.Stop ; RemoveAt(arg.OldStartingIndex+i) ; }
+			if( Editing ) return ; try { Editing = true ; await Task.Delay(100) ; Adapt() ; if( Editable ) System.IO.Path.ChangeExtension(Origin,Filext).WriteAll((string)this) ; } finally { Editing = false ; }
+		}
+		bool Editing ;
 
 		#region Comparation
 		public virtual bool Equals( Pathable path ) => path is Path p && (this as Point).Equals(p) && Content.SequenceEquate(p.Content,(x,y)=>x.EqualsRestricted(y)) && Metax?.Equals(p.Metax)!=false ;

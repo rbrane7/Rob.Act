@@ -20,7 +20,7 @@ namespace Rob.Act.Gen
 		public static Book operator+( Book book , Path path ) => book.Set(b=>path.Set(b.Add)) ;
 		public static Book operator-( Book book , Path path ) => book.Set(b=>path.Set(b.Remove)) ;
 		public static Book operator-( Book book , Predicate<Path> path ) => book.Set(b=>path.Set(b.Remove)) ;
-		public static Book operator|( Book book , Path path ) => book.Set(b=>path.Set(p=>{ var i = b.IndexWhere(p.Match) ; if( i<0 ) b.Add(p) ; else if( b[i]!=p ) b[i].Adopt(p) ; })) ;
+		public static Book operator|( Book book , Path path ) => book.Set(b=>path.Set(p=>{ var i = b.IndexWhere(p.Match) ; if( i<0 ) b.Add(p) ; else if( b[i]!=p ) b[i].Adapt(p) ; })) ;
 		public void Save( string path , string matter ) { if( new Act.Path(this.Min(a=>a.Date)){Dominant=true}.On(this.OfType<Act.Path>()).Set(matter.Compile<Action<Act.Path>>()).Set(a=>a.Origin=path.Pathin(a.Spec.ToFileName())) is Act.Path p && Entries.All(a=>a.Origin!=p.Origin||!p.Equals(a)) ) p.Origin.WriteAll((string)p) ; }
 	}
 	static class PathExtension

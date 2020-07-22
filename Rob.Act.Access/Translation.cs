@@ -21,6 +21,7 @@ namespace Rob.Act
 		public static string Externalize( this Path path , string ext ) { switch( ext ) { case "gpx" : return ((Gpx.gpxType)path).Serialize("utf-8","1.0") ; case "tcx" : return ((Tcx.TrainingCenterDatabase_t)path).Serialize("utf-8","1.0") ; case "skierg.csv" : return (Csv.Skierg)path ; default : return (string)path ; } }
 		public static string Reconcile( this string file )
 		{
+			if( Path.Persistent && System.IO.Path.ChangeExtension(file,Path.Filext) is string p && file!=p && System.IO.File.Exists(p) ) return null ; // we prefer .path files over all serialization forms
 			string cofile = null ; if( file.EndsWith(".tcx") && file.Contains("concept2-logbook-workout-") ) { cofile = file ; file = file.Replace("logbook-workout","result").Replace(".tcx",".csv") ; }
 			var data = file.ReadAllText(false) ; if( data==null ) return null ;
 			if( (cofile??(cofile=file.Replace("result","logbook-workout").Replace(".csv",".tcx")))!=file && System.IO.File.Exists(cofile) )

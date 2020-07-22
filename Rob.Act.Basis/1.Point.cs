@@ -46,7 +46,8 @@ namespace Rob.Act
 		#region Construction
 		public Point( DateTime date , Pathable owner = null ) : base(date) => Owner = owner ;
 		public Point( Point point , Pathable owner = null ) : base(point) => Owner = owner??point?.Owner ;
-		public override void Adopt( Pointable point ) { base.Adopt(point) ; if( (point as Point)?.Tags!=null || Tags!=null ) Tag.Adopt(point.Tag) ; }
+		public override void Adapt( Pointable point ) { base.Adapt(point) ; if( (point as Point)?.Tags!=null || Tags!=null ) Tag.Adopt(point.Tag) ; }
+		protected internal override void Depose() { base.Depose() ; Bit = Dist = null ; Asc = Dev = null ; Owner = null ; }
 		#endregion
 
 		#region State

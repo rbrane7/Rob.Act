@@ -36,6 +36,7 @@ namespace Rob.Act.Analyze
 			Context.AspectFilter = Main.Setup.StatePath.Path("AspectFilter.stt").ReadAllText() ?? string.Empty ;
 			Coordinater = Main.Setup.StatePath.Path("Coordinater.stt").ReadAllLines()?.Where(l=>l.Contains(':')).ToDictionary(c=>c.LeftFrom(':'),c=>c.RightFrom(':')) ?? new Dictionary<string,string>() ;
 			Basis.Mass = Main.Setup.SubjectMass ;
+			System.IO.Path.GetExtension(Main.Setup.WorkoutsPath).Set(e=>Path.Filext=e) ;
 		}
 		void Save( object arg )
 		{

@@ -64,8 +64,8 @@ namespace Rob.Act
 	/// <summary>
 	/// Equatable is used by GUI frameworks therefore they can't be used and overriden !
 	/// </summary>
-	public interface Pointable : Quantable , Aid.Accessible<uint,Quant?> , Aid.Accessible<Quant?> { DateTime Date { get; } TimeSpan Time { get; } uint Dimension { get; } string Action { get; } Mark Mark { get; } Tagable Tag { get; } void Adopt( Pointable path ) ; }
-	public interface Pathable : Pointable , Aid.Countable , Aid.Gettable<DateTime,Pointable> , Aid.Gettable<int,Pointable> { string Origin { get; } Path.Aspect Spectrum { get; } string Object { get; } string Subject { get; } string Locus { get; } string Refine { get; } }
+	public interface Pointable : Quantable , Aid.Accessible<uint,Quant?> , Aid.Accessible<Quant?> { DateTime Date {get;} TimeSpan Time {get;} uint Dimension {get;} string Action {get;} Mark Mark {get;} Tagable Tag {get;} void Adapt( Pointable path ) ; }
+	public interface Pathable : Pointable , Aid.Countable , Aid.Gettable<DateTime,Pointable> , Aid.Gettable<int,Pointable> { string Origin {get;} Path.Aspect Spectrum {get;} string Object {get;} string Subject {get;} string Locus {get;} string Refine {get;} }
 	public static class Basis
 	{
 		#region Axis specifics
@@ -216,7 +216,11 @@ namespace Rob.Act
 
 			#region Setup
 			protected virtual void From( Pointable point ) { Time = point.Time ; for( uint i=0 ; i<point.Dimension ; ++i ) this[i] = point[i] ; }
-			public virtual void Adopt( Pointable point ) { if( point==null ) return ; From(point) ; Date = point.Date ; Action = point.Action ; Mark = point.Mark ; (point as Point).Set(p=>Metax=p.Metax) ; }
+			public virtual void Adapt( Pointable point ) { if( point==null ) return ; From(point) ; Date = point.Date ; Action = point.Action ; Mark = point.Mark ; (point as Point).Set(p=>Metax=p.Metax) ; }
+			/// <summary>
+			/// Resets relative fields which are dependant on context . Those will be set newly . 
+			/// </summary>
+			protected internal virtual void Depose() => Time = default ;
 			#endregion
 
 			#region State
@@ -235,11 +239,11 @@ namespace Rob.Act
 			/// <summary>
 			/// Signature of the point .
 			/// </summary>
-			public virtual string Sign => sign ?? ( sign = $"{Date}{Time.nil().Get(t=>$"+{t:hh\\:mm\\:ss}")}" ) ; string sign ;
+			public virtual string Sign => sign ??= $"{Date}{Time.nil().Get(t=>$"+{t:hh\\:mm\\:ss}")}" ; string sign ;
 			/// <summary>
 			/// Assotiative text .
 			/// </summary>
-			public virtual string Spec { get => spec ?? ( spec = Despect ) ; set { if( value!=spec ) spec = value ; } } string spec ; protected string Despect => Despec(Action) ; protected virtual string Despec( string act ) => $"{act??Action} {Sign}" ;
+			public virtual string Spec { get => spec ??= Despect ; set { if( value!=spec ) spec = value ; } } string spec ; protected string Despect => Despec(Action) ; protected virtual string Despec( string act ) => $"{act??Action} {Sign}" ;
 			/// <summary>
 			/// Action specification .
 			/// </summary>
@@ -247,11 +251,11 @@ namespace Rob.Act
 			/// <summary>
 			/// Kind of demarkaition .
 			/// </summary>
-			public Mark Mark { get; set; } public Mark? Marklet => Mark.nil() ;
+			public Mark Mark {get;set;} public Mark? Marklet => Mark.nil() ;
 			/// <summary>
-			/// Metadata of axes .
+			/// Metadata of axes . 
 			/// </summary>
-			public virtual Metax Metax { get ; set ; }
+			public virtual Metax Metax {get;set;}
 			#endregion
 
 			#region Trait
@@ -265,7 +269,7 @@ namespace Rob.Act
 
 			#region Info
 			public override string ToString() => $"{Action} {Sign} {Exposion} {Trace}" ;
-			public virtual string Quantities => $"{((int)Dimension).Steps().Select(i=>Quantity[i].Get(q=>$"{(Axis)i}={q}")).Stringy(' ')}" ;
+			public virtual string Quantities => $"{((int)Dimension).Steps().Select(i=>Quantity[i].Get(q=>$"{(Axis)i}={q:0.00}")).Stringy(' ')}" ;
 			public virtual string Exposion => null ;
 			public virtual string Trace => null ;
 			public abstract Tagable Tag { get ; }

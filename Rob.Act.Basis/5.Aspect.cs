@@ -31,9 +31,9 @@ namespace Rob.Act
 		public IEnumerator<Aspectable> GetEnumerator() => (Content?.Cast<Aspectable>()??Enumerable.Empty<Aspectable>()).GetEnumerator() ; IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
 		struct Iterator : Aspect.Point.Iterable
 		{
-			internal Aid.Countable<Aspectable> Context { get; set; }
+			internal Aid.Countable<Aspectable> Context {get;set;}
 			public int Count => Context?.Count>0 ? Context.Max(s=>s?.Count(a=>!a.Multi)>0?s.Where(a=>!a.Multi).Max(a=>a?.Count??0):0) : 0 ;
-			Aspectable Aspect.Point.Iterable.Context => throw new NotSupportedException("Single context not supported on multi-context version !") ;
+			Aspectable Aspect.Point.Iterable.Context { get => throw new NotSupportedException("Single context not supported on multi-context version !") ; set => throw new NotSupportedException("Single context not supported on multi-context version !") ; }
 			public IEnumerator<Aspect.Point> GetEnumerator() => throw new NotSupportedException("Points iterator not supported on multi-context version !") ; IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
 			public Aspect.Point this[ int at ] => throw new NotSupportedException("Points not supported on multi-context version !") ;
 		}
@@ -61,7 +61,8 @@ namespace Rob.Act
 		public bool Regular => this.All(a=>a.Regular) ;
 		IEnumerable<Aspectable> Resources => this.SelectMany(a=>a.Resources).Distinct() ;
 		public virtual Point.Iterable Points => new Point.Iterator{ Context = this } ;
-		public virtual IEnumerable<Point> Pointes => new Point.Iterator.Para(this) ; // Parallel accessor of points . Can be made resistent if adequate updates are satisfied to make it relevant . 
+		public virtual IList<Point> Pointes { get => pointes ??= new Point.Parit<Point.Iterator>{ Context = this , Changes = PointsChanged } ; set { if( value==pointes ) return ; pointes = value ; propertyChanged.On(this,"Pointes,Points") ; } } protected IList<Point> pointes ; // Parallel accessor of points . Can be made resistent if adequate updates are satisfied to make it relevant . 
+		protected void PointsChanged( object subject , NotifyCollectionChangedEventArgs arg ) => Raw?.PathEdited(subject,arg) ;
 		public int Index( string axe ) => IndexOf(this[axe]) ;
 		public virtual Path Raw => Source?.Raw ;
 		public Aspect Base => Raw?.Spectrum ;
@@ -71,32 +72,32 @@ namespace Rob.Act
 		#endregion
 		public struct Point : Quantable , IEnumerable<Quant?>
 		{
-			public interface Iterable : IEnumerable<Point> { int Count {get;} Aspectable Context {get;} Point this[ int at ] {get;} }
+			public interface Iterable : IEnumerable<Point> { int Count {get;} Aspectable Context {get;set;} Point this[ int at ] {get;} }
 			readonly Aspect Context ; readonly Quant?[] Content ;
 			public Point( Aspect context , int at ) { Context = context ; Content = context.Select(a=>a[at]).ToArray() ; var raw = context.Raw?[at] ; Mark = raw?.Mark??Mark.No ; Tags = raw?.Tags ; }
 			public Quant? this[ uint key ] => Content.At((int)key) ;
 			public Quant? this[ string key ] => Content.At(Context.Index(key)) ;
 			public IEnumerator<Quant?> GetEnumerator() => Content.Cast<Quant?>().GetEnumerator() ; IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
-			public Mark Mark { get ; set ; }
+			public Mark Mark {get;set;}
 			public Mark? Marklet => Mark.nil() ;
 			public string Tags {get;set;}
 			public struct Iterator : Iterable
 			{
 				public Aspectable Context {get;set;}
-				public int Count => Context?.Count>0 ? Context.Max(a=>a.Count) : 0 ;
+				public int Count => Context?.Count>0 ? Context.Max(a=>a.Count) : Context?.Raw?.Count??0 ;
 				public IEnumerator<Point> GetEnumerator() { for( int i=0 , count=Count ; i<count ; ++i ) yield return this[i] ; } IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
 				public Point this[ int at ] => new Point(Context as Aspect,at) ;
-				public class Para : Aid.Collections.ObservableList<Point> , Iterable
-				{
-					public Aspectable Context => Source.Context ; Iterator Source ;
-					public Para( Aspectable context ) => Source = new Iterator{ Context = context } ;
-					public override IEnumerator<Point> GetEnumerator() { Task.Factory.StartNew(()=>Source.Each(Add)) ; return base.GetEnumerator() ; }
-				}
+			}
+			public class Parit<Iter> : Aid.Collections.ObservableList<Point> , Iterable where Iter : Iterable , new()
+			{
+				public Aspectable Context { get => Source.Context ; set => Source = new Iter{ Context = value } ; } Iter Source ;
+				public override IEnumerator<Point> GetEnumerator() { if( Count==0&&Source.Count>0 ) Task.Factory.StartNew(()=>{Source.Each(Add);if(Source.Count==Count)CollectionChanged+=Changes;}) ; return base.GetEnumerator() ; }
+				public NotifyCollectionChangedEventHandler Changes ;
 			}
 		}
 		public event NotifyCollectionChangedEventHandler CollectionChanged { add => collectionChanged += value.DispatchResolve() ; remove => collectionChanged -= value.DispatchResolve() ; } NotifyCollectionChangedEventHandler collectionChanged ;
-		internal void OnChanged( NotifyCollectionChangedAction act , Axable item ) { collectionChanged?.Invoke(this,new NotifyCollectionChangedEventArgs(act,item)) ; Dirty = true ; }
-		internal void OnChanged( object subject = null , PropertyChangedEventArgs item = null ) { collectionChanged?.Invoke(this,new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset)) ; Dirty = true ; }
+		internal void OnChanged( NotifyCollectionChangedAction act , Axable item ) { Pointes = null ; collectionChanged?.Invoke(this,new NotifyCollectionChangedEventArgs(act,item)) ; Dirty = true ; }
+		internal void OnChanged( object subject = null , PropertyChangedEventArgs item = null ) { Pointes = null ; collectionChanged?.Invoke(this,new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset)) ; Dirty = true ; }
 		public new virtual void Add( Axe ax ) => Insert(Count,ax) ;
 		public new virtual void Insert( int at , Axe ax ) { if( (uint)at<Count ) base.Insert(at,ax) ; else base.Add(ax) ; ax.Own = this ; ax.PropertyChanged += OnChanged ; OnChanged(NotifyCollectionChangedAction.Add,ax) ; }
 		public new virtual void Remove( Axe ax ) { base.Remove(ax) ; ax.Own = null ; ax.PropertyChanged -= OnChanged ; OnChanged(NotifyCollectionChangedAction.Remove,ax) ; }
@@ -215,6 +216,7 @@ namespace Rob.Act
 			Act.Axe perf( Act.Axe pace , Act.Axe grad = null , Act.Axe resi = null , Act.Axe flow = null , Act.Axe gran = null ) => Context.Get( c => new Act.Axe( i => pace[i].PacePower((Gradient(grad?[i]??0),gran?[i]??0),Resistance(resi?[i]),flow?[i]??0) , pace ) ) ?? Axe.No ;
 			#endregion
 			public override Point.Iterable Points => new Iterator{ Context = this } ;
+			public override IList<Point> Pointes => pointes ??= new Point.Parit<Iterator>{ Context = this , Changes = PointsChanged } ;
 			public override Path Raw => Context ;
 			public class Iterator : Point.Iterable
 			{
@@ -227,7 +229,7 @@ namespace Rob.Act
 			public static explicit operator string( Aspect aspect ) => aspect.Get(a=>string.Join(Serialization.Separator,a.Where(x=>!(x is Axe)).Select(x=>(string)x))+(a.Count(x=>!(x is Axe))>0?Serialization.Separator:null)+(string)a.Trait) ;
 			#endregion
 		}
-		public Aspect Spectrum { get => aspect ?? ( aspect = new Aspect(this) ) ; internal set => aspect = value.Set(s=>s.Context=this) ; } Aspect aspect ;
+		public Aspect Spectrum { get => aspect ??= new Aspect(this) ; internal set => aspect = value.Set(s=>s.Context=this) ; } Aspect aspect ;
 		public string Origin { get => Spectrum.Origin ; set { Spectrum.Origin = value ; var asp = (Act.Aspect)System.IO.Path.ChangeExtension(value,"spt").ReadAllText() ; if( asp==null ) return ; foreach( var ax in asp ) if( Spectrum[ax.Spec]==null ) Spectrum.Add(ax) ; foreach( var trait in asp.Trait ) Spectrum.Trait.Add(trait) ; } }
 	}
 }
