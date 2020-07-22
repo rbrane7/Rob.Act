@@ -231,11 +231,11 @@ namespace Rob.Act
 			/// <summary>
 			/// Referential date of object .
 			/// </summary>
-			public DateTime Date { get => date ; set { if( date==value ) return ; date = value ; sign = null ; } } DateTime date ;
+			public DateTime Date { get => date ; set { if( date==value ) return ; if( spec==Despect ) spec = null ; date = value ; sign = null ; } } DateTime date ;
 			/// <summary>
 			/// Relative time of object .
 			/// </summary>
-			public TimeSpan Time { get => time ; set { if( time==value ) return ; time = value ; sign = null ; } } TimeSpan time ;
+			public TimeSpan Time { get => time ; set { if( time==value ) return ; if( spec==Despect ) spec = null ; time = value ; sign = null ; } } TimeSpan time ;
 			/// <summary>
 			/// Signature of the point .
 			/// </summary>
@@ -283,11 +283,11 @@ namespace Rob.Act
 			#region de/Serialization
 			protected Point( string text )
 			{
-				var qs = text.LeftFrom(Serialization.Quant).Separate(',') ; qs[0].Parse<DateTime>().Use(v=>date=v) ; qs[1].Parse<TimeSpan>().Use(v=>time=v) ; Quantity = qs.Skip(2).Select(q=>q.Parse<Quant>()).ToArray() ;
+				var qs = text.LeftFrom(Serialization.Quant).Separate(',') ; qs[0].Parse<DateTime>("yyyy-MM-dd HH:mm:ss.ff").Use(v=>date=v) ; qs[1].Parse<TimeSpan>().Use(v=>time=v) ; Quantity = qs.Skip(2).Select(q=>q.Parse<Quant>()).ToArray() ;
 				var ss = text.RightFrom(Serialization.Quant).LeftFromLast(Serialization.Act) ; ss.LeftFrom(',').Parse<Mark>().Use(v=>Mark=v) ;
 				ss = ss.RightFromFirst(',') ; ss.LeftFrom(Serialization.Act).Null(v=>v.No()).Set(v=>spec=v) ; ss.RightFrom(Serialization.Act).Null(v=>v.No()).Set(v=>action=v) ;
 			}  
-			public static explicit operator string( Point p ) => $"{p.Date},{p.Time},{p.Quantity.Stringy(',')}{Serialization.Quant}{p.Marklet},{(p.Spec!=p.Despect?p.Spec:null)}{Serialization.Act}{p.Action}{Serialization.Act}" ;
+			public static explicit operator string( Point p ) => $"{p.Date:yyyy-MM-dd HH:mm:ss.ff},{p.Time},{p.Quantity.Stringy(',')}{Serialization.Quant}{p.Marklet},{(p.Spec!=p.Despect?p.Spec:null)}{Serialization.Act}{p.Action}{Serialization.Act}" ;
 			public static explicit operator Point( string text ) => text?.Contains('\n')==true ? (Path)text : (Act.Point)text ;
 			protected static class Serialization { public const string Quant = " \x1 Quant \x2 " , Act = " \x1 Act \x2 " , Tag = " \x1 Tag \x2 " ; }
 			#endregion

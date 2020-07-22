@@ -21,14 +21,13 @@ namespace Rob.Act
 	}
 	public partial class Path : Point , IList<Point> , Gettable<DateTime,Point> , INotifyCollectionChanged , Pathable
 	{
-		public static bool Dominancy , Corrects , Altismooths ;
+		public static bool Dominancy , Corrects , Altismooths , Persistent , Primary ;
 		public static double Margin ; public static string Filext = "path" ;
 		public static readonly Dictionary<string,Quant?[]> Meta = new Dictionary<string,Quant?[]>{ ["Tabata"]=new Quant?[]{1,2} } ;
 		public static readonly Dictionary<string,(Quant Grade,Quant Devia,Quant Velo,byte Rad)> Tolerancy = new Dictionary<string,(Quant Grade,Quant Devia,Quant Velo,byte Rad)>{ ["Polling"]=(.20,.25,20,5) , ["ROLLER_SKIING"]=(.20,3,25,5) , ["SKIING_CROSS_COUNTRY"]=(.20,3,20,5) } ;
 		public static readonly IDictionary<string,Profile> SubjectProfile = new Dictionary<string,Profile>{ ["Rob"]=new Profile{Mass=76,Span=1.92,Tranq=4} } ;
 		public static IList<Altiplane> Altiplanes ;
 		Altiplane AltOf => Altiplanes.Get(ap=>Tolerancy.On(Object).Get(m=>ap.FirstOrDefault(a=>a.Grade>=m.Grade)??new Altiplane(m.Grade){Radius=m.Rad}.Set(ap.Add))) ;
-		public static bool Persistent => Filext?.Length>0 ;
 
 		#region Construct
 		public Path( DateTime date , IEnumerable<Point> points = null ) : base(date) { Borrow(points) ; Impose() ; }
@@ -312,6 +311,7 @@ namespace Rob.Act
 		{
 			text.RightFromFirst(Serialization.Separator).Separate(Serialization.Separator,false).Set(e=>Content.AddRange(e.Select(p=>((Point)p).Set(a=>{if(a.Metax==null)a.Metax=Metax;})))) ;
 			if( Dominant = text.StartsBy(Serialization.Domimator) ) for( var ax=Axis.Dist ; ax<=Axis.Time ; ++ax ) { Quant lval = 0 ; for( var i=0 ; i<Count ; ++i ) { this[i][ax] += lval ; this[i][ax].Use(v=>lval=v) ; } }
+			else Impose() ;
 		}
 		public static explicit operator string( Path path ) => path.Get(a=>$"{(path.Dominant?Serialization.Domimator:null)}{(string)(a as Point)}{(string)a.Metax}{Serialization.Separator}{(string.Join(null,a.Content.Select(p=>(string)p+(string)p.Metax.Null(m=>m==a.Metax)+Serialization.Separator)))}") ;
 		public static explicit operator Path( string text ) => text.Null(v=>v.No()).Get(t=>new Path(t)) ;
