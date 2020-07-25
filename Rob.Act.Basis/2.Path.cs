@@ -322,11 +322,15 @@ namespace Rob.Act
 		public IList<Point> Pointes { get => pointes ??= new Aid.Collections.ObservableList<Point>().Set(p=>Task.Factory.StartNew(()=>{this.Each(p.Add);p.CollectionChanged+=PathEdited;})) ; set { if( value==pointes ) return ; pointes = value ; propertyChanged.On(this,"Pointes,Points") ; } } IList<Point> pointes ;
 		internal async void PathEdited( object subject , NotifyCollectionChangedEventArgs arg )
 		{
-			if( arg.Action==NotifyCollectionChangedAction.Remove && arg.OldStartingIndex>=0 && arg.OldItems is IList olds && olds.Count>0 ); else return ;
-			for( var i=0 ; i<olds.Count ; ++i ) { if( this[arg.OldStartingIndex+i]?.Mark==Mark.Stop && arg.OldStartingIndex+i>0 ) this[arg.OldStartingIndex+i-1].Mark |= Mark.Stop ; RemoveAt(arg.OldStartingIndex+i) ; }
+			if( arg.Action==NotifyCollectionChangedAction.Remove && arg.OldStartingIndex>=0 && arg.OldItems is IList olds && olds.Count>0 ) PathRefined(arg.OldStartingIndex,olds) ; else return ;
 			if( Editing ) return ; try { Editing = true ; await Task.Delay(100) ; Adapt() ; if( Editable ) System.IO.Path.ChangeExtension(Origin,Filext).WriteAll((string)this) ; } finally { Editing = false ; }
 		}
 		bool Editing ;
+		void PathRefined( int at , IList olds )
+		{
+			for( var ax=Basis.Potentials.At ; ax<Basis.Potentials.To ; ++ax ) this[at+olds.Count][ax] -= (this[at+olds.Count-1]?[ax]??0)-(this[at-1]?[ax]??0) ;
+			for( var i=0 ; i<olds.Count ; ++i ) { if( this[at+i]?.Marklet is Mark mark && at>0 ) this[at-1].Mark |= mark ; RemoveAt(at+i) ; }
+		}
 
 		#region Comparation
 		public virtual bool Equals( Pathable path ) => path is Path p && (this as Point).Equals(p) && Content.SequenceEquate(p.Content,(x,y)=>x.EqualsRestricted(y)) && Metax?.Equals(p.Metax)!=false ;

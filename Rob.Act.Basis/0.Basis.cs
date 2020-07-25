@@ -71,6 +71,7 @@ namespace Rob.Act
 		#region Axis specifics
 		static readonly List<string> axis = Enum.GetNames(typeof(Axis)).ToList() ; static readonly List<uint> vaxi = Enum.GetValues(typeof(Axis)).Cast<uint>().ToList() ;
 		internal static uint Axis( this string name , uint dim ) => vaxi.At(axis.IndexOf(name)).nil(i=>i<0).Get(i=>i==(uint)Act.Axis.Time?dim:i==(uint)Act.Axis.Date?dim+1:i) ?? (uint)axis.Set(a=>{a.Add(name);vaxi.Add((uint)vaxi.Count);}).Count-1 ;
+		internal static readonly (Axis At,Axis To) Potentials = (Act.Axis.Dist,Act.Axis.Time) ;
 		internal static Quant ActLim( this Axis axis , string activity ) => 50 ;
 		public static class Device
 		{
