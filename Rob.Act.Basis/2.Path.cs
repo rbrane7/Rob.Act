@@ -30,15 +30,19 @@ namespace Rob.Act
 		Altiplane AltOf => Altiplanes.Get(ap=>Tolerancy.On(Object).Get(m=>ap.FirstOrDefault(a=>a.Grade>=m.Grade)??new Altiplane(m.Grade){Radius=m.Rad}.Set(ap.Add))) ;
 
 		#region Construct
-		public Path( DateTime date , IEnumerable<Point> points = null ) : base(date) { Borrow(points) ; Impose() ; }
+		public Path( DateTime date , IEnumerable<Point> points = null , bool close = false ) : base(date)
+		{
+			Take(points) ;
+			if( close && Beat==null ) { this[0].Beat = 0 ; Quant lb = 0 ; for( var i=1 ; i<Count ; ++i ) this[i].Beat = ((this[i-1].Beat??lb)+this[i].Beat/60*(this[i].Time-this[i-1].Time).TotalSeconds).use(b=>lb=b) ; Beat = lb ; }
+			Impose() ;
+		}
 		/// <summary> Transform beat to potential . </summary>
-		public Path( DateTime date , bool close , IEnumerable<Point> points = null ) : this(date,points) { if( close && Beat==null ) { this[0].Beat = 0 ; Quant lb = 0 ; for( var i=1 ; i<Count ; ++i ) this[i].Beat = ((this[i-1].Beat??lb)+this[i].Beat/60*(this[i].Time-this[i-1].Time).TotalSeconds).use(b=>lb=b) ; Beat = lb ; } }
 		#endregion
 
 		#region Setup
 		void Impose()
 		{
-			Preclude() ;
+			Preclude() ; var pon = Potenties.ToDictionary(a=>a,a=>0D) ;
 			var date = DateTime.Now ; for( var i=0 ; i<Count ; ++i )
 			{
 				if( this[i].Owner==null ) this[i].Owner = this ;
@@ -50,6 +54,7 @@ namespace Rob.Act
 					if( this[i].Asc==null && Alti!=null ) this[i].Asc = this[i-1]?.Asc??0 ;
 					if( this[i].Dev==null && IsGeo ) this[i].Dev = this[i-1]?.Dev??0 ;
 					if( this[i].Alti==null && Alti!=null ) this[i].Alti = ((Count-i).Steps(i).FirstOrDefault(j=>this[j].Alti!=null).nil()??i-1).Get(j=>this[j].Alti) ;
+					foreach( var ax in Potenties ) pon[ax] += (this[i][ax]??this[i-1]?[ax]??0)-(this[i-1]?[ax]??0) ;
 				}
 				if( this[i].Time==default ) this[i].Time = this[i].Date-date ;
 				if( this[i].Bit==null ) this[i].Bit = i ;
@@ -63,6 +68,7 @@ namespace Rob.Act
 					}
 					if( this[i].Dev==null ) this[i].Dev = this[i-1].Dev + ( i<Count-1 && !this[i].Mark.HasFlag(Mark.Stop) && (this[i].Geo-this[i-1].Geo).Devia(this[i+1].Geo-this[i].Geo) is Quant v ? v : 0 ) ;
 				}
+				foreach( var ax in Potenties ) this[i][ax] -= pon[ax] ; // Adjustion of potentials
 			}
 			Conclude(this[Count-1]) ;
 		}
@@ -78,10 +84,14 @@ namespace Rob.Act
 		}
 		void Pointable.Adapt( Pointable path ) => (path as Path).Set(Adapt) ;
 		public void Populate() { Metax.Reset(Spectrum.Trait) ; Spectrum.Trait.Each(t=>this[t.Spec]=t.Value) ; Spectrum.Tags.Set(Tag.Add) ; }
-		void Borrow( IEnumerable<Point> points ) { points.Set(p=>Content.AddRange(p.OrderBy(t=>t.Date))) ; if( Metax==null ) Metax = points?.FirstOrDefault(p=>p.Metax!=null)?.Metax ; }
+		void Take( IEnumerable<Point> points )
+		{
+			points.Set(p=>Content.AddRange(p.OrderBy(t=>t.Date))) ; if( Metax==null ) Metax = points?.FirstOrDefault(p=>p.Metax!=null)?.Metax ;
+			var date = DateTime.Now ; for( var i=0 ; i<Count ; ++i ) { if( i<=0 || this[i-1].Mark.HasFlag(Mark.Stop) ) date = this[i].Date-(this[i-1]?.Time??default) ; if( this[i].Time==default ) this[i].Time = this[i].Date-date ; }
+		}
 		internal Path On( IEnumerable<Point> points )
 		{
-			Borrow(points) ;
+			Take(points) ;
 			for( var ax = Axis.Lon ; ax<=Axis.Alt ; ++ax ) this[ax] = this.Average(p=>p[ax]) ; for( var ax = Axis.Dist ; ax<=Axis.Time ; ++ax ) this[ax] = this.Sum(p=>p[ax]) ;
 			Asc = this.Sum(p=>(Quant?)p.Asc) ; Dev = this.Sum(p=>(Quant?)p.Dev) ; if( Metax!=null ) foreach( var ax in Metax ) this[ax.Value.At] = this.Average(p=>p[ax.Value.At]) ;
 			for( int i=0 , c=this.Min(p=>p.Tag.Count) ; i<c ; ++i ) Tag[i] = this.Where(p=>p.Tags!=null).Aggregate(string.Empty,(a,p)=>a==null?null:a==string.Empty?p.Tag[i]:a==p.Tag[i]||p.Tag[i].No()?a:null) ;
@@ -183,6 +193,7 @@ namespace Rob.Act
 		readonly List<Point> Content = new List<Point>() ;
 		/// <summary> Dominancy causes this path to be dominant to it's point sub-pathhes and is used as base of <see cref="Metax"/> attribute . </summary>
 		public bool Dominant = Dominancy , Editable = Persistent ;
+		protected IEnumerable<uint> Potenties => Metax?.Potenties ?? Basis.Potenties ;
 		protected override void SpecChanged( string value ) { base.SpecChanged(value) ; aspect.Set(a=>a.Spec=value) ; }
 		/// <summary>
 		/// Profile of the path derived from Subject property . 
@@ -328,8 +339,8 @@ namespace Rob.Act
 		bool Editing ;
 		void PathRefined( int at , IList olds )
 		{
-			for( var ax=Basis.Potentials.At ; ax<Basis.Potentials.To ; ++ax ) this[at+olds.Count][ax] -= (this[at+olds.Count-1]?[ax]??0)-(this[at-1]?[ax]??0) ;
-			for( var i=0 ; i<olds.Count ; ++i ) { if( this[at+i]?.Marklet is Mark mark && at>0 ) this[at-1].Mark |= mark ; RemoveAt(at+i) ; }
+			foreach( var ax in Potenties ) this[at+olds.Count][ax] -= (this[at+olds.Count-1]?[ax]??0)-(this[at-1]?[ax]??0) ;
+			for( var i=0 ; i<olds.Count ; ++i ) { if( at>0 ) { this[at-1].Mark |= Mark.Stop ; if( this[at+i]?.Marklet is Mark mark ) this[at-1].Mark |= mark ; } RemoveAt(at+i) ; }
 		}
 
 		#region Comparation

@@ -71,7 +71,12 @@ namespace Rob.Act
 		#region Axis specifics
 		static readonly List<string> axis = Enum.GetNames(typeof(Axis)).ToList() ; static readonly List<uint> vaxi = Enum.GetValues(typeof(Axis)).Cast<uint>().ToList() ;
 		internal static uint Axis( this string name , uint dim ) => vaxi.At(axis.IndexOf(name)).nil(i=>i<0).Get(i=>i==(uint)Act.Axis.Time?dim:i==(uint)Act.Axis.Date?dim+1:i) ?? (uint)axis.Set(a=>{a.Add(name);vaxi.Add((uint)vaxi.Count);}).Count-1 ;
-		internal static readonly (Axis At,Axis To) Potentials = (Act.Axis.Dist,Act.Axis.Time) ;
+		internal static readonly (Axis At,Axis To) Potentialim = (Act.Axis.Dist,Act.Axis.Time) ;
+		public static readonly Axis[] Derivates = {Act.Axis.Dist,Act.Axis.Bit,Act.Axis.Time} ;
+		public static readonly uint[] Potenties = Potentials.Except(Derivates).Select(v=>(uint)v).ToArray() ;
+		public static bool IsPotential( this Axis ax ) => Potentialim.At<=ax && ax<=Potentialim.To ;
+		public static IEnumerable<Axis> Potentials { get { for( var ax=Potentialim.At ; ax<=Potentialim.To ; ++ax ) yield return ax ; } }
+		public static IEnumerable<Axis> Absoltutes { get { for( var ax=(Axis)0 ; ax<=Act.Axis.Date ; ++ax ) if( ax<Potentialim.At || Potentialim.To<ax ) yield return ax ; } }
 		internal static Quant ActLim( this Axis axis , string activity ) => 50 ;
 		public static class Device
 		{
@@ -183,7 +188,7 @@ namespace Rob.Act
 	}
 	public class Metax : IEquatable<Metax> , IEnumerable<KeyValuePair<string,(uint At,string Form)>>
 	{
-		internal uint Base ; internal Metax Basis ;
+		internal uint Base ; internal Metax Basis ; public IList<uint> Potenties { get => potenties??Act.Basis.Potenties ; set => potenties = value ; } IList<uint> potenties ;
 		readonly IDictionary<string,(uint At,string Form)> Map = new Dictionary<string,(uint At,string Form)>() ;
 		public uint this[ string ax ] => Map.On(ax)?.At+Base ?? Basis?.Map.On(ax)?.At+Base+Top ?? uint.MaxValue ;
 		public (string Name,string Form) this[ uint ax ] => this.SingleOrNil(m=>m.Value.At==ax).get(v=>(v.Key,v.Value.Form))??default ;
