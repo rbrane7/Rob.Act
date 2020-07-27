@@ -15,4 +15,5 @@ System.Diagnostics.{ Trace.Listeners.Add(Aid.Diagnostics.StoreListener(@"Destiny
 Aid.Extension.LambdaContext.MultipletGenAssembly = 'System.ValueTuple, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51' ;
 Rob.Act.Path.{ Persistent = Primary = Corrects = /*Altismooths =*/ true } ;
 Rob.Act.Altiplane.{ VicinityRad = 1 ; HitWeight = 100 } ;
+Rob.Act.Translation.Kind = type.Act ;
 (Rob.Act.AxeOperations) ;

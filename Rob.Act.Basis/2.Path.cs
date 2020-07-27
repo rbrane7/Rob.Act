@@ -228,6 +228,7 @@ namespace Rob.Act
 		public int IndexOf( DateTime time ) => this.IndexWhere(p=>p.Date>=time).nil(i=>i<0) ?? Count ;
 		public IEnumerable<Point> Vicinity( DateTime time ) => Vicinity(IndexOf(time)) ;
 		public IEnumerable<Point> Vicinity( int index ) => this.Skip(index-Depth).Take(Depth<<1) ; //todo: solve stops
+		public int this[ Mark mark , int of ] { get { while( of>=0 && ((this[of]?.Mark??0)&mark)==0 ) --of ; return of ; } }
 		#endregion
 
 		#region Operation

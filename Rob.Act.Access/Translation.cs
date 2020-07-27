@@ -10,6 +10,7 @@ namespace Rob.Act
 {
 	public static class Translation
 	{
+		public static Mark Kind ;
 		public static Path Internalize( this string data )
 		{
 			if( data.Consists(Gpx.Extension.Sign) ) return data.Deserialize<Gpx.gpxType>() ;

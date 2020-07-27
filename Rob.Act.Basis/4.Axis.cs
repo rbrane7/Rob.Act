@@ -164,7 +164,7 @@ namespace Rob.Act
 		/// <param name="at"> Position where to calculate differce . </param>
 		/// <param name="dif"> Index difference from position <paramref name="at"/> . </param>
 		/// <returns> Difference value of axe . </returns>
-		Quant? Dif( int at , int dif ) => (Resolve(at+dif)-Resolve(at))*Math.Sign(dif) ;
+		Quant? Dif( int at , int dif ) => dif==0 ? Resolve(at)-Resolve(Own?.Raw?[Mark.Lap,at]??0) : (Resolve(at+dif)-Resolve(at))*Math.Sign(dif) ;
 		/// <summary> Calculates value difference of this axe between value <paramref name="at"/> positin and position differing by <paramref name="dif"/> . </summary>
 		/// <param name="at"> Position where to calculate differce . </param>
 		/// <param name="dif"> Index difference from position <paramref name="at"/> . </param>
