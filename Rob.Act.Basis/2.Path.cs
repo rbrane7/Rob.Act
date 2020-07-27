@@ -30,31 +30,33 @@ namespace Rob.Act
 		Altiplane AltOf => Altiplanes.Get(ap=>Tolerancy.On(Object).Get(m=>ap.FirstOrDefault(a=>a.Grade>=m.Grade)??new Altiplane(m.Grade){Radius=m.Rad}.Set(ap.Add))) ;
 
 		#region Construct
-		public Path( DateTime date , IEnumerable<Point> points = null , bool close = false ) : base(date)
+		public Path( DateTime date , IEnumerable<Point> points = null , Mark kind = Mark.No , params (Axis Ax,Quant Uni)[] measures ) : base(date)
 		{
-			Take(points) ;
-			if( close && Beat==null ) { this[0].Beat = 0 ; Quant lb = 0 ; for( var i=1 ; i<Count ; ++i ) this[i].Beat = ((this[i-1].Beat??lb)+this[i].Beat/60*(this[i].Time-this[i-1].Time).TotalSeconds).use(b=>lb=b) ; Beat = lb ; }
-			Impose() ;
+			Take(points,kind) ;
+			if( measures!=null ) foreach( var measure in measures ) if( this[measure.Ax]==null ) { this[0][measure.Ax] = 0 ; Quant lb = 0 ; for( var i=1 ; i<Count ; ++i ) this[i][measure.Ax] = ((this[i-1][measure.Ax]??lb)+this[i][measure.Ax]/measure.Uni*(this[i].Time-this[i-1].Time).TotalSeconds).use(b=>lb=b) ; this[measure.Ax] = lb ; }
+			Impose(kind) ;
 		}
 		/// <summary> Transform beat to potential . </summary>
 		#endregion
 
 		#region Setup
-		void Impose()
+		void Impose( Mark? kind = null )
 		{
-			Preclude() ; var pon = Potenties.ToDictionary(a=>a,a=>0D) ;
+			var mark = kind??Mark ; Preclude() ; var pon = Potenties.ToDictionary(a=>a,a=>0D) ;
 			var date = DateTime.Now ; for( var i=0 ; i<Count ; ++i )
 			{
 				if( this[i].Owner==null ) this[i].Owner = this ;
 				if( this[i].Metax==null ) Metax.Set(m=>this[i].Metax=m) ;
-				if( i<=0 || this[i-1].Mark.HasFlag(Mark.Stop) )
+				if( i<=0 || (this[i-1].Mark&(Mark.Stop|mark))!=0 )
 				{
-					date = this[i].Date-(this[i-1]?.Time??default) ;
-					if( this[i].Dist==null && IsGeo ) this[i].Dist = this[i-1]?.Dist??0 ;
-					if( this[i].Asc==null && Alti!=null ) this[i].Asc = this[i-1]?.Asc??0 ;
-					if( this[i].Dev==null && IsGeo ) this[i].Dev = this[i-1]?.Dev??0 ;
+					var res = i<=0 || (this[i-1].Mark&mark)!=0 ;
+					date = this[i].Date-(this[i-1]?.Time.nil(_=>res)??default) ;
+					if( this[i].Dist==null && IsGeo ) this[i].Dist = this[i-1]?.Dist.Nil(_=>res)??0 ;
+					if( this[i].Asc==null && Alti!=null ) this[i].Asc = this[i-1]?.Asc.Nil(_=>res)??0 ;
+					if( this[i].Dev==null && IsGeo ) this[i].Dev = this[i-1]?.Dev.Nil(_=>res)??0 ;
 					if( this[i].Alti==null && Alti!=null ) this[i].Alti = ((Count-i).Steps(i).FirstOrDefault(j=>this[j].Alti!=null).nil()??i-1).Get(j=>this[j].Alti) ;
-					foreach( var ax in Potenties ) pon[ax] += (this[i][ax]??this[i-1]?[ax]??0)-(this[i-1]?[ax]??0) ;
+					if( res ) foreach( var ax in Potenties ) pon[ax] = (this[i][ax]??this[i-1]?[ax]??0) ;
+					else foreach( var ax in Potenties ) pon[ax] += (this[i][ax]??this[i-1]?[ax]??0)-(this[i-1]?[ax]??0) ;
 				}
 				if( this[i].Time==default ) this[i].Time = this[i].Date-date ;
 				if( this[i].Bit==null ) this[i].Bit = i ;
@@ -75,23 +77,24 @@ namespace Rob.Act
 		void Preclude() { if( Alti==null ) Alti = this.Average(p=>p.Alti) ; if( this[Axis.Lon]==null ) this[Axis.Lon] = this.Average(p=>p[Axis.Lon]) ; if( this[Axis.Lat]==null ) this[Axis.Lat] = this.Average(p=>p[Axis.Lat]) ; }
 		void Conclude( Point point ) => point.Set(p=>{var z=this[0];if(Bit==null)Bit=p.Bit-z.Bit;if(Time==default)Time=p.Time-z.Time;if(Dist==null)Dist=p.Dist-z.Dist;if(Asc==null)Asc=p.Asc-z.Asc;if(Dev==null)Dev=p.Dev-z.Dev;}) ;
 		protected internal override void Depose() { base.Depose() ; for( var i=0 ; i<Count ; ++i ) this[i].Depose() ; }
-		public void Reset() { Depose() ; Impose() ; }
+		public void Reset( Mark? kind = null , bool notify = true ) { Depose() ; Impose(kind) ; if( notify ) Spectrify() ; }
 		protected virtual void Adapt( Path path=null )
 		{
 			Depose() ; path.Set(base.Adapt) ;
 			if( Count>path?.Count ) Content.RemoveRange(path.Count,Count-path.Count) ; if( path!=null ) for( var i=0 ; i<Count ; ++i ) this[i].Adapt(path[i]) ; if( Count<path?.Count ) Content.AddRange(path.Content.Skip(Count)) ;
-			Impose() ; Spectrum.Pointes = null ; Pointes = null ; propertyChanged.On(this,"Spec,Spectrum") ; collectionChanged?.Invoke(this,new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset)) ;
+			Impose() ; Spectrify() ;
 		}
+		void Spectrify() { Spectrum.Pointes = null ; Pointes = null ; propertyChanged.On(this,"Spec,Spectrum") ; collectionChanged?.Invoke(this,new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset)) ; }
 		void Pointable.Adapt( Pointable path ) => (path as Path).Set(Adapt) ;
 		public void Populate() { Metax.Reset(Spectrum.Trait) ; Spectrum.Trait.Each(t=>this[t.Spec]=t.Value) ; Spectrum.Tags.Set(Tag.Add) ; }
-		void Take( IEnumerable<Point> points )
+		void Take( IEnumerable<Point> points , Mark kind = Mark.No )
 		{
 			points.Set(p=>Content.AddRange(p.OrderBy(t=>t.Date))) ; if( Metax==null ) Metax = points?.FirstOrDefault(p=>p.Metax!=null)?.Metax ;
-			var date = DateTime.Now ; for( var i=0 ; i<Count ; ++i ) { if( i<=0 || this[i-1].Mark.HasFlag(Mark.Stop) ) date = this[i].Date-(this[i-1]?.Time??default) ; if( this[i].Time==default ) this[i].Time = this[i].Date-date ; }
+			var date = DateTime.Now ; for( var i=0 ; i<Count ; ++i ) { if( i<=0 || (this[i-1].Mark&(Mark.Stop|kind))!=0 ) date = this[i].Date-(this[i-1]?.Time.nil(_=>(this[i-1].Mark&kind)!=0)??default) ; if( this[i].Time==default ) this[i].Time = this[i].Date-date ; }
 		}
-		internal Path On( IEnumerable<Point> points )
+		internal Path On( IEnumerable<Point> points , Mark kind = Mark.No )
 		{
-			Take(points) ;
+			Take(points,kind) ;
 			for( var ax = Axis.Lon ; ax<=Axis.Alt ; ++ax ) this[ax] = this.Average(p=>p[ax]) ; for( var ax = Axis.Dist ; ax<=Axis.Time ; ++ax ) this[ax] = this.Sum(p=>p[ax]) ;
 			Asc = this.Sum(p=>(Quant?)p.Asc) ; Dev = this.Sum(p=>(Quant?)p.Dev) ; if( Metax!=null ) foreach( var ax in Metax ) this[ax.Value.At] = this.Average(p=>p[ax.Value.At]) ;
 			for( int i=0 , c=this.Min(p=>p.Tag.Count) ; i<c ; ++i ) Tag[i] = this.Where(p=>p.Tags!=null).Aggregate(string.Empty,(a,p)=>a==null?null:a==string.Empty?p.Tag[i]:a==p.Tag[i]||p.Tag[i].No()?a:null) ;
@@ -228,7 +231,7 @@ namespace Rob.Act
 		#endregion
 
 		#region Operation
-		public static IEnumerable<Path> operator/( Path path , Mark kind ) { var seg = new Path(path.Date) ; foreach( var point in path ) { seg.Content.Add(point) ; if( point.Mark.HasFlag(kind) ) { yield return seg ; seg = new Path(point.Date) ; } } if( seg.Count>0 ) yield return seg ; }
+		public static IEnumerable<Path> operator/( Path path , Mark kind ) { var seg = new Path(path.Date) ; foreach( var point in path ) { seg.Content.Add(point) ; if( (point.Mark&kind)!=0 ) { yield return seg ; seg = new Path(point.Date) ; } } if( seg.Count>0 ) yield return seg ; }
 		public static Path operator|( Path path , Point point ) => path.Set(p=>p.Add(point)) ;
 		public static Path operator|( Path prime , IEnumerable<Point> second ) => prime.Set(pri=>second.Each(pri.Add)) ;
 		public static Path operator|( Path prime , Path second ) => prime.Set( w => { if( w.Dominant ) w.Each(p=>p|=second[p.Date]) ; else w |= second as IEnumerable<Point> ; if( w[0]?.Date<w.Date ) w.Date = w[0].Date ; } ) ?? second ;
@@ -322,7 +325,7 @@ namespace Rob.Act
 		{
 			text.RightFromFirst(Serialization.Separator).Separate(Serialization.Separator,false).Set(e=>Content.AddRange(e.Select(p=>((Point)p).Set(a=>{if(a.Metax==null)a.Metax=Metax;})))) ;
 			if( Dominant = text.StartsBy(Serialization.Domimator) ) for( var ax=Axis.Dist ; ax<=Axis.Time ; ++ax ) { Quant lval = 0 ; for( var i=0 ; i<Count ; ++i ) { this[i][ax] += lval ; this[i][ax].Use(v=>lval=v) ; } }
-			else Impose() ;
+			else Impose(Mark) ;
 		}
 		public static explicit operator string( Path path ) => path.Get(a=>$"{(path.Dominant?Serialization.Domimator:null)}{(string)(a as Point)}{(string)a.Metax}{Serialization.Separator}{(string.Join(null,a.Content.Select(p=>(string)p+(string)p.Metax.Null(m=>m==a.Metax)+Serialization.Separator)))}") ;
 		public static explicit operator Path( string text ) => text.Null(v=>v.No()).Get(t=>new Path(t)) ;

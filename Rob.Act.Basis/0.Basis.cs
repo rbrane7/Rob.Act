@@ -257,7 +257,7 @@ namespace Rob.Act
 			/// <summary>
 			/// Kind of demarkaition .
 			/// </summary>
-			public Mark Mark {get;set;} public Mark? Marklet => Mark.nil() ;
+			public Mark Mark {get;set;} public Mark? Marklet { get => Mark.nil() ; set { if( value is Mark mark ) Mark = mark ; } }
 			/// <summary>
 			/// Metadata of axes . 
 			/// </summary>

@@ -26,7 +26,7 @@ namespace Rob.Act
 				if( min is uint m ) path[(int)(m-o)].Mark |= Mark.Stop ;
 				var a = (int?)min+1-(int)o??0 ; var c = (max??(uint)path.Count)-(min??0U) ; for( o+=c ; c>0 ; --c ) path.RemoveAt(a) ;
 			}
-			path.Set(s=>s.Reset()).Set(s=>p.Name.Set(s.Tag.Add)) ;
+			path.Set(s=>s.Reset(null,false)).Set(s=>p.Name.Set(s.Tag.Add)) ;
 			foreach( var axe in p.Correction ) path.Correct(axe.Key,axe.Value.ToArray()) ;
 			return path ;
 		}
