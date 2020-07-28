@@ -97,6 +97,8 @@ namespace Rob.Act
 		//public static Axe operator^( Axe x , Axe y ) => x==null||y==null ? No : new Axe( i => x.Resolve(i) is Quant a && y.Resolve(i) is Quant b ? Math.Pow(a,b) : null as Quant? , a=>Math.Max(x.Count,y.Count) ) ;
 		public static Axe operator>>( Axe x , int lev ) => x==null ? No : lev<0 ? x<<-lev : lev==0 ? x : new Axe( i=>x.Resolve(i)-x.Resolve(i-1) , x )>>lev-1 ;
 		public static Axe operator<<( Axe x , int lev ) => x==null ? No : lev<0 ? x>>-lev : lev==0 ? x : new Axe( i=>i.Steps().Sum(x.Resolve) , x )<<lev-1 ;
+		public static Axe operator%( Axe x , bool _ ) => x % Mark.Lap ;
+		public static Axe operator%( Axe x , Mark lap ) => x==null ? No : new Axe( i=>x.Dif(i,lap) , x ) ;
 		public static Axe operator%( Axe x , int dif ) => x==null ? No : new Axe( i=>x.Dif(i,dif) , x ) ;
 		public static Axe operator%( Axe x , Quant dif ) => new Lap.Axe(x,dif) ;
 		public static Axe operator%( Axe x , float mod ) => x==null ? No : new Axe( i=>x.Resolve(i)%mod , x ) ;
@@ -109,7 +111,7 @@ namespace Rob.Act
 		public static Axe operator/( Axe x , Axe y ) => x==null||y==null ? No : (y as Lap.Axe??y.Solver as Lap.Axe).Get(l=>x/l.Arg) ?? new Axe( i=>x.Resolve(i)/y.Resolve(i).Nil() , x ) ;
 		public static Axe operator/( Axe x , Quant y ) => x==null ? No : new Axe( i=>x.Resolve(i)/y.nil() , x ) ;
 		public static Axe operator/( Quant x , Axe y ) => y==null ? No : new Axe( i=>x/y.Resolve(i).Nil() , y ) ;
-		public static Axe operator/( bool _ , Axe y ) => y==null ? No : new Axe( i=>1D/y.Resolve(i).Nil() , y ) ;
+		public static Axe operator/( bool _ , Axe y ) => y==null ? No : new Axe( i=>1/y.Resolve(i).Nil() , y ) ;
 		public static Axe operator/( Axe x , Lap dif ) => x==null ? No : new Axe( i => dif[i] is double d ? x.Dif(i,d) : null , x ) ;
 		public static Axe operator+( Axe x , Axe y ) => x==null||y==null ? No : new Axe( i=>x.Resolve(i)+y.Resolve(i) , x ) ;
 		public static Axe operator+( Axe x , Quant y ) => x==null ? No : new Axe( i=>x.Resolve(i)+y , x ) ;
@@ -164,7 +166,12 @@ namespace Rob.Act
 		/// <param name="at"> Position where to calculate differce . </param>
 		/// <param name="dif"> Index difference from position <paramref name="at"/> . </param>
 		/// <returns> Difference value of axe . </returns>
-		Quant? Dif( int at , int dif ) => dif==0 ? Resolve(at)-Resolve(Own?.Raw?[Mark.Lap,at]??0) : (Resolve(at+dif)-Resolve(at))*Math.Sign(dif) ;
+		Quant? Dif( int at , Mark lap ) => Resolve(at)-(Resolve(Own?.Raw?[lap,at-1]??0)??0) ;
+		/// <summary> Calculates value difference of this axe between value <paramref name="at"/> positin and position differing by <paramref name="dif"/> . </summary>
+		/// <param name="at"> Position where to calculate differce . </param>
+		/// <param name="dif"> Index difference from position <paramref name="at"/> . </param>
+		/// <returns> Difference value of axe . </returns>
+		Quant? Dif( int at , int dif ) => dif==0 ? Dif(at,Mark.Lap) : (Resolve(at+dif)-Resolve(at))*Math.Sign(dif) ;
 		/// <summary> Calculates value difference of this axe between value <paramref name="at"/> positin and position differing by <paramref name="dif"/> . </summary>
 		/// <param name="at"> Position where to calculate differce . </param>
 		/// <param name="dif"> Index difference from position <paramref name="at"/> . </param>

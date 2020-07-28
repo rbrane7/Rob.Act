@@ -30,7 +30,7 @@ namespace Rob.Act.Analyze
 	public partial class Main : Window , INotifyPropertyChanged
 	{
 		public static Settings Setup => setup?.Result ; static readonly Aid.Prog.Setup<Settings> setup ;
-		static Main() { new Aid.Prog.Setup(e=>Trace.TraceError($"Setup {e}")).Go() ; setup = (Resetup,e=>Trace.TraceError($"Setup Settings {e}")) ; Doct = (Setup.Doctee.Uri(),e=>Trace.TraceError($"Doctor {e}")) ; }
+		static Main() { AppDomain.CurrentDomain.Load(typeof(Translation).Assembly.FullName) ; new Aid.Prog.Setup(e=>Trace.TraceError($"Setup {e}")).Go() ; setup = (Resetup,e=>Trace.TraceError($"Setup Settings {e}")) ; Doct = (Setup.Doctee.Uri(),e=>Trace.TraceError($"Doctor {e}")) ; }
 		static Aid.Prog.Doct Doct ;
 		public static readonly Aspect Laboratory = new Aspect() ;
 		readonly Presources Presources ;
