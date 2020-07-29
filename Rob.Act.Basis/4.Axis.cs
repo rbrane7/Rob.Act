@@ -340,9 +340,18 @@ namespace Rob.Act
 	{
 		public class Axe : Act.Axe
 		{
-			new internal Path Context ;
-			public virtual uint Ax { get => axis ; set { base.Spec = ( axis = value ).Get(v=>v<(uint)Axis.Time?((Axis)v).Stringy():v<Context.Dimension?Context.Metax?[v].Name:v==Context.Dimension?Axis.Time.ToString():Axis.Date.ToString()) ; Resolver = at=>Context?[at]?[Ax] ; } } uint axis ;
-			public Axis Axis { get => axis==Context.Dimension||ax==Axis.Time ? Axis.Time : axis==Context.Dimension+1||ax==Axis.Date ? Axis.Date : axis==(uint)Axis.Time ? (Axis)Context.Dimension : axis==(uint)Axis.Date ? (Axis)Context.Dimension+1 : (Axis)axis ; set => Ax = (ax=value)==Axis.Time ? Context.Dimension : value==Axis.Date ? Context.Dimension+1 : value<Axis.Time ? (uint)value : (uint)value-2 ; } Axis ax ;
+			new internal Path Context ; uint axis ; Axis ax ; Mark mark ;
+			public virtual uint Ax
+			{
+				get => axis ;
+				set { base.Spec = ( axis = value ).Get(v=>v<(uint)Axis.Time?((Axis)v).Stringy():v<Context.Dimension?Context.Metax?[v].Name:v==Context.Dimension?Axis.Time.ToString():v==Context.Dimension+1?Axis.Date.ToString():v==Context.Dimension+2?Mark.Lap.ToString():v==Context.Dimension+3?Mark.Stop.ToString():v==Context.Dimension+4?Mark.Act.ToString():null) ; Resolver = at=>Context?[at]?[Ax] ; }
+			}
+			public Axis Axis
+			{
+				get => axis==Context.Dimension||ax==Axis.Time ? Axis.Time : axis==Context.Dimension+1||ax==Axis.Date ? Axis.Date : axis==(uint)Axis.Time ? (Axis)Context.Dimension : axis==(uint)Axis.Date ? (Axis)Context.Dimension+1 : (Axis)axis ;
+				set => Ax = ( ax = value )==Axis.Time ? Context.Dimension : value==Axis.Date ? Context.Dimension+1 : value<Axis.Time ? (uint)value : (uint)value-2 ;
+			}
+			public Mark Mark { get => mark ; set => Ax = ( mark = value )==Mark.Lap ? Context.Dimension+2 : value==Mark.Stop ? Context.Dimension+3 : value==Mark.Act ? Context.Dimension+4 : throw new InvalidEnumArgumentException($"Mark invalid {value} !") ; }
 			//public Axis Axis { get => axis ?? Axis4(ax) ; set => Ax = (uint)( axis = value ) ; } Axis? axis ;
 			//public virtual uint Ax { get => axis==Axis.Time ? Context.Dimension : axis==Axis.Date ? Context.Dimension+1 : ax ; set { base.Spec = ( ax = value ).Get(v=>v<(uint)Axis.Time?(axis=(Axis)v).Stringy():v<Context.Dimension?Context.Metax?[v].Name:(axis=v==Context.Dimension?Axis.Time:Axis.Date).ToString()) ; Resolver = at=>Context?[at]?[Ax] ; } } uint ax ;
 			Axis Axis4( uint a ) => a==Context.Dimension ? Axis.Time : a==Context.Dimension+1 ? Axis.Date : a==(uint)Axis.Time ? (Axis)Context.Dimension : a==(uint)Axis.Date ? (Axis)Context.Dimension+1 : (Axis)a ;

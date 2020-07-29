@@ -191,7 +191,13 @@ namespace Rob.Act
 		public class Aspect : Act.Aspect
 		{
 			internal Path Context { get => context ; set { context = value ; foreach( var ax in this ) if( ax is Axe a ) a.Context = value ; OnChanged() ; } } Path context ;
-			public Aspect( Path path ) { Context = path ; Add(new Axe(Context){Axis=Axis.Date}) ; Add(new Axe(Context){Axis=Axis.Time}) ; for( uint ax = 0 ; ax<Context.Dimension ; ++ax ) if( Context[ax]!=null ) Add(new Axe(Context){Ax=ax}) ; this.Each(a=>a.Quantizer=null) ; }
+			public Aspect( Path path )
+			{
+				Context = path ; Add(new Axe(Context){Axis=Axis.Date}) ; Add(new Axe(Context){Axis=Axis.Time}) ;
+				for( uint ax = 0 ; ax<Context.Dimension ; ++ax ) if( Context[ax]!=null ) Add(new Axe(Context){Ax=ax}) ;
+				foreach( var mark in Basis.Marks ) if( Context[mark]!=null ) Add(new Axe(Context){Mark=mark}) ;
+				this.Each(a=>a.Quantizer=null) ;
+			}
 			public override string Spec { get => Context.Spec ; set => base.Spec = value ; }
 			public override Aspectable Source { set {} }
 			public Axable this[ Axis ax , bool insure = false ] => this.OfType<Axe>().FirstOrDefault(a=>a.Axis==ax) ??( insure ? new Axe(Context){Axis=ax}.Set(Add) : Axe.No as Axable ) ;

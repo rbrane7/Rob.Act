@@ -74,8 +74,16 @@ namespace Rob.Act
 			}
 			Conclude(this[Count-1]) ;
 		}
-		void Preclude() { if( Alti==null ) Alti = this.Average(p=>p.Alti) ; if( this[Axis.Lon]==null ) this[Axis.Lon] = this.Average(p=>p[Axis.Lon]) ; if( this[Axis.Lat]==null ) this[Axis.Lat] = this.Average(p=>p[Axis.Lat]) ; }
-		void Conclude( Point point ) => point.Set(p=>{var z=this[0];if(Bit==null)Bit=p.Bit-z.Bit;if(Time==default)Time=p.Time-z.Time;if(Dist==null)Dist=p.Dist-z.Dist;if(Asc==null)Asc=p.Asc-z.Asc;if(Dev==null)Dev=p.Dev-z.Dev;}) ;
+		void Preclude()
+		{
+			if( Alti==null ) Alti = this.Average(p=>p.Alti) ; if( this[Axis.Lon]==null ) this[Axis.Lon] = this.Average(p=>p[Axis.Lon]) ; if( this[Axis.Lat]==null ) this[Axis.Lat] = this.Average(p=>p[Axis.Lat]) ;
+			if( this[Mark.Lap]==null ) this[Mark.Lap] = this.Count(p=>p.Mark.HasFlag(Mark.Lap)).nil() ; if( this[Mark.Stop]==null ) this[Mark.Stop] = this.Count(p=>p.Mark.HasFlag(Mark.Stop)).nil() ; if( this[Mark.Act]==null ) this[Mark.Act] = this.Count(p=>p.Mark.HasFlag(Mark.Act)).nil() ;
+		}
+		void Conclude( Point point )
+		{
+			point.Set(p=>{var z=this[0];if(Bit==null)Bit=p.Bit-z.Bit;if(Time==default)Time=p.Time-z.Time;if(Dist==null)Dist=p.Dist-z.Dist;if(Asc==null)Asc=p.Asc-z.Asc;if(Dev==null)Dev=p.Dev-z.Dev;}) ;
+			foreach( var mark in Basis.Marks ) if( this[mark]!=null ) Segmentize(mark) ;
+		}
 		protected internal override void Depose() { base.Depose() ; for( var i=0 ; i<Count ; ++i ) this[i].Depose() ; }
 		public void Reset( Mark? kind = null , bool notify = true ) { Depose() ; Impose(kind) ; if( notify ) Spectrify() ; }
 		protected virtual void Adapt( Path path=null )
@@ -196,6 +204,8 @@ namespace Rob.Act
 		readonly List<Point> Content = new List<Point>() ;
 		/// <summary> Dominancy causes this path to be dominant to it's point sub-pathhes and is used as base of <see cref="Metax"/> attribute . </summary>
 		public bool Dominant = Dominancy , Editable = Persistent ;
+		#endregion
+		#region Support
 		protected IEnumerable<uint> Potenties => Metax?.Potenties ?? Basis.Potenties ;
 		protected override void SpecChanged( string value ) { base.SpecChanged(value) ; aspect.Set(a=>a.Spec=value) ; }
 		/// <summary>
@@ -228,7 +238,18 @@ namespace Rob.Act
 		public int IndexOf( DateTime time ) => this.IndexWhere(p=>p.Date>=time).nil(i=>i<0) ?? Count ;
 		public IEnumerable<Point> Vicinity( DateTime time ) => Vicinity(IndexOf(time)) ;
 		public IEnumerable<Point> Vicinity( int index ) => this.Skip(index-Depth).Take(Depth<<1) ; //todo: solve stops
+		/// <summary>
+		/// Position of start of segment of <paramref name="mark"/> kind , the <paramref name="of"/> position belongs to . 
+		/// </summary>
+		/// <param name="mark"> Kind of segmentation . </param>
+		/// <param name="of"> Point index to get segment start of . </param>
+		/// <returns> Starting position of segment , the <paramref name="of"/> position belongs to . </returns>
 		public int this[ Mark mark , int of ] { get { while( of>0 && ((this[of]?.Mark??0)&mark)==0 ) --of ; return of ; } }
+		Path Segmentize( Mark mark )
+		{
+			for( int bo = 0 , to = 0 , at = 0 ; to<Count ; ++to,bo=to,++at ) { while( to<Count-1 && ((this[to]?.Mark??0)&mark)==0 ) ++to ; for( var i=bo ; i<=to ; ++i ) this[i][mark] = (i-bo+1D)/(to-bo+1)+at ; }
+			return this ;
+		}
 		#endregion
 
 		#region Operation

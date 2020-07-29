@@ -64,19 +64,22 @@ namespace Rob.Act
 	/// <summary>
 	/// Equatable is used by GUI frameworks therefore they can't be used and overriden !
 	/// </summary>
-	public interface Pointable : Quantable , Aid.Accessible<uint,Quant?> , Aid.Accessible<Quant?> { DateTime Date {get;} TimeSpan Time {get;} uint Dimension {get;} string Action {get;} Mark Mark {get;} Tagable Tag {get;} void Adapt( Pointable path ) ; }
+	public interface Pointable : Quantable , Aid.Accessible<uint,Quant?> , Aid.Accessible<Quant?> , Aid.Accessible<Mark,Quant?> { DateTime Date {get;} TimeSpan Time {get;} uint Dimension {get;} string Action {get;} Mark Mark {get;} Tagable Tag {get;} void Adapt( Pointable path ) ; }
 	public interface Pathable : Pointable , Aid.Countable , Aid.Gettable<DateTime,Pointable> , Aid.Gettable<int,Pointable> { string Origin {get;} Path.Aspect Spectrum {get;} string Object {get;} string Subject {get;} string Locus {get;} string Refine {get;} }
 	public static class Basis
 	{
 		#region Axis specifics
-		static readonly List<string> axis = Enum.GetNames(typeof(Axis)).ToList() ; static readonly List<uint> vaxi = Enum.GetValues(typeof(Axis)).Cast<uint>().ToList() ;
+		static readonly List<string> axis = Enum.GetNames(typeof(Axis)).ToList() , marks = Enum.GetNames(typeof(Mark)).ToList() ;
+		static readonly List<uint> vaxi = Enum.GetValues(typeof(Axis)).Cast<uint>().ToList() ; static readonly List<Mark> vama = Enum.GetValues(typeof(Mark)).Cast<Mark>().ToList() ;
 		internal static uint Axis( this string name , uint dim ) => vaxi.At(axis.IndexOf(name)).nil(i=>i<0).Get(i=>i==(uint)Act.Axis.Time?dim:i==(uint)Act.Axis.Date?dim+1:i) ?? (uint)axis.Set(a=>{a.Add(name);vaxi.Add((uint)vaxi.Count);}).Count-1 ;
+		internal static Mark Mark( this string name ) => vama.At(marks.IndexOf(name)) ;
 		internal static readonly (Axis At,Axis To) Potentialim = (Act.Axis.Dist,Act.Axis.Time) ;
 		public static readonly Axis[] Derivates = {Act.Axis.Dist,Act.Axis.Bit,Act.Axis.Time} ;
 		public static readonly uint[] Potenties = Potentials.Except(Derivates).Select(v=>(uint)v).ToArray() ;
 		public static bool IsPotential( this Axis ax ) => Potentialim.At<=ax && ax<=Potentialim.To ;
 		public static IEnumerable<Axis> Potentials { get { for( var ax=Potentialim.At ; ax<=Potentialim.To ; ++ax ) yield return ax ; } }
 		public static IEnumerable<Axis> Absoltutes { get { for( var ax=(Axis)0 ; ax<=Act.Axis.Date ; ++ax ) if( ax<Potentialim.At || Potentialim.To<ax ) yield return ax ; } }
+		public static IEnumerable<Mark> Marks => vama ;
 		internal static Quant ActLim( this Axis axis , string activity ) => 50 ;
 		public static class Device
 		{
@@ -226,7 +229,7 @@ namespace Rob.Act
 			/// <summary>
 			/// Resets relative fields which are dependant on context . Those will be set newly . 
 			/// </summary>
-			protected internal virtual void Depose() => Time = default ;
+			protected internal virtual void Depose() { Time = default ; Post = default ; }
 			#endregion
 
 			#region State
@@ -234,6 +237,10 @@ namespace Rob.Act
 			/// Quanitity data vector .
 			/// </summary>
 			Quant?[] Quantity ;
+			/// <summary>
+			/// Position relative to segments types .
+			/// </summary>
+			(Quant? Lap,Quant? Stop,Quant? Act) Post ;
 			/// <summary>
 			/// Referential date of object .
 			/// </summary>
@@ -266,8 +273,21 @@ namespace Rob.Act
 
 			#region Trait
 			public abstract uint Dimension { get ; }
-			public Quant? this[ uint axis ] { get => axis==Dimension ? Time.TotalSeconds : axis==Dimension+1 ? Date.TotalSeconds() : Quantity.At((int)axis) ; set { if( axis>=Quantity.Length && value!=null && axis<uint.MaxValue ) Quantity.Set(q=>q.CopyTo(Quantity=new Quant?[Math.Max(axis+1,Metax?.Dimension??0)],0)) ; if( axis<Quantity.Length ) Quantity[axis] = value ; } }
-			public Quant? this[ string axis ] { get => this[Metax?[axis]??axis.Axis(Dimension)] ; set => this[Metax?[axis]??axis.Axis(Dimension)] = value ; }
+			public Quant? this[ uint axis ]
+			{
+				get => axis==Dimension ? Time.TotalSeconds : axis==Dimension+1 ? Date.TotalSeconds() : axis==Dimension+2 ? Post.Lap : axis==Dimension+3 ? Post.Stop : axis==Dimension+4 ? Post.Act : Quantity.At((int)axis) ;
+				set { if( axis>=Quantity.Length && value!=null && axis<uint.MaxValue ) Quantity.Set(q=>q.CopyTo(Quantity=new Quant?[Math.Max(axis+1,Metax?.Dimension??0)],0)) ; if( axis<Quantity.Length ) Quantity[axis] = value ; }
+			}
+			public Quant? this[ Mark mark ]
+			{
+				get => mark switch { Mark.Lap => Post.Lap , Mark.Stop => Post.Stop , Mark.Act => Post.Act , _=> null } ;
+				set { switch( mark ) { case Mark.Lap : Post.Lap = value ; break ; case Mark.Stop : Post.Stop = value ; break ; case Mark.Act : Post.Act = value ; break ; } }
+			}
+			public Quant? this[ string axis ]
+			{
+				get => Metax?[axis] is uint ax ? ax<uint.MaxValue ? this[ax] : this[axis.Mark()] : this[axis.Mark()] ?? this[axis.Axis(Dimension)] ;
+				set { if( Metax?[axis] is uint ax ) if( ax<uint.MaxValue ) this[ax] = value ; else this[axis.Mark()] = value ; else if( axis.Mark().nil() is Mark mark ) this[mark] = value ; else this[axis.Axis(Dimension)] = value ; }
+			}
 			public override bool TrySetMember( SetMemberBinder binder , object value ) { this[binder.Name] = (Quant?)value ; return base.TrySetMember( binder, value ) ; }
 			public override bool TryGetMember( GetMemberBinder binder , out object result ) { result = this[binder.Name] ; return true ; }
 			public static implicit operator Quant?[]( Point point ) => point?.Quantity ;

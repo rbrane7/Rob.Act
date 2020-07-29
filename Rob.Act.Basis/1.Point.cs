@@ -83,7 +83,11 @@ namespace Rob.Act
 		public static Point Zero( DateTime date ) => new Point(date){ Time = TimeSpan.Zero }.Set( p=>{ for( uint i=0 ; i<p.Dimension ; ++i ) p[i] = 0 ; } ) ;
 		public override uint Dimension => (uint?)((Quant?[])this)?.Length ?? (uint)Axis.Time ; // Dimension doesn't include Time and Date components , as they state is separate fields . Therefore Axis.Time limits index .
 		public new Quant? this[ uint axis ] { get => base[axis] ; set => base[axis] = value ; } // because of WFP bug proprty of Binding.Path property resolution on inedexers
-		public virtual Quant? this[ Axis axis ] { get => axis==Axis.Time ? Time.TotalSeconds : axis==Axis.Date ? Date.TotalSeconds() : this[(uint)axis] ; set { if( axis<Axis.Time ) this[(uint)axis] = value ; else if( axis>Axis.Date ) this[(uint)axis-2] = value ; else if( value is Quant q ) if( axis==Axis.Time ) Time = TimeSpan.FromSeconds(q) ; else Date = DateTime.MinValue.AddSeconds(q) ; } }
+		public virtual Quant? this[ Axis axis ]
+		{
+			get => axis==Axis.Time ? Time.TotalSeconds : axis==Axis.Date ? Date.TotalSeconds() : this[(uint)axis] ;
+			set { if( axis<Axis.Time ) this[(uint)axis] = value ; else if( axis>Axis.Date ) this[(uint)axis-2] = value ; else if( value is Quant q ) if( axis==Axis.Time ) Time = TimeSpan.FromSeconds(q) ; else Date = DateTime.MinValue.AddSeconds(q) ; }
+		}
 		#endregion
 
 		#region Trait
