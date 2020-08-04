@@ -13,7 +13,7 @@ namespace Rob.Act
 {
 	using Quant = Double ;
 	public enum Taglet { Object , Drag , Subject , Locus , Refine , Grade , Flow }
-	public interface Tagable : IEquatable<Tagable> , IEnumerable<string> { void Add( string item ) ; string this[ int key ] { get ; set ; } string this[ Taglet tag ] { get ; set ; } string this[ string key ] { get ; set ; } int Count { get ; } void Clear() ; void Adopt( Tagable tags ) ; string Uri { get ; } }
+	public interface Tagable : IEquatable<Tagable> , IEnumerable<string> { void Add( string item ) ; string this[ int key ] {get;set;} string this[ Taglet tag ] {get;set;} string this[ string key ] {get;set;} int Count {get;} void Clear() ; void Adopt( Tagable tags ) ; string Uri {get;} }
 	public class Tagger : List<string> , Tagable
 	{
 		public static readonly string[] Names = Enum.GetNames(typeof(Taglet)) ;
@@ -56,20 +56,20 @@ namespace Rob.Act
 		/// </summary>
 		public override string Spec { set { if( value!=Spec ) SpecChanged( base.Spec = value ) ; } }
 		protected override string Despec( string act ) => Tags is string t ? $"{base.Despec(act)} {t}" : base.Despec(act) ;
-		protected virtual void SpecChanged( string value ) => propertyChanged.On(this,"Spec") ;
+		protected virtual void SpecChanged( string value ) => Changed("Spec") ;
 		/// <summary>
 		/// Ascent of the path .
 		/// </summary>
-		public Bipole? Asc { get; set; }
+		public Bipole? Asc {get;set;}
 		/// <summary>
 		/// Deviation of the path .
 		/// </summary>
-		public Bipole? Dev { get; set; }
+		public Bipole? Dev {get;set;}
 		#endregion
 
 		#region Tags
-		public override Tagable Tag => tags ?? System.Threading.Interlocked.CompareExchange(ref tags,new Tagger(p=>{tag=null;if(Spec==Despect)Spec=null;propertyChanged.On(this,p??"Tags");}),null) ?? tags ; Tagger tags ;
-		public string Tags { get => tag ?? ( tag = tags.Stringy() ) ; set { if( value==tag ) return ; tag = null ; (Tag as Tagger)[value.ExtractTags()] = true ; propertyChanged.On(this,"Subject,Object,Locus,Refine") ; } } string tag ;
+		public override Tagable Tag => tags ?? System.Threading.Interlocked.CompareExchange(ref tags,new Tagger(p=>{tag=null;if(Spec==Despect)Spec=null;Changed(p??"Tags");}),null) ?? tags ; Tagger tags ;
+		public string Tags { get => tag ??= tags.Stringy() ; set { if( value==tag ) return ; tag = null ; (Tag as Tagger)[value.ExtractTags()] = true ; Changed("Subject,Object,Locus,Refine") ; } } string tag ;
 		public string Subject { get => tags?[Taglet.Subject]??Owner?.Subject ; set { if( value?.Length>0 ) Tag[Taglet.Subject] = value ; else tags.Set(t=>t[Taglet.Subject]=value) ; } }
 		public string Object { get => tags?[Taglet.Object]??Owner?.Object ; set { if( value?.Length>0 ) Tag[Taglet.Object] = value ; else tags.Set(t=>t[Taglet.Object]=value) ; } }
 		public string Locus { get => tags?[Taglet.Locus]??Owner?.Locus ; set { if( value?.Length>0 ) Tag[Taglet.Locus] = value ; else tags.Set(t=>t[Taglet.Locus]=value) ; } }
@@ -82,12 +82,15 @@ namespace Rob.Act
 		#region Vector
 		public static Point Zero( DateTime date ) => new Point(date){ Time = TimeSpan.Zero }.Set( p=>{ for( uint i=0 ; i<p.Dimension ; ++i ) p[i] = 0 ; } ) ;
 		public override uint Dimension => (uint?)((Quant?[])this)?.Length ?? (uint)Axis.Time ; // Dimension doesn't include Time and Date components , as they state is separate fields . Therefore Axis.Time limits index .
-		public new Quant? this[ uint axis ] { get => base[axis] ; set => base[axis] = value ; } // because of WFP bug proprty of Binding.Path property resolution on inedexers
+		public new Quant? this[ uint axis ] { get => base[axis] ; set { if( this[axis]==value ) return ; base[axis] = value ; /*Changed(Metax?[axis].Name??((Axis)axis).ToString()) ;*/ } } // because of WFP bug proprty of Binding.Path property resolution on inedexers
 		public virtual Quant? this[ Axis axis ]
 		{
 			get => axis==Axis.Time ? Time.TotalSeconds : axis==Axis.Date ? Date.TotalSeconds() : this[(uint)axis] ;
 			set { if( axis<Axis.Time ) this[(uint)axis] = value ; else if( axis>Axis.Date ) this[(uint)axis-2] = value ; else if( value is Quant q ) if( axis==Axis.Time ) Time = TimeSpan.FromSeconds(q) ; else Date = DateTime.MinValue.AddSeconds(q) ; }
 		}
+		public override Mark Mark { get => base.Mark ; set { if( value==Mark ) return ; base.Mark = value ; Changed("Mark") ; } }
+		public override DateTime Date { get => base.Date ; set { if( Date==value ) return ; base.Date = value ; Changed("Date") ; } }
+		public override TimeSpan Time { get => base.Time ; set { if( Time==value ) return ; base.Time=value ; Changed("Time") ; } }
 		#endregion
 
 		#region Trait
@@ -134,16 +137,17 @@ namespace Rob.Act
 		public static Point operator/( Point point , Axis axis ) => point / (uint)axis ;
 		public static Point operator/( Point point , uint axis ) => point.Set(p=>p[axis]=null) ;
 		public static Point operator/( Point point , string axis ) => point / (point.Metax?[axis]??axis.Axis(point.Dimension)) ;
-		public static Point operator-( Point point , Point offset ) => new Point(new DateTime(point.Date.Ticks+offset.Date.Ticks>>1)){ Time = point.Date-offset.Date }.Set( p=>{ for( uint i=0 ; i<p.Dimension ; ++i ) p[i] = point[i]-offset[i] ; if( p.IsGeo ) p.Dist = p.Euclid(offset) ; } ) ;
+		public static Point operator-( Point point , Point offset ) => new Point(new DateTime(point.Date.Ticks+offset.Date.Ticks>>1)){ Time = point.Date-offset.Date }.Set(p=>{ for( uint i=0 ; i<p.Dimension ; ++i ) p[i] = point[i]-offset[i] ; if( p.IsGeo ) p.Dist = p.Euclid(offset) ; }) ;
 		public static Point operator+( Point accu , Point diff ) => accu.Set( p => diff.Set( d => { p.Time += d.Time ; for( uint i=0 ; i<p.Dimension ; ++i ) p[i] += d[i] ; } ) ) ;
 		public Geos? Geo => this ;
 		#endregion
 
-		#region GUI
+		#region Handling
 		public event PropertyChangedEventHandler PropertyChanged { add => propertyChanged += value.DispatchResolve() ; remove => propertyChanged -= value.DispatchResolve() ; } protected PropertyChangedEventHandler propertyChanged ;
+		protected void Changed( string property ) { propertyChanged.On(this,property) ; (Owner as Path)?.Edited(this,null) ; }
 		#endregion
 
-		#region Comparison
+		#region Eqalization
 		public override bool Equals( Pointable other ) => other is Point p && base.Equals(p) && tags?.Equals(p?.tags)!=false ;
 		public override bool EqualsRestricted( Pointable other ) => other is Point p && base.EqualsRestricted(p) && tags?.Equals(p?.tags)!=false ;
 		#endregion

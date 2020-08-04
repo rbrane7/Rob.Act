@@ -71,6 +71,27 @@ namespace Rob.Act
 			}
 		}
 	}
+	public partial class Path
+	{
+		public class Altiplane : Act.Altiplane
+		{
+			public bool Dirty { get ; private set ; }
+			public readonly Quant Grade ;
+			public Altiplane( Quant grade , Quant grane = 10 ) : base(grane) => Grade = grade ;
+			public void Include( Path path )
+			{
+				if( path==null || !Include(path.Date) ) return ; Dirty = true ;
+				for( var i=0 ; i<path.Count ; ++i )
+				{
+					var alt = path[i].Alti ;
+					//for( var j=Math.Max(0,i-170) ; j<Math.Min(i+171,path.Count) ; ++j ) if( path[i].Alti is Quant a && path[j].Alti is Quant b && Math.Abs(a-b)>Grade*(path[i]-path[j]).Euclid(path[i]) ) alt = null ;
+					this[path[i].Geo] = alt ;
+				}
+			}
+			public Altiplane( string file ) : base(file) => Grade = file.RightFrom(FileSign).LeftFrom(ArgSep).Parse(.999) ;
+			public override void Save( string file ) { base.Save(file) ; Dirty = false ; }
+		}
+	}
 	static class AltiExtension
 	{
 		internal static IEnumerable<(short Alt,Quant Dis,ushort Wei)> Close( this IEnumerable<(short Lon,short Lat,short Alt,ushort Wei)> vicinity , (short Lon,short Lat) point , Quant limit )

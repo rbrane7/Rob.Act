@@ -41,7 +41,7 @@ namespace Rob.Act.Analyze
 		void Save( object arg )
 		{
 			Context.Aspects.Where(a=>a.Dirty).Each(a=>{(a.Origin??Main.Setup.AspectsPath.Get(p=>p.Pathin(a.Spec))).WriteAll((string)a);a.Dirty=false;}) ;
-			Context.Book.Where(a=>a.Spectrum.Dirty).Each(a=>{System.IO.Path.ChangeExtension(a.Origin,"spt").Set(p=>{if(((string)a.Spectrum).Null(s=>s.No()).Set(s=>p.WriteAll(s))==null)System.IO.File.Delete(p);});a.Spectrum.Dirty=false;}) ;
+			Context.Book.Where(a=>a.Spectrum.Dirty).Each(a=>{System.IO.Path.ChangeExtension(a.Origin,Path.Aspect.Filex).Set(p=>{if(((string)a.Spectrum).Null(s=>s.No()).Set(s=>p.WriteAll(s))==null)System.IO.File.Delete(p);});a.Spectrum.Dirty=false;}) ;
 			if( Context.ActionFilter.Any(f=>f.Dirty) ) { Context.ActionFilter.Each(f=>f.Dirty=false) ; Main.Setup.StatePath.Set(p=>System.IO.Directory.CreateDirectory(p)).Path("ActionFilter.stt").WriteAll((string)Context.ActionFilter) ; }
 			if( Context.SourceFilter.Any(f=>f.Dirty) ) { Context.SourceFilter.Each(f=>f.Dirty=false) ; Main.Setup.StatePath.Set(p=>System.IO.Directory.CreateDirectory(p)).Path("SourceFilter.stt").WriteAll((string)Context.SourceFilter) ; }
 			if( Context.AspectFilter.Any(f=>f.Dirty) ) { Context.AspectFilter.Each(f=>f.Dirty=false) ; Main.Setup.StatePath.Set(p=>System.IO.Directory.CreateDirectory(p)).Path("AspectFilter.stt").WriteAll((string)Context.AspectFilter) ; }

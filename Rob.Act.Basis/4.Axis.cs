@@ -13,6 +13,8 @@ namespace Rob.Act
 	using System.ComponentModel ;
 	using Quant = Double ;
 	using Aid.Math ;
+	using Aid;
+
 	public interface Axable : Aid.Gettable<int,Quant?> , Aid.Gettable<double,Quant?> , Aid.Countable<Quant?> { string Spec {get;} }
 	public class Axe : Axable , INotifyPropertyChanged
 	{
@@ -61,9 +63,9 @@ namespace Rob.Act
 		//Aid.Collections.BinSetNative<Quant> Cash => cash ??( cash = new Aid.Collections.BinArray<(Quant,int)>.Map<Quant>(Count.Steps().Select(i=>(this[i],i))) ) ; Aid.Collections.BinSetNative<Quant> cash ;
 		protected internal virtual Quant? Resolve( int at ) => Resolver(at) ;
 		public Axe Solver => Resolver.Get(_=>coaxe) ;
-		Axe Coaxe { get { try { return coaxe = Multi?Aspects.Get(a=>Resolvelet.Compile<Func<Contexts,Axe>>(use:"Rob.Act").Of(new Contexts{Base=a,This=Own,The=this})):Aspect.Get(a=>Resolvelet.Compile<Func<Context,Axe>>(use:"Rob.Act").Of(new Context{Base=a,This=Own,The=this})) ; } catch( LambdaContext.Exception ) { throw ; } catch( System.Exception e ) { throw new InvalidOperationException($"Problem resolving {Spec} !",e) ; } finally { coaxe.Set(c=>Counter=c.Counter) ; } } } Axe coaxe ;
+		Axe Coaxe { get { try { return coaxe = Multi?Aspects.Get(a=>Resolvelet.Compile<Func<Contexts,Axe>>(use:"Rob.Act").Of(new Contexts{Base=a,This=Own, The=this})):Aspect.Get(a=>Resolvelet.Compile<Func<Context,Axe>>(use:"Rob.Act").Of(new Context{Base=a,This=Own, The=this})) ; } catch( LambdaContext.Exception ) { throw ; } catch( System.Exception e ) { throw new InvalidOperationException($"Problem resolving {Spec} !",e) ; } finally { coaxe.Set(c=>Counter=c.Counter) ; } } } Axe coaxe ;
 		/// <summary> Never null . If nul than always throws . </summary>
-		protected Func<int,Quant?> Resolver { private get => resolver ??( resolver = (Coaxe??No).Resolver ) ; set { if( resolver==value ) return ; resolver = value ; propertyChanged.On(this,"Resolver") ; } } Func<int,Quant?> resolver ;
+		protected Func<int,Quant?> Resolver { private get => resolver ??= (Coaxe??No).Resolver ; set { if( resolver==value ) return ; resolver = value ; propertyChanged.On(this,"Resolver") ; } } Func<int,Quant?> resolver ;
 		public string Resolvelet { get => resolvelet ; set { if( value==resolvelet ) return ; resolvelet = value ; Resolver = null ; propertyChanged.On(this,"Resolvelet") ; } } string resolvelet ;
 		public IEnumerator<Quant?> GetEnumerator() { for( int i=0 , count=Count ; i<count ; ++i ) yield return this[i] ; } IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
 		#region Quantile
@@ -97,7 +99,7 @@ namespace Rob.Act
 		//public static Axe operator^( Axe x , Axe y ) => x==null||y==null ? No : new Axe( i => x.Resolve(i) is Quant a && y.Resolve(i) is Quant b ? Math.Pow(a,b) : null as Quant? , a=>Math.Max(x.Count,y.Count) ) ;
 		public static Axe operator>>( Axe x , int lev ) => x==null ? No : lev<0 ? x<<-lev : lev==0 ? x : new Axe( i=>x.Resolve(i)-x.Resolve(i-1) , x )>>lev-1 ;
 		public static Axe operator<<( Axe x , int lev ) => x==null ? No : lev<0 ? x>>-lev : lev==0 ? x : new Axe( i=>i.Steps().Sum(x.Resolve) , x )<<lev-1 ;
-		public static Axe operator%( Axe x , bool _ ) => x % Mark.Lap ;
+		public static Axe operator%( Axe x , bool _ ) => x==null ? No : new Axe( i=>x.Dif(i) , x ) ;
 		public static Axe operator%( Axe x , Mark lap ) => x==null ? No : new Axe( i=>x.Dif(i,lap) , x ) ;
 		public static Axe operator%( Axe x , int dif ) => x==null ? No : new Axe( i=>x.Dif(i,dif) , x ) ;
 		public static Axe operator%( Axe x , Quant dif ) => new Lap.Axe(x,dif) ;
@@ -166,12 +168,12 @@ namespace Rob.Act
 		/// <param name="at"> Position where to calculate differce . </param>
 		/// <param name="dif"> Index difference from position <paramref name="at"/> . </param>
 		/// <returns> Difference value of axe . </returns>
-		Quant? Dif( int at , Mark lap ) => Resolve(at)-(Resolve(Own?.Raw?[lap,at-1]??0)??0) ;
+		Quant? Dif( int at , Mark lap = Mark.Any ) => Resolve(at)-(Resolve(Own?.Raw?[lap,at-1]??0)??0) ;
 		/// <summary> Calculates value difference of this axe between value <paramref name="at"/> positin and position differing by <paramref name="dif"/> . </summary>
 		/// <param name="at"> Position where to calculate differce . </param>
 		/// <param name="dif"> Index difference from position <paramref name="at"/> . </param>
 		/// <returns> Difference value of axe . </returns>
-		Quant? Dif( int at , int dif ) => dif==0 ? Dif(at,Mark.Lap) : (Resolve(at+dif)-Resolve(at))*Math.Sign(dif) ;
+		Quant? Dif( int at , int dif ) => dif==0 ? Dif(at) : (Resolve(at+dif)-Resolve(at))*Math.Sign(dif) ;
 		/// <summary> Calculates value difference of this axe between value <paramref name="at"/> positin and position differing by <paramref name="dif"/> . </summary>
 		/// <param name="at"> Position where to calculate differce . </param>
 		/// <param name="dif"> Index difference from position <paramref name="at"/> . </param>
@@ -207,11 +209,11 @@ namespace Rob.Act
 		/// <summary>
 		/// Deserializes aspect from string .
 		/// </summary>
-		public static explicit operator Axe( string text ) => text.Separate(Serialization.Separator,braces:null).Get(t=>new Axe{Spec=t.At(0),Multi=t.At(1)==Serialization.Multier,Resolvelet=t.At(2),Selectlet=t.At(4),Distribulet=t.At(5),Quantlet=t.At(6),Binder=t.At(7),Asrex=t.At(8)==Serialization.Rex}) ;
+		public static explicit operator Axe( string text ) => text.Separate( Serialization.Separator,braces:null).Get(t=>new Axe{Spec=t.At(0),Multi=t.At(1)==Serialization.Multier,Resolvelet=t.At(2),Selectlet=t.At(4),Distribulet=t.At(5),Quantlet=t.At(6),Binder=t.At(7),Asrex=t.At(8)==Serialization.Rex}) ;
 		/// <summary>
 		/// Serializes aspect from string .
 		/// </summary>
-		public static explicit operator string( Axe aspect ) => aspect.Get(a=>string.Join(Serialization.Separator,a.spec,a.multi?Serialization.Multier:string.Empty,a.resolvelet,null,a.selectlet,a.distribulet,a.quantlet,a.Binder,a.rex?Serialization.Rex:string.Empty)) ;
+		public static explicit operator string( Axe aspect ) => aspect.Get(a=>string.Join( Serialization.Separator,a.spec,a.multi? Serialization.Multier:string.Empty,a.resolvelet,null,a.selectlet,a.distribulet,a.quantlet,a.Binder,a.rex? Serialization.Rex:string.Empty)) ;
 		static class Serialization { public const string Separator = " \x1 Axlet \x2 " ; public const string Multier = "*" , Rex = "rex"; }
 		#endregion
 		public struct Context : Contextable
@@ -301,8 +303,8 @@ namespace Rob.Act
 		public Lap( Act.Axe context , Quant dif )
 		{
 			// Calculation of absolute equidifferenced distribution .
-			var retent = new List<double>() ; Quant? oy = null ; for( int c=context.Count , i=0 ; i<c ; ++i ) if( context[i] is Quant ay ) if( oy==null ) { oy = ay ; retent.Add(i) ; }
-			else if( context[i-1] is Quant ly && (ay-ly).nil() is double dy ) for( int j=1 , n=(int)((ay-oy)/dif) ; j<=n ; ++j ) (i-1+((oy+=dif)-ly)/dy).Use(retent.Add) ;
+			var retent = new List<double>() ; Quant? oy = null ; for( int c=context?.Count??0 , i=0 ; i<c ; ++i ) if( context[i] is Quant ay )
+			if( oy==null ) { oy = ay ; retent.Add(i) ; } else if( context[i-1] is Quant ly && (ay-ly).nil() is double dy ) for( int j=1 , n=(int)((ay-oy)/dif) ; j<=n ; ++j ) (i-1+((oy+=dif)-ly)/dy).Use(retent.Add) ;
 			Absolution = retent.ToArray() ;
 			// Calculation of diferential distribution .
 			var content = new List<int>() ; var dir = Math.Sign(dif) ; dif = Math.Abs(dif) ; if( context!=null )
@@ -338,7 +340,7 @@ namespace Rob.Act
 	}
 	public partial class Path
 	{
-		public class Axe : Act.Axe
+		public class Axe : Act.Axe , Aid.Accessible<int,Quant?>
 		{
 			new internal Path Context ; uint axis ; Axis ax ; Mark mark ;
 			public virtual uint Ax
@@ -360,6 +362,8 @@ namespace Rob.Act
 			public override int Count => Context?.Count ?? 0 ;
 			protected override Aspectable DefaultAspect => Context?.Spectrum ;
 			bool Intensive => Axis==Axis.Time || Axis==Axis.Date || Axis==Axis.Bit || Axis==Axis.Beat ;
+			public new Quant? this[ int at ] { set => Context[at][Axis] = value ; }
+			Quant? Accessible<int,Quant?>.this[ int at ] { get => base[at] ; set => this[at] = value ; }
 			#region Operations
 			public Act.Axe Propagation( (Quant time,Quant potential) a , (Quant time,Quant potential) b , Quant? tranq = null ) => new Act.Axe( i=>(Resolve(i),Intensive).Propagation(a,b,tranq??Context.Profile?.Tranq) , this ) ;
 			public Act.Axe Propagation( (TimeSpan time,Quant potential) a , (TimeSpan time,Quant potential) b , Quant? tranq = null ) => new Act.Axe( i=>(Resolve(i),Intensive).Propagation(a,b,tranq??Context.Profile?.Tranq) , this ) ;

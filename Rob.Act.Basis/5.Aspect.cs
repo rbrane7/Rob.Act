@@ -62,7 +62,7 @@ namespace Rob.Act
 		IEnumerable<Aspectable> Resources => this.SelectMany(a=>a.Resources).Distinct() ;
 		public virtual Point.Iterable Points => new Point.Iterator{ Context = this } ;
 		public virtual IList<Point> Pointes { get => pointes ??= new Point.Parit<Point.Iterator>{ Context = this , Changes = PointsChanged } ; set { if( value==pointes ) return ; pointes = value ; propertyChanged.On(this,"Pointes,Points") ; } } protected IList<Point> pointes ; // Parallel accessor of points . Can be made resistent if adequate updates are satisfied to make it relevant . 
-		protected void PointsChanged( object subject , NotifyCollectionChangedEventArgs arg ) => Raw?.PathEdited(subject,arg) ;
+		protected void PointsChanged( object subject , NotifyCollectionChangedEventArgs arg ) => Raw?.Edited(subject,arg) ;
 		public int Index( string axe ) => IndexOf(this[axe]) ;
 		public virtual Path Raw => Source?.Raw ;
 		public Aspect Base => Raw?.Spectrum ;
@@ -73,14 +73,14 @@ namespace Rob.Act
 		public struct Point : Quantable , IEnumerable<Quant?>
 		{
 			public interface Iterable : IEnumerable<Point> { int Count {get;} Aspectable Context {get;set;} Point this[ int at ] {get;} }
-			readonly Aspect Context ; readonly Quant?[] Content ;
-			public Point( Aspect context , int at ) { Context = context ; Content = context.Select(a=>a[at]).ToArray() ; var raw = context.Raw?[at] ; Mark = raw?.Mark??Mark.No ; Tags = raw?.Tags ; }
-			public Quant? this[ uint key ] => Content.At((int)key) ;
-			public Quant? this[ string key ] => Content.At(Context.Index(key)) ;
-			public IEnumerator<Quant?> GetEnumerator() => Content.Cast<Quant?>().GetEnumerator() ; IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
-			public Mark Mark {get;set;}
+			readonly Aspect Context ; readonly int At ; Act.Point Raw => Context?.Raw?[At] ;
+			public Point( Aspect context , int at ) { Context = context ; At = at ; }
+			public Quant? this[ uint key ] { get => Context[(int)key][At] ; set { if( Context is Path.Aspect s && s[(int)key] is Path.Axe a ) a[At] = value ; else throw new InvalidOperationException($"Can't set {key} axe of {Context} aspect !") ; } }
+			public Quant? this[ string key ] { get => Context[key][At] ; set { if( Context is Path.Aspect s && s[key] is Path.Axe a ) a[At] = value ; else throw new InvalidOperationException($"Can't set {key} axe of {Context} aspect !") ; } }
+			public IEnumerator<Quant?> GetEnumerator() { var at = At ; return Context.Select(a=>a[at]).GetEnumerator() ; } IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
+			public Mark Mark { get => Raw?.Mark??Mark.No ; set { if( Raw is Act.Point raw ) raw.Mark = value ; } }
 			public Mark? Marklet => Mark.nil() ;
-			public string Tags {get;set;}
+			public string Tags { get => Raw?.Tags ; set { if( Raw is Act.Point raw ) raw.Tags = value ; } }
 			public struct Iterator : Iterable
 			{
 				public Aspectable Context {get;set;}
@@ -181,7 +181,7 @@ namespace Rob.Act
 			/// <summary>
 			/// Serializes aspect from string .
 			/// </summary>
-			public static explicit operator string( Traits traits ) => traits.Null(t=>t.Count<=0)?.Where(t=>t.Context==traits.Context).Get(a=>string.Join(Serialization.Separator,a.Select(x=>(string)x))+Serialization.Separator) ;
+			public static explicit operator string( Traits traits ) => traits.Null(t=>t.Count<=0)?.Where(t=>t.Context==traits.Context).Get(a=>string.Join(Serialization.Separator,a.Select(x=>(string)x))).Null(v=>v.No()).Get(v=>v+Serialization.Separator) ;
 			static class Serialization { public const string Separator = " \x1 Trait \x2\n" ; }
 			#endregion
 		}
@@ -190,6 +190,7 @@ namespace Rob.Act
 	{
 		public class Aspect : Act.Aspect
 		{
+			public static string Filex = "spt" ;
 			internal Path Context { get => context ; set { context = value ; foreach( var ax in this ) if( ax is Axe a ) a.Context = value ; OnChanged() ; } } Path context ;
 			public Aspect( Path path )
 			{
@@ -236,6 +237,6 @@ namespace Rob.Act
 			#endregion
 		}
 		public Aspect Spectrum { get => aspect ??= new Aspect(this) ; internal set => aspect = value.Set(s=>s.Context=this) ; } Aspect aspect ;
-		public string Origin { get => Spectrum.Origin ; set { Spectrum.Origin = value ; var asp = (Act.Aspect)System.IO.Path.ChangeExtension(value,"spt").ReadAllText() ; if( asp==null ) return ; foreach( var ax in asp ) if( Spectrum[ax.Spec]==null ) Spectrum.Add(ax) ; foreach( var trait in asp.Trait ) Spectrum.Trait.Add(trait) ; } }
+		public string Origin { get => Spectrum.Origin ; set { Spectrum.Origin = value ; var asp = (Act.Aspect)System.IO.Path.ChangeExtension(value,Aspect.Filex).ReadAllText() ; if( asp==null ) return ; foreach( var ax in asp ) if( Spectrum[ax.Spec]==null ) Spectrum.Add(ax) ; foreach( var trait in asp.Trait ) Spectrum.Trait.Add(trait) ; } }
 	}
 }

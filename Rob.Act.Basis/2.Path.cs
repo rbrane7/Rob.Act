@@ -92,7 +92,7 @@ namespace Rob.Act
 			if( Count>path?.Count ) Content.RemoveRange(path.Count,Count-path.Count) ; if( path!=null ) for( var i=0 ; i<Count ; ++i ) this[i].Adapt(path[i]) ; if( Count<path?.Count ) Content.AddRange(path.Content.Skip(Count)) ;
 			Impose() ; Spectrify() ;
 		}
-		void Spectrify() { Spectrum.Pointes = null ; Pointes = null ; propertyChanged.On(this,"Spec,Spectrum") ; collectionChanged?.Invoke(this,new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset)) ; }
+		void Spectrify() { Spectrum.Pointes = null ; Pointes = null ; Changed("Spec,Spectrum") ; collectionChanged?.Invoke(this,new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset)) ; }
 		void Pointable.Adapt( Pointable path ) => (path as Path).Set(Adapt) ;
 		public void Populate() { Metax.Reset(Spectrum.Trait) ; Spectrum.Trait.Each(t=>this[t.Spec]=t.Value) ; Spectrum.Tags.Set(Tag.Add) ; }
 		void Take( IEnumerable<Point> points , Mark kind = Mark.No )
@@ -355,40 +355,20 @@ namespace Rob.Act
 		#endregion
 
 		public override Metax Metax { set { if( Dominant && Metax!=null ) Metax.Basis = value ; else base.Metax = value ; } }
-		public IList<Point> Pointes { get => pointes ??= new Aid.Collections.ObservableList<Point>().Set(p=>Task.Factory.StartNew(()=>{this.Each(p.Add);p.CollectionChanged+=PathEdited;})) ; set { if( value==pointes ) return ; pointes = value ; propertyChanged.On(this,"Pointes,Points") ; } } IList<Point> pointes ;
-		internal async void PathEdited( object subject , NotifyCollectionChangedEventArgs arg )
+		public IList<Point> Pointes { get => pointes ??= new Aid.Collections.ObservableList<Point>().Set(p=>Task.Factory.StartNew(()=>{this.Each(p.Add);p.CollectionChanged+=Edited;})) ; set { if( value==pointes ) return ; pointes = value ; Changed("Pointes,Points") ; } } IList<Point> pointes ;
+		internal void Edited( object _ , NotifyCollectionChangedEventArgs arg )
 		{
-			if( arg.Action==NotifyCollectionChangedAction.Remove && arg.OldStartingIndex>=0 && arg.OldItems is IList olds && olds.Count>0 ) PathRefined(arg.OldStartingIndex,olds) ; else return ;
-			if( Editing ) return ; try { Editing = true ; await Task.Delay(100) ; Adapt() ; if( Editable ) System.IO.Path.ChangeExtension(Origin,Filext).WriteAll((string)this) ; } finally { Editing = false ; }
+			if( arg==null ); else if( arg.Action==NotifyCollectionChangedAction.Remove && arg.OldStartingIndex>=0 && arg.OldItems is IList olds && olds.Count>0 ) Refined(arg.OldStartingIndex,olds) ; else return ; Persisting() ;
 		}
-		bool Editing ;
-		void PathRefined( int at , IList olds )
+		async void Persisting() { if( persisting ) return ; try { persisting = true ; await Task.Delay(100) ; Adapt() ; if( Editable ) System.IO.Path.ChangeExtension(Origin,Filext).WriteAll((string)this) ; } finally { persisting = false ; } } bool persisting ;
+		void Refined( int at , IList olds )
 		{
 			foreach( var ax in Potenties ) this[at+olds.Count][ax] -= (this[at+olds.Count-1]?[ax]??0)-(this[at-1]?[ax]??0) ;
 			for( var i=0 ; i<olds.Count ; ++i ) { if( at>0 ) { this[at-1].Mark |= Mark.Stop ; if( this[at+i]?.Marklet is Mark mark ) this[at-1].Mark |= mark ; } RemoveAt(at+i) ; }
 		}
 
-		#region Comparation
+		#region Equalization
 		public virtual bool Equals( Pathable path ) => path is Path p && (this as Point).Equals(p) && Content.SequenceEquate(p.Content,(x,y)=>x.EqualsRestricted(y)) && Metax?.Equals(p.Metax)!=false ;
 		#endregion
-
-		public class Altiplane : Act.Altiplane
-		{
-			public bool Dirty { get ; private set ; }
-			public readonly Quant Grade ;
-			public Altiplane( Quant grade , Quant grane = 10 ) : base(grane) => Grade = grade ;
-			public void Include( Path path )
-			{
-				if( path==null || !Include(path.Date) ) return ; Dirty = true ;
-				for( var i=0 ; i<path.Count ; ++i )
-				{
-					var alt = path[i].Alti ;
-					//for( var j=Math.Max(0,i-170) ; j<Math.Min(i+171,path.Count) ; ++j ) if( path[i].Alti is Quant a && path[j].Alti is Quant b && Math.Abs(a-b)>Grade*(path[i]-path[j]).Euclid(path[i]) ) alt = null ;
-					this[path[i].Geo] = alt ;
-				}
-			}
-			public Altiplane( string file ) : base(file) => Grade = file.RightFrom(FileSign).LeftFrom(ArgSep).Parse(.999) ;
-			public override void Save( string file ) { base.Save(file) ; Dirty = false ; }
-		}
 	}
 }

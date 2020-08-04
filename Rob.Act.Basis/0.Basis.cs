@@ -13,7 +13,7 @@ namespace Rob.Act
 	/// <summary>
 	/// Kind of separation marks .
 	/// </summary>
-	[Flags] public enum Mark { No=0 , Stop=1 , Lap=2 , Act=4 }
+	[Flags] public enum Mark { No=0 , Stop=1 , Lap=2 , Act=4 , Any=Act|Lap|Stop }
 	[Flags] public enum Oper { Merge=0 , Combi=1 , Trim=2 , Smooth=4 , Relat=8 }
 	public enum Axis : uint { Lon,Longitude=Lon , Lat,Latitude=Lat , Alt,Altitude=Alt , Dist,Distance=Dist , Drag , Flow , Beat , Bit , Energy , Grade , Time , Date }
 	public struct Bipole : IFormattable
@@ -244,11 +244,11 @@ namespace Rob.Act
 			/// <summary>
 			/// Referential date of object .
 			/// </summary>
-			public DateTime Date { get => date ; set { if( date==value ) return ; if( spec==Despect ) spec = null ; date = value ; sign = null ; } } DateTime date ;
+			public virtual DateTime Date { get => date ; set { if( date==value ) return ; if( spec==Despect ) spec = null ; date = value ; sign = null ; } } DateTime date ;
 			/// <summary>
 			/// Relative time of object .
 			/// </summary>
-			public TimeSpan Time { get => time ; set { if( time==value ) return ; if( spec==Despect ) spec = null ; time = value ; sign = null ; } } TimeSpan time ;
+			public virtual TimeSpan Time { get => time ; set { if( time==value ) return ; if( spec==Despect ) spec = null ; time = value ; sign = null ; } } TimeSpan time ;
 			/// <summary>
 			/// Signature of the point .
 			/// </summary>
@@ -264,7 +264,7 @@ namespace Rob.Act
 			/// <summary>
 			/// Kind of demarkaition .
 			/// </summary>
-			public Mark Mark {get;set;} public Mark? Marklet { get => Mark.nil() ; set { if( value is Mark mark ) Mark = mark ; } }
+			public virtual Mark Mark {get;set;} public Mark? Marklet { get => Mark.nil() ; set { if( value is Mark mark ) Mark = mark ; } }
 			/// <summary>
 			/// Metadata of axes . 
 			/// </summary>
