@@ -272,7 +272,7 @@ namespace Rob.Act
 			#endregion
 
 			#region Trait
-			public abstract uint Dimension { get ; }
+			public abstract uint Dimension {get;}
 			public Quant? this[ uint axis ]
 			{
 				get => axis==Dimension ? Time.TotalSeconds : axis==Dimension+1 ? Date.TotalSeconds() : axis==Dimension+2 ? Post.Lap : axis==Dimension+3 ? Post.Stop : axis==Dimension+4 ? Post.Act : Quantity.At((int)axis) ;
@@ -298,7 +298,7 @@ namespace Rob.Act
 			public virtual string Quantities => $"{((int)Dimension).Steps().Select(i=>Quantity[i].Get(q=>$"{(Axis)i}={q:0.00}")).Stringy(' ')}" ;
 			public virtual string Exposion => null ;
 			public virtual string Trace => null ;
-			public abstract Tagable Tag { get ; }
+			public abstract Tagable Tag {get;}
 			#endregion
 
 			#region Comparison

@@ -79,7 +79,7 @@ namespace Rob.Act
 			public Quant? this[ string key ] { get => Context[key][At] ; set { if( Context is Path.Aspect s && s[key] is Path.Axe a ) a[At] = value ; else throw new InvalidOperationException($"Can't set {key} axe of {Context} aspect !") ; } }
 			public IEnumerator<Quant?> GetEnumerator() { var at = At ; return Context.Select(a=>a[at]).GetEnumerator() ; } IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
 			public Mark Mark { get => Raw?.Mark??Mark.No ; set { if( Raw is Act.Point raw ) raw.Mark = value ; } }
-			public Mark? Marklet => Mark.nil() ;
+			public Mark? Marklet { get => Mark.nil() ; set => Mark = value??Mark.No ; }
 			public string Tags { get => Raw?.Tags ; set { if( Raw is Act.Point raw ) raw.Tags = value ; } }
 			public struct Iterator : Iterable
 			{
@@ -195,7 +195,7 @@ namespace Rob.Act
 			public Aspect( Path path )
 			{
 				Context = path ; Add(new Axe(Context){Axis=Axis.Date}) ; Add(new Axe(Context){Axis=Axis.Time}) ;
-				for( uint ax = 0 ; ax<Context.Dimension ; ++ax ) if( Context[ax]!=null ) Add(new Axe(Context){Ax=ax}) ;
+				for( uint ax = 0 ; ax<Context.Dimensions ; ++ax ) if( Context[ax]!=null ) Add(new Axe(Context){Ax=ax}) ;
 				foreach( var mark in Basis.Marks ) if( Context[mark]!=null ) Add(new Axe(Context){Mark=mark}) ;
 				this.Each(a=>a.Quantizer=null) ;
 			}
@@ -204,7 +204,7 @@ namespace Rob.Act
 			public Axable this[ Axis ax , bool insure = false ] => this.OfType<Axe>().FirstOrDefault(a=>a.Axis==ax) ??( insure ? new Axe(Context){Axis=ax}.Set(Add) : Axe.No as Axable ) ;
 			public override void Add( Act.Axe ax ) => base.Add(ax.Set(a=>{if(!(a is Axe))a.Aspect=this;})) ;
 			public override void Remove( Act.Axe ax ) => base.Remove(ax.Set(a=>{if(!(a is Axe))a.Aspect=null;})) ;
-			public void Reform( params string[] binds ) => this.OfType<Axe>().Each(a=>a.Binder=binds.At((int)a.Axis)??Context.Metax?[a.Ax].Form) ;
+			public void Reform( params string[] binds ) => this.OfType<Axe>().Each(a=>a.Binder=binds.At((int)a.Axis)??Context.Metaxes?[a.Ax].Form) ;
 			#region Operation
 			public Act.Axe perf( Lap lap ) => perf(pace(lap),grad(lap),resi(lap),flow(lap),gran(lap)) ;
 			public Act.Axe velo( Lap lap ) => lap.quo(this[Axis.Dist,false]as Axe,this[Axis.Time,false]as Axe) ;

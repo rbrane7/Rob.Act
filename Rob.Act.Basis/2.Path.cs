@@ -32,6 +32,7 @@ namespace Rob.Act
 		#region Construct
 		public Path( DateTime date , IEnumerable<Point> points = null , Mark kind = Mark.No , params (Axis Ax,Quant Uni)[] measures ) : base(date)
 		{
+			using var _=Incognit ;
 			Take(points,kind) ;
 			if( measures!=null ) foreach( var measure in measures ) if( this[measure.Ax]==null ) { this[0][measure.Ax] = 0 ; Quant lb = 0 ; for( var i=1 ; i<Count ; ++i ) this[i][measure.Ax] = ((this[i-1][measure.Ax]??lb)+this[i][measure.Ax]/measure.Uni*(this[i].Time-this[i-1].Time).TotalSeconds).use(b=>lb=b) ; this[measure.Ax] = lb ; }
 			Impose(kind) ;
@@ -42,11 +43,12 @@ namespace Rob.Act
 		#region Setup
 		void Impose( Mark? kind = null )
 		{
-			var mark = kind??Mark ; Preclude() ; var pon = Potenties.ToDictionary(a=>a,a=>0D) ;
+			using var _=Incognit ; var mark = kind??Mark ;
+			Preclude() ; var pon = Potenties.ToDictionary(a=>a,a=>0D) ;
 			var date = DateTime.Now ; for( var i=0 ; i<Count ; ++i )
 			{
 				if( this[i].Owner==null ) this[i].Owner = this ;
-				if( this[i].Metax==null ) Metax.Set(m=>this[i].Metax=m) ;
+				if( this[i].Metax==null && Derived ) Metax.Set(m=>this[i].Metax=m) ;
 				if( i<=0 || (this[i-1].Mark&(Mark.Stop|mark))!=0 )
 				{
 					var res = i<=0 || (this[i-1].Mark&mark)!=0 ;
@@ -84,25 +86,27 @@ namespace Rob.Act
 			point.Set(p=>{var z=this[0];if(Bit==null)Bit=p.Bit-z.Bit;if(Time==default)Time=p.Time-z.Time;if(Dist==null)Dist=p.Dist-z.Dist;if(Asc==null)Asc=p.Asc-z.Asc;if(Dev==null)Dev=p.Dev-z.Dev;}) ;
 			foreach( var mark in Basis.Marks ) if( this[mark]!=null ) Segmentize(mark) ;
 		}
-		protected internal override void Depose() { base.Depose() ; for( var i=0 ; i<Count ; ++i ) this[i].Depose() ; }
+		protected internal override void Depose() { using var _=Incognit ; base.Depose() ; for( var i=0 ; i<Count ; ++i ) this[i].Depose() ; }
 		public void Reset( Mark? kind = null , bool notify = true ) { Depose() ; Impose(kind) ; if( notify ) Spectrify() ; }
 		protected virtual void Adapt( Path path=null )
 		{
+			using var _=Incognit ;
 			Depose() ; path.Set(base.Adapt) ;
 			if( Count>path?.Count ) Content.RemoveRange(path.Count,Count-path.Count) ; if( path!=null ) for( var i=0 ; i<Count ; ++i ) this[i].Adapt(path[i]) ; if( Count<path?.Count ) Content.AddRange(path.Content.Skip(Count)) ;
 			Impose() ; Spectrify() ;
 		}
 		void Spectrify() { Spectrum.Pointes = null ; Pointes = null ; Changed("Spec,Spectrum") ; collectionChanged?.Invoke(this,new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset)) ; }
 		void Pointable.Adapt( Pointable path ) => (path as Path).Set(Adapt) ;
-		public void Populate() { Metax.Reset(Spectrum.Trait) ; Spectrum.Trait.Each(t=>this[t.Spec]=t.Value) ; Spectrum.Tags.Set(Tag.Add) ; }
+		public void Populate() { using var init = Incognit ; Metax.Reset(Spectrum.Trait) ; Spectrum.Trait.Each(t=>this[t.Spec]=t.Value) ; Spectrum.Tags.Set(Tag.Add) ; }
 		void Take( IEnumerable<Point> points , Mark kind = Mark.No )
 		{
+			using var _=Incognit ;
 			points.Set(p=>Content.AddRange(p.OrderBy(t=>t.Date))) ; if( Metax==null ) Metax = points?.FirstOrDefault(p=>p.Metax!=null)?.Metax ;
 			var date = DateTime.Now ; for( var i=0 ; i<Count ; ++i ) { if( i<=0 || (this[i-1].Mark&(Mark.Stop|kind))!=0 ) date = this[i].Date-(this[i-1]?.Time.nil(_=>(this[i-1].Mark&kind)!=0)??default) ; if( this[i].Time==default ) this[i].Time = this[i].Date-date ; }
 		}
 		internal Path On( IEnumerable<Point> points , Mark kind = Mark.No )
 		{
-			Take(points,kind) ;
+			Take(points,kind) ; using var _=Incognit ;
 			for( var ax = Axis.Lon ; ax<=Axis.Alt ; ++ax ) this[ax] = this.Average(p=>p[ax]) ; for( var ax = Axis.Dist ; ax<=Axis.Time ; ++ax ) this[ax] = this.Sum(p=>p[ax]) ;
 			Asc = this.Sum(p=>(Quant?)p.Asc) ; Dev = this.Sum(p=>(Quant?)p.Dev) ; if( Metax!=null ) foreach( var ax in Metax ) this[ax.Value.At] = this.Average(p=>p[ax.Value.At]) ;
 			for( int i=0 , c=this.Min(p=>p.Tag.Count) ; i<c ; ++i ) Tag[i] = this.Where(p=>p.Tags!=null).Aggregate(string.Empty,(a,p)=>a==null?null:a==string.Empty?p.Tag[i]:a==p.Tag[i]||p.Tag[i].No()?a:null) ;
@@ -110,7 +114,7 @@ namespace Rob.Act
 		}
 		public Path Energize()
 		{
-			var dflt = Basis.Energing.On(Object) ;
+			using var _=Incognit ; var dflt = Basis.Energing.On(Object) ;
 			if( Grade==null ) Granelet = Gradstr.Parse<Quant>()??dflt?.Grade ; if( Flow==null ) Flowlet = Flowstr.Parse<Quant>() ; if( Drag==null ) Draglet = Dragstr.Parse<Quant>() ;
 			for( var i=0 ; i<Count ; ++i )
 			{
@@ -133,6 +137,7 @@ namespace Rob.Act
 			bool AldKo( int i ) => Ald(i).use(Math.Abs)>Dif(i)*Tolerancy.On(Object)?.Grade ;
 			Quant? AldOk( int i , int at ) => Ald(i) is Quant d && !(Math.Abs(d)>Dif(i)*Tolerancy.On(Object)?.Grade) && !(Ald(i,at).use(Math.Abs)>Dif(i,at)*Tolerancy.On(Object)?.Grade) ? d : null as Quant? ;
 			Quant? OkAld( int i ) { for( var j=i+1 ; j<Count ; ++j ) if( AldOk(j,i-1) is Quant d ) return d ; /*else if( this[j-1]?.Mark.HasFlag(Mark.Stop)!=false ) break ;*/ return null ; }
+			using var _=Incognit ;
 			for( var i=1 ; i<Count ; ++i )
 			{
 				if( cord!=0 ) this[i].Dist += cord ; if( cora!=0 ) this[i].Alti += cora ;
@@ -150,7 +155,7 @@ namespace Rob.Act
 			}
 			return this ;
 		}
-		public Path Altify() { if( AltOf is Altiplane alp ) { alp.Include(this) ; for( var i=1 ; i<Count ; ++i ) if( alp[this[i].Geo] is Quant a ) this[i].Alti = a ; } return this ; }
+		public Path Altify() { using var _=Incognit ; if( AltOf is Altiplane alp ) { alp.Include(this) ; for( var i=1 ; i<Count ; ++i ) if( alp[this[i].Geo] is Quant a ) this[i].Alti = a ; } return this ; }
 		public Path Altismooth()
 		{
 			if( !Altismooths ) return this ;
@@ -161,7 +166,7 @@ namespace Rob.Act
 					if( (((this[i+1].Alti-this[i].Alti)/(this[i+1].Dist-this[i].Dist)-(this[i].Alti-this[i-1].Alti)/(this[i].Dist-this[i-1].Dist))/(this[i+1].Dist-this[i-1].Dist)*2).use(Math.Abs) is Quant c && c>max.Alt ) max = (c,i) ;
 				return max ;
 			}
-			var count = Count ; for( (Quant Alt,int Idx) max ; count>0 && (max=MaxInd()).Alt>Tolerancy.On(Object)?.Grade ; --count ) this[max.Idx].Alti = (this[max.Idx-1].Alti+this[max.Idx+1].Alti)/2 ;
+			using var _=Incognit ; var count = Count ; for( (Quant Alt,int Idx) max ; count>0 && (max=MaxInd()).Alt>Tolerancy.On(Object)?.Grade ; --count ) this[max.Idx].Alti = (this[max.Idx-1].Alti+this[max.Idx+1].Alti)/2 ;
 			return this ;
 		}
 		#endregion
@@ -169,6 +174,7 @@ namespace Rob.Act
 		#region Correction
 		public void Correct( Axis axe , params KeyValuePair<int,Quant>[] cor )
 		{
+			using var _=Incognit ;
 			var bas = 0D ; if( cor==null ) return ;
 			for( var i=0 ; i<cor.Length ; ++i ) if( cor[i].Key is int k && k>=0 && k<Count )
 			if( this[k][axe] is double to )
@@ -182,6 +188,7 @@ namespace Rob.Act
 		}
 		public void Correct( string axe , params KeyValuePair<int,Quant>[] cor )
 		{
+			using var _=Incognit ;
 			var bas = 0D ; if( cor==null ) return ;
 			for( var i=0 ; i<cor.Length ; ++i ) if( cor[i].Key is int k && k>=0 && k<Count )
 			if( this[k][axe] is double to )
@@ -202,8 +209,10 @@ namespace Rob.Act
 		#region State
 		int Depth = 1 ; // Defines the size of vicinity of points .
 		readonly List<Point> Content = new List<Point>() ;
-		/// <summary> Dominancy causes this path to be dominant to it's point sub-pathhes and is used as base of <see cref="Metax"/> attribute . </summary>
-		public bool Dominant = Dominancy , Editable = Persistent ;
+		/// <summary> Derivancy causes this path to be drived from it's point sub-pathes and is used as base of <see cref="Metax"/> of points in case of top-down construction . In this case points inherit path's <see cref="Metax"/> if they doesn't have own . </summary>
+		public bool Dominant = Dominancy , Editable = Persistent ; internal bool Derived ;
+		public Metax Metaxes => metaxex ??= this.Select(p=>p.Metax).Distinct().SingleOrNo() ; Metax metaxex ;
+		public uint Dimensions => dimensions ??= Metaxes?.Dimension??(Count>0?this.Max(p=>p.Dimension):0) ; uint? dimensions ;
 		#endregion
 		#region Support
 		protected IEnumerable<uint> Potenties => Metax?.Potenties ?? Basis.Potenties ;
@@ -247,6 +256,7 @@ namespace Rob.Act
 		public int this[ Mark mark , int of ] { get { while( of>0 && ((this[of]?.Mark??0)&mark)==0 ) --of ; return of ; } }
 		Path Segmentize( Mark mark )
 		{
+			using var _=Incognit ;
 			for( int bo = 0 , to = 0 , at = 0 ; to<Count ; ++to,bo=to,++at ) { while( to<Count-1 && ((this[to]?.Mark??0)&mark)==0 ) ++to ; for( var i=bo ; i<=to ; ++i ) this[i][mark] = (i-bo+1D)/(to-bo+1)+at ; }
 			return this ;
 		}
@@ -278,7 +288,7 @@ namespace Rob.Act
 		#endregion
 
 		public override string ToString() => $"{Action} {Sign} {Distance/1000:0.00}km {Exposion} {"\\ {0:0} /".Comb(MaxExposion)} {MinEffort.Get(e=>$"{e:0}W\\")}{MinMaxEffort.Get(e=>$"{e:0}W")}:{AeroEffort.Get(a=>$"{a:#W}")} {Trace} {Tags}" ;
-		public override string Sign => Dominant ? Date.ToString() : base.Sign ;
+		public override string Sign => Derived ? Date.ToString() : base.Sign ;
 
 		#region Implementation
 		public void Rely( Path lead )
@@ -343,27 +353,28 @@ namespace Rob.Act
 		#endregion
 
 		#region De/Serialization
-		Path( string text ) : base(text.LeftFrom(Serialization.Separator,all:true).Get(t=>t.StartsBy(Serialization.Domimator)?t.RightFromFirst(Serialization.Domimator):t))
+		Path( string text ) : base(text.LeftFrom(Serialization.Separator,all:true).Get(t=>t.StartsBy(Serialization.Derivator)?t.RightFromFirst(Serialization.Derivator):t))
 		{
-			text.RightFromFirst(Serialization.Separator).Separate(Serialization.Separator,false).Set(e=>Content.AddRange(e.Select(p=>((Point)p).Set(a=>{if(a.Metax==null)a.Metax=Metax;})))) ;
-			if( Dominant = text.StartsBy(Serialization.Domimator) ) for( var ax=Axis.Dist ; ax<=Axis.Time ; ++ax ) { Quant lval = 0 ; for( var i=0 ; i<Count ; ++i ) { this[i][ax] += lval ; this[i][ax].Use(v=>lval=v) ; } }
-			else Impose(Mark) ;
+			Derived = text.StartsBy(Serialization.Derivator) ;
+			text.RightFromFirst(Serialization.Separator).Separate(Serialization.Separator,false).Set(e=>Content.AddRange(e.Select(p=>((Point)p).Set(a=>{if(a.Metax==null&&Derived)a.Metax=Metax;})))) ;
+			if( Derived ) for( var ax=Axis.Dist ; ax<=Axis.Time ; ++ax ) { Quant lval = 0 ; for( var i=0 ; i<Count ; ++i ) { this[i][ax] += lval ; this[i][ax].Use(v=>lval=v) ; } } else Impose(Mark) ;
 		}
-		public static explicit operator string( Path path ) => path.Get(a=>$"{(path.Dominant?Serialization.Domimator:null)}{(string)(a as Point)}{(string)a.Metax}{Serialization.Separator}{(string.Join(null,a.Content.Select(p=>(string)p+(string)p.Metax.Null(m=>m==a.Metax)+Serialization.Separator)))}") ;
+		public static explicit operator string( Path path ) => path.Get(a=>$"{(path.Derived?Serialization.Derivator:null)}{(string)(a as Point)}{(string)a.Metax}{Serialization.Separator}{(string.Join(null,a.Content.Select(p=>(string)p+(string)p.Metax.Null(m=>m==a.Metax)+Serialization.Separator)))}") ;
 		public static explicit operator Path( string text ) => text.Null(v=>v.No()).Get(t=>new Path(t)) ;
-		new internal static class Serialization { public const string Separator = " \x1 Point \x2\n" ; public const string Domimator = "^ " ; }
+		new internal static class Serialization { public const string Separator = " \x1 Point \x2\n" ; public const string Derivator = "^ " ; }
 		#endregion
 
-		public override Metax Metax { set { if( Dominant && Metax!=null ) Metax.Basis = value ; else base.Metax = value ; } }
+		public override Metax Metax { set { if( Derived && Metax!=null ) Metax.Basis = value ; else base.Metax = value ; } }
 		public IList<Point> Pointes { get => pointes ??= new Aid.Collections.ObservableList<Point>().Set(p=>Task.Factory.StartNew(()=>{this.Each(p.Add);p.CollectionChanged+=Edited;})) ; set { if( value==pointes ) return ; pointes = value ; Changed("Pointes,Points") ; } } IList<Point> pointes ;
-		internal void Edited( object _ , NotifyCollectionChangedEventArgs arg )
+		internal void Edited( object _=null , NotifyCollectionChangedEventArgs arg=null )
 		{
 			if( arg==null ); else if( arg.Action==NotifyCollectionChangedAction.Remove && arg.OldStartingIndex>=0 && arg.OldItems is IList olds && olds.Count>0 ) Refined(arg.OldStartingIndex,olds) ; else return ; Persisting() ;
 		}
 		async void Persisting() { if( persisting ) return ; try { persisting = true ; await Task.Delay(100) ; Adapt() ; if( Editable ) System.IO.Path.ChangeExtension(Origin,Filext).WriteAll((string)this) ; } finally { persisting = false ; } } bool persisting ;
 		void Refined( int at , IList olds )
 		{
-			foreach( var ax in Potenties ) this[at+olds.Count][ax] -= (this[at+olds.Count-1]?[ax]??0)-(this[at-1]?[ax]??0) ;
+			using var _=Incognit ;
+			if( this[at+olds.Count] is Point p ) foreach( var ax in Potenties ) p[ax] -= (this[at+olds.Count-1]?[ax]??0)-(this[at-1]?[ax]??0) ;
 			for( var i=0 ; i<olds.Count ; ++i ) { if( at>0 ) { this[at-1].Mark |= Mark.Stop ; if( this[at+i]?.Marklet is Mark mark ) this[at-1].Mark |= mark ; } RemoveAt(at+i) ; }
 		}
 
