@@ -201,8 +201,8 @@ namespace Rob.Act
 		public Axe By( Quant dif ) => By(Lap(dif)) ;
 		public Axe Nil( Predicate<Quant> nil ) => new Axe( i=>Resolve(i).Nil(nil) , this ) ;
 		public Axe Fun( Func<Quant,Quant> fun ) => new Axe( i=>Resolve(i).use(fun) , this ) ;
-		public Axe PacePower( Quant grade = 0 , Quant? resi = null , Quant flow = 0 ) => new Axe( i=>Resolve(i).PacePower(grade,(Aspect as Aspect)?.Resistance(resi)??0,flow,Aspect?.Raw?.Profile?.Mass) , this ) ;
-		public Axe PowerPace( Quant grade = 0 , Quant? resi = null , Quant flow = 0 ) => new Axe( i=>Resolve(i).PowerPace(grade,resi??Aspect?.Raw?.Resister??0,flow,Aspect?.Raw?.Profile?.Mass) , this ) ;
+		public Axe PacePower( Quant grade = 0 , Quant? resi = null , Quant flow = 0 , Quant grane = 0 ) => new Axe( i=>Resolve(i).PacePower(grade,(Aspect as Aspect)?.Resistance(resi)??0,flow,grane,Aspect?.Raw?.Profile?.Mass) , this ) ;
+		public Axe PowerPace( Quant grade = 0 , Quant? resi = null , Quant flow = 0 , Quant grane = 0 ) => new Axe( i=>Resolve(i).PowerPace(grade,resi??Aspect?.Raw?.Resister??0,flow,Aspect?.Raw?.Profile?.Mass) , this ) ;
 		public Axe Centre( Axe mesure ) => this*mesure/+mesure ;
 		#endregion
 		#region De/Serialization

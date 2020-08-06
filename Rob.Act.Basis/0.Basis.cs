@@ -116,7 +116,7 @@ namespace Rob.Act
 		/// </summary>
 		static Quant? Sqrm( this Point vect , Axis axis , Point at ) { Quant? value = vect[axis]??0 ; if( axis==Act.Axis.Lat ) value *= Degmet ; if( axis==Act.Axis.Lon ) value *= Londeg(at[Act.Axis.Lat]) ; return value*value ; }
 		static readonly Quant Degmet = 111321.5 ;
-		public const Quant Gravity = 9.823 ;
+		public static readonly (Quant Force,Quant Power) Gravity = (9.823,6) ;
 		static Quant? Londeg( Quant? latdeg ) => latdeg.Rad().use(Math.Cos) * Degmet ;
 		static Quant? Rad( this Quant? deg ) => deg/180*Math.PI ;
 		static Quant? Polar( this Point vect , Point at ) => vect.Sqrm(Act.Axis.Lon,at)+vect.Sqrm(Act.Axis.Lat,at) ; // Polar 2D square of size of vector at point of sphere .
@@ -154,14 +154,13 @@ namespace Rob.Act
 		#region Transformators
 		public static Quant? PowerPace( this Quant? power , Quant grade = 0 , Quant drag = 0 , Quant flow = 0 , Quant? mass = null )
 		{
-			if( power is Quant p );else return null ; var g = grade*Gravity*(mass??Mass) ; var d = drag ; var f = flow ; if( p==0 && d*g>=0 ) return null ;
+			if( power is Quant p );else return null ; var g = grade*Gravity.Force*(mass??Mass) ; var d = drag ; var f = flow ; if( p==0 && d*g>=0 ) return null ;
 			return p==0 ? 1/Math.Sqrt(Math.Abs(g/3*d)) : 1/(d*g<0?p+Math.Sign(p)*Math.Sqrt(Math.Abs(g/3*d)):p).Radix(u=>(g+(f+d*u)*u)*u-p,u=>g+(2*f+3*d*u)*u).Nil() ;
 		}
-		public static Quant? PacePower( this Quant? pace , Quant grade = 0 , Quant drag = 0 , Quant flow = 0 , Quant? mass = null ) => pace!=0 ?
-			(grade*Gravity*(mass??Mass)).Get(g=>g*Histeresis+(g+grade.Recuperation()*(flow+drag/pace)/pace)/pace) : null as Quant? ;
-		public static Quant? PacePower( this Quant? pace , (Quant grade,Quant grane) g , Quant drag = 0 , Quant flow = 0 , Quant? mass = null ) => pace.PacePower(g.GradeGrane(),drag,flow,mass) ;
+		public static Quant? PacePower( this Quant? pace , Quant grade = 0 , Quant drag = 0 , Quant flow = 0 , Quant grane = 0 , Quant? mass = null ) =>
+			pace==0 ? null : (mass??Mass).Get(m=>grade*m*Gravity.Power+(grade,grane).GradeGrane().Get(g=>g*m*Gravity.Force+g.Recuperation()*(flow+drag/pace)/pace)/pace) ;
 		static Quant Recuperation( this Quant grade ) => grade<0 ? 1-Math.Tanh(grade*GravityRecuperation).Sqr() : 1 ;
-		public static Quant GravityRecuperation = 200 , AirResistance = .4 , Histeresis = 1 ;
+		public static Quant GravityRecuperation = 200 , AirResistance = .4 ;
 		static Quant GradeGrane( this (Quant grade,Quant grane) g ) => g.grade.nil(v=>Math.Abs(v)>1) is Quant a ? a+g.grane*Math.Sqrt(1-a.Sqr()) : g.grane ;
 		#endregion
 
