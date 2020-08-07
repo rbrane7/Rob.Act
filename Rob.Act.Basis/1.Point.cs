@@ -59,6 +59,10 @@ namespace Rob.Act
 		/// Assotiative text .
 		/// </summary>
 		public override string Spec { set { if( value!=Spec ) SpecChanged( base.Spec = value ) ; } }
+		/// <summary>
+		/// Accessor of binding .
+		/// </summary>
+		public object This { get => this ; set => (value as Action<object>)?.Invoke(this) ; }
 		protected override string Despec( string act ) => Tags is string t ? $"{base.Despec(act)} {t}" : base.Despec(act) ;
 		protected virtual void SpecChanged( string value ) => Changed("Spec") ;
 		/// <summary>

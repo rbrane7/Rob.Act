@@ -98,7 +98,13 @@ namespace Rob.Act.Analyze
 				public static implicit operator Binding( string value ) => new Binding(value) ;
 				public Binding( string value )
 				{
-					if( value?.TrimStart().StartsBy("(")==true ) { var cvt = value.LeftFromScoped(true,'/',',',':') ; Converter = new Aid.Converters.LambdaConverter{Forward=cvt} ; Path = null ; value = value.RightFromFirst(cvt) ; } else { Path = value.LeftFrom(true,':',',','/') ; Converter = null ; }
+					if( value?.TrimStart().StartsBy("(")==true )
+					{
+						var cvt = value.LeftFromScoped(true,'/',',',':') ;  value = value.RightFromFirst(cvt) ; Path = cvt.Contains("==>") ? "This" : null ;
+						if( Path==null ) Converter = new Aid.Converters.LambdaConverter{Forward=cvt} ;
+						else { cvt = cvt.Trim('(',')') ; Converter = new Aid.Converters.LambdaAccessor{Forward=cvt.LeftFrom("==>"),Backward=cvt.RightFrom("==>")} ; }
+					}
+					else { Path = value.LeftFrom(true,':',',','/') ; Converter = null ; }
 					Name = value.LeftFrom(true,':',',').RightFromFirst('/',true) ; Format = value.RightFromFirst(':') ; Align = value.LeftFrom(':').RightFrom(',') ;
 				}
 				public string Of( object value ) => Reform.Form( Converter is IValueConverter c ? c.Convert(value,null,null,null) : value ) ;
