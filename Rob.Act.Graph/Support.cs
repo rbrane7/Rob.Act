@@ -92,6 +92,7 @@ namespace Rob.Act.Analyze
 			public (Func<Objective,bool> Filter,Func<Enhancer,bool> Associer,Func<IEnumerable<Objective>,IEnumerable<Objective>> Query) ToRefiner<Objective,Enhancer>() => (ToFilter<Objective>(),ToAssocier<Enhancer>(),ToQuery<Objective>()) ;
 			public struct Binding
 			{
+				static readonly string ThisKey = typeof(Aid.Converters.ObjectAccessible).GetProperties().One().Name ;
 				public string Path , Name , Format , Align ; public IValueConverter Converter ; 
 				public string Form => Align.No() ? Format : Format.No() ? $"{{0,{Align}}}" : $"{{0,{Align}:{Format}}}" ;
 				public string Reform => Align.No()&&!Format.No() ? $"{{0:{Format}}}" : Form ;
@@ -100,9 +101,9 @@ namespace Rob.Act.Analyze
 				{
 					if( value?.TrimStart().StartsBy("(")==true )
 					{
-						var cvt = value.LeftFromScoped(true,'/',',',':') ;  value = value.RightFromFirst(cvt) ; Path = cvt.Contains("==>") ? "This" : null ;
+						var cvt = value.LeftFromScoped(true,'/',',',':') ;  value = value.RightFromFirst(cvt) ; Path = cvt.Contains(LambdaContext.Act.Accessor) ? ThisKey : null ;
 						if( Path==null ) Converter = new Aid.Converters.LambdaConverter{Forward=cvt} ;
-						else { cvt = cvt.Trim('(',')') ; Converter = new Aid.Converters.LambdaAccessor{Forward=cvt.LeftFrom("==>"),Backward=cvt.RightFrom("==>")} ; }
+						else { cvt = cvt.RightFromFirst('(').LeftFromLast(')') ; Converter = new Aid.Converters.LambdaAccessor{Forward=cvt.LeftFrom(LambdaContext.Act.Accessor),Backward=cvt.RightFrom(LambdaContext.Act.Accessor)} ; }
 					}
 					else { Path = value.LeftFrom(true,':',',','/') ; Converter = null ; }
 					Name = value.LeftFrom(true,':',',').RightFromFirst('/',true) ; Format = value.RightFromFirst(':') ; Align = value.LeftFrom(':').RightFrom(',') ;
