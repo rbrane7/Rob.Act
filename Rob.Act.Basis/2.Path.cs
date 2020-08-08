@@ -374,7 +374,7 @@ namespace Rob.Act
 		void Refined( int at , IList olds )
 		{
 			using var _=Incognit ;
-			if( this[at+olds.Count] is Point p ) foreach( var ax in Potenties ) p[ax] -= (this[at+olds.Count-1]?[ax]??0)-(this[at-1]?[ax]??0) ;
+			foreach( var ax in Potenties ) if( (this[at+olds.Count-1]?[ax]??0)-(this[at-1]?[ax]??0) is Quant d && d!=0 ) for( var i=at+olds.Count ; i<Count ; ++i ) if( this[i] is Point p ) p[ax] -= d ;
 			for( var i=0 ; i<olds.Count ; ++i ) { if( at>0 ) { this[at-1].Mark |= Mark.Stop ; if( this[at+i]?.Marklet is Mark mark ) this[at-1].Mark |= mark ; } RemoveAt(at+i) ; }
 		}
 

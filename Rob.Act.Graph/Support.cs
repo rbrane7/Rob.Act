@@ -101,7 +101,7 @@ namespace Rob.Act.Analyze
 				{
 					if( value?.TrimStart().StartsBy("(")==true )
 					{
-						var cvt = value.LeftFromScoped(true,'/',',',':') ;  value = value.RightFromFirst(cvt) ; Path = cvt.Contains(LambdaContext.Act.Accessor) ? ThisKey : null ;
+						var cvt = value.LeftFromScoped(true,'/',',',':') ; value = value.RightFromFirst(cvt) ; Path = cvt.Contains(LambdaContext.Act.Accessor) ? ThisKey : null ;
 						if( Path==null ) Converter = new Aid.Converters.LambdaConverter{Forward=cvt} ;
 						else { cvt = cvt.RightFromFirst('(').LeftFromLast(')') ; Converter = new Aid.Converters.LambdaAccessor{Forward=cvt.LeftFrom(LambdaContext.Act.Accessor),Backward=cvt.RightFrom(LambdaContext.Act.Accessor)} ; }
 					}
