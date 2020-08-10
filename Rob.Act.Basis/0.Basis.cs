@@ -42,6 +42,9 @@ namespace Rob.Act
 		public static Bipole? operator/( Bipole? x , Bipole? y ) => x!=null&&y!=null ? x.Value/y.Value : null as Bipole? ;
 		public static implicit operator Bipole( Quant v ) => new Bipole(v) ;
 		public static explicit operator Quant( Bipole v ) => v.A+v.B ;
+		public static explicit operator Quant?( Bipole? v ) => v.use(q=>(Quant)q) ;
+		public static bool operator==( Bipole x , Bipole y ) => x.A==y.A && x.B==y.B ;
+		public static bool operator!=( Bipole x , Bipole y ) => !(x==y) ;
 		public override string ToString() => $"{A}-{-B}" ;
 		public string ToString( string format , IFormatProvider formatProvider ) => $"{A.ToString(format,formatProvider)}-{(-B).ToString(format,formatProvider)}" ;
 	}

@@ -47,7 +47,7 @@ namespace Rob.Act
 		public Point( DateTime date , Pathable owner = null ) : base(date) => Owner = owner ;
 		public Point( Point point , Pathable owner = null ) : base(point) => Owner = owner??point?.Owner ;
 		public override void Adapt( Pointable point ) { base.Adapt(point) ; if( (point as Point)?.Tags!=null || Tags!=null ) Tag.Adopt(point.Tag) ; }
-		protected internal override void Depose() { base.Depose() ; Bit = Dist = null ; Asc = Dev = null ; Owner = null ; }
+		protected internal override void Depose() { base.Depose() ; Bit = Dist = null ; Ascent = Deviation = null ; Owner = null ; }
 		#endregion
 
 		#region State
@@ -68,11 +68,11 @@ namespace Rob.Act
 		/// <summary>
 		/// Ascent of the path .
 		/// </summary>
-		public Bipole? Asc {get;set;}
+		public Bipole? Ascent {get;set;}
 		/// <summary>
 		/// Deviation of the path .
 		/// </summary>
-		public Bipole? Dev {get;set;}
+		public Bipole? Deviation {get;set;}
 		#endregion
 
 		#region Tags
@@ -114,9 +114,9 @@ namespace Rob.Act
 		#endregion
 
 		#region Quotient
-		public Quant? Distance => Dist / Transfer ;
+		public virtual Quant? Distance { get => Dist/Transfer ; set => Dist = value*Transfer ; }
 		public Quant? Speed => Distance.Quotient(Time.TotalSeconds) ;
-		public Quant? Pace => Time.TotalSeconds / Distance ;
+		public Quant? Pace => Time.TotalSeconds/Distance ;
 		public Quant? Power => Object==Basis.Device.Skierg.Code ? Time.TotalSeconds.Quotient(Dist).PacePower(drag:Basis.Device.Skierg.Draw) : Energy.Quotient(Time.TotalSeconds) ;
 		public Quant? Force => Energy.Quotient(Distance) ;
 		public Quant? Beatage => Energy.Quotient(Beat) ;
@@ -126,8 +126,8 @@ namespace Rob.Act
 		public Quant? Granelet { get => Grade.Quotient(Dist) ; set => Grade = value*Dist ; }
 		public Quant? Draglet { get => Drag.Quotient(Dist) ; set => Drag = value*Dist ; }
 		public Quant? Flowlet { get => Flow.Quotient(Dist) ; set => Flow = value*Dist ; }
-		public Bipole? Gradelet => Asc / Dist ;
-		public Bipole? Bendlet => Dev / Dist ;
+		public Bipole? Gradelet => Ascent/Dist ;
+		public Bipole? Bendlet => Deviation/Dist ;
 		#endregion
 
 		#region Query
@@ -135,7 +135,7 @@ namespace Rob.Act
 		public Quant Transfer => Basis.Device.Skierg.Code==Object ? Math.Pow(Draglet??1,1D/3D) : 1 ;
 		public Quant Resister => Object==Basis.Device.Skierg.Code ? Basis.Device.Skierg.Draw : Drag??Path.SubjectProfile.By(Subject)?.Resi??0 ;
 		public override string Exposion => "{0}={1}bW".Comb("{0}/{1}".Comb(Power.Get(p=>$"{Math.Round(p)}W"),Beatrate.Get(b=>$"{Math.Round(b)}`b")),Beatage.use(Math.Round))+$" {Speed*3.6:0.00}km/h" ;
-		public override string Trace => $"{Resister.Get(v=>$"Resist={v:0.00}")} {Asc.Get(v=>$"Ascent={v:0}m")} {Gradelet.Get(v=>$"Grade={v:.000}")} {Dev.Get(v=>$"Devia={v:0}m")} {Bendlet.Get(v=>$"Bend={v:.000}")} {Quantities} {Mark.nil(m=>m==Mark.No)}" ;
+		public override string Trace => $"{Resister.Get(v=>$"Resist={v:0.00}")} {Ascent.Get(v=>$"Ascent={v:0}m")} {Gradelet.Get(v=>$"Grade={v:.000}")} {Deviation.Get(v=>$"Devia={v:0}m")} {Bendlet.Get(v=>$"Bend={v:.000}")} {Quantities} {Mark.nil(m=>m==Mark.No)}" ;
 		#endregion
 
 		#region Operation

@@ -54,8 +54,8 @@ namespace Rob.Act
 					var res = i<=0 || (this[i-1].Mark&mark)!=0 ;
 					date = this[i].Date-(this[i-1]?.Time.nil(_=>res)??default) ;
 					if( this[i].Dist==null && IsGeo ) this[i].Dist = this[i-1]?.Dist.Nil(_=>res)??0 ;
-					if( this[i].Asc==null && Alti!=null ) this[i].Asc = this[i-1]?.Asc.Nil(_=>res)??0 ;
-					if( this[i].Dev==null && IsGeo ) this[i].Dev = this[i-1]?.Dev.Nil(_=>res)??0 ;
+					if( this[i].Ascent==null && Alti!=null ) this[i].Ascent = this[i-1]?.Ascent.Nil(_=>res)??0 ;
+					if( this[i].Deviation==null && IsGeo ) this[i].Deviation = this[i-1]?.Deviation.Nil(_=>res)??0 ;
 					if( this[i].Alti==null && Alti!=null ) this[i].Alti = ((Count-i).Steps(i).FirstOrDefault(j=>this[j].Alti!=null).nil()??i-1).Get(j=>this[j].Alti) ;
 					if( res ) foreach( var ax in Potenties ) pon[ax] = (this[i][ax]??this[i-1]?[ax]??0) ;
 					else foreach( var ax in Potenties ) pon[ax] += (this[i][ax]??this[i-1]?[ax]??0)-(this[i-1]?[ax]??0) ;
@@ -68,9 +68,9 @@ namespace Rob.Act
 					if( Alti!=null )
 					{
 						if( this[i].Alti==null ) this[i].Alti = this[i-1].Alti + (((Count-i).Steps(i).FirstOrDefault(j=>this[j].Alti!=null).nil()??i-1).Get(j=>(this[j].Alti-this[i-1].Alti)/j).Nil(a=>Math.Abs(a)>(this[i].Dist-this[i-1].Dist)*Tolerancy.On(Object)?.Grade)??0) ;
-						if( this[i].Asc==null ) this[i].Asc = this[i-1].Asc + ( this[i].Alti-this[i-1].Alti is Quant u && Math.Abs(u)<(this[i].Dist-this[i-1].Dist)*(Tolerancy.On(Object)?.Grade??.3) ? u : 0 ) ;
+						if( this[i].Ascent==null ) this[i].Ascent = this[i-1].Ascent + ( this[i].Alti-this[i-1].Alti is Quant u && Math.Abs(u)<(this[i].Dist-this[i-1].Dist)*(Tolerancy.On(Object)?.Grade??.3) ? u : 0 ) ;
 					}
-					if( this[i].Dev==null ) this[i].Dev = this[i-1].Dev + ( i<Count-1 && !this[i].Mark.HasFlag(Mark.Stop) && (this[i].Geo-this[i-1].Geo).Devia(this[i+1].Geo-this[i].Geo) is Quant v ? v : 0 ) ;
+					if( this[i].Deviation==null ) this[i].Deviation = this[i-1].Deviation + ( i<Count-1 && !this[i].Mark.HasFlag(Mark.Stop) && (this[i].Geo-this[i-1].Geo).Devia(this[i+1].Geo-this[i].Geo) is Quant v ? v : 0 ) ;
 				}
 				foreach( var ax in Potenties ) this[i][ax] -= pon[ax] ; // Adjustion of potentials
 			}
@@ -83,7 +83,7 @@ namespace Rob.Act
 		}
 		void Conclude( Point point )
 		{
-			point.Set(p=>{var z=this[0];if(Bit==null)Bit=p.Bit-z.Bit;if(Time==default)Time=p.Time-z.Time;if(Dist==null)Dist=p.Dist-z.Dist;if(Asc==null)Asc=p.Asc-z.Asc;if(Dev==null)Dev=p.Dev-z.Dev;}) ;
+			point.Set(p=>{var z=this[0];if(Bit==null)Bit=p.Bit-z.Bit;if(Time==default)Time=p.Time-z.Time;if(Dist==null)Dist=p.Dist-z.Dist;if(Ascent==null)Ascent=p.Ascent-z.Ascent;if(Deviation==null)Deviation=p.Deviation-z.Deviation;}) ;
 			foreach( var mark in Basis.Marks ) if( this[mark]!=null ) Segmentize(mark) ;
 		}
 		protected internal override void Depose() { using var _=Incognit ; base.Depose() ; for( var i=0 ; i<Count ; ++i ) this[i].Depose() ; }
@@ -108,7 +108,7 @@ namespace Rob.Act
 		{
 			Take(points,kind) ; using var _=Incognit ;
 			for( var ax = Axis.Lon ; ax<=Axis.Alt ; ++ax ) this[ax] = this.Average(p=>p[ax]) ; for( var ax = Axis.Dist ; ax<=Axis.Time ; ++ax ) this[ax] = this.Sum(p=>p[ax]) ;
-			Asc = this.Sum(p=>(Quant?)p.Asc) ; Dev = this.Sum(p=>(Quant?)p.Dev) ; if( Metax!=null ) foreach( var ax in Metax ) this[ax.Value.At] = this.Average(p=>p[ax.Value.At]) ;
+			Ascent = this.Sum(p=>(Quant?)p.Ascent) ; Deviation = this.Sum(p=>(Quant?)p.Deviation) ; if( Metax!=null ) foreach( var ax in Metax ) this[ax.Value.At] = this.Average(p=>p[ax.Value.At]) ;
 			for( int i=0 , c=this.Min(p=>p.Tag.Count) ; i<c ; ++i ) Tag[i] = this.Where(p=>p.Tags!=null).Aggregate(string.Empty,(a,p)=>a==null?null:a==string.Empty?p.Tag[i]:a==p.Tag[i]||p.Tag[i].No()?a:null) ;
 			return this ;
 		}
@@ -202,8 +202,8 @@ namespace Rob.Act
 		}
 		public void Correct( Axis axe , IEnumerable<(double at,Quant value)> cor ) => Correct(axe,cor?.Select(c=>new KeyValuePair<int,Quant>((int)Math.Round(c.at*(Count-1)),c.value)).ToArray()) ;
 		public void Correct( string axe , IEnumerable<(double at,Quant value)> cor ) => Correct(axe,cor?.Select(c=>new KeyValuePair<int,Quant>((int)Math.Round(c.at*(Count-1)),c.value)).ToArray()) ;
-		public void Correct( Axis axe , params Quant[] cor ) => Correct(axe,cor?.Length.Steps().Select(i=>((double)i/(cor.Length-1),cor[i]))) ;
-		public void Correct( string axe , params Quant[] cor ) => Correct(axe,cor?.Length.Steps().Select(i=>((double)i/(cor.Length-1),cor[i]))) ;
+		public void Correct( Axis axe , params Quant[] cor ) => Correct(axe,cor?.Length.Steps().Select(i=>((double)i/(cor.Length-1).nil()??1,cor[i]))) ;
+		public void Correct( string axe , params Quant[] cor ) => Correct(axe,cor?.Length.Steps().Select(i=>((double)i/(cor.Length-1).nil()??1,cor[i]))) ;
 		#endregion
 
 		#region State
@@ -213,6 +213,8 @@ namespace Rob.Act
 		public bool Dominant = Dominancy , Editable = Persistent ; internal bool Derived ;
 		public Metax Metaxes => metaxex ??= this.Select(p=>p.Metax).Distinct().SingleOrNo() ; Metax metaxex ;
 		public uint Dimensions => dimensions ??= Metaxes?.Dimension??(Count>0?this.Max(p=>p.Dimension):0) ; uint? dimensions ;
+		public override Quant? Distance { set { if( value==Distance ) return ; if( value is Quant v ) Correct(Axis.Dist,v*Transfer) ; Edited() ; } }
+		public Quant? Elevation { get => this[Count-1]?.Alti-this[0]?.Alti ; set { if( value==Elevation ) return ; if( value is Quant v && this[0][Axis.Alt] is Quant alt ) Correct(Axis.Alt,alt,alt+v) ; Edited() ; } }
 		#endregion
 		#region Support
 		protected IEnumerable<uint> Potenties => Metax?.Potenties ?? Basis.Potenties ;
@@ -368,9 +370,9 @@ namespace Rob.Act
 		public IList<Point> Pointes { get => pointes ??= new Aid.Collections.ObservableList<Point>().Set(p=>Task.Factory.StartNew(()=>{this.Each(p.Add);p.CollectionChanged+=Edited;})) ; set { if( value==pointes ) return ; pointes = value ; Changed("Pointes,Points") ; } } IList<Point> pointes ;
 		internal void Edited( object _=null , NotifyCollectionChangedEventArgs arg=null )
 		{
-			if( arg==null ); else if( arg.Action==NotifyCollectionChangedAction.Remove && arg.OldStartingIndex>=0 && arg.OldItems is IList olds && olds.Count>0 ) Refined(arg.OldStartingIndex,olds) ; else return ; Persisting() ;
+			if( arg==null ); else if( arg.Action==NotifyCollectionChangedAction.Remove && arg.OldStartingIndex>=0 && arg.OldItems is IList olds && olds.Count>0 ) Refined(arg.OldStartingIndex,olds) ; else return ; Persisting(arg!=null) ;
 		}
-		async void Persisting() { if( persisting ) return ; try { persisting = true ; await Task.Delay(100) ; Adapt() ; if( Editable ) System.IO.Path.ChangeExtension(Origin,Filext).WriteAll((string)this) ; } finally { persisting = false ; } } bool persisting ;
+		async void Persisting( bool recollected ) { if( persisting ) return ; try { persisting = true ; await Task.Delay(100) ; if( recollected ) Adapt() ; if( Editable ) System.IO.Path.ChangeExtension(Origin,Filext).WriteAll((string)this) ; } finally { persisting = false ; } } bool persisting ;
 		void Refined( int at , IList olds )
 		{
 			using var _=Incognit ;
