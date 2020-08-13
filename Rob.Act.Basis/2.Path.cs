@@ -174,30 +174,32 @@ namespace Rob.Act
 		#region Correction
 		public void Correct( Axis axe , params KeyValuePair<int,Quant>[] cor )
 		{
-			using var _=Incognit ;
-			var bas = 0D ; if( cor==null ) return ;
-			for( var i=0 ; i<cor.Length ; ++i ) if( cor[i].Key is int k && k>=0 && k<Count )
+			if( cor==null ) return ;
+			using var _=Incognit ; var bas = 0D ; 
+			for( var i=0 ; i<cor.Length ; ++i ) if( cor[i].Key is int k && (uint)k<Count )
 			if( this[k][axe] is double to )
 			{
-				if( to==cor[i].Value ); else if( k<=0 ) this[k][axe] = cor[i].Value ;
-				else { var f = cor.At(i-1) ; if( (cor[i].Value-f.Value)/(to-bas) is double q ) for( var j=f.Key+1 ; j<=k ; ++j ) this[j][axe] = f.Value + (this[j][axe]-bas)*q ; }
+				if( to==cor[i].Value ); else if( k<=0 || i<=0&&cor.Length>1 ) this[k][axe] = cor[i].Value ; else
+				{ var f = cor.At(i-1) ; Quant Dif( double x ) => (1-x)*(bas-f.Value)+x*(to-cor[i].Value) ; for( var j=f.Key+1 ; j<=k ; ++j ) this[j][axe] -= Dif((double)(j-f.Key)/(k-f.Key)) ; }
 				bas = to ;
 			}
 			else this[k][axe] = cor[i].Value ;
+			if( cor.Length==1 && (uint)cor[0].Key<Count-1 ) { var f = cor[0] ; Quant Dif( double x ) => (1-x)*(bas-f.Value) ; for( int j=f.Key+1 , k=Count-1 ; j<=k ; ++j ) this[j][axe] -= Dif((double)(j-f.Key)/(k-f.Key)) ; }
 			this[axe] = this[Count-1][axe]-this[0][axe] ;
 		}
 		public void Correct( string axe , params KeyValuePair<int,Quant>[] cor )
 		{
-			using var _=Incognit ;
-			var bas = 0D ; if( cor==null ) return ;
-			for( var i=0 ; i<cor.Length ; ++i ) if( cor[i].Key is int k && k>=0 && k<Count )
+			if( cor==null ) return ;
+			using var _=Incognit ; var bas = 0D ; 
+			for( var i=0 ; i<cor.Length ; ++i ) if( cor[i].Key is int k && (uint)k<Count )
 			if( this[k][axe] is double to )
 			{
-				if( to==cor[i].Value ); else if( k<=0 ) this[k][axe] = cor[i].Value ;
-				else { var f = cor.At(i-1) ; if( (cor[i].Value-f.Value)/(to-bas) is double q ) for( var j=f.Key+1 ; j<=k ; ++j ) this[j][axe] = f.Value + (this[j][axe]-bas)*q ; }
+				if( to==cor[i].Value ); else if( k<=0 || i<=0&&cor.Length>1 ) this[k][axe] = cor[i].Value ; else
+				{ var f = cor.At(i-1) ; Quant Dif( double x ) => (1-x)*(bas-f.Value)+x*(to-cor[i].Value) ; for( var j=f.Key+1 ; j<=k ; ++j ) this[j][axe] -= Dif((double)(j-f.Key)/(k-f.Key)) ; }
 				bas = to ;
 			}
 			else this[k][axe] = cor[i].Value ;
+			if( cor.Length==1 && (uint)cor[0].Key<Count-1 ) { var f = cor[0] ; Quant Dif( double x ) => (1-x)*(bas-f.Value) ; for( int j=f.Key+1 , k=Count-1 ; j<=k ; ++j ) this[j][axe] -= Dif((double)(j-f.Key)/(k-f.Key)) ; }
 			this[axe] = this[Count-1][axe]-this[0][axe] ;
 		}
 		public void Correct( Axis axe , IEnumerable<(double at,Quant value)> cor ) => Correct(axe,cor?.Select(c=>new KeyValuePair<int,Quant>((int)Math.Round(c.at*(Count-1)),c.value)).ToArray()) ;
