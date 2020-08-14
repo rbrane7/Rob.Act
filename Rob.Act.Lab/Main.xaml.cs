@@ -103,7 +103,7 @@ namespace Rob.Act.Analyze
 		public Aspect Aspect { get => Respect ; protected set { if( (value??Laboratory)==Aspect ) return ; Aspect.Set(a=>{a.CollectionChanged-=OnAspectChanged;a.PropertyChanged-=OnAspectChanged;}) ; (Respect=value??Laboratory).Set(a=>{a.CollectionChanged+=OnAspectChanged;a.PropertyChanged+=OnAspectChanged;}) ; AspectAxisGrid.CanUserAddRows = AspectAxisGrid.CanUserDeleteRows = AspectTraitsGrid.CanUserAddRows = AspectTraitsGrid.CanUserDeleteRows = AspectsGrid.SelectedItems.Count<=1 ; Resources = null ; PropertyChangedOn("Aspect",value) ; } } Aspect Respect = Laboratory ;
 		public IEnumerable<Axe> Quantiles { get => quantiles??Enumerable.Empty<Axe>() ; private set { if( !quantiles.SequenceEquate(value) ) PropertyChangedOn("Quantiles",quantiles=value?.ToArray()) ; } } Axe[] quantiles ;
 		public IEnumerable<Aspect> Sources { get => Resources.Issue(Sourcer) ; set => PropertyChangedOn("Sources",value) ; } (Func<Aspect,bool> Filter,Func<IEnumerable<Aspect>,IEnumerable<Aspect>> Query)[] Sourcer ;
-		public new IEnumerable<Aspect> Resources { get => sources ??( sources = new Aid.Collections.ObservableList<Aspect>(ActionsProjection) ) ; set { PropertyChangedOn("Resources", DrawingResources = sources = value ) ; Sources = value ; } } IEnumerable<Aspect> sources ;
+		public new IEnumerable<Aspect> Resources { get => sources ??= new Aid.Collections.ObservableList<Aspect>(ActionsProjection) ; set { PropertyChangedOn("Resources", DrawingResources = sources = value ) ; Sources = value ; } } IEnumerable<Aspect> sources ;
 		Aspect Projection( Pathable path ) => new Aspect(Aspect){Source=path.Spectrum} ;
 		IEnumerable<Aspect> Projection( IEnumerable<Pathable> p ) => p.Select(Projection).ToArray().Reprojection() ;
 		IEnumerable<Aspect> ActionsProjection => Presources.Get( p => Aspect is Path.Aspect ? p.Select(s=>s.Spectrum) : Projection(p) ) ;
@@ -117,7 +117,7 @@ namespace Rob.Act.Analyze
 		void CoordinatesGrid_SelectionChanged( object sender , SelectionChangedEventArgs e ) { if( MapTab.IsSelected ) Map_Draw(this) ; }
 		void OnAspectChanged( object subject , NotifyCollectionChangedEventArgs arg=null ) { var sub = Aspect is Path.Aspect ? SpectrumTabs : AspectTabs ; Revoke : var six = sub.SelectedIndex ; if( sub==AspectTabs || sub==QuantileTabs ) Resources = null ; sub.SelectedIndex = -1 ; sub.SelectedIndex = six ; if( sub==AspectTabs ) { sub = QuantileTabs ; goto Revoke ; } }
 		void OnAspectChanged( object subject , PropertyChangedEventArgs arg ) => OnAspectChanged(subject) ;
-		async void BookGrid_SelectionChanged( object sender , SelectionChangedEventArgs e ) { if( BlockSourcesUpdate ) return ; await Task.Factory.StartNew(()=> Resources_Update(e) ) ; Grid_Coloring(sender) ; }
+		async void BookGrid_SelectionChanged( object sender , SelectionChangedEventArgs e ) { if( BlockSourcesUpdate ) return ; await Task.Factory.StartNew(()=>Resources_Update(e)) ; Grid_Coloring(sender) ; }
 		void Resources_Update( SelectionChangedEventArgs e )
 		{
 			//if( Multiaspected ) { Sources = null ; return ; } // inoptimal solution
@@ -173,7 +173,7 @@ namespace Rob.Act.Analyze
 			var asp = e.AddedItems.Count>0 ? e.AddedItems[0] : null ; switch( (DisplayTable.SelectedItem as TabItem)?.Header )
 			{
 				case "Aspect" : Aspect = AspectSelection ; break ; case "Spectrum" : (asp as Pathable)?.Spectrum.Set(a=>Aspect=a) ; break ;
-				case "Graph" : case "Map" : case "Quantile" : if( asp is Path.Aspect ) goto case "Spectrum" ; else goto case "Aspect" ;
+				case "Graph" : case "Map" : case "Quantile" : if( Aspect is Path.Aspect ) break ; else goto case "Aspect" ;
 			}
 		}
 

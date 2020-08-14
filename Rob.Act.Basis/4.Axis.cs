@@ -362,7 +362,7 @@ namespace Rob.Act
 			public override int Count => Context?.Count ?? 0 ;
 			protected override Aspectable DefaultAspect => Context?.Spectrum ;
 			bool Intensive => Axis==Axis.Time || Axis==Axis.Date || Axis==Axis.Bit || Axis==Axis.Beat ;
-			public new Quant? this[ int at ] { set => Context[at][Axis] = value ; }
+			public new Quant? this[ int at ] { get => Context[at][Axis] ; set => Context[at][Axis] = value ; }
 			Quant? Accessible<int,Quant?>.this[ int at ] { get => base[at] ; set => this[at] = value ; }
 			#region Operations
 			public Act.Axe Propagation( (Quant time,Quant potential) a , (Quant time,Quant potential) b , Quant? tranq = null ) => new Act.Axe( i=>(Resolve(i),Intensive).Propagation(a,b,tranq??Context.Profile?.Tranq) , this ) ;

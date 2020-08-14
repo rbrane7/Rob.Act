@@ -75,8 +75,8 @@ namespace Rob.Act
 			public interface Iterable : IEnumerable<Point> { int Count {get;} Aspectable Context {get;set;} Point this[ int at ] {get;} }
 			readonly Aspect Context ; readonly int At ; Act.Point Raw => Context?.Raw?[At] ;
 			public Point( Aspect context , int at ) { Context = context ; At = at ; }
-			public Quant? this[ uint key ] { get => Context[(int)key][At] ; set { if( Context is Path.Aspect s && s[(int)key] is Path.Axe a ) a[At] = value ; else throw new InvalidOperationException($"Can't set {key} axe of {Context} aspect !") ; } }
-			public Quant? this[ string key ] { get => Context[key][At] ; set { if( Context is Path.Aspect s && s[key] is Path.Axe a ) a[At] = value ; else throw new InvalidOperationException($"Can't set {key} axe of {Context} aspect !") ; } }
+			public Quant? this[ uint key ] { get => Context[(int)key][At] ; set { if( Context is Path.Aspect s && s[(int)key] is Path.Axe a ) { if( value is Quant v && a[At]!=v ) { s.Context.Correct(a.Axis,(At,v)) ; s.Context.Edited() ; } } else throw new InvalidOperationException($"Can't set {key} axe of {Context} aspect !") ; } }
+			public Quant? this[ string key ] { get => Context[key][At] ; set { if( Context is Path.Aspect s && s[key] is Path.Axe a ) { if( value is Quant v && a[At]!=v ) { s.Context.Correct(a.Axis,(At,v)) ; s.Context.Edited() ; } } else throw new InvalidOperationException($"Can't set {key} axe of {Context} aspect !") ; } }
 			public IEnumerator<Quant?> GetEnumerator() { var at = At ; return Context.Select(a=>a[at]).GetEnumerator() ; } IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
 			public Mark Mark { get => Raw?.Mark??Mark.No ; set { if( Raw is Act.Point raw ) raw.Mark = value ; } }
 			public Mark? Marklet { get => Mark.nil() ; set => Mark = value??Mark.No ; }

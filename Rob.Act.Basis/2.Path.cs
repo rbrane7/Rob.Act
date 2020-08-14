@@ -204,6 +204,8 @@ namespace Rob.Act
 		}
 		public void Correct( Axis axe , IEnumerable<(double at,Quant value)> cor ) => Correct(axe,cor?.Select(c=>new KeyValuePair<int,Quant>((int)Math.Round(c.at*(Count-1)),c.value)).ToArray()) ;
 		public void Correct( string axe , IEnumerable<(double at,Quant value)> cor ) => Correct(axe,cor?.Select(c=>new KeyValuePair<int,Quant>((int)Math.Round(c.at*(Count-1)),c.value)).ToArray()) ;
+		public void Correct( Axis axe , params (double at,Quant value)[] cor ) => Correct(axe,cor as IEnumerable<(double at,Quant value)>) ;
+		public void Correct( string axe , params (double at,Quant value)[] cor ) => Correct(axe,cor as IEnumerable<(double at,Quant value)>) ;
 		public void Correct( Axis axe , params Quant[] cor ) => Correct(axe,cor?.Length.Steps().Select(i=>((double)i/(cor.Length-1).nil()??1,cor[i]))) ;
 		public void Correct( string axe , params Quant[] cor ) => Correct(axe,cor?.Length.Steps().Select(i=>((double)i/(cor.Length-1).nil()??1,cor[i]))) ;
 		#endregion
