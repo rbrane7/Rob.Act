@@ -94,6 +94,10 @@ namespace Rob.Act
 				public override IEnumerator<Point> GetEnumerator() { if( Count==0&&Source.Count>0 ) Task.Factory.StartNew(()=>{Source.Each(Add);if(Source.Count==Count)CollectionChanged+=Changes;}) ; return base.GetEnumerator() ; }
 				public NotifyCollectionChangedEventHandler Changes ;
 			}
+			/// <summary>
+			/// Accessor of binding .
+			/// </summary>
+			public object This { get => this ; set => (value as Action<object>)?.Invoke(this) ; }
 		}
 		public event NotifyCollectionChangedEventHandler CollectionChanged { add => collectionChanged += value.DispatchResolve() ; remove => collectionChanged -= value.DispatchResolve() ; } NotifyCollectionChangedEventHandler collectionChanged ;
 		internal void OnChanged( NotifyCollectionChangedAction act , Axable item ) { Pointes = null ; collectionChanged?.Invoke(this,new NotifyCollectionChangedEventArgs(act,item)) ; Dirty = true ; }
