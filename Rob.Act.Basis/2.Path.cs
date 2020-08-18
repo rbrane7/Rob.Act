@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Aid;
+using Aid.Data;
 using Aid.Extension;
 
 namespace Rob.Act
@@ -150,7 +151,7 @@ namespace Rob.Act
 			if( cord!=0 ) Dist += cord ;
 			if( IsGeo && Locus.LeftFrom('^').RightFrom('.',all:true).Null(s=>s.Length!=5).Parse<double>() is double dist )
 			{
-				Correct(Axis.Dist,0,dist=Math.Pow(2,dist/10000)*1000) ;
+				Correct(Axis.Dist,dist=Math.Pow(2,dist/10000)*1000) ;
 				if( Locus.RightFrom('^').LeftFrom('.',all:true).Null(s=>s.Length!=6||s[0]!='+'&&s[0]!='-').Parse<double>() is double ald && this[0][Axis.Alt] is Quant alt ) Correct(Axis.Alt,alt,alt+ald/100000*dist) ;
 			}
 			return this ;
@@ -174,32 +175,32 @@ namespace Rob.Act
 		#region Correction
 		public void Correct( Axis axe , params KeyValuePair<int,Quant>[] cor )
 		{
-			if( cor==null ) return ;
+			if( cor?.Length<=0 ) return ;
 			using var _=Incognit ; var bas = 0D ; 
 			for( var i=0 ; i<cor.Length ; ++i ) if( cor[i].Key is int k && (uint)k<Count )
 			if( this[k][axe] is double to )
 			{
-				if( to==cor[i].Value ); else if( k<=0 || i<=0&&cor.Length>1 ) this[k][axe] = cor[i].Value ; else
+				if( to==cor[i].Value ); else if( k<=0 ) this[k][axe] = cor[i].Value ; else
 				{ var f = cor.At(i-1) ; Quant Dif( double x ) => (1-x)*(bas-f.Value)+x*(to-cor[i].Value) ; for( var j=f.Key+1 ; j<=k ; ++j ) this[j][axe] -= Dif((double)(j-f.Key)/(k-f.Key)) ; }
 				bas = to ;
 			}
 			else this[k][axe] = cor[i].Value ;
-			if( cor.Length==1 && (uint)cor[0].Key<Count-1 ) { var f = cor[0] ; Quant Dif( double x ) => (1-x)*(bas-f.Value) ; for( int j=f.Key+1 , k=Count-1 ; j<=k ; ++j ) this[j][axe] -= Dif((double)(j-f.Key)/(k-f.Key)) ; }
+			if( (uint)cor[^1].Key<Count-1 ) { var f = cor[^1] ; Quant Dif( double x ) => (1-x)*(bas-f.Value) ; for( int j=f.Key+1 , k=Count-1 ; j<=k ; ++j ) this[j][axe] -= Dif((double)(j-f.Key)/(k-f.Key)) ; }
 			this[axe] = this[Count-1][axe]-this[0][axe] ;
 		}
 		public void Correct( string axe , params KeyValuePair<int,Quant>[] cor )
 		{
-			if( cor==null ) return ;
+			if( cor?.Length<=0 ) return ;
 			using var _=Incognit ; var bas = 0D ; 
 			for( var i=0 ; i<cor.Length ; ++i ) if( cor[i].Key is int k && (uint)k<Count )
 			if( this[k][axe] is double to )
 			{
-				if( to==cor[i].Value ); else if( k<=0 || i<=0&&cor.Length>1 ) this[k][axe] = cor[i].Value ; else
+				if( to==cor[i].Value ); else if( k<=0 ) this[k][axe] = cor[i].Value ; else
 				{ var f = cor.At(i-1) ; Quant Dif( double x ) => (1-x)*(bas-f.Value)+x*(to-cor[i].Value) ; for( var j=f.Key+1 ; j<=k ; ++j ) this[j][axe] -= Dif((double)(j-f.Key)/(k-f.Key)) ; }
 				bas = to ;
 			}
 			else this[k][axe] = cor[i].Value ;
-			if( cor.Length==1 && (uint)cor[0].Key<Count-1 ) { var f = cor[0] ; Quant Dif( double x ) => (1-x)*(bas-f.Value) ; for( int j=f.Key+1 , k=Count-1 ; j<=k ; ++j ) this[j][axe] -= Dif((double)(j-f.Key)/(k-f.Key)) ; }
+			if( (uint)cor[^1].Key<Count-1 ) { var f = cor[^1] ; Quant Dif( double x ) => (1-x)*(bas-f.Value) ; for( int j=f.Key+1 , k=Count-1 ; j<=k ; ++j ) this[j][axe] -= Dif((double)(j-f.Key)/(k-f.Key)) ; }
 			this[axe] = this[Count-1][axe]-this[0][axe] ;
 		}
 		public void Correct( Axis axe , IEnumerable<(double at,Quant value)> cor ) => Correct(axe,cor?.Select(c=>new KeyValuePair<int,Quant>((int)Math.Round(c.at*(Count-1)),c.value)).ToArray()) ;
@@ -228,6 +229,15 @@ namespace Rob.Act
 		/// </summary>
 		public Profile Profile => SubjectProfile.By(Subject) ;
 		public event NotifyCollectionChangedEventHandler CollectionChanged { add => collectionChanged += value.DispatchResolve() ; remove => collectionChanged -= value.DispatchResolve() ; } NotifyCollectionChangedEventHandler collectionChanged ;
+		public class Correctioner : Dictionary<Axis,ISet<(int at,Quant value)>>
+		{
+			Path Context ; public bool Immediate ;
+			public Correctioner( Path context ) => Context = context ;
+			ISet<(int at,Quant value)> Ones( Axis ax ) => TryGetValue(ax,out var v) ? v : new SortedSet<(int at,Quant value)>().Set(c=>Add(ax,c)) ;
+			public new (int at,Quant value) this[ Axis ax ] { set { Ones(ax).Add(value) ; if( Immediate ) Commit() ; } }
+			public void Commit() { if( Count<=0 ) return ; this.Each(c=>Context.Correct(c.Key,c.Value?.ToArray())) ; Clear() ; Context.Spectrify() ; Context.Edited() ; }
+		}
+		internal Correctioner Correction => Corrections ??= new Correctioner(this) ; internal Correctioner Corrections ;
 		#endregion
 
 		#region Trait
