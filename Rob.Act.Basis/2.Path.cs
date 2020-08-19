@@ -206,6 +206,7 @@ namespace Rob.Act
 		public void Correct( Axis axe , IEnumerable<(double at,Quant value)> cor ) => Correct(axe,cor?.Select(c=>new KeyValuePair<int,Quant>((int)Math.Round(c.at*(Count-1)),c.value)).ToArray()) ;
 		public void Correct( string axe , IEnumerable<(double at,Quant value)> cor ) => Correct(axe,cor?.Select(c=>new KeyValuePair<int,Quant>((int)Math.Round(c.at*(Count-1)),c.value)).ToArray()) ;
 		public void Correct( Axis axe , params (int at,Quant value)[] cor ) => Correct(axe,cor.Select(c=>((double)c.at/(Count-1).nil()??1,c.value))) ;
+		public void Correct( bool complex , Axis axe , params (int at,Quant value)[] cor ) { if( cor?.Length>0 ) if( complex ) Correct(axe,cor) ; else using( Incognit ) foreach( var (at,value) in cor ) this[at][axe] = value ; }
 		public void Correct( string axe , params (int at,Quant value)[] cor ) => Correct(axe,cor.Select(c=>((double)c.at/(Count-1).nil()??1,c.value))) ;
 		public void Correct( Axis axe , params Quant[] cor ) => Correct(axe,cor?.Length.Steps().Select(i=>((double)i/(cor.Length-1).nil()??1,cor[i]))) ;
 		public void Correct( string axe , params Quant[] cor ) => Correct(axe,cor?.Length.Steps().Select(i=>((double)i/(cor.Length-1).nil()??1,cor[i]))) ;
@@ -229,13 +230,15 @@ namespace Rob.Act
 		/// </summary>
 		public Profile Profile => SubjectProfile.By(Subject) ;
 		public event NotifyCollectionChangedEventHandler CollectionChanged { add => collectionChanged += value.DispatchResolve() ; remove => collectionChanged -= value.DispatchResolve() ; } NotifyCollectionChangedEventHandler collectionChanged ;
-		public class Correctioner : Dictionary<Axis,ISet<(int at,Quant value)>>
+		public class Correctioner : Dictionary<Axis,ISet<(int at,Quant value)>> , IDictionary
 		{
-			Path Context ; public bool Immediate ;
+			Path Context ;
 			public Correctioner( Path context ) => Context = context ;
 			ISet<(int at,Quant value)> Ones( Axis ax ) => TryGetValue(ax,out var v) ? v : new SortedSet<(int at,Quant value)>().Set(c=>Add(ax,c)) ;
-			public new (int at,Quant value) this[ Axis ax ] { set { Ones(ax).Add(value) ; if( Immediate ) Commit() ; } }
-			public void Commit() { if( Count<=0 ) return ; this.Each(c=>Context.Correct(c.Key,c.Value?.ToArray())) ; Clear() ; Context.Spectrify() ; Context.Edited() ; }
+			public new (int at,Quant value) this[ Axis ax ] { set => Ones(ax).Add(value) ; }
+			public Quant? this[ Axis ax , int at ] { get { if( Ones(ax) is ISet<(int at,Quant value)> set ) foreach( var pair in set ) if( pair.at==at ) return pair.value ; return null ; } }
+			public void Commit( bool complex = true ) { if( Count<=0 ) return ; this.Each(c=>Context.Correct(complex,c.Key,c.Value?.ToArray())) ; Clear() ; Context.Edited() ; }
+			public new void Clear() { base.Clear() ; Context.Spectrify() ; } void IDictionary.Clear() => Clear() ;
 		}
 		internal Correctioner Correction => Corrections ??= new Correctioner(this) ; internal Correctioner Corrections ;
 		#endregion

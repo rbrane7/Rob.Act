@@ -205,6 +205,7 @@
                             <DataGrid.InputBindings>
                                 <KeyBinding Command="Stop" Key="Esc" Modifiers="Shift"/>
                                 <KeyBinding Command="Save" Key="Return" Modifiers="Shift"/>
+                                <KeyBinding Command="Save" Key="Return" Modifiers="Ctrl" CommandParameter="false"/>
                             </DataGrid.InputBindings>
                         </DataGrid>
                     </DataTemplate></TabControl.ContentTemplate>
@@ -221,6 +222,7 @@
                             <DataGrid.InputBindings>
                                 <KeyBinding Command="Stop" Key="Esc" Modifiers="Shift"/>
                                 <KeyBinding Command="Save" Key="Return" Modifiers="Shift"/>
+                                <KeyBinding Command="Save" Key="Return" Modifiers="Ctrl" CommandParameter="false"/>
                             </DataGrid.InputBindings>
                         </DataGrid>
                     </DataTemplate></TabControl.ContentTemplate>
@@ -236,6 +238,7 @@
             <DataGrid.InputBindings>
                 <KeyBinding Command="Stop" Key="Esc" Modifiers="Shift"/>
                 <KeyBinding Command="Save" Key="Return" Modifiers="Shift"/>
+                <KeyBinding Command="Save" Key="Return" Modifiers="Ctrl" CommandParameter="false"/>
             </DataGrid.InputBindings>
         </DataGrid>
         <DataGrid Name="ActionFilterGrid" Grid.Row="0" Grid.Column="2" ItemsSource="{Binding ActionFilter}" AutoGenerateColumns="False" SelectionChanged="ActionFilterGrid_SelectionChanged" Margin="2" CanUserResizeRows="False">
