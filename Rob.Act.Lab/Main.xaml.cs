@@ -45,7 +45,7 @@ namespace Rob.Act.Analyze
 		public State State { get => state ; private set => state = (value??new State()).Set(s=>s.Context=this) ; } State state ;
 		FileSystemWatcher[] WorkoutsWatchers ;
 		public event PropertyChangedEventHandler PropertyChanged ;
-		void PropertyChangedOn<Value>( string properties , Value value ) => Dispatcher.Invoke(()=>{ PropertyChanged.On(this,properties,value) ; if( properties.Consists("Sources") ) if( GraphTab.IsSelected ) Graph_Draw(this) ; else if( MapTab.IsSelected ) Map_Draw(this) ; } ) ;
+		void PropertyChangedOn<Value>( string properties , Value value ) => Dispatcher.Invoke(()=>{ PropertyChanged.On(this,properties,value) ; if( properties.Consists("Sources") ) Redraw() ; } ) ;
 		public Main()
 		{
 			InitializeComponent() ; Presources = new Presources(BookGrid,this) ; AppDomain.CurrentDomain.Load(typeof(AxeOperations).Assembly.FullName) ; ViewPanel = GraphPanel ; DataContext = this ;
@@ -203,6 +203,7 @@ namespace Rob.Act.Analyze
 		void SourcesGridDeleteCommandBinding_Executed( object sender , ExecutedRoutedEventArgs _=null ) => (sources as IList).Set(l=>(sender as DataGrid)?.SelectedItems.OfType<Aspect>().ToArray().Each(a=>{l.Remove(a);Presources.Remove(a.Raw);})) ;
 
 		#region Graphing
+		void Redraw() { if( GraphTab.IsSelected ) Graph_Draw(this) ; else if( MapTab.IsSelected ) Map_Draw(this) ; }
 		void Graph_Draw( object sender , RoutedEventArgs e = null ) { ViewPanel = GraphPanel ; GraphPanel.Children.Clear() ; switch( ViewType ) { case "Aspect" : case "Spectrum" : GraphDrawAspect() ; return ; case "Quantile" : GraphDrawQuantile() ; return ; } }
 		void Map_Draw( object sender , RoutedEventArgs e = null ) { ViewPanel = MapPanel ; MapPanel.Children.Clear() ; switch( ViewType ) { case "Aspect" : case "Spectrum" : MapDrawAspect() ; return ; case "Quantile" : GraphDrawQuantile() ; return ; } }
 		#region State
@@ -550,8 +551,8 @@ namespace Rob.Act.Analyze
 		#endregion
 
 		#region Corrections
-		void DataGrid_Stop_CommandBinding_Executed( object sender, ExecutedRoutedEventArgs e ) { foreach( Path path in BookGrid.SelectedItems ) path.Corrections?.Clear() ; }
-		void DataGrid_Enter_CommandBinding_Executed( object sender, ExecutedRoutedEventArgs e ) { foreach( Path path in BookGrid.SelectedItems ) path.Corrections?.Commit(e.Parameter==null) ; }
+		void DataGrid_Stop_CommandBinding_Executed( object sender, ExecutedRoutedEventArgs e ) { foreach( Path path in BookGrid.SelectedItems ) path.Corrections?.Clear() ; Redraw() ; }
+		void DataGrid_Enter_CommandBinding_Executed( object sender, ExecutedRoutedEventArgs e ) { foreach( Path path in BookGrid.SelectedItems ) path.Corrections?.Commit(e.Parameter==null) ; Redraw() ; }
 		void TabControl_Stop_CommandBinding_Executed( object sender, ExecutedRoutedEventArgs e ) { if( ((sender as DataGrid)?.TemplatedParent as ContentPresenter)?.Content is Path path ) path.Corrections?.Clear() ; }
 		void TabControl_Enter_CommandBinding_Executed( object sender, ExecutedRoutedEventArgs e ) { if( ((sender as DataGrid)?.TemplatedParent as ContentPresenter)?.Content is Path path ) path.Corrections?.Commit(e.Parameter==null) ; }
 		#endregion

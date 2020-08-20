@@ -239,7 +239,7 @@ namespace Rob.Act
 			public new (int at,Quant value) this[ Axis ax ] { set { var o = Ones(ax) ; if( o.Add(value) ) return ; o.Remove(value) ; o.Add(value) ; } }
 			public Quant? this[ Axis ax , int at ] { get { if( Ones(ax) is ISet<(int at,Quant value)> set ) foreach( var pair in set ) if( pair.at==at ) return pair.value ; return null ; } }
 			public void Commit( bool complex = true ) { if( Count<=0 ) return ; this.Each(c=>Context.Correct(complex,c.Key,c.Value?.ToArray())) ; Clear() ; Context.Edited() ; }
-			public new void Clear() { base.Clear() ; Context.Spectrify() ; } void IDictionary.Clear() => Clear() ;
+			public new void Clear() { if( Count<=0 ) return ; base.Clear() ; Context.Spectrify() ; } void IDictionary.Clear() => Clear() ;
 		}
 		internal Correctioner Correction => Corrections ??= new Correctioner(this) ; internal Correctioner Corrections ;
 		#endregion
