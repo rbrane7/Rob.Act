@@ -20,6 +20,7 @@ using Aid.Extension;
 using System.Collections.Specialized;
 using System.Globalization;
 using Aid.IO;
+using Aid.Extension.Private;
 
 namespace Rob.Act.Analyze
 {
@@ -265,16 +266,24 @@ namespace Rob.Act.Analyze
 			{
 				var asv = val.One(a=>a.Aspect==asp.Spec) ; var xax = asv.Axes.One(a=>a.Spec==xaxe.Spec) ; var color = new SolidColorBrush(Coloring(asp)) ; foreach( var ax in asv.Axes ) if( yaxes.Contains(ax.Spec) ) try
 				{
-					var ptss = new List<(int Count,int From)>() ;
+					var ptss = new List<(int Count,int From)>() ; DoubleCollection dash = null ;
 					{
 						int c,i,ac ; for( i=0 , c=0 , ac=ax.Val.Length ; i<ac ; ++i ) try { var stop = false ; if( xax.Val.At(i)!=null&&ax.Val.At(i)!=null ) ++c ; else stop = true ; if( stop||asp.Raw?[i]?.Mark==Mark.Stop ) { if( c>0 ) ptss.Add((c,i-c+(stop?0:1))) ; c = 0 ; } }
 						catch( System.Exception e ) { Trace.TraceWarning($"Points calculation problem at {i}/{c}/{ac} : {e}") ; }
 						if( c>0 ) ptss.Add((c,i-c)) ;
 					}
 					foreach( var pts in ptss ) GraphPanel.Children.Add( new Polyline{
-						Stroke = color , StrokeDashArray = Array.IndexOf(yaxes,ax.Spec).Get(j=>j<1?null:new DoubleCollection{j}) ,
+						Stroke = color , StrokeDashArray = dash??=Array.IndexOf(yaxes,ax.Spec).Get(j=>j<1?null:new DoubleCollection{j}) ,
 						Points = new PointCollection(pts.Count.Steps(pts.From).Select(i=>ScreenPoint(((xax.Val[i].Value-rng[xax.Spec].Min)/(rng[xax.Spec].Max-rng[xax.Spec].Min).nil()*width??0)+asp.Offset,height-(ax.Val[i].Value-rng[ax.Spec].Min)/(rng[ax.Spec].Max-rng[ax.Spec].Min).nil()*height??0)))
 					} ) ;
+					if( axes.One(a=>a.Spec==ax.Spec) is Path.Axe a && asp.Raw?.Corrections?.Base[a.Axis] is ISet<(int at,double value)> cors ) foreach( var cor in cors )
+					{
+						var p = ScreenPoint(((xax.Val[cor.at].Value-rng[xax.Spec].Min)/(rng[xax.Spec].Max-rng[xax.Spec].Min).nil()*width??0)+asp.Offset,height-(cor.value-rng[ax.Spec].Min)/(rng[ax.Spec].Max-rng[ax.Spec].Min).nil()*height??0) ;
+						GraphPanel.Children.Add( new Polygon{
+							Stroke = color , StrokeDashArray = dash??=Array.IndexOf(yaxes,ax.Spec).Get(j=>j<1?null:new DoubleCollection{j}) ,
+							Points = new PointCollection{ p+new Vector(-Math.Sqrt(3),-1) , p+new Vector(Math.Sqrt(3),-1) , p+new Vector(0,2) }
+						} ) ;
+					}
 				}
 				catch( System.Exception ex ) { Trace.TraceWarning(ex.Stringy()) ; }
 			}
