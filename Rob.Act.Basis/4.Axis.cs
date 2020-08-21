@@ -45,7 +45,7 @@ namespace Rob.Act
 		protected internal Resourcable Resource => Aspect ?? Aspects as Resourcable ;
 		public IEnumerable<Aspectable> Resources => (Regular?Multi?aspects:aspect?.Times():null) ?? Enumerable.Empty<Aspectable>() ;
 		protected virtual Aspectables Aspects { get => aspects.No ? aspects = new Aspectables(DefaultAspects) : aspects ; set { aspects = value ; Resolver = null ; propertyChanged.On(this,"Aspects,Aspect") ; } } Aspectables aspects ;
-		public virtual Aspectable Aspect { get => aspect ??( aspect = DefaultAspect ) ; set { if( aspect==value ) return ; aspect = value ; Resolver = null ; propertyChanged.On(this,"Aspect") ; } } protected Aspectable aspect ;
+		public virtual Aspectable Aspect { get => aspect ??= DefaultAspect ; set { if( aspect==value ) return ; aspect = value ; Resolver = null ; propertyChanged.On(this,"Aspect") ; } } protected Aspectable aspect ;
 		public virtual int Count => Counter?.Invoke() ?? Resource.Points.Count ;
 		protected virtual Func<int> Counter { get => counter ?? Resolver.Get(_=>counter) ; set => counter = value ; } Func<int> counter ;
 		internal Aspectable Own ;
