@@ -204,8 +204,9 @@
                             </DataGrid.CommandBindings>
                             <DataGrid.InputBindings>
                                 <KeyBinding Command="Stop" Key="Esc" Modifiers="Shift"/>
-                                <KeyBinding Command="Save" Key="Return" Modifiers="Shift"/>
-                                <KeyBinding Command="Save" Key="Return" Modifiers="Ctrl" CommandParameter="false"/>
+                                <KeyBinding Command="Save" Key="Return" Modifiers="Shift" CommandParameter="2"/>
+                                <KeyBinding Command="Save" Key="Return" Modifiers="Alt" CommandParameter="1"/>
+                                <KeyBinding Command="Save" Key="Return" Modifiers="Ctrl" CommandParameter="0"/>
                             </DataGrid.InputBindings>
                         </DataGrid>
                     </DataTemplate></TabControl.ContentTemplate>
@@ -221,8 +222,9 @@
                             </DataGrid.CommandBindings>
                             <DataGrid.InputBindings>
                                 <KeyBinding Command="Stop" Key="Esc" Modifiers="Shift"/>
-                                <KeyBinding Command="Save" Key="Return" Modifiers="Shift"/>
-                                <KeyBinding Command="Save" Key="Return" Modifiers="Ctrl" CommandParameter="false"/>
+                                <KeyBinding Command="Save" Key="Return" Modifiers="Shift" CommandParameter="2"/>
+                                <KeyBinding Command="Save" Key="Return" Modifiers="Alt" CommandParameter="1"/>
+                                <KeyBinding Command="Save" Key="Return" Modifiers="Ctrl" CommandParameter="0"/>
                             </DataGrid.InputBindings>
                         </DataGrid>
                     </DataTemplate></TabControl.ContentTemplate>
@@ -237,8 +239,9 @@
             </DataGrid.CommandBindings>
             <DataGrid.InputBindings>
                 <KeyBinding Command="Stop" Key="Esc" Modifiers="Shift"/>
-                <KeyBinding Command="Save" Key="Return" Modifiers="Shift"/>
-                <KeyBinding Command="Save" Key="Return" Modifiers="Ctrl" CommandParameter="false"/>
+                <KeyBinding Command="Save" Key="Return" Modifiers="Shift" CommandParameter="2"/>
+                <KeyBinding Command="Save" Key="Return" Modifiers="Alt" CommandParameter="1"/>
+                <KeyBinding Command="Save" Key="Return" Modifiers="Ctrl" CommandParameter="0"/>
             </DataGrid.InputBindings>
         </DataGrid>
         <DataGrid Name="ActionFilterGrid" Grid.Row="0" Grid.Column="2" ItemsSource="{Binding ActionFilter}" AutoGenerateColumns="False" SelectionChanged="ActionFilterGrid_SelectionChanged" Margin="2" CanUserResizeRows="False">

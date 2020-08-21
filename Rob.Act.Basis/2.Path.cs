@@ -203,10 +203,40 @@ namespace Rob.Act
 			if( (uint)cor[^1].Key<Count-1 ) { var f = cor[^1] ; Quant Dif( double x ) => (1-x)*(bas-f.Value) ; for( int j=f.Key+1 , k=Count-1 ; j<=k ; ++j ) this[j][axe] -= Dif((double)(j-f.Key)/(k-f.Key)) ; }
 			this[axe] = this[Count-1][axe]-this[0][axe] ;
 		}
+		public void Flatten( Axis axe , params KeyValuePair<int,Quant>[] cor )
+		{
+			if( cor==null ) return ;
+			using var _=Incognit ; var bas = 0D ; 
+			for( var i=0 ; i<cor.Length ; ++i ) if( cor[i].Key is int k && (uint)k<Count )
+			if( this[k][axe] is double to )
+			{
+				if( to==cor[i].Value ); else if( k<=0 || i<=0 ) this[k][axe] = cor[i].Value ; else
+				{ var f = cor.At(i-1) ; Quant F( double x ) => (1-x)*f.Value+x*cor[i].Value ; for( var j=f.Key+1 ; j<=k ; ++j ) this[j][axe] = F((double)(j-f.Key)/(k-f.Key)) ; }
+				bas = to ;
+			}
+			else this[k][axe] = cor[i].Value ;
+			this[axe] = this[Count-1][axe]-this[0][axe] ;
+		}
+		public void Flatten( string axe , params KeyValuePair<int,Quant>[] cor )
+		{
+			if( cor==null ) return ;
+			using var _=Incognit ; var bas = 0D ; 
+			for( var i=0 ; i<cor.Length ; ++i ) if( cor[i].Key is int k && (uint)k<Count )
+			if( this[k][axe] is double to )
+			{
+				if( to==cor[i].Value ); else if( k<=0 || i<=0 ) this[k][axe] = cor[i].Value ; else
+				{ var f = cor.At(i-1) ; Quant F( double x ) => (1-x)*f.Value+x*cor[i].Value ; for( var j=f.Key+1 ; j<=k ; ++j ) this[j][axe] = F((double)(j-f.Key)/(k-f.Key)) ; }
+				bas = to ;
+			}
+			else this[k][axe] = cor[i].Value ;
+			this[axe] = this[Count-1][axe]-this[0][axe] ;
+		}
 		public void Correct( Axis axe , IEnumerable<(double at,Quant value)> cor ) => Correct(axe,cor?.Select(c=>new KeyValuePair<int,Quant>((int)Math.Round(c.at*(Count-1)),c.value)).ToArray()) ;
+		public void Flatten( Axis axe , IEnumerable<(double at,Quant value)> cor ) => Flatten(axe,cor?.Select(c=>new KeyValuePair<int,Quant>((int)Math.Round(c.at*(Count-1)),c.value)).ToArray()) ;
 		public void Correct( string axe , IEnumerable<(double at,Quant value)> cor ) => Correct(axe,cor?.Select(c=>new KeyValuePair<int,Quant>((int)Math.Round(c.at*(Count-1)),c.value)).ToArray()) ;
 		public void Correct( Axis axe , params (int at,Quant value)[] cor ) => Correct(axe,cor.Select(c=>((double)c.at/(Count-1).nil()??1,c.value))) ;
-		public void Correct( bool complex , Axis axe , params (int at,Quant value)[] cor ) { if( cor?.Length>0 ) if( complex ) Correct(axe,cor) ; else using( Incognit ) foreach( var (at,value) in cor ) this[at][axe] = value ; }
+		public void Flatten( Axis axe , params (int at,Quant value)[] cor ) => Flatten(axe,cor.Select(c=>((double)c.at/(Count-1).nil()??1,c.value))) ;
+		public void Correct( byte level , Axis axe , params (int at,Quant value)[] cor ) { if( cor?.Length>0 ) if( level==2 ) Correct(axe,cor) ; else if( level==1 ) Flatten(axe,cor) ; else if( level==0 ) using( Incognit ) foreach( var (at,value) in cor ) this[at][axe] = value ; }
 		public void Correct( string axe , params (int at,Quant value)[] cor ) => Correct(axe,cor.Select(c=>((double)c.at/(Count-1).nil()??1,c.value))) ;
 		public void Correct( Axis axe , params Quant[] cor ) => Correct(axe,cor?.Length.Steps().Select(i=>((double)i/(cor.Length-1).nil()??1,cor[i]))) ;
 		public void Correct( string axe , params Quant[] cor ) => Correct(axe,cor?.Length.Steps().Select(i=>((double)i/(cor.Length-1).nil()??1,cor[i]))) ;
@@ -238,7 +268,7 @@ namespace Rob.Act
 			ISet<(int at,Quant value)> Ones( Axis ax ) => TryGetValue(ax,out var v) ? v : new SortedSet<(int at,Quant value)>(new Aid.Comparer<(int at,Quant value)>((x,y)=>x.at-y.at)).Set(c=>Add(ax,c)) ;
 			public new (int at,Quant value) this[ Axis ax ] { set { var o = Ones(ax) ; if( o.Add(value) ) return ; o.Remove(value) ; o.Add(value) ; } }
 			public Quant? this[ Axis ax , int at ] { get { if( Ones(ax) is ISet<(int at,Quant value)> set ) foreach( var pair in set ) if( pair.at==at ) return pair.value ; return null ; } }
-			public void Commit( bool complex = true ) { if( Count<=0 ) return ; this.Each(c=>Context.Correct(complex,c.Key,c.Value?.ToArray())) ; Clear() ; Context.Edited() ; }
+			public void Commit( byte level ) { if( Count<=0 ) return ; this.Each(c=>Context.Correct(level,c.Key,c.Value?.ToArray())) ; Clear() ; Context.Edited() ; }
 			public new void Clear() { if( Count<=0 ) return ; base.Clear() ; Context.Spectrify() ; } void IDictionary.Clear() => Clear() ;
 		}
 		internal Correctioner Correction => Corrections ??= new Correctioner(this) ; internal Correctioner Corrections ;

@@ -560,9 +560,9 @@ namespace Rob.Act.Analyze
 
 		#region Corrections
 		void DataGrid_Stop_CommandBinding_Executed( object sender, ExecutedRoutedEventArgs e ) { foreach( Path path in BookGrid.SelectedItems ) path.Corrections?.Clear() ; Redraw() ; }
-		void DataGrid_Enter_CommandBinding_Executed( object sender, ExecutedRoutedEventArgs e ) { foreach( Path path in BookGrid.SelectedItems ) path.Corrections?.Commit(e.Parameter==null) ; Redraw(true) ; }
+		void DataGrid_Enter_CommandBinding_Executed( object sender, ExecutedRoutedEventArgs e ) { foreach( Path path in BookGrid.SelectedItems ) path.Corrections?.Commit(e.Parameter.Parse((byte)2)) ; Redraw(true) ; }
 		void TabControl_Stop_CommandBinding_Executed( object sender, ExecutedRoutedEventArgs e ) { if( ((sender as DataGrid)?.TemplatedParent as ContentPresenter)?.Content is Path path ) path.Corrections?.Clear() ; }
-		void TabControl_Enter_CommandBinding_Executed( object sender, ExecutedRoutedEventArgs e ) { if( ((sender as DataGrid)?.TemplatedParent as ContentPresenter)?.Content is Path path ) path.Corrections?.Commit(e.Parameter==null) ; }
+		void TabControl_Enter_CommandBinding_Executed( object sender, ExecutedRoutedEventArgs e ) { if( ((sender as DataGrid)?.TemplatedParent as ContentPresenter)?.Content is Path path ) path.Corrections?.Commit(e.Parameter.Parse((byte)2)) ; }
 		#endregion
 	}
 	class Presources : IEnumerable<Pathable>
