@@ -58,6 +58,7 @@ namespace Rob.Act
 		/// <param name="at"> Exact position where to calculate the axe value . </param>
 		/// <returns> Interpolated value of axe . </returns>
 		public Quant? this[ double at ] { get { var f = Math.Floor(at) ; var c = Math.Ceiling(at) ; return c==f ? Resolve((int)at) : (Resolve((int)f)*(c-at)+Resolve((int)c)*(at-f)) ; } }
+		public int? AtOf( Quant? value ) => value.Get(v=>this.Best(q=>q is Quant u?Math.Abs(u-v):Quant.MaxValue)?.at) ;
 		public Quantile.Measure Measure( Axe on ) => new Quantile.Measure(this,on) ;
 		public Quant this[ Quant at , Axe ax ] { get { if( ax==null ) return this.Count(q=>q>=at) ; Quant rez = 0 ; for( int i=0 , count=Count ; i<count ; ++i ) if( Resolve(i)>=at ) rez += ax[i+1]-ax[i]??0 ; return rez ; } }
 		//Aid.Collections.BinSetNative<Quant> Cash => cash ??( cash = new Aid.Collections.BinArray<(Quant,int)>.Map<Quant>(Count.Steps().Select(i=>(this[i],i))) ) ; Aid.Collections.BinSetNative<Quant> cash ;

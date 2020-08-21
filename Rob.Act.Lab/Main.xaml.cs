@@ -203,7 +203,7 @@ namespace Rob.Act.Analyze
 		void SourcesGridDeleteCommandBinding_Executed( object sender , ExecutedRoutedEventArgs _=null ) => (sources as IList).Set(l=>(sender as DataGrid)?.SelectedItems.OfType<Aspect>().ToArray().Each(a=>{l.Remove(a);Presources.Remove(a.Raw);})) ;
 
 		#region Graphing
-		void Redraw() { if( GraphTab.IsSelected ) Graph_Draw(this) ; else if( MapTab.IsSelected ) Map_Draw(this) ; }
+		void Redraw( bool clean = false ) { if( clean ) DrawingValue = null ; if( GraphTab.IsSelected ) Graph_Draw(this) ; else if( MapTab.IsSelected ) Map_Draw(this) ; }
 		void Graph_Draw( object sender , RoutedEventArgs e = null ) { ViewPanel = GraphPanel ; GraphPanel.Children.Clear() ; switch( ViewType ) { case "Aspect" : case "Spectrum" : GraphDrawAspect() ; return ; case "Quantile" : GraphDrawQuantile() ; return ; } }
 		void Map_Draw( object sender , RoutedEventArgs e = null ) { ViewPanel = MapPanel ; MapPanel.Children.Clear() ; switch( ViewType ) { case "Aspect" : case "Spectrum" : MapDrawAspect() ; return ; case "Quantile" : GraphDrawQuantile() ; return ; } }
 		#region State
@@ -440,21 +440,29 @@ namespace Rob.Act.Analyze
 			public string At { get => at ; set { if( value==at ) return ; Size = (at=value).Parse<uint>() ; PropertyChanged.On(this,"At") ; } } string at ;
 			public uint? Size { get =>size ; set { if( value==size ) return ; size = value ; PropertyChanged.On(this,"Size") ; if( Context.MapTab.IsSelected ) Context.Map_Draw(Context) ; At = value.Stringy() ; } } uint? size ;
 		}
-		public Aid.Collections.ObservableList<Coordinate> Coordinates { get; private set; } = new Aid.Collections.ObservableList<Coordinate>() ;
+		public Aid.Collections.ObservableList<Coordinate> Coordinates {get;private set;} = new Aid.Collections.ObservableList<Coordinate>() ;
 		public System.Windows.Point? MousePoint
 		{
 			get => mousePoint ; set
 			{
-				MouseCross.X.Set(ViewPanel.Children.Remove) ; MouseCross.Y.Set(ViewPanel.Children.Remove) ; if( value==null || value?.X<0 || value?.Y<0 || value?.X>ViewFrame.Width || value?.Y>ViewFrame.Height ) return ;
-				var asp = Hypercube is Array ; PropertyChanged.On( this, "MousePoint", (mousePoint=value).Use(m=>Hypercube.Each(a=>CoordinateSet(m,a,asp))) ) ;
-				ViewPanel.Children.Add( MouseCross.X = new Line{ Stroke=Brushes.Gray , X1=0 , X2=ViewFrame.Width , Y1=value.Value.Y , Y2=value.Value.Y } ) ;
-				ViewPanel.Children.Add( MouseCross.Y = new Line{ Stroke=Brushes.Gray , Y1=0 , Y2=ViewFrame.Height , X1=value.Value.X , X2=value.Value.X } ) ;
+				MouseCross.X.Set(ViewPanel.Children.Remove) ; MouseCross.Y.Set(ViewPanel.Children.Remove) ; if( value is System.Windows.Point point ); else return ;
+				if( point.X<0 ) point.X = 0 ; if( point.Y<0 ) point.Y = 0 ; if( point.X>ViewFrame.Width ) point.X = ViewFrame.Width ; if( point.Y>ViewFrame.Height ) point.Y = ViewFrame.Height ;
+				var asp = Hypercube is Array ; PropertyChanged.On( this, "MousePoint", (mousePoint=point).Use(m=>Hypercube.Each(a=>CoordinateSet(m,a,asp))) ) ;
+				ViewPanel.Children.Add( MouseCross.X = new Line{ Stroke=Brushes.Gray , X1=0 , X2=ViewFrame.Width , Y1=point.Y , Y2=point.Y } ) ;
+				ViewPanel.Children.Add( MouseCross.Y = new Line{ Stroke=Brushes.Gray , Y1=0 , Y2=ViewFrame.Height , X1=point.X , X2=point.X } ) ;
 			}
 		}
 		void CoordinateSet( System.Windows.Point m , KeyValuePair<string,(double Min,double Max)> a , bool asp )
 		{
 			var co = Coordinates.First(c=>c.Axe==a.Key) ; co.Value = ( asp ? AspectAxisGrid.SelectedItem is Axe x && a.Key==x.Spec : !a.Key.StartsBy("Q(") ) ?
 			ScreenX(AxeXByMouse(m,a),a.Value) : ViewPanel==GraphPanel || Coordinates.IndexOf(co)<2 ? ScreenY(AxeYByMouse(m,a),a.Value) : AxeZByMouse(a.Key) ;
+		}
+		void CorrectionSet()
+		{
+			if( MousePoint is System.Windows.Point point ); else return ; bool redraw = false ;
+			if( Hypercube is KeyValuePair<string,(double Min,double Max)>[] hyp && hyp.Length==2 ) foreach( var asp in Resources ) if( asp[hyp[1].Key] is Path.Axe y && asp[hyp[0].Key] is Path.Axe x )
+				if( x.AtOf(ScreenX(AxeXByMouse(point,hyp[0]),hyp[0].Value)) is int at ) { asp.Raw.Correction[y.Axis] = (at,ScreenY(AxeYByMouse(point,hyp[1]),hyp[1].Value)) ; redraw = true ; }
+			if( redraw ) Redraw() ;
 		}
 		double AxeXByMouse( System.Windows.Point m , KeyValuePair<string,(double Min,double Max)> a ) => m.X/ViewFrame.Width*(a.Value.Max-a.Value.Min)+a.Value.Min ;
 		double AxeYByMouse( System.Windows.Point m , KeyValuePair<string,(double Min,double Max)> a ) => (ViewFrame.Height-m.Y)/ViewFrame.Height*(a.Value.Max-a.Value.Min)+a.Value.Min ;
@@ -478,8 +486,8 @@ namespace Rob.Act.Analyze
 			}
 		}
 		System.Windows.Point? ScreenMouse { get { if( ScreenRect==null || MousePoint==null ) return MousePoint ; (var width,var height) = MainFrameSize ; var p = MousePoint.Value ; var r = ScreenRect.Value ; return new System.Windows.Point(p.X*r.Size.Width/width+r.Location.X,p.Y*r.Size.Height/height+r.Location.Y) ; } }
-		void ViewPanel_MouseDown( object sender, MouseButtonEventArgs e ) => ScreenOrigin = MousePoint ;
-		void DisplayTable_MouseUp( object sender, MouseButtonEventArgs e ) { if( ScreenMouse==ScreenOrigin ) return ; var scr = ScreenOrigin.Get(s=>ScreenMouse.use(p=>new Rect(s,p))) ; if( scr==ScreenRect ) return ; ScreenRect = scr ; if( GraphTab.IsSelected ) Graph_Draw(sender) ; if( MapTab.IsSelected ) Map_Draw(sender) ; }
+		void ViewPanel_MouseDown( object sender, MouseButtonEventArgs e ) { if( Keyboard.Modifiers==ModifierKeys.None ) ScreenOrigin = MousePoint ; else if( Keyboard.Modifiers==ModifierKeys.Control && MousePoint is System.Windows.Point p ) CorrectionSet() ; }
+		void DisplayTable_MouseUp( object sender, MouseButtonEventArgs e ) { if( ScreenMouse==ScreenOrigin || Keyboard.Modifiers!=ModifierKeys.None ) return ; var scr = ScreenOrigin.Get(s=>ScreenMouse.use(p=>new Rect(s,p))) ; if( scr==ScreenRect ) return ; ScreenRect = scr ; if( GraphTab.IsSelected ) Graph_Draw(sender) ; if( MapTab.IsSelected ) Map_Draw(sender) ; }
 		void DisplayTable_MouseDoubleClick( object sender, MouseButtonEventArgs e ) { ScreenOrigin = null ; ScreenRect = null ; if( GraphTab.IsSelected ) Graph_Draw(sender,e) ; else if( MapTab.IsSelected ) Map_Draw(sender,e) ; }
 		System.Windows.Point ScreenPoint( double x , double y ) => new System.Windows.Point(ScreenX(x),ScreenY(y)) ;
 		double ScreenX( double x ) { if( ScreenRect==null ) return x ; var r = ScreenRect.Value ; return (x-r.Location.X)*ViewFrame.Width/r.Size.Width ; }
@@ -552,7 +560,7 @@ namespace Rob.Act.Analyze
 
 		#region Corrections
 		void DataGrid_Stop_CommandBinding_Executed( object sender, ExecutedRoutedEventArgs e ) { foreach( Path path in BookGrid.SelectedItems ) path.Corrections?.Clear() ; Redraw() ; }
-		void DataGrid_Enter_CommandBinding_Executed( object sender, ExecutedRoutedEventArgs e ) { foreach( Path path in BookGrid.SelectedItems ) path.Corrections?.Commit(e.Parameter==null) ; Redraw() ; }
+		void DataGrid_Enter_CommandBinding_Executed( object sender, ExecutedRoutedEventArgs e ) { foreach( Path path in BookGrid.SelectedItems ) path.Corrections?.Commit(e.Parameter==null) ; Redraw(true) ; }
 		void TabControl_Stop_CommandBinding_Executed( object sender, ExecutedRoutedEventArgs e ) { if( ((sender as DataGrid)?.TemplatedParent as ContentPresenter)?.Content is Path path ) path.Corrections?.Clear() ; }
 		void TabControl_Enter_CommandBinding_Executed( object sender, ExecutedRoutedEventArgs e ) { if( ((sender as DataGrid)?.TemplatedParent as ContentPresenter)?.Content is Path path ) path.Corrections?.Commit(e.Parameter==null) ; }
 		#endregion
