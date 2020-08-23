@@ -45,7 +45,7 @@ namespace Rob.Act.Analyze
 		public State State { get => state ; private set => state = (value??new State()).Set(s=>s.Context=this) ; } State state ;
 		FileSystemWatcher[] WorkoutsWatchers ;
 		public event PropertyChangedEventHandler PropertyChanged ;
-		void PropertyChangedOn<Value>( string properties , Value value ) => Dispatcher.Invoke(()=>{ PropertyChanged.On(this,properties,value) ; if( properties.Consists("Sources") ) Redraw() ; } ) ;
+		void PropertyChangedOn<Value>( string properties , Value value ) => Dispatcher.Invoke(()=>{ PropertyChanged.On(this,properties,value) ; if( properties.Consists("Sources") ) Redraw() ; }) ;
 		public Main()
 		{
 			InitializeComponent() ; Presources = new Presources(BookGrid,this) ; AppDomain.CurrentDomain.Load(typeof(AxeOperations).Assembly.FullName) ; ViewPanel = GraphPanel ; DataContext = this ;
@@ -567,20 +567,20 @@ namespace Rob.Act.Analyze
 	}
 	class Presources : IEnumerable<Pathable>
 	{
-		IList Origin ; List<Pathable> Basis ; DataGrid Grid ; Main Main ;
+		IList Origin ; List<Pathable> Base ; DataGrid Grid ; Main Main ;
 		public Presources( DataGrid grid , Main main ) { Origin = ( Grid = grid ).SelectedItems ; Main = main ; grid.SelectionChanged += Grid_SelectionChanged ; }
-		void Grid_SelectionChanged( object sender , SelectionChangedEventArgs e ) { if( Main.BlockSourcesUpdate ) return ; e.RemovedItems.OfType<Pathable>().Each(p=>Basis?.Remove(p)) ; e.AddedItems.OfType<Pathable>().Each(p=>Basis?.Remove(p)) ; }
-		IEnumerable<Pathable> Original => Origin.OfType<Pathable>() ;
-		public IEnumerator<Pathable> GetEnumerator() => ( Basis is List<Pathable> b ? b.Union(Original) : Original ).GetEnumerator() ; IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
-		public int IndexOf( Pathable path ) => Basis?.IndexOf(path) is int i && i>=0 ? i : Origin.IndexOf(path) is int j && j>=0 ? j+(Basis?.Count??0) : -1 ;
-		public void Snapshot() => Basis = ( Basis is List<Pathable> b ? b.Union(Original):Original ).ToList() ;
-		public void Clean() => Basis = null ;
-		public void Remove( Pathable path ) { Basis?.Remove(path) ; if( Origin.Contains(path) ) Origin.Remove(path) ; else Main.Grid_Coloring(Grid) ; }
+		void Grid_SelectionChanged( object sender , SelectionChangedEventArgs e ) { if( Main.BlockSourcesUpdate ) return ; e.RemovedItems.OfType<Pathable>().Each(p=>Base?.Remove(p)) ; e.AddedItems.OfType<Pathable>().Each(p=>Base?.Add(p)) ; }
+		IEnumerable<Pathable> Original => Origin.OfType<Pathable>() ; IEnumerable<Pathable> Basis => Base is List<Pathable> b ? b.Union(Original) : Original ;
+		public IEnumerator<Pathable> GetEnumerator() => Basis.GetEnumerator() ; IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
+		public int IndexOf( Pathable path ) => Base?.IndexOf(path) is int i && i>=0 ? i : Origin.IndexOf(path) is int j && j>=0 ? j+(Base?.Count??0) : -1 ;
+		public void Snapshot() => Base = Basis.ToList() ;
+		public void Clean() => Base = null ;
+		public void Remove( Pathable path ) { Base?.Remove(path) ; if( Origin.Contains(path) ) Origin.Remove(path) ; else Main.Grid_Coloring(Grid) ; }
 		public void Reselect()
 		{
-			bool recolor = false ; if( Basis?.Intersect(Grid.Items.OfType<Pathable>()).ToArray() is IEnumerable<Pathable> join )
+			bool recolor = false ; if( Base?.Intersect(Grid.Items.OfType<Pathable>()).ToArray() is IEnumerable<Pathable> join )
 			{
-				foreach( var path in join.Intersect(Original) ) Basis?.Remove(path) ;
+				foreach( var path in join.Intersect(Original) ) Base?.Remove(path) ;
 				if( join.Except(Original).ToArray() is Pathable[] exce && exce.Length>0 ) foreach( var path in exce ) Origin.Add(path) ;
 				else recolor = true ;
 			}
