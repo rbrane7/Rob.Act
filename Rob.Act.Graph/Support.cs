@@ -70,7 +70,7 @@ namespace Rob.Act.Analyze
 			async Task<int> Quantilable.Count() { if( !Ready ) await Task.Factory.StartNew(()=>System.Threading.SpinWait.SpinUntil(()=>Ready)) ; return base.Count ; }
 		}
 	}
-	public class Filter : Aid.Collections.ObservableList<Filter.Entry>
+	public class Filter : Aid.Collections.ObservableList<Filter.Entry>.Filtered
 	{
 		public class Entry
 		{

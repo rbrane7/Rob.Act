@@ -261,19 +261,35 @@
                 <CommandBinding Command="Backspace" Executed="DataGrid_Cut_CommandBinding_Executed"/>
             </DataGrid.CommandBindings>
         </DataGrid>
-        <DataGrid Name="SourceFilterGrid" Grid.Row="2" Grid.Column="2" ItemsSource="{Binding SourceFilter}" AutoGenerateColumns="False" SelectionChanged="SourceFilterGrid_SelectionChanged" Margin="2" CanUserResizeRows="False">
-            <DataGrid.Columns>
-                <DataGridCheckBoxColumn Header="Rex" Binding="{Binding Rex}"/>
-                <DataGridTextColumn Header="Sources" Binding="{Binding Filter}" Width="*"/>
-                <DataGridTextColumn Header="Query" Binding="{Binding Query}" Width="*"/>
-            </DataGrid.Columns>
-            <DataGrid.CommandBindings>
-                <CommandBinding Command="Delete" Executed="DataGridDeleteCommandBinding_Executed"/>
-                <CommandBinding Command="Paste" Executed="DataGrid_Paste_CommandBinding_Executed"/>
-                <CommandBinding Command="Cut" Executed="DataGrid_Cut_CommandBinding_Executed"/>
-                <CommandBinding Command="Backspace" Executed="DataGrid_Cut_CommandBinding_Executed"/>
-            </DataGrid.CommandBindings>
-        </DataGrid>
+        <Grid Grid.Row="2" Grid.Column="2">
+            <Grid.RowDefinitions><RowDefinition/><RowDefinition/></Grid.RowDefinitions>
+            <DataGrid Name="ActionsFilterFilterGrid" ItemsSource="{Binding ActionFilterFilter}" AutoGenerateColumns="False" SelectionChanged="ActionFilterFilterGrid_SelectionChanged" Margin="2" CanUserResizeRows="False" HeadersVisibility="None">
+                <DataGrid.Columns>
+                    <DataGridCheckBoxColumn Header="Rex" Binding="{Binding Rex}"/>
+                    <DataGridTextColumn Header="Filter" Binding="{Binding Filter}" Width="*"/>
+                    <DataGridTextColumn Header="Query" Binding="{Binding Query}" Width="*"/>
+                </DataGrid.Columns>
+                <DataGrid.CommandBindings>
+                    <CommandBinding Command="Delete" Executed="DataGridDeleteCommandBinding_Executed"/>
+                    <CommandBinding Command="Paste" Executed="DataGrid_Paste_CommandBinding_Executed"/>
+                    <CommandBinding Command="Cut" Executed="DataGrid_Cut_CommandBinding_Executed"/>
+                    <CommandBinding Command="Backspace" Executed="DataGrid_Cut_CommandBinding_Executed"/>
+                </DataGrid.CommandBindings>
+            </DataGrid>
+            <DataGrid Name="SourceFilterGrid" Grid.Row="1" ItemsSource="{Binding SourceFilter}" AutoGenerateColumns="False" SelectionChanged="SourceFilterGrid_SelectionChanged" Margin="2" CanUserResizeRows="False">
+                <DataGrid.Columns>
+                    <DataGridCheckBoxColumn Header="Rex" Binding="{Binding Rex}"/>
+                    <DataGridTextColumn Header="Filter" Binding="{Binding Filter}" Width="*"/>
+                    <DataGridTextColumn Header="Query" Binding="{Binding Query}" Width="*"/>
+                </DataGrid.Columns>
+                <DataGrid.CommandBindings>
+                    <CommandBinding Command="Delete" Executed="DataGridDeleteCommandBinding_Executed"/>
+                    <CommandBinding Command="Paste" Executed="DataGrid_Paste_CommandBinding_Executed"/>
+                    <CommandBinding Command="Cut" Executed="DataGrid_Cut_CommandBinding_Executed"/>
+                    <CommandBinding Command="Backspace" Executed="DataGrid_Cut_CommandBinding_Executed"/>
+                </DataGrid.CommandBindings>
+            </DataGrid>
+        </Grid>
         <DataGrid Name="AspectFilterGrid" Grid.Row="2" Grid.Column="0" ItemsSource="{Binding AspectFilter}" AutoGenerateColumns="False" SelectionChanged="AspectFilterGrid_SelectionChanged" Margin="2" CanUserResizeRows="False">
             <DataGrid.Columns>
                 <DataGridCheckBoxColumn Header="Rex" Binding="{Binding Rex}"/>
