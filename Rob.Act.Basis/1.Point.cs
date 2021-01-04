@@ -47,7 +47,7 @@ namespace Rob.Act
 		public Point( DateTime date , Pathable owner = null ) : base(date) => Owner = owner ;
 		public Point( Point point , Pathable owner = null ) : base(point) => Owner = owner??point?.Owner ;
 		public override void Adapt( Pointable point ) { base.Adapt(point) ; if( (point as Point)?.Tags!=null || Tags!=null ) Tag.Adopt(point.Tag) ; }
-		protected internal override void Depose() { base.Depose() ; Bit = Dist = null ; Ascent = Deviation = null ; Owner = null ; }
+		protected internal override void Depose() { base.Depose() ; At = null ; Dist = null ; Ascent = Deviation = null ; Owner = null ; }
 		#endregion
 
 		#region State
@@ -89,16 +89,20 @@ namespace Rob.Act
 
 		#region Vector
 		public static Point Zero( DateTime date ) => new Point(date){ Time = TimeSpan.Zero }.Set( p=>{ for( uint i=0 ; i<p.Dimension ; ++i ) p[i] = 0 ; } ) ;
-		public override uint Dimension => (uint?)((Quant?[])this)?.Length ?? (uint)Axis.Time ; // Dimension doesn't include Time and Date components , as they state is separate fields . Therefore Axis.Time limits index .
-		public new Quant? this[ uint axis ] { get => base[axis] ; set { if( this[axis]==value ) return ; base[axis] = value ; Changed(Metax?[axis].Name??((Axis)axis).ToString()) ; } } // because of WFP bug proprty of Binding.Path property resolution on inedexers
+		public override uint Dimension => (uint?)((Quant?[])this)?.Length ?? (uint)Axis.Time ; // Dimension doesn't include Time and Date and At components , as they state is separate fields . Therefore Axis.Time limits index .
+		public new Quant? this[ uint axis ] { get => base[axis] /*??( axis==(uint)Axis.At ? At : null )*/ ; set { if( this[axis]==value ) return ; base[axis] = value ; Changed(Metax?[axis].Name??((Axis)axis).ToString()) ; } } // because of WFP bug proprty of Binding.Path property resolution on inedexers
 		public virtual Quant? this[ Axis axis ]
 		{
-			get => axis==Axis.Time ? Time.TotalSeconds : axis==Axis.Date ? Date.TotalSeconds() : this[(uint)axis] ;
-			set { if( axis<Axis.Time ) this[(uint)axis] = value ; else if( axis>Axis.Date ) this[(uint)axis-2] = value ; else if( value is Quant q ) if( axis==Axis.Time ) Time = TimeSpan.FromSeconds(q) ; else Date = DateTime.MinValue.AddSeconds(q) ; }
+			get => axis==Axis.Time ? Time.TotalSeconds : axis==Axis.Date ? Date.TotalSeconds() : /*axis==Axis.At ? At :*/ this[(uint)axis] ;
+			set { if( axis<Axis.Time ) this[(uint)axis] = value ; else if( axis>Axis.Date ) this[(uint)axis-3] = value ; else if( value is Quant q ) if( axis==Axis.Time ) Time = TimeSpan.FromSeconds(q) ; else if( axis==Axis.Date ) Date = DateTime.MinValue.AddSeconds(q) ; /*else if( axis==Axis.At ) At = (int)q ;*/ }
 		}
 		public override Mark Mark { get => base.Mark ; set { if( value==Mark ) return ; base.Mark = value ; Changed("Mark") ; } }
 		public override DateTime Date { get => base.Date ; set { if( Date==value ) return ; base.Date = value ; Changed("Date") ; } }
 		public override TimeSpan Time { get => base.Time ; set { if( Time==value ) return ; base.Time=value ; Changed("Time") ; } }
+		/// <summary>
+		/// Position within owner .
+		/// </summary>
+		public int? At { get => at ; set { if( At==value ) return ; at = value ; Changed("At") ; } } int? at ;
 		#endregion
 
 		#region Trait

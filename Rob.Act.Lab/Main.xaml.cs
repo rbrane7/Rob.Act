@@ -336,7 +336,7 @@ namespace Rob.Act.Analyze
 				{
 					var spt0 = ScreenPoint((xax.Val[i].Value-rng[xax.Spec].Min)/(rng[xax.Spec].Max-rng[xax.Spec].Min).nil()*width??0,height-(yax.Val[i].Value-rng[yax.Spec].Min)/(rng[yax.Spec].Max-rng[yax.Spec].Min).nil()*height??0) ;
 					var spt1 = ScreenPoint((xax.Val[i+1].Value-rng[xax.Spec].Min)/(rng[xax.Spec].Max-rng[xax.Spec].Min).nil()*width??0,height-(yax.Val[i+1].Value-rng[yax.Spec].Min)/(rng[yax.Spec].Max-rng[yax.Spec].Min).nil()*height??0) ;
-					if( spt0.X>=0 && spt0.Y>=0 && spt1.X<=width && spt1.Y<=height ) pts.Add((spt0,spt1,asp.Raw[i+1].Mark.HasFlag(Mark.Stop),xax.Val[i],yax.Val[i],zaxes.Select(z=>(z.Spec,z.Val[i])).ToArray())) ;
+					if( spt0.X>=0 && spt0.Y>=0 && spt1.X<=width && spt1.Y<=height ) pts.Add((spt0,spt1,asp.Raw[i+1].Mark>Mark.No,xax.Val[i],yax.Val[i],zaxes.Select(z=>(z.Spec,z.Val[i])).ToArray())) ;
 				}
 				catch( System.Exception ex ) { Trace.TraceWarning(ex.Stringy()) ; }
 				for( var i=1 ; i<yaxes.Length ; ++i ) rng[yaxes[i]]=(pts.Min(p=>p.Z[i-1].Val).Value,pts.Max(p=>p.Z[i-1].Val).Value) ;
@@ -471,8 +471,8 @@ namespace Rob.Act.Analyze
 		double AxeYByMouse( System.Windows.Point m , KeyValuePair<string,(double Min,double Max)> a ) => (ViewFrame.Height-m.Y)/ViewFrame.Height*(a.Value.Max-a.Value.Min)+a.Value.Min ;
 		double? AxeZByMouse( string a )
 		{
-			var x = Coordinates[0]?.Value ; var y = Coordinates[1]?.Value ; var ax = Coordinates[0]?.Axe ; var ay = Coordinates[1]?.Axe ; Aspect.Point? op = null ; double? ov = null , cv = null ;
-			foreach( var src in Sources ) foreach( var pt in src.Points ) if( (cv=(pt[ax]-x).Sqr()+(pt[ay]-y).Sqr())<ov || ov==null ) { op = pt ; ov = cv ; }
+			var x = Coordinates[0]?.Value ; var y = Coordinates[1]?.Value ; var ax = Coordinates[0]?.Axe ; var ay = Coordinates[1]?.Axe ; Aspect.Point? op = null ; double? ov = null , cv ;
+			foreach( var src in DrawingSources ) foreach( var pt in src.Points ) if( (cv=(pt[ax]-x).Sqr()+(pt[ay]-y).Sqr())<ov || ov==null ) { op = pt ; ov = cv ; }
 			return op?[a] ;
 		}
 		#endregion

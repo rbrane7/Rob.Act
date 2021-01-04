@@ -90,6 +90,7 @@ namespace Rob.Act.Analyze
 			public Func<IEnumerable<Objective>,IEnumerable<Objective>> ToQuery<Objective>() => Query.Compile<Func<IEnumerable<Objective>,IEnumerable<Objective>>>() ;
 			public Func<Objective,bool> ToAssocier<Objective>() => Associer.Compile<Func<Objective,bool>>() ;
 			public (Func<Objective,bool> Filter,Func<Enhancer,bool> Associer,Func<IEnumerable<Objective>,IEnumerable<Objective>> Query) ToRefiner<Objective,Enhancer>() => (ToFilter<Objective>(),ToAssocier<Enhancer>(),ToQuery<Objective>()) ;
+			public override string ToString() => Filter ;
 			public struct Binding
 			{
 				static readonly string ThisKey = typeof(Aid.Converters.ObjectAccessible).GetProperties().One().Name ;
@@ -112,7 +113,7 @@ namespace Rob.Act.Analyze
 			}
 		}
 		const string Separator = " \x1 Filter \x2\n" ;
-		public static explicit operator string( Filter filter ) => filter.Get(f=>string.Join(Separator,f.Where(e=>!e.Empty).Select(e=>(string)e))) ;
+		public static explicit operator string( Filter filter ) => filter.Get(f=>string.Join(Separator,f.Entries.Where(e=>!e.Empty).Select(e=>(string)e))) ;
 		public static implicit operator Filter( string filter ) => filter.Get(f=>new Filter{Sensible=true}.Set(t=>f.Separate(Separator).Each(e=>t.Add(e)))) ;
 	}
 	public struct Associable { public Pathable Path ; public Aspect Aspect ; public Associable( Pathable path , Aspect aspect ) { Path = path ; Aspect = aspect ; } public  static implicit operator Associable( (Pathable path,Aspect aspect) arg ) => new Associable(arg.path,arg.aspect) ; }

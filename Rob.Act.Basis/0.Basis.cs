@@ -20,8 +20,8 @@ namespace Rob.Act
 	{
 		Bipole( Quant a , Quant b ) { A = Math.Abs(a) ; B = -Math.Abs(b) ; }
 		public Bipole( Quant a ) { A = Math.Max(0,a) ; B = Math.Min(0,a) ; }
-		public Quant A { get; }
-		public Quant B { get; }
+		public Quant A {get;}
+		public Quant B {get;}
 		public static Quant operator+( Bipole x ) => x.A-x.B ;
 		public static Bipole operator-( Bipole x ) => new Bipole(x.B,x.A) ;
 		public static Bipole operator+( Bipole x , Bipole y ) => new Bipole(x.A+y.A,x.B+y.B) ;
@@ -77,7 +77,7 @@ namespace Rob.Act
 		internal static uint Axis( this string name , uint dim ) => vaxi.At(axis.IndexOf(name)).nil(i=>i<0).Get(i=>i==(uint)Act.Axis.Time?dim:i==(uint)Act.Axis.Date?dim+1:i) ?? (uint)axis.Set(a=>{a.Add(name);vaxi.Add((uint)vaxi.Count);}).Count-1 ;
 		internal static Mark Mark( this string name ) => vama.At(marks.IndexOf(name)) ;
 		internal static readonly (Axis At,Axis To) Potentialim = (Act.Axis.Dist,Act.Axis.Time) ;
-		public static readonly Axis[] Derivates = {Act.Axis.Dist,Act.Axis.Bit,Act.Axis.Time} ;
+		public static readonly Axis[] Derivates = {Act.Axis.Dist,Act.Axis.Time} ;
 		public static readonly uint[] Potenties = Potentials.Except(Derivates).Select(v=>(uint)v).ToArray() ;
 		public static bool IsPotential( this Axis ax ) => Potentialim.At<=ax && ax<=Potentialim.To ;
 		public static IEnumerable<Axis> Potentials { get { for( var ax=Potentialim.At ; ax<=Potentialim.To ; ++ax ) yield return ax ; } }

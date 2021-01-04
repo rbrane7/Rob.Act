@@ -62,6 +62,7 @@ namespace Rob.Act
 					else foreach( var ax in Potenties ) pon[ax] += (this[i][ax]??this[i-1]?[ax]??0)-(this[i-1]?[ax]??0) ;
 				}
 				if( this[i].Time==default ) this[i].Time = this[i].Date-date ;
+				if( this[i].At==null ) this[i].At = i ;
 				if( this[i].Bit==null ) this[i].Bit = i ;
 				if( this[i].IsGeo )
 				{
@@ -84,7 +85,7 @@ namespace Rob.Act
 		}
 		void Conclude( Point point )
 		{
-			point.Set(p=>{var z=this[0];if(Bit==null)Bit=p.Bit-z.Bit;if(Time==default)Time=p.Time-z.Time;if(Dist==null)Dist=p.Dist-z.Dist;if(Ascent==null)Ascent=p.Ascent-z.Ascent;if(Deviation==null)Deviation=p.Deviation-z.Deviation;}) ;
+			point.Set(p=>{var z=this[0];if(At==null)At=p.At-z.At;if(Bit==null)Bit=p.Bit-z.Bit;if(Time==default)Time=p.Time-z.Time;if(Dist==null)Dist=p.Dist-z.Dist;if(Ascent==null)Ascent=p.Ascent-z.Ascent;if(Deviation==null)Deviation=p.Deviation-z.Deviation;}) ;
 			foreach( var mark in Basis.Marks ) if( this[mark]!=null ) Segmentize(mark) ;
 		}
 		protected internal override void Depose() { using var _=Incognit ; base.Depose() ; for( var i=0 ; i<Count ; ++i ) this[i].Depose() ; }

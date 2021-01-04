@@ -48,6 +48,6 @@ namespace Rob.Act
 			else if( file.EndsWith(Partitioner.Ext) ) data = $"{Partitioner.Sign}{file.LeftFromLast(Partitioner.Ext)}{Environment.NewLine}{data}" ;
 			return data ;
 		}
-		public static void Partitionate( this Path path ) { if( path==null ) return ; var parter = path.Origin+Partitioner.Ext ; if( System.IO.File.Exists(parter) ) return ; path.Where(p=>p.Mark.HasFlag(Mark.Stop)&&p.Bit+1<path.Count).Select(p=>(uint)p.Bit).Stringy(' ').Null(p=>p.No()).Set(p=>parter.WriteAll(p)) ; }
+		public static void Partitionate( this Path path ) { if( path==null ) return ; var parter = path.Origin+Partitioner.Ext ; if( System.IO.File.Exists(parter) ) return ; path.Where(p=>p.Mark.HasFlag(Mark.Stop)&&p.At+1<path.Count).Select(p=>p.At).Stringy(' ').Null(p=>p.No()).Set(p=>parter.WriteAll(p)) ; }
 	}
 }
