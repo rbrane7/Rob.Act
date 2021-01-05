@@ -35,7 +35,12 @@ namespace Rob.Act
 		{
 			using var _=Incognit ;
 			Take(points,kind) ;
-			if( measures!=null ) foreach( var measure in measures ) if( this[measure.Ax]==null ) { this[0][measure.Ax] = 0 ; Quant lb = 0 ; for( var i=1 ; i<Count ; ++i ) this[i][measure.Ax] = ((this[i-1][measure.Ax]??lb)+this[i][measure.Ax]/measure.Uni*(this[i].Time-this[i-1].Time).TotalSeconds).use(b=>lb=b) ; this[measure.Ax] = lb ; }
+			if( measures!=null ) foreach( var measure in measures ) if( this[measure.Ax]==null )
+			{
+				this[0][measure.Ax] = 0 ; Quant lb = 0 ;
+				for( var i=1 ; i<Count ; ++i ) this[i][measure.Ax] = ((this[i-1][measure.Ax]??lb)+this[i][measure.Ax]/measure.Uni*(this[i].Time-this[i-1].Time).TotalSeconds).use(b=>lb=b) ;
+				if( ( this[measure.Ax] = lb.nil() )==null ) this[0][measure.Ax] = null ;
+			}
 			Impose(kind) ;
 		}
 		/// <summary> Transform beat to potential . </summary>
@@ -58,12 +63,12 @@ namespace Rob.Act
 					if( this[i].Ascent==null && Alti!=null ) this[i].Ascent = this[i-1]?.Ascent.Nil(_=>res)??0 ;
 					if( this[i].Deviation==null && IsGeo ) this[i].Deviation = this[i-1]?.Deviation.Nil(_=>res)??0 ;
 					if( this[i].Alti==null && Alti!=null ) this[i].Alti = ((Count-i).Steps(i).FirstOrDefault(j=>this[j].Alti!=null).nil()??i-1).Get(j=>this[j].Alti) ;
-					if( res ) foreach( var ax in Potenties ) pon[ax] = (this[i][ax]??this[i-1]?[ax]??0) ;
+					if( res ) foreach( var ax in Potenties ) pon[ax] = this[i][ax]??this[i-1]?[ax]??0 ;
 					else foreach( var ax in Potenties ) pon[ax] += (this[i][ax]??this[i-1]?[ax]??0)-(this[i-1]?[ax]??0) ;
 				}
 				if( this[i].Time==default ) this[i].Time = this[i].Date-date ;
-				if( this[i].At==null ) this[i].At = i ;
-				if( this[i].Bit==null ) this[i].Bit = i ;
+				if( this[i].No==null ) this[i].No = i ;
+				//if( this[i].Bit==null ) this[i].Bit = i ;
 				if( this[i].IsGeo )
 				{
 					if( this[i].Dist==null ) this[i].Dist = this[i-1].Dist + (this[i]-this[i-1]).Euclid(this[i-1]) ;
@@ -85,8 +90,8 @@ namespace Rob.Act
 		}
 		void Conclude( Point point )
 		{
-			point.Set(p=>{var z=this[0];if(At==null)At=p.At-z.At;if(Bit==null)Bit=p.Bit-z.Bit;if(Time==default)Time=p.Time-z.Time;if(Dist==null)Dist=p.Dist-z.Dist;if(Ascent==null)Ascent=p.Ascent-z.Ascent;if(Deviation==null)Deviation=p.Deviation-z.Deviation;}) ;
-			foreach( var mark in Basis.Marks ) if( this[mark]!=null ) Segmentize(mark) ;
+			point.Set(p=>{var z=this[0];if(No==null)No=p.No-z.No;if(Bit==null)Bit=p.Bit-z.Bit;if(Time==default)Time=p.Time-z.Time;if(Dist==null)Dist=p.Dist-z.Dist;if(Ascent==null)Ascent=p.Ascent-z.Ascent;if(Deviation==null)Deviation=p.Deviation-z.Deviation;}) ;
+			foreach( var mark in Basis.Segmentables ) if( this[mark]!=null ) Segmentize(mark) ;
 		}
 		protected internal override void Depose() { using var _=Incognit ; base.Depose() ; for( var i=0 ; i<Count ; ++i ) this[i].Depose() ; }
 		public void Reset( Mark? kind = null , bool notify = true ) { Depose() ; Impose(kind) ; if( notify ) Spectrify() ; }

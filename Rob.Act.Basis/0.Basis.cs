@@ -83,6 +83,7 @@ namespace Rob.Act
 		public static IEnumerable<Axis> Potentials { get { for( var ax=Potentialim.At ; ax<=Potentialim.To ; ++ax ) yield return ax ; } }
 		public static IEnumerable<Axis> Absoltutes { get { for( var ax=(Axis)0 ; ax<=Act.Axis.Date ; ++ax ) if( ax<Potentialim.At || Potentialim.To<ax ) yield return ax ; } }
 		public static IEnumerable<Mark> Marks => vama ;
+		public static IEnumerable<Mark> Segmentables => vama.Where(m=>m!=Act.Mark.No) ;
 		internal static Quant ActLim( this Axis axis , string activity ) => 50 ;
 		public static class Device
 		{
@@ -242,7 +243,7 @@ namespace Rob.Act
 			/// <summary>
 			/// Position relative to segments types .
 			/// </summary>
-			(Quant? Lap,Quant? Stop,Quant? Act) Post ;
+			(Quant? Lap,Quant? Stop,Quant? Act,int? No) Post ;
 			/// <summary>
 			/// Referential date of object .
 			/// </summary>
@@ -251,6 +252,10 @@ namespace Rob.Act
 			/// Relative time of object .
 			/// </summary>
 			public virtual TimeSpan Time { get => time ; set { if( time==value ) return ; if( spec==Despect ) spec = null ; time = value ; sign = null ; } } TimeSpan time ;
+			/// <summary>
+			/// Position within owner .
+			/// </summary>
+			public virtual int? No { get => Post.No ; set { if( No==value ) return ; Post.No = value ; } }
 			/// <summary>
 			/// Signature of the point .
 			/// </summary>
@@ -277,18 +282,18 @@ namespace Rob.Act
 			public abstract uint Dimension {get;}
 			public Quant? this[ uint axis ]
 			{
-				get => axis==Dimension ? Time.TotalSeconds : axis==Dimension+1 ? Date.TotalSeconds() : axis==Dimension+2 ? Post.Lap : axis==Dimension+3 ? Post.Stop : axis==Dimension+4 ? Post.Act : Quantity.At((int)axis) ;
+				get => axis==Dimension ? Time.TotalSeconds : axis==Dimension+1 ? Date.TotalSeconds() : axis==Dimension+2 ? Post.Lap : axis==Dimension+3 ? Post.Stop : axis==Dimension+4 ? Post.Act : axis==Dimension+5 ? No : Quantity.At((int)axis) ;
 				set { if( axis>=Quantity.Length && value!=null && axis<uint.MaxValue ) Quantity.Set(q=>q.CopyTo(Quantity=new Quant?[Math.Max(axis+1,Metax?.Dimension??0)],0)) ; if( axis<Quantity.Length ) Quantity[axis] = value ; }
 			}
 			public Quant? this[ Mark mark ]
 			{
-				get => mark switch { Mark.Lap => Post.Lap , Mark.Stop => Post.Stop , Mark.Act => Post.Act , _=> null } ;
-				set { switch( mark ) { case Mark.Lap : Post.Lap = value ; break ; case Mark.Stop : Post.Stop = value ; break ; case Mark.Act : Post.Act = value ; break ; } }
+				get => mark switch { Mark.No => No , Mark.Lap => Post.Lap , Mark.Stop => Post.Stop , Mark.Act => Post.Act , _=> null } ;
+				set { switch( mark ) { case Mark.No : No = value.use(v=>(int)v) ; break ; case Mark.Lap : Post.Lap = value ; break ; case Mark.Stop : Post.Stop = value ; break ; case Mark.Act : Post.Act = value ; break ; } }
 			}
 			public Quant? this[ string axis ]
 			{
 				get => Metax?[axis] is uint ax ? ax<uint.MaxValue ? this[ax] : this[axis.Mark()] : this[axis.Mark()] ?? this[axis.Axis(Dimension)] ;
-				set { if( Metax?[axis] is uint ax ) if( ax<uint.MaxValue ) this[ax] = value ; else this[axis.Mark()] = value ; else if( axis.Mark().nil() is Mark mark ) this[mark] = value ; else this[axis.Axis(Dimension)] = value ; }
+				set { if( Metax?[axis] is uint ax ) if( ax<uint.MaxValue ) this[ax] = value ; else this[axis.Mark()] = value ; else if( axis.Mark() is Mark mark ) this[mark] = value ; else this[axis.Axis(Dimension)] = value ; }
 			}
 			public override bool TrySetMember( SetMemberBinder binder , object value ) { this[binder.Name] = (Quant?)value ; return base.TrySetMember( binder, value ) ; }
 			public override bool TryGetMember( GetMemberBinder binder , out object result ) { result = this[binder.Name] ; return true ; }
