@@ -16,7 +16,11 @@ namespace Rob.Act
 	[Flags] public enum Mark { No=0 , Stop=1 , Lap=2 , Act=4 , Any=Act|Lap|Stop }
 	[Flags] public enum Oper { Merge=0 , Combi=1 , Trim=2 , Smooth=4 , Relat=8 }
 	public enum Axis : uint { Lon,Longitude=Lon , Lat,Latitude=Lat , Alt,Altitude=Alt , Dist,Distance=Dist , Drag , Flow , Beat , Bit , Energy , Grade , Time , Date }
+	#pragma warning disable CS0660 // Type defines operator == or operator != but does not override Object.Equals(object o)
+	#pragma warning disable CS0661 // Type defines operator == or operator != but does not override Object.GetHashCode()
 	public struct Bipole : IFormattable
+	#pragma warning restore CS0661 // Type defines operator == or operator != but does not override Object.GetHashCode()
+	#pragma warning restore CS0660 // Type defines operator == or operator != but does not override Object.Equals(object o)
 	{
 		Bipole( Quant a , Quant b ) { A = Math.Abs(a) ; B = -Math.Abs(b) ; }
 		public Bipole( Quant a ) { A = Math.Max(0,a) ; B = Math.Min(0,a) ; }
@@ -87,7 +91,8 @@ namespace Rob.Act
 		internal static Quant ActLim( this Axis axis , string activity ) => 50 ;
 		public static class Device
 		{
-			public static class Skierg { public const string Code = "Skierg" ; public const Quant Draw = 2.8 ; }
+			public static class Skierg { public static readonly string Code = typeof(Skierg).Logo().RightFrom('.',true) ; public const Quant Draw = 2.8 ; }
+			public static class Bio { public static readonly string Code = typeof(Bio).Logo().RightFrom('.',true) ; public const Quant Draw = 2.8 ; }
 		}
 		public readonly static IDictionary<string,(Quant Grade,Quant Flow,Quant Drag)> Energing = new Dictionary<string,(Quant Grade,Quant Flow,Quant Drag)>
 		{

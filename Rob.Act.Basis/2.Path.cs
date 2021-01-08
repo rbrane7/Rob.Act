@@ -192,7 +192,7 @@ namespace Rob.Act
 			}
 			else this[k][axe] = cor[i].Value ;
 			if( (uint)cor[^1].Key<Count-1 ) { var f = cor[^1] ; Quant Dif( double x ) => (1-x)*(bas-f.Value) ; for( int j=f.Key+1 , k=Count-1 ; j<=k ; ++j ) this[j][axe] -= Dif((double)(j-f.Key)/(k-f.Key)) ; }
-			this[axe] = this[Count-1][axe]-this[0][axe] ;
+			this[axe] = this[^1][axe]-this[0][axe] ;
 		}
 		public void Correct( string axe , params KeyValuePair<int,Quant>[] cor )
 		{
@@ -207,7 +207,7 @@ namespace Rob.Act
 			}
 			else this[k][axe] = cor[i].Value ;
 			if( (uint)cor[^1].Key<Count-1 ) { var f = cor[^1] ; Quant Dif( double x ) => (1-x)*(bas-f.Value) ; for( int j=f.Key+1 , k=Count-1 ; j<=k ; ++j ) this[j][axe] -= Dif((double)(j-f.Key)/(k-f.Key)) ; }
-			this[axe] = this[Count-1][axe]-this[0][axe] ;
+			this[axe] = this[^1][axe]-this[0][axe] ;
 		}
 		public void Flatten( Axis axe , params KeyValuePair<int,Quant>[] cor )
 		{
@@ -221,7 +221,7 @@ namespace Rob.Act
 				bas = to ;
 			}
 			else this[k][axe] = cor[i].Value ;
-			this[axe] = this[Count-1][axe]-this[0][axe] ;
+			this[axe] = this[^1][axe]-this[0][axe] ;
 		}
 		public void Flatten( string axe , params KeyValuePair<int,Quant>[] cor )
 		{
@@ -235,7 +235,7 @@ namespace Rob.Act
 				bas = to ;
 			}
 			else this[k][axe] = cor[i].Value ;
-			this[axe] = this[Count-1][axe]-this[0][axe] ;
+			this[axe] = this[^1][axe]-this[0][axe] ;
 		}
 		public void Correct( Axis axe , IEnumerable<(double at,Quant value)> cor ) => Correct(axe,cor?.Select(c=>new KeyValuePair<int,Quant>((int)Math.Round(c.at*(Count-1)),c.value)).ToArray()) ;
 		public void Flatten( Axis axe , IEnumerable<(double at,Quant value)> cor ) => Flatten(axe,cor?.Select(c=>new KeyValuePair<int,Quant>((int)Math.Round(c.at*(Count-1)),c.value)).ToArray()) ;
@@ -289,6 +289,8 @@ namespace Rob.Act
 		public Quant? MinMaxPower( int ext ) => (Count-1).Steps().Select(i=>(Content[i+1].Energy-Content[i].Energy).Quotient(Content[i+1].Time.TotalSeconds-Content[i].Time.TotalSeconds)).Skip(5).ToArray().Get(a=>(a.Length-2).Steps(1).Min(i=>ext.Steps(1).All(j=>(a.At(i-j)??Quant.MinValue)<=a[i]&&a[i]>=(a.At(i+j)??Quant.MinValue))?a[i]:null)) ;
 		public Quant? AeroEffort { get { var min = MinEffort ; var max = MinMaxEffort ; var mav = (Count-1).Steps().Count(i=>(Content[i+1].Energy-Content[i].Energy).Quotient(Content[i+1].Time.TotalSeconds-Content[i].Time.TotalSeconds)>=max*0.9) ; var miv = (Count-1).Steps().Count(i=>(Content[i+1].Energy-Content[i].Energy).Quotient(Content[i+1].Time.TotalSeconds-Content[i].Time.TotalSeconds)<=min*1.2) ; return (min*miv+max*mav)/(miv+mav)*Durability ; } } // => (Meta.By(Action).At(0)*MinEffort+Meta.By(Action).At(1)*MinMaxEffort)/(Meta.By(Action).At(0)+Meta.By(Action).At(1)) ;
 		public Quant? MaxBeat => (Count-1).Steps().Max(i=>(Content[i+1].Beat-Content[i].Beat).Quotient((Content[i+1].Time-Content[i].Time).TotalSeconds)) ;
+		public Quant? MinBeat => (Count-1).Steps().Min(i=>(Content[i+1].Beat-Content[i].Beat).Quotient((Content[i+1].Time-Content[i].Time).TotalSeconds)) ;
+		public Quant? O2Rate => MaxBeat/MinBeat*15.3 ;
 		public Quant? MaxExposure => MaxEffort/MaxBeat ;
 		public string MaxExposion => "{0}={1}".Comb("{0}/{1}".Comb(MaxEffort.Get(e=>$"{e:0}W"),MaxBeat.Get(v=>$"{Math.Round(v*60)}′♥")),MaxExposure.Get(e=>$"{Math.Round(e)}♥W")) ;
 		Quant Durability => Math.Max(0,1.1-20/Time.TotalSeconds) ;

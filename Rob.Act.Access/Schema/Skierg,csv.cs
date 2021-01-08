@@ -13,10 +13,10 @@ namespace Rob.Act
 		public class Skierg
 		{
 			public static bool Interpolate = false ;
-			public static readonly string[] Axes = new[]{"Number","Time (seconds)","Distance (meters)","Pace (seconds)","Watts","Cal/Hr","Stroke Rate","Heart Rate","Laps","Refine","Locus","Subject","Drag Factor","Date","Spec"} ;
+			public static readonly string[] Axes = {"Number","Time (seconds)","Distance (meters)","Pace (seconds)","Watts","Cal/Hr","Stroke Rate","Heart Rate","Laps","Refine","Locus","Subject","Drag Factor","Date","Spec"} ;
 			public static readonly string Sign = $"\"{Axes[0]}\",\"{Axes[1]}\",\"{Axes[2]}\",\"{Axes[3]}\",\"{Axes[4]}\",\"{Axes[5]}\",\"{Axes[6]}\",\"{Axes[7]}\"" ;
-			IList<(TimeSpan Time,double Distance,double Beat,uint Bit,double Energy,double Drag,double Effort,Mark Mark)> Data = new List<(TimeSpan Time,double Distance,double Beat,uint Bit,double Energy,double Drag,double Effort,Mark Mark)>() ;
-			DateTime Date = DateTime.Now ; string Spec , Subject , Locus , Refine ;
+			readonly IList<(TimeSpan Time,double Distance,double Beat,uint Bit,double Energy,double Drag,double Effort,Mark Mark)> Data = new List<(TimeSpan Time,double Distance,double Beat,uint Bit,double Energy,double Drag,double Effort,Mark Mark)>() ;
+			readonly DateTime Date = DateTime.Now ; readonly string Spec , Subject , Locus , Refine ;
 			/// <summary>
 			/// Skierg data processing and clening . 
 			/// </summary>
@@ -27,19 +27,20 @@ namespace Rob.Act
 			public Skierg( string data )
 			{
 				(TimeSpan Time,Quant Distance,Quant Beat,uint Bit,Quant Energy,Quant Drag,Quant Effort,Mark Mark) accu = default ;
-				uint idrag = 0 ; Quant atime = 0 , adist = 0 ; IEnumerable<(Quant time,Quant dist)> laps = null ; (uint bit,double time,double dist,uint beat,uint power,uint drag,double pace,uint effort,Mark mark) last = default ;
+				(uint bit,double time,double dist,uint beat,uint power,uint drag,double pace,uint effort,Mark mark) last = default ;
+				uint idrag = 0 ; Quant atime = 0 , adist = 0 ; IEnumerable<(Quant time,Quant dist)> laps = null ;
 				foreach( var line in data.SeparateTrim('\n').Select(l=>l.Trim()) )
 				{
 					if( line.StartsBy(Sign) )
 					{
 						Data.Add(accu) ;
-						laps = line.RightFrom(Axes[Axes.Length-7]+'=').LeftFrom('"').SeparateTrim(';',false)?.Select(e=>(e.LeftFrom(',').Parse<Quant>(0),e.RightFrom(',').Parse<Quant>(0))).ToArray() ;
-						Refine = line.RightFrom(Axes[Axes.Length-6]+'=').LeftFrom('"') ;
-						Locus = line.RightFrom(Axes[Axes.Length-5]+'=').LeftFrom('"') ;
-						Subject = line.RightFrom(Axes[Axes.Length-4]+'=').LeftFrom('"') ;
-						if( line.RightFrom(Axes[Axes.Length-3]+'=').LeftFrom('"').Parse<uint>() is uint drg ) idrag = drg ;
-						if( line.RightFrom(Axes[Axes.Length-2]+'=').LeftFrom('"').Parse<DateTime>() is DateTime date ) Date = date ;
-						if( line.RightFrom(Axes[Axes.Length-1]+'=').LeftFrom('"') is string spec ) Spec = spec ;
+						laps = line.RightFrom(Axes[^7]+'=').LeftFrom('"').SeparateTrim(';',false)?.Select(e=>(e.LeftFrom(',').Parse<Quant>(0),e.RightFrom(',').Parse<Quant>(0))).ToArray() ;
+						Refine = line.RightFrom(Axes[^6]+'=').LeftFrom('"') ;
+						Locus = line.RightFrom(Axes[^5]+'=').LeftFrom('"') ;
+						Subject = line.RightFrom(Axes[^4]+'=').LeftFrom('"') ;
+						if( line.RightFrom(Axes[^3]+'=').LeftFrom('"').Parse<uint>() is uint drg ) idrag = drg ;
+						if( line.RightFrom(Axes[^2]+'=').LeftFrom('"').Parse<DateTime>() is DateTime date ) Date = date ;
+						if( line.RightFrom(Axes[^1]+'=').LeftFrom('"') is string spec ) Spec = spec ;
 						continue ;
 					}
 					var vals = line.Separate(',').Select(v=>v.Trim('"')).ToArray() ; if( vals.At(7)==null ) continue ; (Quant time,Quant dist)? lap = null ;
@@ -53,8 +54,8 @@ namespace Rob.Act
 			}
 			public static implicit operator Path( Skierg work ) =>
 				new Path(work.Date,work.Data.Select(p=>new Point(work.Date+p.Time){ Time = p.Time , Dist = p.Distance , Energy = p.Energy , Fuel = p.Effort , Beat = p.Beat , Bit = p.Bit , Drag = p.Drag.nil() , Mark = p.Mark }))
-				{ Action = work.Spec , Tags = $"{Basis.Device.Skierg.Code} {work.Data[work.Data.Count-1].get(d=>d.Drag/d.Distance):0.00} {work.Subject} {work.Locus} {work.Refine}" }
-				.Set(p=>{ var l = work.Data[work.Data.Count-1] ; var f = work.Data[0] ; p.Dist = l.Distance-f.Distance ; p.Time = l.Time-f.Time ; p.Energy = l.Energy-f.Energy ; p.Fuel = l.Effort-f.Effort ; p.Beat = l.Beat-f.Beat ; p.Bit = l.Bit-f.Bit ; p.Drag = l.Drag-f.Drag ; }) ;
+				{ Action = work.Spec , Tags = $"{Basis.Device.Skierg.Code} {work.Data[^1].get(d=>d.Drag/d.Distance):0.00} {work.Subject} {work.Locus} {work.Refine}" }
+				.Set(p=>{ var l = work.Data[^1] ; var f = work.Data[0] ; p.Dist = l.Distance-f.Distance ; p.Time = l.Time-f.Time ; p.Energy = l.Energy-f.Energy ; p.Fuel = l.Effort-f.Effort ; p.Beat = l.Beat-f.Beat ; p.Bit = l.Bit-f.Bit ; p.Drag = l.Drag-f.Drag ; }) ;
 			public static explicit operator Skierg( Path data ) => throw new NotImplementedException() ;
 			public static implicit operator string( Skierg data ) => throw new NotImplementedException() ;
 		}

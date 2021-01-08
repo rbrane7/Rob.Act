@@ -54,6 +54,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Schema\Partitioner.cs" />
+    <Compile Include="Schema\Life,csv.cs" />
     <Compile Include="Schema\Skierg,csv.cs" />
     <Compile Include="Schema\Gpx.cs">
       <SubType>code</SubType>
