@@ -347,7 +347,13 @@ namespace Rob.Act
 			public virtual uint Ax
 			{
 				get => ax ;
-				set { base.Spec = ( ax = value ).Get(v=>v<(uint)Axis.Time?((Axis)v).Stringy():v<Context.Dimensions?Context.Metaxes?[v].Name:v==Context.Dimensions?Axis.Time.ToString():v==Context.Dimensions+1?Axis.Date.ToString():v==Context.Dimensions+2?Mark.Lap.ToString():v==Context.Dimensions+3?Mark.Stop.ToString():v==Context.Dimensions+4?Mark.Act.ToString():v==Context.Dimensions+5?Mark.No.ToString():null) ; Resolver = at=>Context?[at]?[Ax] ; }
+				set
+				{
+					ax = value ; var meta = Context.Metaxe(value) ;
+					base.Spec = value.Get(v=>meta.Name??(v<(uint)Axis.Time?((Axis)v).Stringy():v==Context.Dimensions?Axis.Time.ToString():v==Context.Dimensions+1?Axis.Date.ToString():v==Context.Dimensions+2?Mark.Lap.ToString():v==Context.Dimensions+3?Mark.Stop.ToString():v==Context.Dimensions+4?Mark.Act.ToString():v==Context.Dimensions+5?Mark.No.ToString():null)) ;
+					if( !meta.Form.No() ) Binder = meta.Form ;
+					Resolver = at=>Context?[at]?[Ax] ;
+				}
 			}
 			public Axis Axis
 			{

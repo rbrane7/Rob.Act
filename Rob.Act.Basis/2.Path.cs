@@ -254,6 +254,7 @@ namespace Rob.Act
 		/// <summary> Derivancy causes this path to be drived from it's point sub-pathes and is used as base of <see cref="Metax"/> of points in case of top-down construction . In this case points inherit path's <see cref="Metax"/> if they doesn't have own . </summary>
 		public bool Dominant = Dominancy , Editable = Persistent ; internal bool Derived ;
 		public Metax Metaxes => metaxex ??= this.Select(p=>p.Metax).Distinct().SingleOrNo() ; Metax metaxex ;
+		public (string Name,string Form) Metaxe( uint ax , bool insure = false ) => (insure||metaxex!=null||dimensions==null&&ax<Dimensions?Metaxes?[ax]:null) ?? Metax?[ax] ?? default ;
 		public uint Dimensions => dimensions ??= Metaxes?.Dimension??(Count>0?this.Max(p=>p.Dimension):0) ; uint? dimensions ;
 		public override Quant? Distance { set { if( value==Distance ) return ; if( value is Quant v ) Correct(Axis.Dist,v*Transfer) ; Edited() ; } }
 		public Quant? Elevation { get => this[Count-1]?.Alti-this[0]?.Alti ; set { if( value==Elevation ) return ; if( value is Quant v && this[0][Axis.Alt] is Quant alt ) Correct(Axis.Alt,alt,alt+v) ; Edited() ; } }

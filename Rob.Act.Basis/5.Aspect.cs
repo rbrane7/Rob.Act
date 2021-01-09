@@ -208,7 +208,7 @@ namespace Rob.Act
 			public Axable this[ Axis ax , bool insure = false ] => this.OfType<Axe>().FirstOrDefault(a=>a.Axis==ax) ??( insure ? new Axe(Context){Axis=ax}.Set(Add) : Axe.No as Axable ) ;
 			public override void Add( Act.Axe ax ) => base.Add(ax.Set(a=>{if(!(a is Axe))a.Aspect=this;})) ;
 			public override void Remove( Act.Axe ax ) => base.Remove(ax.Set(a=>{if(!(a is Axe))a.Aspect=null;})) ;
-			public void Reform( params string[] binds ) => this.OfType<Axe>().Each(a=>a.Binder=binds.At((int)a.Axis)??Context.Metaxes?[a.Ax].Form) ;
+			public void Reform( params string[] binds ) => this.OfType<Axe>().Each(a=>a.Binder=Context.Metaxe(a.Ax).Form??binds.At((int)a.Axis)) ;
 			#region Operation
 			public Act.Axe perf( Lap lap ) => perf(pace(lap),grad(lap),resi(lap),flow(lap),gran(lap)) ;
 			public Act.Axe velo( Lap lap ) => lap.quo(this[Axis.Dist,false]as Axe,this[Axis.Time,false]as Axe) ;

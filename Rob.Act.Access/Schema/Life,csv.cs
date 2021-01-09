@@ -17,7 +17,7 @@ namespace Rob.Act
 			public static readonly string[] Axes = {"Date","Heart rate(count/min)","Heart rate variability (SDNN)(ms)","Oxygen saturation(%)","VO2 Max(mL/min·kg)","Spec","Subject"} ;
 			public static readonly string Sign = $"{Axes[0]},{Axes[1]},{Axes[2]}" , Act = Basis.Device.Bio.Code , Ext = $".{Act}{Csv.Ext}" ;
 			readonly IList<(DateTime Date,double Beat,double Var,double Sat,double Max)> Data = new List<(DateTime Date,double Beat,double Var,double Sat,double Max)>() ;
-			TimeSpan Time => Data[^1].Date-Data[0].Date ; DateTime Date => Data.at(0)?.Date??DateTime.Today ; readonly string Spec = Act , Subject ;
+			TimeSpan Time => Data[^1].Date-Data[0].Date ; DateTime Date => Data.at(0)?.Date??DateTime.Today ; readonly string Spec = Act , Subject ; readonly bool Multi ;
 			/// <summary>
 			/// iOs export and cleaning . 
 			/// </summary>
@@ -39,10 +39,15 @@ namespace Rob.Act
 					accu.Date = Date ; accu.Beat += dB ; accu.Var += Var*dB ; accu.Sat += Sat*dt ; accu.Max += Max*dt/60 ;
 					Data.Add(accu) ; last = (Date,Beat,Var,Sat,Max) ;
 				}
+				Multi = (Data.LastOrDefault().Date-Date).Days>0 ;
 			}
 			public static implicit operator Path( Bio work ) =>
-				new Path(work.Date,work.Data.Select(p=>new Point(p.Date){ Beat = p.Beat , Flow = p.Sat , Grade = p.Var , Energy = p.Max })){ Action = work.Spec }
-				.Set(p=>{ p.Tags = $"{Basis.Device.Bio.Code} {p.O2Rate:0.0} {work.Subject}" ; var l = work.Data[^1] ; var f = work.Data[0] ; p.Time = work.Time ; p.Beat = l.Beat-f.Beat ; p.Energy = l.Max-f.Max ; p.Grade = l.Var-f.Var ; p.Flow = l.Sat-f.Sat ; }) ;
+				new Path(work.Date,work.Data.Select(p=>new Point(p.Date){ Beat = p.Beat , Flow = p.Sat , Grade = p.Var , Energy = p.Max , Bit = work.Multi?(p.Date-work.Date).Days:null as Quant? }))
+				{ Action = work.Spec , Metax = new Metax{ [Axis.Energy]=("O₂↑",":0.0") , [Axis.Flow]=("Sat",":0%") , [Axis.Grade]=("Var",":0ms") } }
+				.Set(p=>{
+					p.Tags = $"{Basis.Device.Bio.Code} {p.O2Rate:0.0} {work.Subject}" ; var l = work.Data[^1] ; var f = work.Data[0] ;
+					p.Time = work.Time ; p.Beat = l.Beat-f.Beat ; p.Energy = (l.Max-f.Max).nil() ; p.Grade = (l.Var-f.Var).nil() ; p.Flow = (l.Sat-f.Sat).nil() ; p.Bit = p[^1].Bit-p[0].Bit ;
+				}) ;
 			public static explicit operator Bio( Path data ) => throw new NotImplementedException() ;
 			public static implicit operator string( Bio data ) => throw new NotImplementedException() ;
 		}

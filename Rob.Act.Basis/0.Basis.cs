@@ -199,10 +199,12 @@ namespace Rob.Act
 	}
 	public class Metax : IEquatable<Metax> , IEnumerable<KeyValuePair<string,(uint At,string Form)>>
 	{
-		internal uint Base ; internal Metax Basis ; public IList<uint> Potenties { get => potenties??Act.Basis.Potenties ; set => potenties = value ; } IList<uint> potenties ;
+		internal uint Base ; internal Metax Basis ;
 		readonly IDictionary<string,(uint At,string Form)> Map = new Dictionary<string,(uint At,string Form)>() ;
+		public IList<uint> Potenties { get => potenties??Act.Basis.Potenties ; set => potenties = value ; } IList<uint> potenties ;
 		public uint this[ string ax ] => Map.On(ax)?.At+Base ?? Basis?.Map.On(ax)?.At+Base+Top ?? uint.MaxValue ;
-		public (string Name,string Form) this[ uint ax ] => this.SingleOrNil(m=>m.Value.At==ax).get(v=>(v.Key,v.Value.Form))??default ;
+		public (string Name,string Form) this[ uint ax ] { get => this.SingleOrNil(m=>m.Value.At==ax).get(v=>(v.Key,v.Value.Form))??default ; set => Map[value.Name] = (ax,value.Form) ; }
+		public (string Name,string Form) this[ Axis ax ] { get => this[(uint)ax] ; set => this[(uint)ax] = value ; }
 		public void Reset( Aspect.Traits traits ) { if( (Basis?.Map.Count??Map.Count)>0 ) return ; uint i = 0 ; traits.Each(t=>(Basis?.Map??Map)[t.Spec]=(i++,t.Bond)) ; }
 		public bool Equals( Metax other ) => other is Metax m && Base==m.Base && this.SequenceEquate(m) ;
 		internal IEnumerable<KeyValuePair<string,(uint At,string Form)>> Iterator( uint @base ) => Map.Select(a=>new KeyValuePair<string,(uint At,string Form)>(a.Key,(a.Value.At+@base,a.Value.Form))) ;
