@@ -15,7 +15,7 @@ namespace Rob.Act
 	/// </summary>
 	[Flags] public enum Mark { No=0 , Stop=1 , Lap=2 , Act=4 , Any=Act|Lap|Stop }
 	[Flags] public enum Oper { Merge=0 , Combi=1 , Trim=2 , Smooth=4 , Relat=8 }
-	public enum Axis : uint { Lon,Longitude=Lon , Lat,Latitude=Lat , Alt,Altitude=Alt , Dist,Distance=Dist , Drag , Flow , Beat , Bit , Energy , Grade , Time , Date }
+	public enum Axis : uint { Lon,Longitude=Lon , Lat,Latitude=Lat , Alt,Altitude=Alt , Dist,Distance=Dist , Drag , Flow , Beat , Bit , Energy , Grade , Top , Lim=No-1 , Time=uint.MaxValue , Date=Time-1 , Lap=Date-1 , Stop=Lap-1 , Act=Stop-1 , No=Act-1 }
 	#pragma warning disable CS0660 // Type defines operator == or operator != but does not override Object.Equals(object o)
 	#pragma warning disable CS0661 // Type defines operator == or operator != but does not override Object.GetHashCode()
 	public struct Bipole : IFormattable
@@ -78,14 +78,14 @@ namespace Rob.Act
 		#region Axis specifics
 		static readonly List<string> axis = Enum.GetNames(typeof(Axis)).ToList() , marks = Enum.GetNames(typeof(Mark)).ToList() ;
 		static readonly List<uint> vaxi = Enum.GetValues(typeof(Axis)).Cast<uint>().ToList() ; static readonly List<Mark> vama = Enum.GetValues(typeof(Mark)).Cast<Mark>().ToList() ;
-		internal static uint Axis( this string name , uint dim ) => vaxi.At(axis.IndexOf(name)).nil(i=>i<0).Get(i=>i==(uint)Act.Axis.Time?dim:i==(uint)Act.Axis.Date?dim+1:i) ?? (uint)axis.Set(a=>{a.Add(name);vaxi.Add((uint)vaxi.Count);}).Count-1 ;
+		internal static uint Axis( this string name ) => vaxi.At(axis.IndexOf(name)).nil(i=>i<0) ?? (uint)axis.Set(a=>{a.Add(name);vaxi.Add((uint)vaxi.Count);}).Count-1 ;
 		internal static Mark Mark( this string name ) => vama.At(marks.IndexOf(name)) ;
-		internal static readonly (Axis At,Axis To) Potentialim = (Act.Axis.Dist,Act.Axis.Time) ;
+		static readonly (Axis At,Axis To) Potentialim = (Act.Axis.Dist,Act.Axis.Top-1) ;
 		public static readonly Axis[] Derivates = {Act.Axis.Dist,Act.Axis.Time} ;
 		public static readonly uint[] Potenties = Potentials.Except(Derivates).Select(v=>(uint)v).ToArray() ;
 		public static bool IsPotential( this Axis ax ) => Potentialim.At<=ax && ax<=Potentialim.To ;
-		public static IEnumerable<Axis> Potentials { get { for( var ax=Potentialim.At ; ax<=Potentialim.To ; ++ax ) yield return ax ; } }
-		public static IEnumerable<Axis> Absoltutes { get { for( var ax=(Axis)0 ; ax<=Act.Axis.Date ; ++ax ) if( ax<Potentialim.At || Potentialim.To<ax ) yield return ax ; } }
+		public static IEnumerable<Axis> Potentials { get { for( var ax=Potentialim.At ; ax<=Potentialim.To ; ++ax ) yield return ax ; yield return Act.Axis.Time ; } }
+		public static IEnumerable<Axis> Absoltutes { get { for( var ax=(Axis)0 ; ax<Act.Axis.Top ; ++ax ) if( ax<Potentialim.At || Potentialim.To<ax ) yield return ax ; yield return Act.Axis.Date ; } }
 		public static IEnumerable<Mark> Marks => vama ;
 		public static IEnumerable<Mark> Segmentables => vama.Where(m=>m!=Act.Mark.No) ;
 		internal static Quant ActLim( this Axis axis , string activity ) => 50 ;
@@ -202,7 +202,7 @@ namespace Rob.Act
 		internal uint Base ; internal Metax Basis ;
 		readonly IDictionary<string,(uint At,string Form)> Map = new Dictionary<string,(uint At,string Form)>() ;
 		public IList<uint> Potenties { get => potenties??Act.Basis.Potenties ; set => potenties = value ; } IList<uint> potenties ;
-		public uint this[ string ax ] => Map.On(ax)?.At+Base ?? Basis?.Map.On(ax)?.At+Base+Top ?? uint.MaxValue ;
+		public uint this[ string ax ] => Map.On(ax)?.At+Base ?? Basis?.Map.On(ax)?.At+Base+Top ?? (uint)Axis.Lim ;
 		public (string Name,string Form) this[ uint ax ] { get => this.SingleOrNil(m=>m.Value.At==ax).get(v=>(v.Key,v.Value.Form))??default ; set => Map[value.Name] = (ax,value.Form) ; }
 		public (string Name,string Form) this[ Axis ax ] { get => this[(uint)ax] ; set => this[(uint)ax] = value ; }
 		public void Reset( Aspect.Traits traits ) { if( (Basis?.Map.Count??Map.Count)>0 ) return ; uint i = 0 ; traits.Each(t=>(Basis?.Map??Map)[t.Spec]=(i++,t.Bond)) ; }
@@ -293,8 +293,8 @@ namespace Rob.Act
 			public abstract uint Dimension {get;}
 			public Quant? this[ uint axis ]
 			{
-				get => axis==Dimension ? Time.TotalSeconds : axis==Dimension+1 ? Date.TotalSeconds() : axis==Dimension+2 ? Post.Lap : axis==Dimension+3 ? Post.Stop : axis==Dimension+4 ? Post.Act : axis==Dimension+5 ? No : Quantity.At((int)axis) ;
-				set { if( axis>=Quantity.Length && value!=null && axis<uint.MaxValue ) Quantity.Set(q=>q.CopyTo(Quantity=new Quant?[Math.Max(axis+1,Metax?.Dimension??0)],0)) ; if( axis<Quantity.Length ) Quantity[axis] = value ; }
+				get => axis==(uint)Axis.Time ? Time.TotalSeconds : axis==(uint)Axis.Date ? Date.TotalSeconds() : axis==(uint)Axis.Lap ? Post.Lap : axis==(uint)Axis.Stop ? Post.Stop : axis==(uint)Axis.Act ? Post.Act : axis==(uint)Axis.No ? No : Quantity.At((int)axis) ;
+				set { if( axis>=Quantity.Length && value!=null && axis<(uint)Axis.Lim ) Quantity.Set(q=>q.CopyTo(Quantity=new Quant?[Math.Max(axis+1,Metax?.Dimension??0)],0)) ; if( axis<Quantity.Length ) Quantity[axis] = value ; }
 			}
 			public Quant? this[ Mark mark ]
 			{
@@ -303,8 +303,8 @@ namespace Rob.Act
 			}
 			public Quant? this[ string axis ]
 			{
-				get => Metax?[axis] is uint ax ? ax<uint.MaxValue ? this[ax] : this[axis.Mark()] : this[axis.Mark()] ?? this[axis.Axis(Dimension)] ;
-				set { if( Metax?[axis] is uint ax ) if( ax<uint.MaxValue ) this[ax] = value ; else this[axis.Mark()] = value ; else if( axis.Mark() is Mark mark ) this[mark] = value ; else this[axis.Axis(Dimension)] = value ; }
+				get => Metax?[axis] is uint ax ? ax<(uint)Axis.Lim ? this[ax] : this[axis.Mark()] : this[axis.Mark()] ?? this[axis.Axis()] ;
+				set { if( Metax?[axis] is uint ax ) if( ax<(uint)Axis.Lim ) this[ax] = value ; else this[axis.Mark()] = value ; else if( axis.Mark() is Mark mark ) this[mark] = value ; else this[axis.Axis()] = value ; }
 			}
 			public override bool TrySetMember( SetMemberBinder binder , object value ) { this[binder.Name] = (Quant?)value ; return base.TrySetMember( binder, value ) ; }
 			public override bool TryGetMember( GetMemberBinder binder , out object result ) { result = this[binder.Name] ; return true ; }
@@ -321,7 +321,7 @@ namespace Rob.Act
 
 			#region Comparison
 			public virtual bool Equals( Pointable other ) => other is Point p && date==p.date && time==p.time /*&& Spec==p.Spec*/ && action==p.action && Mark==p.Mark && Quantity.SequenceEquate(p.Quantity,Basis.Equals) ;
-			public virtual bool EqualsRestricted( Pointable other ) => other is Point p && date==p.date /*&& Spec==p.Spec*/ && action==p.action && Mark==p.Mark && Quantity.Skip((int)Axis.Time).SequenceEquate(p.Quantity.Skip((int)Axis.Time),Basis.Equals) ;
+			public virtual bool EqualsRestricted( Pointable other ) => other is Point p && date==p.date /*&& Spec==p.Spec*/ && action==p.action && Mark==p.Mark && Quantity.Skip((int)Axis.Top).SequenceEquate(p.Quantity.Skip((int)Axis.Top),Basis.Equals) ;
 			#endregion
 
 			#region de/Serialization

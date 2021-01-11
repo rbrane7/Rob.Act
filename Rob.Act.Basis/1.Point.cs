@@ -93,12 +93,12 @@ namespace Rob.Act
 
 		#region Vector
 		public static Point Zero( DateTime date ) => new Point(date){ Time = TimeSpan.Zero }.Set(p=>{ for( uint i=0 ; i<p.Dimension ; ++i ) p[i] = 0 ; }) ;
-		public override uint Dimension => (uint?)((Quant?[])this)?.Length ?? (uint)Axis.Time ; // Dimension doesn't include Time and Date and At components , as they state is separate fields . Therefore Axis.Time limits index .
+		public override uint Dimension => (uint?)((Quant?[])this)?.Length ?? (uint)Axis.Top ; // Dimension doesn't include Time and Date and At components , as they state is separate fields . Therefore Axis.Time limits index .
 		public new Quant? this[ uint axis ] { get => base[axis] ; set { if( this[axis]==value ) return ; base[axis] = value ; Changed(Metax?[axis].Name??((Axis)axis).ToString()) ; } } // because of WFP bug proprty of Binding.Path property resolution on inedexers
 		public virtual Quant? this[ Axis axis ]
 		{
 			get => axis==Axis.Time ? Time.TotalSeconds : axis==Axis.Date ? Date.TotalSeconds() : this[(uint)axis] ;
-			set { if( axis<Axis.Time ) this[(uint)axis] = value ; else if( axis>Axis.Date ) this[(uint)axis-3] = value ; else if( value is Quant q ) if( axis==Axis.Time ) Time = TimeSpan.FromSeconds(q) ; else if( axis==Axis.Date ) Date = DateTime.MinValue.AddSeconds(q) ; /*else if( axis==Axis.At ) At = (int)q ;*/ }
+			set { if( axis<Axis.Lim ) this[(uint)axis] = value ; else if( value is Quant q ) if( axis==Axis.Time ) Time = TimeSpan.FromSeconds(q) ; else if( axis==Axis.Date ) Date = DateTime.MinValue.AddSeconds(q) ; /*else if( axis==Axis.At ) At = (int)q ;*/ }
 		}
 		public override Mark Mark { get => base.Mark ; set { if( value==Mark ) return ; base.Mark = value ; Changed("Mark") ; } }
 		public override DateTime Date { get => base.Date ; set { if( Date==value ) return ; base.Date = value ; Changed("Date") ; } }
@@ -152,7 +152,7 @@ namespace Rob.Act
 		public static implicit operator Quant?[]( Point point ) => point as Pre.Point ;
 		public static Point operator/( Point point , Axis axis ) => point / (uint)axis ;
 		public static Point operator/( Point point , uint axis ) => point.Set(p=>p[axis]=null) ;
-		public static Point operator/( Point point , string axis ) => point / (point.Metax?[axis]??axis.Axis(point.Dimension)) ;
+		public static Point operator/( Point point , string axis ) => point / (point.Metax?[axis]??axis.Axis()) ;
 		public static Point operator-( Point point , Point offset ) => new Point(new DateTime(point.Date.Ticks+offset.Date.Ticks>>1)){ Time = point.Date-offset.Date }.Set(p=>{ for( uint i=0 ; i<p.Dimension ; ++i ) p[i] = point[i]-offset[i] ; if( p.IsGeo ) p.Dist = p.Euclid(offset) ; }) ;
 		public static Point operator+( Point accu , Point diff ) => accu.Set( p => diff.Set( d => { p.Time += d.Time ; for( uint i=0 ; i<p.Dimension ; ++i ) p[i] += d[i] ; } ) ) ;
 		public Geos? Geo => this ;

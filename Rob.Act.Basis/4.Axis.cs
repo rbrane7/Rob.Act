@@ -350,21 +350,16 @@ namespace Rob.Act
 				set
 				{
 					ax = value ; var meta = Context.Metaxe(value) ;
-					base.Spec = value.Get(v=>meta.Name??(v<(uint)Axis.Time?((Axis)v).Stringy():v==Context.Dimensions?Axis.Time.ToString():v==Context.Dimensions+1?Axis.Date.ToString():v==Context.Dimensions+2?Mark.Lap.ToString():v==Context.Dimensions+3?Mark.Stop.ToString():v==Context.Dimensions+4?Mark.Act.ToString():v==Context.Dimensions+5?Mark.No.ToString():null)) ;
+					base.Spec = value.Get(v=>meta.Name??(v<(uint)Axis.Top||v>(uint)Axis.Lim?((Axis)v).Stringy():null)) ;
 					if( !meta.Form.No() ) Binder = meta.Form ;
 					Resolver = at=>Context?[at]?[Ax] ;
 				}
 			}
-			public Axis Axis
-			{
-				get => ax==Context.Dimensions||axis==Axis.Time ? Axis.Time : ax==Context.Dimensions+1||axis==Axis.Date ? Axis.Date : ax==(uint)Axis.Time ? (Axis)Context.Dimensions : ax==(uint)Axis.Date ? (Axis)Context.Dimensions+1 : (Axis)ax ;
-				set => Ax = ( axis = value )==Axis.Time ? Context.Dimensions : value==Axis.Date ? Context.Dimensions+1 : value<Axis.Time ? (uint)value : (uint)value-2 ;
-			}
-			public Mark Mark { get => mark ; set => Ax = ( mark = value )==Mark.Lap ? Context.Dimensions+2 : value==Mark.Stop ? Context.Dimensions+3 : value==Mark.Act ? Context.Dimensions+4 : value==Mark.No ? Context.Dimensions+5 : throw new InvalidEnumArgumentException($"Mark invalid {value} !") ; }
+			public Axis Axis { get => axis==Axis.Time ? Axis.Time : axis==Axis.Date ? Axis.Date : (Axis)ax ; set => Ax = (uint)( axis = value ) ; }
+			public Mark Mark { get => mark ; set => Axis = ( mark = value )==Mark.Lap ? Axis.Lap : value==Mark.Stop ? Axis.Stop : value==Mark.Act ? Axis.Act : value==Mark.No ? Axis.No : throw new InvalidEnumArgumentException($"Mark invalid {value} !") ; }
 			//public Axis Axis { get => axis ?? Axis4(ax) ; set => Ax = (uint)( axis = value ) ; } Axis? axis ;
 			//public virtual uint Ax { get => axis==Axis.Time ? Context.Dimension : axis==Axis.Date ? Context.Dimension+1 : ax ; set { base.Spec = ( ax = value ).Get(v=>v<(uint)Axis.Time?(axis=(Axis)v).Stringy():v<Context.Dimension?Context.Metax?[v].Name:(axis=v==Context.Dimension?Axis.Time:Axis.Date).ToString()) ; Resolver = at=>Context?[at]?[Ax] ; } } uint ax ;
-			Axis Axis4( uint a ) => a==Context.Dimensions ? Axis.Time : a==Context.Dimensions+1 ? Axis.Date : a==(uint)Axis.Time ? (Axis)Context.Dimensions : a==(uint)Axis.Date ? (Axis)Context.Dimensions+1 : (Axis)a ;
-			public override string Spec { get => base.Spec ; set { if( value!=null ) if( value.Axis(Context.Dimensions) is uint v && v<Context.Dimensions ) Ax = v ; else Axis = Axis4(v) ; base.Spec = value ; } }
+			public override string Spec { get => base.Spec ; set { if( value!=null ) if( value.Axis() is uint v && v<Context.Dimensions ) Ax = v ; else Axis = (Axis)v ; base.Spec = value ; } }
 			public Axe( Path context ) => Context = context ;
 			public override int Count => Context?.Count ?? 0 ;
 			protected override Aspectable DefaultAspect => Context?.Spectrum ;

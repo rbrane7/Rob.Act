@@ -115,7 +115,7 @@ namespace Rob.Act
 		internal Path On( IEnumerable<Point> points , Mark kind = Mark.No )
 		{
 			Take(points,kind) ; using var _=Incognit ;
-			for( var ax = Axis.Lon ; ax<=Axis.Alt ; ++ax ) this[ax] = this.Average(p=>p[ax]) ; for( var ax = Axis.Dist ; ax<=Axis.Time ; ++ax ) this[ax] = this.Sum(p=>p[ax]) ;
+			for( var ax = Axis.Lon ; ax<=Axis.Alt ; ++ax ) this[ax] = this.Average(p=>p[ax]) ; foreach( var ax in Basis.Potentials ) this[ax] = this.Sum(p=>p[ax]) ;
 			Ascent = this.Sum(p=>(Quant?)p.Ascent) ; Deviation = this.Sum(p=>(Quant?)p.Deviation) ; if( Metax!=null ) foreach( var ax in Metax ) this[ax.Value.At] = this.Average(p=>p[ax.Value.At]) ;
 			for( int i=0 , c=this.Min(p=>p.Tag.Count) ; i<c ; ++i ) Tag[i] = this.Where(p=>p.Tags!=null).Aggregate(string.Empty,(a,p)=>a==null?null:a==string.Empty?p.Tag[i]:a==p.Tag[i]||p.Tag[i].No()?a:null) ;
 			return this ;
@@ -330,7 +330,7 @@ namespace Rob.Act
 		public static Path operator&( Path path , Path lead ) => path.Set(p=>p.Rely(lead)) ;
 		public static Path operator/( Path path , uint axis ) => path.Set(p=>p.Each(i=>i/=axis)) ;
 		public static Path operator/( Path path , Axis axis ) => path / (uint)axis ;
-		public static Path operator/( Path path , string axis ) => path / axis.Axis(path?.Dimension??default) ;
+		public static Path operator/( Path path , string axis ) => path / axis.Axis() ;
 		public static Path operator>>( Path path , int depth ) { if( path!=null ) while( depth-->0 ) path = new Path( path.Date , path.Diff ) ; return ++path ; }
 		public static Path operator<<( Path path , int depth ) { if( path!=null ) while( depth-->0 ) path = new Path( path.Date , path.Inte ) ; return ++path ; }
 		public static Path operator--( Path path ) => path - true ;
@@ -417,7 +417,7 @@ namespace Rob.Act
 		{
 			Derived = text.StartsBy(Serialization.Derivator) ;
 			text.RightFromFirst(Serialization.Separator).Separate(Serialization.Separator,false).Set(e=>Content.AddRange(e.Select(p=>((Point)p).Set(a=>{if(a.Metax==null&&Derived)a.Metax=Metax;})))) ;
-			if( Derived ) for( var ax=Axis.Dist ; ax<=Axis.Time ; ++ax ) { Quant lval = 0 ; for( var i=0 ; i<Count ; ++i ) { this[i][ax] += lval ; this[i][ax].Use(v=>lval=v) ; } } else Impose(Mark) ;
+			if( Derived ) foreach( var ax in Basis.Potentials ) { Quant lval = 0 ; for( var i=0 ; i<Count ; ++i ) { this[i][ax] += lval ; this[i][ax].Use(v=>lval=v) ; } } else Impose(Mark) ;
 		}
 		public static explicit operator string( Path path ) => path.Get(a=>$"{(path.Derived?Serialization.Derivator:null)}{(string)(a as Point)}{(string)a.Metax}{Serialization.Separator}{(string.Join(null,a.Content.Select(p=>(string)p+(string)p.Metax.Null(m=>m==a.Metax)+Serialization.Separator)))}") ;
 		public static explicit operator Path( string text ) => text.Null(v=>v.No()).Get(t=>new Path(t)) ;
