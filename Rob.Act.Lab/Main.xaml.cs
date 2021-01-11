@@ -98,7 +98,7 @@ namespace Rob.Act.Analyze
 					new Aspect(asp){Source=path.Spectrum}.Set(a=>{path.Spectrum.Trait.Add(a.Trait);path.Spectrum.Tager+=a.Tager;}) ;
 			PathEnhancing(path as Path) ;
 		}
-		void PathEnhancing( Path path ) => path.Set(p=>p.Metax=ActiveMetax??(ActiveMetax=new Metax(p.Metax?.Base??p.Dimension)))?.Populate() ;
+		void PathEnhancing( Path path ) => path.Set(p=>p.Metax=ActiveMetax??=new Metax(p.Metax?.Base??p.Dimension))?.Populate() ;
 		void SaveBook() { if( ActionFilterGrid.SelectedItems.Count==1 && (ActionFilterGrid.SelectedItem as Filter.Entry)?.Matter.Null(v=>v.Void()) is string matter && Book.Count>0 && Setup?.WorkoutsPath is string path ) try{Book.Save(path,matter);}catch(System.Exception e){Trace.TraceError("Save Book failed on {0}:{1} : {2}",path,matter,e);} }
 
 		#region Core

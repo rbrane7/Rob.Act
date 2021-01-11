@@ -229,8 +229,12 @@ namespace Rob.Act
 		{
 			#region Construction
 			Point() => Quantity = new Quant?[Dimension] ;
-			public Point( DateTime date ) : this() => Date = date ;
-			public Point( Point point ) : this() { Date = point.Date ; Quantity = point.Quantity.ToArray() ; Mark = point.Mark ; Spec = point.Spec ; Action = point.Action ; }
+			public Point( DateTime date ) : this() { using var _=Incognit ; Date = date ; }
+			public Point( Point point ) : this() { using var _=Incognit ; Date = point.Date ; Quantity = point.Quantity.ToArray() ; Mark = point.Mark ; Spec = point.Spec ; Action = point.Action ; }
+			/// <summary>
+			/// During init faze property chnges are not persisted .
+			/// </summary>
+			protected abstract Aid.Closure Incognit {get;}
 			#endregion
 
 			#region Setup

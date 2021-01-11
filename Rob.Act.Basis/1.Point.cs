@@ -54,7 +54,11 @@ namespace Rob.Act
 		/// <summary>
 		/// During init faze property chnges are not persisted .
 		/// </summary>
-		protected Closure Incognit => new Closure(()=>++initing,()=>--initing) ; byte initing ; protected bool Initing => initing>0 ;
+		protected override Closure Incognit => new Closure(()=>++initing,()=>--initing) ; byte initing ;
+		/// <summary>
+		/// Set to initialization/initialized mode .
+		/// </summary>
+		public bool Initing { get => initing>0 ; set { if( value ) ++initing ; else --initing ; } }
 		/// <summary>
 		/// Assotiative text .
 		/// </summary>
@@ -88,7 +92,7 @@ namespace Rob.Act
 		#endregion
 
 		#region Vector
-		public static Point Zero( DateTime date ) => new Point(date){ Time = TimeSpan.Zero }.Set( p=>{ for( uint i=0 ; i<p.Dimension ; ++i ) p[i] = 0 ; } ) ;
+		public static Point Zero( DateTime date ) => new Point(date){ Time = TimeSpan.Zero }.Set(p=>{ for( uint i=0 ; i<p.Dimension ; ++i ) p[i] = 0 ; }) ;
 		public override uint Dimension => (uint?)((Quant?[])this)?.Length ?? (uint)Axis.Time ; // Dimension doesn't include Time and Date and At components , as they state is separate fields . Therefore Axis.Time limits index .
 		public new Quant? this[ uint axis ] { get => base[axis] ; set { if( this[axis]==value ) return ; base[axis] = value ; Changed(Metax?[axis].Name??((Axis)axis).ToString()) ; } } // because of WFP bug proprty of Binding.Path property resolution on inedexers
 		public virtual Quant? this[ Axis axis ]
@@ -156,7 +160,7 @@ namespace Rob.Act
 
 		#region Handling
 		public event PropertyChangedEventHandler PropertyChanged { add => propertyChanged += value.DispatchResolve() ; remove => propertyChanged -= value.DispatchResolve() ; } protected PropertyChangedEventHandler propertyChanged ;
-		protected void Changed( string property ) { propertyChanged.On(this,property) ; (Owner as Path).Null(p=>p.Initing)?.Edited() ; }
+		protected virtual void Changed( string property ) { propertyChanged.On(this,property) ; (this as Path).Null(p=>p.Initing)?.Edited() ; (Owner as Path).Null(p=>p.Initing)?.Edited() ; }
 		#endregion
 
 		#region Eqalization
