@@ -331,12 +331,12 @@ namespace Rob.Act.Analyze
 			foreach( var asp in DrawingSources )
 			{
 				var asv = val.One(a=>a.Aspect==asp.Spec) ; var xax = asv.Axes.One(a=>a.Spec==xaxe.Spec) ; var yax = asv.Axes.One(a=>a.Spec==yaxes[0]) ;
-				var pts =new List<(System.Windows.Point A,System.Windows.Point B,bool S,double? X,double? Y,(string Spec,double? Val)[] Z)>() ; var zaxes = yaxes.Skip(1).Select(z=>asv.Axes.One(a=>a.Spec==z)).ToArray() ;
+				var pts =new List<(System.Windows.Point A,System.Windows.Point B,Mark S,double? X,double? Y,(string Spec,double? Val)[] Z)>() ; var zaxes = yaxes.Skip(1).Select(z=>asv.Axes.One(a=>a.Spec==z)).ToArray() ;
 				for( int i=0 , c = asp.Points.Count-1 ; i<c ; ++i ) if( xax.Val[i]!=null && yax.Val[i]!=null && xax.Val[i+1]!=null && yax.Val[i+1]!=null && !asp.Raw[i].Mark.HasFlag(Mark.Stop) ) try
 				{
 					var spt0 = ScreenPoint((xax.Val[i].Value-rng[xax.Spec].Min)/(rng[xax.Spec].Max-rng[xax.Spec].Min).nil()*width??0,height-(yax.Val[i].Value-rng[yax.Spec].Min)/(rng[yax.Spec].Max-rng[yax.Spec].Min).nil()*height??0) ;
 					var spt1 = ScreenPoint((xax.Val[i+1].Value-rng[xax.Spec].Min)/(rng[xax.Spec].Max-rng[xax.Spec].Min).nil()*width??0,height-(yax.Val[i+1].Value-rng[yax.Spec].Min)/(rng[yax.Spec].Max-rng[yax.Spec].Min).nil()*height??0) ;
-					if( spt0.X>=0 && spt0.Y>=0 && spt1.X<=width && spt1.Y<=height ) pts.Add((spt0,spt1,asp.Raw[i+1].Mark>Mark.No,xax.Val[i],yax.Val[i],zaxes.Select(z=>(z.Spec,z.Val[i])).ToArray())) ;
+					if( spt0.X>=0 && spt0.Y>=0 && spt1.X<=width && spt1.Y<=height ) pts.Add((spt0,spt1,asp.Raw[i+1].Mark,xax.Val[i],yax.Val[i],zaxes.Select(z=>(z.Spec,z.Val[i])).ToArray())) ;
 				}
 				catch( System.Exception ex ) { Trace.TraceWarning(ex.Stringy()) ; }
 				for( var i=1 ; i<yaxes.Length ; ++i ) rng[yaxes[i]]=(pts.Min(p=>p.Z[i-1].Val).Value,pts.Max(p=>p.Z[i-1].Val).Value) ;
@@ -355,7 +355,12 @@ namespace Rob.Act.Analyze
 						Stroke = axcol.Get(z=>new SolidColorBrush(color*(float)(z%1).Signate(zb.At((zi+1)%2)?.Reverse==false?1:null as double?))) ?? new SolidColorBrush(color) ,
 						StrokeThickness = axarow ?? ( axcol==null && (zicol?.Spec??ziaro?.Spec) is string spec ? rng[spec].Min : 1 ) ,
 					} ) ;
-					if( S ) MapPanel.Children.Add( new Line{ X1 = x2 , Y1 = y2 , X2 = x2-lv.dy*zis , Y2 = y2+lv.dx*zis , Stroke = Brushes.Black , StrokeThickness = 1 } ) ; // stop mark
+					if( S.HasFlag(Mark.Stop) ) MapPanel.Children.Add( new Line{ X1 = x2 , Y1 = y2 , X2 = x2-lv.dy*zis , Y2 = y2+lv.dx*zis , Stroke = Brushes.Gray , StrokeThickness = 1 } ) ; // stop mark
+					if( S.HasFlag(Mark.Lap) )
+					{
+						MapPanel.Children.Add( new Line{ X1 = x2 , Y1 = y2 , X2 = x2+(lv.dx-lv.dy)*Lape*zis , Y2 = y2+(lv.dx+lv.dy)*Lape*zis , Stroke = Brushes.Black , StrokeThickness = 1 } ) ; // lap mark
+						MapPanel.Children.Add( new Line{ X1 = x2 , Y1 = y2 , X2 = x2-(lv.dx+lv.dy)*Lape*zis , Y2 = y2+(lv.dx-lv.dy)*Lape*zis , Stroke = Brushes.Black , StrokeThickness = 1 } ) ; // lap mark
+					}
 					if( axcol>zb.At((zi+1)%2)?.Count || axaro>zb.At(zi%2)?.Count )
 					{
 						foreach( var v in Z ) Coordinates.FirstOrDefault(c=>c.Axe==v.Spec).Set(c=>c.Value=v.Val) ;
@@ -369,6 +374,7 @@ namespace Rob.Act.Analyze
 			Hypercube = rng.Where(a=>xaxe.Spec==a.Key||yaxes.Contains(a.Key)).OrderBy(e=>e.Key==xaxe.Spec?0:Array.IndexOf(yaxes,e.Key)+1).ToArray() ; var co = Coordinates.ToLookup(c=>c.Axe) ; Coordinates.Clear() ;
 			Hypercube.Each(e=>Coordinates+=co[e.Key].One().Set(c=>{c.Range=e.Value;c.Bond=axes.FirstOrDefault(a=>a.Spec==e.Key)?.Binder;})??new Coordinate(this,e.Key){Range=e.Value,Bond=axes.FirstOrDefault(a=>a.Spec==e.Key)?.Binder}) ;
 		}
+		static readonly double Lape = Math.Cos(Math.PI/4) ;
 		async void GraphDrawQuantile()
 		{
 			(var width,var height) = ViewFrame = MainFrameSize ;

@@ -17,7 +17,7 @@ namespace Rob.Act
 	public class Tagger : List<string> , Tagable
 	{
 		public static readonly string[] Names = Enum.GetNames(typeof(Taglet)) ;
-		readonly Action<string> Notifier ;
+		internal Action<string> Notifier {private get;set;}
 		internal Tagger( Action<string> notifier = null ) => Notifier = notifier ;
 		public new string this[ int key ] { get => (uint)key<Count ? base[key] : null ; set { if( this[key]==value ) return ; if( value!=null ) InsureCapacity(key) ; if( (uint)key<Count );else return ; base[key] = value ; Notifier?.Invoke(null) ; } }
 		public string this[ Taglet key ] { get => this[(int)key] ; set { if( this[key]==value ) return ; this[(int)key] = value ; Notifier?.Invoke(key.ToString()) ; } }
@@ -80,7 +80,8 @@ namespace Rob.Act
 		#endregion
 
 		#region Tags
-		public override Tagable Tag => tags ?? System.Threading.Interlocked.CompareExchange(ref tags,new Tagger(p=>{tag=null;if(Spec==Despect)Spec=null;Changed(p??"Tags");}),null) ?? tags ; Tagger tags ;
+		void TagChanged( string p ) { tag = null ; if( Spec==Despect ) Spec = null ; Changed(p??"Tags") ; }
+		public override Tagable Tag => tags ?? System.Threading.Interlocked.CompareExchange(ref tags,new Tagger(TagChanged),null) ?? tags ; Tagger tags ;
 		public string Tags { get => tag ??= tags.Stringy() ; set { if( value==tag ) return ; tag = null ; (Tag as Tagger)[value.ExtractTags()] = true ; Changed("Subject,Object,Locus,Refine") ; } } string tag ;
 		public string Subject { get => tags?[Taglet.Subject]??Owner?.Subject ; set { if( value?.Length>0 ) Tag[Taglet.Subject] = value ; else tags.Set(t=>t[Taglet.Subject]=value) ; } }
 		public string Object { get => tags?[Taglet.Object]??Owner?.Object ; set { if( value?.Length>0 ) Tag[Taglet.Object] = value ; else tags.Set(t=>t[Taglet.Object]=value) ; } }
@@ -163,13 +164,13 @@ namespace Rob.Act
 		protected virtual void Changed( string property ) { propertyChanged.On(this,property) ; (this as Path).Null(p=>p.Initing)?.Edited() ; (Owner as Path).Null(p=>p.Initing)?.Edited() ; }
 		#endregion
 
-		#region Eqalization
+		#region Equalization
 		public override bool Equals( Pointable other ) => other is Point p && base.Equals(p) && tags?.Equals(p?.tags)!=false ;
 		public override bool EqualsRestricted( Pointable other ) => other is Point p && base.EqualsRestricted(p) && tags?.Equals(p?.tags)!=false ;
 		#endregion
 
 		#region De/Serialization
-		protected Point( string text ) : base(text) { tags = (Tagger)text.RightFrom(Serialization.Act).LeftFromLast(Serialization.Tag) ; Metax = (Metax)text.RightFrom(Serialization.Tag) ; }
+		protected Point( string text ) : base(text) { ( tags = (Tagger)text.RightFrom(Serialization.Act).LeftFromLast(Serialization.Tag) ).Set(t=>t.Notifier=TagChanged) ; Metax = (Metax)text.RightFrom(Serialization.Tag) ; }
 		public static explicit operator Point( string text ) => text?.Contains(Path.Serialization.Separator)==true ? (Path)text : text.Get(t=>new Point(t)) ;
 		public static explicit operator string( Point p ) => $"{(string)(p as Pre.Point)}{(string)p.tags}{Serialization.Tag}" ;
 		#endregion

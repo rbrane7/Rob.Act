@@ -29,7 +29,7 @@ namespace Rob.Act.Gpx
 	public partial class trksegType
 	{
 		[XmlIgnore] public wptType First => trkpt.At(0) ; [XmlIgnore] public wptType Last => trkpt.At(trkpt.Length-1) ;
-		internal IEnumerable<Point> Iterator { get { if( trkpt==null ) yield break ; foreach( var point in trkpt ) yield return ((Point)point).Set(p=>p.Mark|=Last==point?Mark.Stop:Mark.No) ; } }
+		internal IEnumerable<Point> Iterator { get { if( trkpt==null ) yield break ; foreach( var point in trkpt ) yield return ((Point)point).Set(p=>p.Mark|=Last==point?Mark.Stop|Mark.Lap:Mark.No) ; } }
 		public static implicit operator Point[]( trksegType segment ) => segment?.Iterator.Cast<Point>().ToArray() ;
 		public static implicit operator trksegType( Path path ) => path.Get( s => new trksegType { trkpt = s?.Select(p=>(wptType)p).ToArray() } ) ;
 	}

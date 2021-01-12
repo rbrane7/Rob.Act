@@ -196,6 +196,9 @@ namespace Rob.Act
 			}
 			public string Of( object value ) => Reform.Form( Converter is Func<object,object> c ? c(value) : value ) ;
 		}
+
+		internal static string Serialize( this Mark mark ) => $"{(mark.HasFlag(Act.Mark.Stop)?"Stop":null)}{(mark.HasFlag(Act.Mark.Lap)?"Lap":null)}{(mark.HasFlag(Act.Mark.Act)?"Act":null)}" ;
+		internal static Mark Deserialize( this string mark ) => (mark?.Contains("Stop")==true?Act.Mark.Stop:Act.Mark.No)|(mark?.Contains("Lap")==true?Act.Mark.Lap:Act.Mark.No)|(mark?.Contains("Act")==true?Act.Mark.Act:Act.Mark.No) ;
 	}
 	public class Metax : IEquatable<Metax> , IEnumerable<KeyValuePair<string,(uint At,string Form)>>
 	{
@@ -328,10 +331,10 @@ namespace Rob.Act
 			protected Point( string text )
 			{
 				var qs = text.LeftFrom(Serialization.Quant).Separate(',') ; qs[0].Parse<DateTime>("yyyy-MM-dd HH:mm:ss.ff").Use(v=>date=v) ; qs[1].Parse<TimeSpan>().Use(v=>time=v) ; Quantity = qs.Skip(2).Select(q=>q.Parse<Quant>()).ToArray() ;
-				var ss = text.RightFrom(Serialization.Quant).LeftFromLast(Serialization.Act) ; ss.LeftFrom(',').Parse<Mark>().Use(v=>Mark=v) ;
+				var ss = text.RightFrom(Serialization.Quant).LeftFromLast(Serialization.Act) ; ss.LeftFrom(',').Deserialize().nil().Use(v=>Mark=v) ;
 				ss = ss.RightFromFirst(',') ; ss.LeftFrom(Serialization.Act).Null(v=>v.No()).Set(v=>spec=v) ; ss.RightFrom(Serialization.Act).Null(v=>v.No()).Set(v=>action=v) ;
 			}  
-			public static explicit operator string( Point p ) => $"{p.Date:yyyy-MM-dd HH:mm:ss.ff},{p.Time},{p.Quantity.Stringy(',')}{Serialization.Quant}{p.Marklet},{(p.Spec!=p.Despect?p.Spec:null)}{Serialization.Act}{p.Action}{Serialization.Act}" ;
+			public static explicit operator string( Point p ) => $"{p.Date:yyyy-MM-dd HH:mm:ss.ff},{p.Time},{p.Quantity.Stringy(',')}{Serialization.Quant}{p.Marklet?.Serialize()},{(p.Spec!=p.Despect?p.Spec:null)}{Serialization.Act}{p.Action}{Serialization.Act}" ;
 			public static explicit operator Point( string text ) => text?.Contains('\n')==true ? (Path)text : (Act.Point)text ;
 			protected static class Serialization { public const string Quant = " \x1 Quant \x2 " , Act = " \x1 Act \x2 " , Tag = " \x1 Tag \x2 " ; }
 			#endregion
