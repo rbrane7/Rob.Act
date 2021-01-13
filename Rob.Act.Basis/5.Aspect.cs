@@ -224,7 +224,7 @@ namespace Rob.Act
 			public Act.Axe gran( int lap = 0 ) => lap.quo(this[Axis.Grade,false]as Axe,this[Axis.Dist,false]as Axe) ;
 			public Act.Axe flow( int lap = 0 ) => Raw.Object==Basis.Device.Skierg.Code ? Axe.No : lap.quo(this[Axis.Flow,false]as Axe,this[Axis.Dist,false]as Axe) ;
 			public Act.Axe resi( int lap = 0 ) => lap.quo(this[Axis.Drag,false]as Axe,this[Axis.Dist,false]as Axe) ;
-			Act.Axe perf( Act.Axe pace , Act.Axe grad = null , Act.Axe resi = null , Act.Axe flow = null , Act.Axe gran = null ) => Context.Get( c => new Act.Axe( i => pace[i].PacePower(Gradient(grad?[i]??0),Resistance(resi?[i]),flow?[i]??0,gran?[i]??0) , pace ) ) ?? Axe.No ;
+			Act.Axe perf( Act.Axe pace , Act.Axe grad = null , Act.Axe resi = null , Act.Axe flow = null , Act.Axe gran = null ) => Context.Get( c => new Act.Axe( i => pace[i].PacePower(Gradient(grad?[i]??0),Resistance(resi?[i]??Raw.Draglet),flow?[i]??Raw.Flowlet??0,gran?[i]??Raw.Granlet??0) , pace ) ) ?? Axe.No ;
 			#endregion
 			public override Point.Iterable Points => new Iterator{ Context = this } ;
 			public override IList<Point> Pointes => pointes ??= new Point.Parit<Iterator>{ Context = this , Changes = PointsChanged } ;

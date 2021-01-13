@@ -331,17 +331,17 @@ namespace Rob.Act.Analyze
 			foreach( var asp in DrawingSources )
 			{
 				var asv = val.One(a=>a.Aspect==asp.Spec) ; var xax = asv.Axes.One(a=>a.Spec==xaxe.Spec) ; var yax = asv.Axes.One(a=>a.Spec==yaxes[0]) ;
-				var pts =new List<(System.Windows.Point A,System.Windows.Point B,Mark S,double? X,double? Y,(string Spec,double? Val)[] Z)>() ; var zaxes = yaxes.Skip(1).Select(z=>asv.Axes.One(a=>a.Spec==z)).ToArray() ;
+				var pts =new List<(System.Windows.Point A,System.Windows.Point B,Mark S,double? X,double? Y,(string Spec,double? Val)[] Z,string T)>() ; var zaxes = yaxes.Skip(1).Select(z=>asv.Axes.One(a=>a.Spec==z)).ToArray() ;
 				for( int i=0 , c = asp.Points.Count-1 ; i<c ; ++i ) if( xax.Val[i]!=null && yax.Val[i]!=null && xax.Val[i+1]!=null && yax.Val[i+1]!=null && !asp.Raw[i].Mark.HasFlag(Mark.Stop) ) try
 				{
 					var spt0 = ScreenPoint((xax.Val[i].Value-rng[xax.Spec].Min)/(rng[xax.Spec].Max-rng[xax.Spec].Min).nil()*width??0,height-(yax.Val[i].Value-rng[yax.Spec].Min)/(rng[yax.Spec].Max-rng[yax.Spec].Min).nil()*height??0) ;
 					var spt1 = ScreenPoint((xax.Val[i+1].Value-rng[xax.Spec].Min)/(rng[xax.Spec].Max-rng[xax.Spec].Min).nil()*width??0,height-(yax.Val[i+1].Value-rng[yax.Spec].Min)/(rng[yax.Spec].Max-rng[yax.Spec].Min).nil()*height??0) ;
-					if( spt0.X>=0 && spt0.Y>=0 && spt1.X<=width && spt1.Y<=height ) pts.Add((spt0,spt1,asp.Raw[i+1].Mark,xax.Val[i],yax.Val[i],zaxes.Select(z=>(z.Spec,z.Val[i])).ToArray())) ;
+					if( spt0.X>=0 && spt0.Y>=0 && spt1.X<=width && spt1.Y<=height ) pts.Add((spt0,spt1,asp.Raw[i+1].Mark,xax.Val[i],yax.Val[i],zaxes.Select(z=>(z.Spec,z.Val[i])).ToArray(),asp.Raw[i+1].Tags)) ;
 				}
 				catch( System.Exception ex ) { Trace.TraceWarning(ex.Stringy()) ; }
 				for( var i=1 ; i<yaxes.Length ; ++i ) rng[yaxes[i]]=(pts.Min(p=>p.Z[i-1].Val).Value,pts.Max(p=>p.Z[i-1].Val).Value) ;
 				var color = Coloring(asp) ; (double dx,double dy) lv = (0,0) ;
-				foreach( var (A,B,S,X,Y,Z) in pts ) try
+				foreach( var (A,B,S,X,Y,Z,T) in pts ) try
 				{
 					var za = Z.Select(z=>Coordinates.FirstOrDefault(c=>c.Axe==z.Spec)).ToArray() ; var zb = Z.Select(z=>Coordinates.FirstOrDefault(c=>c.Axe==z.Spec)?.Info??State.Coordination(z.Spec)).ToArray() ;
 					var zicol = Z.At((zi+1)%2).nil(z=>z.Spec==null) ; var ziaro = Z.At(zi%2).nil(z=>z.Spec==null) ;
@@ -361,6 +361,7 @@ namespace Rob.Act.Analyze
 						MapPanel.Children.Add( new Line{ X1 = x2 , Y1 = y2 , X2 = x2+(lv.dx-lv.dy)*Lape*zis , Y2 = y2+(lv.dx+lv.dy)*Lape*zis , Stroke = Brushes.Black , StrokeThickness = 1 } ) ; // lap mark
 						MapPanel.Children.Add( new Line{ X1 = x2 , Y1 = y2 , X2 = x2-(lv.dx+lv.dy)*Lape*zis , Y2 = y2+(lv.dx-lv.dy)*Lape*zis , Stroke = Brushes.Black , StrokeThickness = 1 } ) ; // lap mark
 					}
+					if( T.Void() );else MapPanel.Children.Add(new Label{ Content=T , Foreground=Brushes.Gray , FontStyle=FontStyles.Italic }.Set(l=>{Canvas.SetTop(l,y2-4);Canvas.SetLeft(l,x2-2);})) ; // point tag
 					if( axcol>zb.At((zi+1)%2)?.Count || axaro>zb.At(zi%2)?.Count )
 					{
 						foreach( var v in Z ) Coordinates.FirstOrDefault(c=>c.Axe==v.Spec).Set(c=>c.Value=v.Val) ;

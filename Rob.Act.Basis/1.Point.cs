@@ -132,10 +132,10 @@ namespace Rob.Act
 		public Quant? Bitage => Energy.Quotient(Bit) ;
 		public Quant? Beatrate => Beat.Quotient(Time.TotalMinutes) ;
 		public Quant? Bitrate => Bit.Quotient(Time.TotalMinutes) ;
-		public Quant? Granelet { get => Grade.Quotient(Dist) ; set => Grade = value*Dist ; }
+		public Quant? Granlet { get => Grade.Quotient(Dist) ; set => Grade = value*Dist ; }
 		public Quant? Draglet { get => Drag.Quotient(Dist) ; set => Drag = value*Dist ; }
 		public Quant? Flowlet { get => Flow.Quotient(Dist) ; set => Flow = value*Dist ; }
-		public Bipole? Gradelet => Ascent/Dist ;
+		public Bipole? Gradlet => Ascent/Dist ;
 		public Bipole? Bendlet => Deviation/Dist ;
 		#endregion
 
@@ -144,7 +144,7 @@ namespace Rob.Act
 		public Quant Transfer => Basis.Device.Skierg.Code==Object ? Math.Pow(Draglet??1,1D/3D) : 1 ;
 		public Quant Resister => Object==Basis.Device.Skierg.Code ? Basis.Device.Skierg.Draw : Drag??Path.SubjectProfile.By(Subject)?.Resi??0 ;
 		public override string Exposion => "{0}={1}bW".Comb("{0}/{1}".Comb(Power.Get(p=>$"{Math.Round(p)}W"),Beatrate.Get(b=>$"{Math.Round(b)}`b")),Beatage.use(Math.Round))+$" {Speed*3.6:0.00}km/h" ;
-		public override string Trace => $"{Resister.Get(v=>$"Resist={v:0.00}")} {Ascent.Get(v=>$"Ascent={v:0}m")} {Gradelet.Get(v=>$"Grade={v:.000}")} {Deviation.Get(v=>$"Devia={v:0}m")} {Bendlet.Get(v=>$"Bend={v:.000}")} {Quantities} {Mark.nil(m=>m==Mark.No)}" ;
+		public override string Trace => $"{Resister.Get(v=>$"Resist={v:0.00}")} {Ascent.Get(v=>$"Ascent={v:0}m")} {Gradlet.Get(v=>$"Grade={v:.000}")} {Deviation.Get(v=>$"Devia={v:0}m")} {Bendlet.Get(v=>$"Bend={v:.000}")} {Quantities} {Mark.nil(m=>m==Mark.No)}" ;
 		#endregion
 
 		#region Operation
