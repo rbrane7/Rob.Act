@@ -123,14 +123,7 @@ namespace Rob.Act
 		public Path Energize()
 		{
 			using var _=Incognit ; var dflt = Basis.Energing.On(Object) ;
-			if( Grade==null ) Granlet = Gradstr.Parse<Quant>()??dflt?.Grade ; if( Flow==null ) Flowlet = Flowstr.Parse<Quant>() ; if( Drag==null ) Draglet = Dragstr.Parse<Quant>() ;
-			//for( var i=0 ; i<Count ; ++i )
-			//{
-			//	var dist = this[i].Dist-this[i-1].Null(p=>p.Mark.HasFlag(Mark.Stop))?.Dist ?? 0 ;
-			//	if( Granelet is Quant g && this[i].Grade==null ) this[i].Grade = this[i-1]?.Grade + g*dist ?? 0 ;
-			//	if( Flowlet is Quant f && this[i].Flow==null ) this[i].Flow = this[i-1]?.Flow + f*dist ?? 0 ;
-			//	if( Draglet is Quant d && this[i].Drag==null ) this[i].Drag = this[i-1]?.Drag + d*dist ?? 0 ;
-			//}
+			if( Grade==null ) Granlet = Gradstr.Gradlet(dflt?.Grade) ; if( Flow==null ) Flowlet = Flowstr.Flowlet(dflt?.Flow) ; if( Drag==null ) Draglet = Dragstr.Draglet(dflt?.Drag) ;
 			return this ;
 		}
 		public Path Correct()

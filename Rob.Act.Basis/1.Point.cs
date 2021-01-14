@@ -56,6 +56,10 @@ namespace Rob.Act
 		/// </summary>
 		protected override Closure Incognit => new Closure(()=>++initing,()=>--initing) ; byte initing ;
 		/// <summary>
+		/// During init faze property chnges are not persisted .
+		/// </summary>
+		protected Closure Incognite => new Closure(()=>{(Owner as Path).Set(p=>p.Initing=true);Initing=true;},()=>{(Owner as Path).Set(p=>p.Initing=false);Initing=false;}) ;
+		/// <summary>
 		/// Set to initialization/initialized mode .
 		/// </summary>
 		public bool Initing { get => initing>0 ; set { if( value ) ++initing ; else --initing ; } }
@@ -90,6 +94,8 @@ namespace Rob.Act
 		public string Dragstr { get => tags?[Taglet.Drag]??(Owner as Path)?.Dragstr ; set { if( value?.Length>0 ) Tag[Taglet.Drag] = value ; else tags.Set(t=>t[Taglet.Drag]=value) ; } }
 		public string Gradstr { get => tags?[Taglet.Grade]??(Owner as Path)?.Gradstr ; set { if( value?.Length>0 ) Tag[Taglet.Grade] = value ; else tags.Set(t=>t[Taglet.Grade]=value) ; } }
 		public string Flowstr { get => tags?[Taglet.Flow]??(Owner as Path)?.Flowstr ; set { if( value?.Length>0 ) Tag[Taglet.Flow] = value ; else tags.Set(t=>t[Taglet.Flow]=value) ; } }
+		public string Restr { get => $"{Gradstr} {Flowstr} {Dragstr}" ; set { value.Separate(' ').Set(v=>{ using(Incognite){ Gradstr = v.At(0) ; Flowstr = v.At(1) ; Dragstr = v.At(2) ; } Energize() ; }) ; } }
+		void Energize() { var dflt = Basis.Energing.On(Object) ; Reslet = (Gradstr.Gradlet(dflt?.Grade),Flowstr.Parse<Quant>(dflt?.Flow),Dragstr.Parse<Quant>(dflt?.Drag)) ; }
 		#endregion
 
 		#region Vector
@@ -120,6 +126,7 @@ namespace Rob.Act
 		public Quant? Drag { get => this[Axis.Drag] ; set => this[Axis.Drag] = value ; }
 		public Quant? Flow { get => this[Axis.Flow] ; set => this[Axis.Flow] = value ; }
 		public Quant? Fuel { get => this[Axis.Flow] ; set => this[Axis.Flow] = value ; }
+		public (Quant? Grad,Quant? Flow,Quant? Drag) Rest { get => (Grade,Flow,Drag) ; set { if( value==Rest ) return ; using(Incognite){ Grade = value.Grad ; Flow = value.Flow ; Drag = value.Drag ; } Changed("Rest") ; } }
 		#endregion
 
 		#region Quotient
@@ -137,6 +144,12 @@ namespace Rob.Act
 		public Quant? Flowlet { get => Flow.Quotient(Dist) ; set => Flow = value*Dist ; }
 		public Bipole? Gradlet => Ascent/Dist ;
 		public Bipole? Bendlet => Deviation/Dist ;
+		public (Quant? Grad,Quant? Flow,Quant? Drag) Reslet { get => (Granlet,Flowlet,Draglet) ; set { if( value==Reslet ) return ; using(Incognite){ Granlet = value.Grad ; Flowlet = value.Flow ; Draglet = value.Drag ; } Changed("Reslet") ; } }
+		public (Quant? Grad,Quant? Flow,Quant? Drag) Reslev
+		{
+			get => Basis.Energing.On(Object).use(d=>((Granlet/d.Grade.nil()).use(Math.Log)*10,(Flowlet/d.Flow.nil()).use(Math.Log)*10,(Draglet/d.Drag.nil()).use(Math.Log)*10))??default ;
+			set { if( value!=Reslev ) Basis.Energing.On(Object).Use(d=>Reslet=((value.Grad/10).use(Math.Exp)*d.Grade,(value.Flow/10).use(Math.Exp)*d.Flow,(value.Drag/10).use(Math.Exp)*d.Drag)) ; }
+		}
 		#endregion
 
 		#region Query
@@ -177,11 +190,11 @@ namespace Rob.Act
 	}
 	public static class PointExtension
 	{
-		public static Quant? Draglet( this string value ) => value.Parse<Quant>() ;
-		public static string Dragstr( this Quant? value ) => value?.ToString() ;
-		public static Quant? Gradlet( this string value ) => value.Parse<Quant>() ;
-		public static string Gradstr( this Quant? value ) => value?.ToString() ;
-		public static Quant? Flowlet( this string value ) => value.Parse<Quant>() ;
-		public static string Flowstr( this Quant? value ) => value?.ToString() ;
+		public static Quant? Draglet( this string value , Quant? dflt = null ) { var lev = value.RightFrom('^').Null(_=>dflt==null) ; return (lev??value).Parse<Quant>().Get(v=>lev==null||dflt==null?v:Math.Exp(v/10)*dflt)??dflt ; }
+		public static string Dragstr( this Quant? value , bool lev = false ) => value?.ToString().Get(v=>lev?$"^{v}":v) ;
+		public static Quant? Gradlet( this string value , Quant? dflt = null ) { var lev = value.RightFrom('^').Null(_=>dflt==null) ; return (lev??value).Parse<Quant>().Get(v=>lev==null||dflt==null?v:Math.Exp(v/10)*dflt)??dflt ; }
+		public static string Gradstr( this Quant? value , bool lev = false ) => value?.ToString().Get(v=>lev?$"^{v}":v) ;
+		public static Quant? Flowlet( this string value , Quant? dflt = null ) { var lev = value.RightFrom('^').Null(_=>dflt==null) ; return (lev??value).Parse<Quant>().Get(v=>lev==null||dflt==null?v:Math.Exp(v/10)*dflt)??dflt ; }
+		public static string Flowstr( this Quant? value , bool lev = false ) => value?.ToString().Get(v=>lev?$"^{v}":v) ;
 	}
 }

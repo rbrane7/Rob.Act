@@ -96,7 +96,7 @@ namespace Rob.Act
 		}
 		public readonly static IDictionary<string,(Quant Grade,Quant Flow,Quant Drag)> Energing = new Dictionary<string,(Quant Grade,Quant Flow,Quant Drag)>
 		{
-			["SKIING_CROSS_COUNTRY"]=(.03,0,.14) , ["ROLLER_SKIING"]=(.01,0,.14) ,
+			["SKIING_CROSS_COUNTRY"]=(.03,0.01,.14) , ["ROLLER_SKIING"]=(.01,0,.14) ,
 		} ;
 		#endregion
 
