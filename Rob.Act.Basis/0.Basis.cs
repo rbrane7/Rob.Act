@@ -277,7 +277,8 @@ namespace Rob.Act
 			/// <summary>
 			/// Assotiative text .
 			/// </summary>
-			public virtual string Spec { get => spec ??= Despect ; set { if( value!=spec ) spec = value ; } } string spec ; protected string Despect => Despec(Action) ; protected virtual string Despec( string act ) => $"{act??Action} {Sign}" ;
+			public virtual string Spec { get => spec ??= Despect ; set { if( value!=spec ) spec = value ; } } string spec ;
+			protected string Despect => Despec(Action) ; protected virtual string Despec( string act ) => $"{act??Action} {Sign}" ;
 			/// <summary>
 			/// Action specification .
 			/// </summary>

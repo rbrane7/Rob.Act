@@ -15,7 +15,19 @@ namespace Rob.Act.Gpx
 	{
 		[XmlIgnore] public trkType First => trk.At(0) ; [XmlIgnore] public trkType Last => trk.At(trk.Length-1) ;
 		internal IEnumerable<Point> Iterator { get { if( trk==null ) yield break ; foreach( var track in trk ) foreach( var point in track.Iterator ) yield return point/*.Set(p=>p.Mark|=Last==track&&p.Mark.HasFlag(Mark.Stop)?Mark.Act:Mark.No)*/ ; } }
-		public static implicit operator Path( gpxType way ) => way.Get( w => new Path(w.Date(),w.Iterator,Translation.Kind,(Axis.Beat,60),(Axis.Bit,60)) { Initing = true , Object = w.trk?.Select(t=>t.type).Distinct().Stringy(',') , Action = w.trk?.Select(t=>t.name.Action()).Stringy(',') , Subject = w.trk?.Select(t=>t.link.At(0)?.href.Subject()).Distinct().Stringy(',') , Locus = w.trk?.Select(t=>t.name.Locus()).Distinct().Stringy(',') , Refine = w.trk?.Select(t=>t.name.Refine()).Distinct().Stringy(',') , Dragstr = w.trk?.Select(t=>t.name.Dragstr().Draglet()).Average().Dragstr() , Gradstr = w.trk?.Select(t=>t.name.Gradstr().Gradlet()).Average().Gradstr() , Flowstr = w.trk?.Select(t=>t.name.Flowstr().Flowlet()).Average().Flowstr() } ).Set(w=>w[0].Set(p=>{w.Date=p.Date;w.Initing=false;})).Correct().Altify().Altismooth().Energize() ;
+		public static implicit operator Path( gpxType way ) => way.Get(w=>
+		{
+			var obj = w.trk?.Select(t=>t.type).Distinct().Stringy(',') ; var dflt = Basis.Energing.On(obj) ; bool lev = false ;
+			return new Path(w.Date(),w.Iterator,Translation.Kind,(Axis.Beat,60),(Axis.Bit,60))
+			{
+				Initing = true , Object = obj , Action = w.trk?.Select(t=>t.name.Action()).Stringy(',') , Subject = w.trk?.Select(t=>t.link.At(0)?.href.Subject()).Distinct().Stringy(',') ,
+				Locus = w.trk?.Select(t=>t.name.Locus()).Distinct().Stringy(',') , Refine = w.trk?.Select(t=>t.name.Refine()).Distinct().Stringy(',') ,
+				Dragstr = w.trk?.Select(t=>t.name.Dragstr().Set(v=>lev=v.Contains('^')).Draglet(dflt?.Drag)).Average().Dragstr(dflt?.Drag.nil(_=>!lev)) ,
+				Gradstr = w.trk?.Select(t=>t.name.Gradstr().Set(v=>lev=v.Contains('^')).Gradlet(dflt?.Grade)).Average().Gradstr(dflt?.Grade.nil(_=>!lev)) ,
+				Flowstr = w.trk?.Select(t=>t.name.Flowstr().Set(v=>lev=v.Contains('^')).Flowlet(dflt?.Flow)).Average().Flowstr(dflt?.Flow.nil(_=>!lev)) ,
+			} ;
+		}
+		).Set(w=>w[0].Set(p=>{w.Date=p.Date;w.Initing=false;})).Correct().Altify().Altismooth().Energize() ;
 		public static implicit operator gpxType( Path path ) => path.Get( p => new gpxType { creator = "Rob" , metadata = new metadataType { name = p.Name() , time = p.Date , timeSpecified = p.Date!=null } , trk = (p/Mark.Act).Select(l=>(trkType)p).ToArray() } ) ;
 	}
 	public partial class trkType

@@ -109,7 +109,9 @@ namespace Rob.Act
 		int IList.Add( object value ) { Add( value as Axe ) ; return Count-1 ; }
 		void ICollection<Axe>.Add( Axe axe ) => Add(axe) ;
 		void IList.Insert( int at , object value ) => Insert(at,value as Axe) ;
-		internal Quant Resistance( Quant? resi ) => Raw.Object==Basis.Device.Skierg.Code ? Basis.Device.Skierg.Draw : (Raw?.Resister).use(d=>resi??d)??0 ;
+		internal Quant Resistance( Quant? resi ) => Raw.Object==Basis.Device.Skierg.Code ? Basis.Device.Skierg.Draw : (Raw?.Resister).use(d=>resi??d) ?? Basis.Energing.On(Raw.Object)?.Drag ?? 0 ;
+		internal Quant Flowing( Quant? flow ) => Raw.Object==Basis.Device.Skierg.Code ? 0 : flow ?? Basis.Energing.On(Raw.Object)?.Flow ?? 0 ;
+		internal Quant Graning( Quant? gran ) => Raw.Object==Basis.Device.Skierg.Code ? 0 : gran ?? Basis.Energing.On(Raw.Object)?.Grade ?? 0 ;
 		internal Quant Gradient( Quant grad ) => Raw.Object==Basis.Device.Skierg.Code ? 0 : Path.Tolerancy.On(Raw?.Object)?.Grade is Quant v && v<Math.Abs(grad) ? -.01 : grad ;
 		public override string ToString() => Score ;
 		#region De/Serialization
@@ -224,7 +226,7 @@ namespace Rob.Act
 			public Act.Axe gran( int lap = 0 ) => lap.quo(this[Axis.Grade,false]as Axe,this[Axis.Dist,false]as Axe) ;
 			public Act.Axe flow( int lap = 0 ) => Raw.Object==Basis.Device.Skierg.Code ? Axe.No : lap.quo(this[Axis.Flow,false]as Axe,this[Axis.Dist,false]as Axe) ;
 			public Act.Axe resi( int lap = 0 ) => lap.quo(this[Axis.Drag,false]as Axe,this[Axis.Dist,false]as Axe) ;
-			Act.Axe perf( Act.Axe pace , Act.Axe grad = null , Act.Axe resi = null , Act.Axe flow = null , Act.Axe gran = null ) => Context.Get( c => new Act.Axe( i => pace[i].PacePower(Gradient(grad?[i]??0),Resistance(resi?[i]??Raw.Draglet),flow?[i]??Raw.Flowlet??0,gran?[i]??Raw.Granlet??0) , pace ) ) ?? Axe.No ;
+			Act.Axe perf( Act.Axe pace , Act.Axe grad = null , Act.Axe resi = null , Act.Axe flow = null , Act.Axe gran = null ) => Context.Get( c => new Act.Axe( i => pace[i].PacePower(Gradient(grad?[i]??0),Resistance(resi?[i]??Raw.Draglet),Flowing(flow?[i]??Raw.Flowlet),Graning(gran?[i]??Raw.Granlet)) , pace ) ) ?? Axe.No ;
 			#endregion
 			public override Point.Iterable Points => new Iterator{ Context = this } ;
 			public override IList<Point> Pointes => pointes ??= new Point.Parit<Iterator>{ Context = this , Changes = PointsChanged } ;
