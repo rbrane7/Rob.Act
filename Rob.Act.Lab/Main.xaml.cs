@@ -352,7 +352,7 @@ namespace Rob.Act.Analyze
 					var axarow = ziaro.use(z=>(axaro*zisc%zisc).Signate(zb.At(zi%2)?.Reverse==false?zisc:null as double?)??rng[z.Spec].Min) ;
 					double x1 = A.X+shift*sha.X , y1 = A.Y+shift*sha.Y , x2 = B.X+shift*sha.X , y2 = B.Y+shift*sha.Y , ln = Math.Sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1)) ; if( ln>0 ) lv = ((x2-x1)/ln,(y2-y1)/ln) ;
 					MapPanel.Children.Add( new Line{ X1 =  x1, Y1 = y1 , X2 = x2 , Y2 = y2 ,
-						Stroke = axcol.Get(z=>new SolidColorBrush(color*(float)(z%1).Signate(zb.At((zi+1)%2)?.Reverse==false?1:null as double?))) ?? new SolidColorBrush(color) ,
+						Stroke = axcol.Get(z=>new SolidColorBrush(color*(float)(z%1*.75+.25).Signate(zb.At((zi+1)%2)?.Reverse==false?1:null as double?))) ?? new SolidColorBrush(color) ,
 						StrokeThickness = axarow ?? ( axcol==null && (zicol?.Spec??ziaro?.Spec) is string spec ? rng[spec].Min : 1 ) ,
 					} ) ;
 					if( S.HasFlag(Mark.Stop) ) MapPanel.Children.Add( new Line{ X1 = x2 , Y1 = y2 , X2 = x2-lv.dy*zis , Y2 = y2+lv.dx*zis , Stroke = Brushes.Gray , StrokeThickness = 1 } ) ; // stop mark

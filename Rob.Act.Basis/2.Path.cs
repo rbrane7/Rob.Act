@@ -173,6 +173,12 @@ namespace Rob.Act
 		#endregion
 
 		#region Correction
+		/// <summary>
+		/// Corrects to values of given correction by setting new values to correctited ones at their paces and those between them are moved by the difference between original and new values of adjacent corrections . 
+		/// Correction of values outside of corrected interval is performed by shifting original values proportionaly to distnce from adjacent corrections .
+		/// </summary>
+		/// <param name="axe"> Axis to correct . </param>
+		/// <param name="cor"> New values for at corrected positions . </param>
 		public void Correct( Axis axe , params KeyValuePair<int,Quant>[] cor )
 		{
 			if( cor?.Length<=0 ) return ;
@@ -188,6 +194,12 @@ namespace Rob.Act
 			if( (uint)cor[^1].Key<Count-1 ) { var f = cor[^1] ; Quant Dif( double x ) => (1-x)*(bas-f.Value) ; for( int j=f.Key+1 , k=Count-1 ; j<=k ; ++j ) this[j][axe] -= Dif((double)(j-f.Key)/(k-f.Key)) ; }
 			this[axe] = this[^1][axe]-this[0][axe] ;
 		}
+		/// <summary>
+		/// Corrects to values of given correction by setting new values to correctited ones at their paces and those between them are moved by the difference between original and new values of adjacent corrections . 
+		/// Correction of values outside of corrected interval is performed by shifting original values proportionaly to distnce from adjacent corrections .
+		/// </summary>
+		/// <param name="axe"> Axis to correct . </param>
+		/// <param name="cor"> New values for at corrected positions . </param>
 		public void Correct( string axe , params KeyValuePair<int,Quant>[] cor )
 		{
 			if( cor?.Length<=0 ) return ;
@@ -203,6 +215,12 @@ namespace Rob.Act
 			if( (uint)cor[^1].Key<Count-1 ) { var f = cor[^1] ; Quant Dif( double x ) => (1-x)*(bas-f.Value) ; for( int j=f.Key+1 , k=Count-1 ; j<=k ; ++j ) this[j][axe] -= Dif((double)(j-f.Key)/(k-f.Key)) ; }
 			this[axe] = this[^1][axe]-this[0][axe] ;
 		}
+		/// <summary>
+		/// Corrects to values of given correction by setting new values to correctited one and those between them are interpolated to new ones . 
+		/// No correction of values outside of corrected interval .
+		/// </summary>
+		/// <param name="axe"> Axis to correct . </param>
+		/// <param name="cor"> New values for at corrected positions . </param>
 		public void Flatten( Axis axe , params KeyValuePair<int,Quant>[] cor )
 		{
 			if( cor==null ) return ;
@@ -217,6 +235,12 @@ namespace Rob.Act
 			else this[k][axe] = cor[i].Value ;
 			this[axe] = this[^1][axe]-this[0][axe] ;
 		}
+		/// <summary>
+		/// Corrects to values of given correction by setting new values to correctited one and those between them are interpolated to new ones . 
+		/// No correction of values outside of corrected interval .
+		/// </summary>
+		/// <param name="axe"> Axis to correct . </param>
+		/// <param name="cor"> New values for at corrected positions . </param>
 		public void Flatten( string axe , params KeyValuePair<int,Quant>[] cor )
 		{
 			if( cor==null ) return ;
@@ -231,12 +255,26 @@ namespace Rob.Act
 			else this[k][axe] = cor[i].Value ;
 			this[axe] = this[^1][axe]-this[0][axe] ;
 		}
+		/// <summary>
+		/// Correction of values after the corrected one if <paramref name="axe"/> is potential .
+		/// </summary>
+		/// <param name="axe"> Axis to correct . </param>
+		/// <param name="at"> Position to correct . </param>
+		public Quant? this[ int at , Axis axe ]
+		{
+			get => this[at][axe] ;
+			set
+			{
+				var dif = null as Quant? ; if( (uint)at<Count && (dif=this[at][axe]-value)!=0 ) this[at][axe] = value ;
+				if( Potenties.Contains((uint)axe) && dif.Nil() is Quant d ) { for( var i=at+1 ; i<Count ; ++i ) this[i][axe] -= dif ; this[axe] = this[^1][axe]-this[0][axe] ; }
+			}
+		}
 		public void Correct( Axis axe , IEnumerable<(double at,Quant value)> cor ) => Correct(axe,cor?.Select(c=>new KeyValuePair<int,Quant>((int)Math.Round(c.at*(Count-1)),c.value)).ToArray()) ;
 		public void Flatten( Axis axe , IEnumerable<(double at,Quant value)> cor ) => Flatten(axe,cor?.Select(c=>new KeyValuePair<int,Quant>((int)Math.Round(c.at*(Count-1)),c.value)).ToArray()) ;
 		public void Correct( string axe , IEnumerable<(double at,Quant value)> cor ) => Correct(axe,cor?.Select(c=>new KeyValuePair<int,Quant>((int)Math.Round(c.at*(Count-1)),c.value)).ToArray()) ;
 		public void Correct( Axis axe , params (int at,Quant value)[] cor ) => Correct(axe,cor.Select(c=>((double)c.at/(Count-1).nil()??1,c.value))) ;
 		public void Flatten( Axis axe , params (int at,Quant value)[] cor ) => Flatten(axe,cor.Select(c=>((double)c.at/(Count-1).nil()??1,c.value))) ;
-		public void Correct( byte level , Axis axe , params (int at,Quant value)[] cor ) { if( cor?.Length>0 ) if( level==2 ) Correct(axe,cor) ; else if( level==1 ) Flatten(axe,cor) ; else if( level==0 ) using( Incognit ) foreach( var (at,value) in cor ) this[at][axe] = value ; }
+		public void Correct( byte level , Axis axe , params (int at,Quant value)[] cor ) { if( cor?.Length>0 ) if( level==2 ) Correct(axe,cor) ; else if( level==1 ) Flatten(axe,cor) ; else if( level==0 ) using( Incognit ) foreach( var (at,value) in cor ) this[at,axe] = value ; }
 		public void Correct( string axe , params (int at,Quant value)[] cor ) => Correct(axe,cor.Select(c=>((double)c.at/(Count-1).nil()??1,c.value))) ;
 		public void Correct( Axis axe , params Quant[] cor ) => Correct(axe,cor?.Length.Steps().Select(i=>((double)i/(cor.Length-1).nil()??1,cor[i]))) ;
 		public void Correct( string axe , params Quant[] cor ) => Correct(axe,cor?.Length.Steps().Select(i=>((double)i/(cor.Length-1).nil()??1,cor[i]))) ;
@@ -289,8 +327,10 @@ namespace Rob.Act
 		public Quant? MaxExposure => MaxEffort/MaxBeat ;
 		public string MaxExposion => "{0}={1}".Comb("{0}/{1}".Comb(MaxEffort.Get(e=>$"{e:0}W"),MaxBeat.Get(v=>$"{Math.Round(v*60)}′♥")),MaxExposure.Get(e=>$"{Math.Round(e)}♥W")) ;
 		Quant Durability => Math.Max(0,1.1-20/Time.TotalSeconds) ;
-		public Quant? Drift => ((Spectrum[Axis.Energy] as Axe)^(Spectrum[Axis.Beat] as Axe))?.LastOrDefault() is Quant v ? Math.Log(v) : null as Quant? ;
-		public Quant? xDrift => ((Spectrum[Axis.Energy] as Axe)^(Spectrum[Axis.Beat] as Axe)).Skip(150)?.Min() is Quant v ? Math.Log(v) : null as Quant? ;
+		public Quant? Drift => ((Spectrum[Axis.Energy] as Axe).Drift(Spectrum[Axis.Beat] as Axe))?.LastOrDefault() is Quant v ? Math.Log(v) : null as Quant? ;
+		public Quant? xDrift => ((Spectrum[Axis.Energy] as Axe).Drift(Spectrum[Axis.Beat] as Axe))?.Skip(150)?.Min() is Quant v ? Math.Log(v) : null as Quant? ;
+		public override double? Beatrate => (Count-1).Steps().Quotient(i=>Content[i+1].Beat-Content[i].Beat,i=>(Content[i+1].Time-Content[i].Time).TotalSeconds) ;
+		public override double? Bitrate => (Count-1).Steps().Quotient(i=>Content[i+1].Bit-Content[i].Bit,i=>(Content[i+1].Time-Content[i].Time).TotalSeconds) ;
 		#endregion
 
 		#region Access

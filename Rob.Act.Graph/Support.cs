@@ -116,5 +116,5 @@ namespace Rob.Act.Analyze
 		public static explicit operator string( Filter filter ) => filter.Get(f=>string.Join(Separator,f.Entries.Where(e=>!e.Empty).Select(e=>(string)e))) ;
 		public static implicit operator Filter( string filter ) => filter.Get(f=>new Filter{Sensible=true}.Set(t=>f.Separate(Separator).Each(e=>t.Add(e)))) ;
 	}
-	public struct Associable { public Pathable Path ; public Aspect Aspect ; public Associable( Pathable path , Aspect aspect ) { Path = path ; Aspect = aspect ; } public  static implicit operator Associable( (Pathable path,Aspect aspect) arg ) => new Associable(arg.path,arg.aspect) ; }
+	public struct Associable { public Pathable path ; public Aspect aspect ; public  static implicit operator Associable( (Pathable path,Aspect aspect) arg ) => new Associable{path=arg.path,aspect=arg.aspect} ; }
 }

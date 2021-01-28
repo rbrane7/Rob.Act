@@ -67,6 +67,7 @@ namespace Rob.Act
 		/// Assotiative text .
 		/// </summary>
 		public override string Spec { set { if( value!=Spec ) SpecChanged( base.Spec = value ) ; } }
+		public override string Action { get => base.Action ; set { if( value==Action ) return ; base.Action = value ; Changed("Action") ; } }
 		/// <summary>
 		/// Accessor of binding .
 		/// </summary>
@@ -95,7 +96,7 @@ namespace Rob.Act
 		public string Gradstr { get => tags?[Taglet.Grade]??(Owner as Path)?.Gradstr ; set { if( value?.Length>0 ) Tag[Taglet.Grade] = value ; else tags.Set(t=>t[Taglet.Grade]=value) ; } }
 		public string Flowstr { get => tags?[Taglet.Flow]??(Owner as Path)?.Flowstr ; set { if( value?.Length>0 ) Tag[Taglet.Flow] = value ; else tags.Set(t=>t[Taglet.Flow]=value) ; } }
 		public string Restr { get => $"{Gradstr} {Flowstr} {Dragstr}" ; set { value.Separate(' ').Set(v=>{ using(Incognite){ Gradstr = v.At(0) ; Flowstr = v.At(1) ; Dragstr = v.At(2) ; } Energize() ; }) ; } }
-		void Energize() { var dflt = Basis.Energing.On(Object) ; Reslet = (Gradstr.Gradlet(dflt?.Grade),Flowstr.Parse(dflt?.Flow),Dragstr.Parse(dflt?.Drag)) ; }
+		void Energize() { var dflt = Basis.Energing.On(Object) ; Reslet = (Gradstr.Gradlet(dflt?.Grade),Flowstr.Flowlet(dflt?.Flow),Dragstr.Draglet(dflt?.Drag)) ; }
 		#endregion
 
 		#region Vector
@@ -135,21 +136,16 @@ namespace Rob.Act
 		public Quant? Pace => Time.TotalSeconds/Distance ;
 		public Quant? Power => Object==Basis.Device.Skierg.Code ? Time.TotalSeconds.Quotient(Dist).PacePower(drag:Basis.Device.Skierg.Draw) : Energy.Quotient(Time.TotalSeconds) ;
 		public Quant? Force => Energy.Quotient(Distance) ;
-		public Quant? Beatage => Energy.Quotient(Beat) ;
-		public Quant? Bitage => Energy.Quotient(Bit) ;
-		public Quant? Beatrate => Beat.Quotient(Time.TotalMinutes) ;
-		public Quant? Bitrate => Bit.Quotient(Time.TotalMinutes) ;
+		public virtual Quant? Beatage => Energy.Quotient(Beat) ;
+		public virtual Quant? Bitage => Energy.Quotient(Bit) ;
+		public virtual Quant? Beatrate => Beat.Quotient(Time.TotalSeconds) ;
+		public virtual Quant? Bitrate => Bit.Quotient(Time.TotalSeconds) ;
 		public Quant? Granlet { get => Grade.Quotient(Dist) ; set => Grade = value*Dist ; }
 		public Quant? Draglet { get => Drag.Quotient(Dist) ; set => Drag = value*Dist ; }
 		public Quant? Flowlet { get => Flow.Quotient(Dist) ; set => Flow = value*Dist ; }
 		public Bipole? Gradlet => Ascent/Dist ;
 		public Bipole? Bendlet => Deviation/Dist ;
-		public (Quant? Grad,Quant? Flow,Quant? Drag) Reslet { get => (Granlet,Flowlet,Draglet) ; set { if( value==Reslet ) return ; using(Incognite){ Granlet = value.Grad ; Flowlet = value.Flow ; Draglet = value.Drag ; } Changed("Reslet") ; } }
-		public (Quant? Grad,Quant? Flow,Quant? Drag) Reslev
-		{
-			get => Basis.Energing.On(Object).use(d=>((Granlet/d.Grade.nil()).use(Math.Log)*10,(Flowlet/d.Flow.nil()).use(Math.Log)*10,(Draglet/d.Drag.nil()).use(Math.Log)*10))??default ;
-			set { if( value!=Reslev ) Basis.Energing.On(Object).Use(d=>Reslet=((value.Grad/10).use(Math.Exp)*d.Grade,(value.Flow/10).use(Math.Exp)*d.Flow,(value.Drag/10).use(Math.Exp)*d.Drag)) ; }
-		}
+		public (Quant? Grad,Quant? Flow,Quant? Drag) Reslet { get => (Granlet,Flowlet,Draglet) ; set { if( value==Reslet ) return ; using(Incognite){ Granlet = value.Grad ; Flowlet = value.Flow ; Draglet = value.Drag ; } Changed("Grade,Flow,Drag,Reslet") ; } }
 		#endregion
 
 		#region Query
@@ -190,12 +186,12 @@ namespace Rob.Act
 	}
 	public static class PointExtension
 	{
-		public static Quant? Draglet( this string value , Quant? dflt = null ) { var lev = value.RightFrom('^').Null(_=>dflt==null) ; return (lev??value).Parse<Quant>().Get(v=>lev==null||dflt==null?v:Math.Exp(v/10)*dflt) ; }
-		public static string Dragstr( this Quant? value , Quant? dflt = null ) => value.Nil(v=>v.Equal(dflt)).use(v=>dflt.use(d=>Math.Log(v/d)*10)??v).Get(v=>dflt!=null?$"^{v:0.###}":v.ToString()) ;
 		public static Quant? Gradlet( this string value , Quant? dflt = null ) { var lev = value.RightFrom('^').Null(_=>dflt==null) ; return (lev??value).Parse<Quant>().Get(v=>lev==null||dflt==null?v:Math.Exp(v/10)*dflt) ; }
 		public static string Gradstr( this Quant? value , Quant? dflt = null ) => value.Nil(v=>v.Equal(dflt)).use(v=>dflt.use(d=>Math.Log(v/d)*10)??v).Get(v=>dflt!=null?$"^{v:0.###}":v.ToString()) ;
-		public static Quant? Flowlet( this string value , Quant? dflt = null ) { var lev = value.RightFrom('^').Null(_=>dflt==null) ; return (lev??value).Parse<Quant>().Get(v=>lev==null||dflt==null?v:Math.Exp(v/10)*dflt) ; }
-		public static string Flowstr( this Quant? value , Quant? dflt = null ) => value.Nil(v=>v.Equal(dflt)).use(v=>dflt.use(d=>Math.Log(v/d)*10)??v).Get(v=>dflt!=null?$"^{v:0.###}":v.ToString()) ;
+		public static Quant? Flowlet( this string value , Quant? dflt = null ) { var lev = value.RightFrom('^').Null(_=>dflt==null) ; return (lev??value).Parse<Quant>().Get(v=>lev==null||dflt==null?v:Math.Exp(v)*dflt) ; }
+		public static string Flowstr( this Quant? value , Quant? dflt = null ) => value.Nil(v=>v.Equal(dflt)).use(v=>dflt.use(d=>Math.Log(v/d))??v).Get(v=>dflt!=null?$"^{v:0.###}":v.ToString()) ;
+		public static Quant? Draglet( this string value , Quant? dflt = null ) { var lev = value.RightFrom('^').Null(_=>dflt==null) ; return (lev??value).Parse<Quant>().Get(v=>lev==null||dflt==null?v:Math.Exp(v/3)*dflt) ; }
+		public static string Dragstr( this Quant? value , Quant? dflt = null ) => value.Nil(v=>v.Equal(dflt)).use(v=>dflt.use(d=>Math.Log(v/d)*3)??v).Get(v=>dflt!=null?$"^{v:0.###}":v.ToString()) ;
 		static bool Equal( this Quant x , Quant? y ) => x==y || y.use(v=>Math.Abs(x-v))<=0.001*(Math.Abs(x)+y.use(Math.Abs)) ;
 	}
 }

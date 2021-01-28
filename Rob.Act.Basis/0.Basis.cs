@@ -282,7 +282,7 @@ namespace Rob.Act
 			/// <summary>
 			/// Action specification .
 			/// </summary>
-			public string Action { get => action ; set { if( action==value ) return ; var a = action ; action = value ; if( spec==Despec(a) ) Spec = null ; } } string action ;
+			public virtual string Action { get => action ; set { if( action==value ) return ; var a = action ; action = value ; if( spec==Despec(a) ) Spec = null ; } } string action ;
 			/// <summary>
 			/// Kind of demarkaition .
 			/// </summary>

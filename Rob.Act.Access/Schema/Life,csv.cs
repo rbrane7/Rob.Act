@@ -35,6 +35,10 @@ namespace Rob.Act
 					var vals = line.Separate(',').Select(v=>v.Trim('"')).ToArray() ; if( vals.At(4)==null ) continue ;
 					(DateTime Date,Quant? Beat,Quant? Var,Quant? Sat,Quant? Max) = (vals[0].LeftFrom(" - ",all:true).Parse(last.Date,"yyyy-MM-dd HH:mm:ss"),vals[1].Parse(last.Beat),vals[2].Parse(last.Var),vals[3].Parse(last.Sat),vals[4].Parse(last.Max)) ;
 					if( accu.Date==default ) { accu.Date = Date.Date ; Data.Add(accu) ; last = (accu.Date,Beat,Var,Sat,Max) ; }
+					if( accu.Sat==null && Sat!=null ) { accu.Sat = 0 ; Data[^1] = accu ; }
+					if( accu.Var==null && Var!=null ) { accu.Var = 0 ; Data[^1] = accu ; }
+					if( accu.Max==null && Max!=null ) { accu.Max = 0 ; Data[^1] = accu ; }
+					if( accu.Beat==null && Beat!=null ) { accu.Beat = 0 ; Data[^1] = accu ; }
 					var dt = (Date-last.Date).TotalSeconds ; var dB = Beat*dt/60 ;
 					accu.Date = Date ; accu.Beat = (accu.Beat??0)+dB ; accu.Var = (accu.Var??0)+Var*dB ; accu.Sat = (accu.Sat??0)+Sat*dt ; accu.Max = (accu.Max??0)+Max*dt/60 ;
 					Data.Add(accu) ; last = (Date,Beat,Var,Sat,Max) ;

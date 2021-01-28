@@ -27,12 +27,17 @@ namespace Rob.Act
 			string cofile = null ; if( file.EndsWith(".tcx") && file.Contains("concept2-logbook-workout-") ) { cofile = file ; file = file.Replace("logbook-workout","result").Replace(".tcx",Csv.Ext) ; }
 			if( !primary )
 			{
-				if( Path.Primary && System.IO.Path.ChangeExtension(file,Path.Filext) is string p && file!=p && System.IO.File.Exists(p) ) return null ; // we prefer .path files over all serialization forms
+				if( cofile!=null )
+				{
+					if( Path.Primary && System.IO.Path.ChangeExtension(cofile,Path.Filext) is string p && cofile!=p && System.IO.File.Exists(p) ) return null ; // we prefer .path files over all serialization forms
+					if( System.IO.File.Exists($"{cofile}.{Partitioner.Ext}") ) return null ; // we prefer ..par corrections over original serialization forms if they are not named
+				}
+				if( Path.Primary )if( System.IO.Path.ChangeExtension(file,Path.Filext) is string p && file!=p && System.IO.File.Exists(p) ) return null ; // we prefer .path files over all serialization forms
 				if( System.IO.File.Exists($"{file}.{Partitioner.Ext}") ) return null ; // we prefer ..par corrections over original serialization forms if they are not named
 			}
 			var data = file.ReadAllText(false) ; if( data==null ) return null ;
 			if( (cofile??=file.Replace("result","logbook-workout").Replace(Csv.Ext,".tcx"))!=file && System.IO.File.Exists(cofile) )
-			{
+			{	// Now cofile is always just heder , not point-to-point data .
 				var rest = cofile.ReadAllText(false) ; var text = rest.Get(t=>t.LeftFrom("<Track")??t.LeftFrom("</Lap>")) ;
 				var date = text.RightFromFirst("<Lap StartTime=\"").LeftFrom("\"") ; var spec = text.RightFromFirst("<Id>").LeftFrom("</Id>") ;
 				var time = text.RightFromFirst("<TotalTimeSeconds>").LeftFrom("</TotalTimeSeconds>") ; var dist = text.RightFrom("<DistanceMeters>").LeftFrom("</DistanceMeters>") ;
