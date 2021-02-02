@@ -167,12 +167,14 @@ namespace Rob.Act
 			public IEnumerable<Aspect> Contexts => this.Select(t=>t.Context).Distinct() ;
 			public Quant? this[ string rek ] => this[rek,t=>rek.Contains(Traitlet.Extern)?t.Spec:t.Name]?.Value ;
 			public void Add( Traitlet trait , IEnumerable<Aspectable> set = null ) => base.Add(trait.Set(t=>{if(set!=null||t.Context==null){t.Context=Context.Set(c=>c.Join(t.Context,set));Dirty=true;}t.PropertyChanged+=ChangedItem;Spec=null;})) ;
+			public void Insert( int at , Traitlet trait , IEnumerable<Aspectable> set = null ) => base.Insert(at,trait.Set(t=>{if(set!=null||t.Context==null){t.Context=Context.Set(c=>c.Join(t.Context,set));Dirty=true;}t.PropertyChanged+=ChangedItem;Spec=null;})) ;
 			public new void Add( IEnumerable<Traitlet> traits ) => traits.Each(Add) ;
 			public static Traits operator+( Traits traits , Traitlet trait ) => traits.Set(t=>t.Add(trait)) ;
 			public override bool Remove( Traitlet item ) => base.Remove(item).Set(r=>{if(item.Context==context){item.Context=null;Dirty=true;}item.PropertyChanged-=ChangedItem;Spec=null;}) ;
 			void ICollection<Traitlet>.Add( Traitlet trait ) => Add(trait) ;
 			int IList.Add( object item ) { Add((Traitlet)item) ; return Count-1 ; }
 			void IList.Remove( object value ) => Remove( value as Traitlet ) ;
+			void IList.Insert( int index , object value ) => Insert(index,(Traitlet)value) ;
 			public void Clean() => this.Where(t=>t.Context!=Context).ToArray().Each(t=>Remove(t)) ;
 			public override string ToString() => Spec ;
 			public string Spec { get => Orphan ? null : this.Stringy(',').Null(v=>v.No()) ; protected set { if( Propagate() ) propertyChanged.On(this,"Spec",Context.Set(c=>c.Score=value)) ; } }

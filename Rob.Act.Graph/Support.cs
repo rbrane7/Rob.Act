@@ -94,7 +94,7 @@ namespace Rob.Act.Analyze
 			public struct Binding
 			{
 				static readonly string ThisKey = typeof(Aid.Converters.ObjectAccessible).GetProperties().One().Name ;
-				public string Path , Name , Format , Align ; public IValueConverter Converter ; 
+				public string Path , Name , Format , Align ; public IValueConverter Converter ;
 				public string Form => Align.No() ? Format : Format.No() ? $"{{0,{Align}}}" : $"{{0,{Align}:{Format}}}" ;
 				public string Reform => Align.No()&&!Format.No() ? $"{{0:{Format}}}" : Form ;
 				public static implicit operator Binding( string value ) => new Binding(value) ;
@@ -103,11 +103,12 @@ namespace Rob.Act.Analyze
 					if( value?.TrimStart().StartsBy("(")==true )
 					{
 						var cvt = value.LeftFromScoped(true,'/',',',':') ; value = value.RightFromFirst(cvt) ; Path = cvt.Contains(LambdaContext.Act.Accessor) ? ThisKey : null ;
-						if( Path==null ) Converter = new Aid.Converters.LambdaConverter{Forward=cvt} ;
-						else { cvt = cvt.RightFromFirst('(').LeftFromLast(')') ; Converter = new Aid.Converters.LambdaAccessor{Forward=cvt.LeftFrom(LambdaContext.Act.Accessor),Backward=cvt.RightFrom(LambdaContext.Act.Accessor)} ; }
+						if( Path==null ) Converter = new Aid.Converters.LambdaConverter{Forward=cvt.LeftFrom(LambdaContext.Act.Lambda,all:true),Getter=cvt.RightFromFirst(LambdaContext.Act.Lambda)} ;
+						else { cvt = cvt.RightFromFirst('(').LeftFromLast(')') ; Converter = new Aid.Converters.LambdaAccessor{Forward=cvt.LeftFrom(LambdaContext.Act.Accessor),Setter=cvt.RightFrom(LambdaContext.Act.Accessor)} ; }
 					}
 					else { Path = value.LeftFrom(true,':',',','/') ; Converter = null ; }
 					Name = value.LeftFrom(true,':',',').RightFromFirst('/',true) ; Format = value.RightFromFirst(':') ; Align = value.LeftFrom(':').RightFrom(',') ;
+					if( Format.RightFrom(LambdaContext.Act.Accessor) is string coformat ) { Format = Format.LeftFromLast(LambdaContext.Act.Accessor) ; if( (Converter??=new Aid.Converters.LambdaConverter()) is Aid.Converters.LambdaConverter cvt ) cvt.Backward = coformat ; }
 				}
 				public string Of( object value ) => Reform.Form( Converter is IValueConverter c ? c.Convert(value,null,null,null) : value ) ;
 			}
