@@ -13,7 +13,7 @@ namespace Rob.Act
 	/// <summary>
 	/// Kind of separation marks .
 	/// </summary>
-	[Flags] public enum Mark { No=0 , Stop=1 , Lap=2 , Act=4 , Any=Act|Lap|Stop }
+	[Flags] public enum Mark { No=0 , Stop=1 , Lap=2 , Act=4 }
 	[Flags] public enum Oper { Merge=0 , Combi=1 , Trim=2 , Smooth=4 , Relat=8 }
 	public enum Axis : uint { Lon,Longitude=Lon , Lat,Latitude=Lat , Alt,Altitude=Alt , Dist,Distance=Dist , Drag , Flow , Beat , Bit , Energy , Grade , Top , Lim=No-1 , Time=uint.MaxValue , Date=Time-1 , Lap=Date-1 , Stop=Lap-1 , Act=Stop-1 , No=Act-1 }
 	#pragma warning disable CS0660 // Type defines operator == or operator != but does not override Object.Equals(object o)

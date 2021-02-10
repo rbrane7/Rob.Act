@@ -102,9 +102,9 @@ namespace Rob.Act.Analyze
 				{
 					if( value?.TrimStart().StartsBy("(")==true )
 					{
-						var cvt = value.LeftFromScoped(true,'/',',',':') ; value = value.RightFromFirst(cvt) ; Path = cvt.Contains(LambdaContext.Act.Accessor) ? ThisKey : null ;
-						if( Path==null ) Converter = new Aid.Converters.LambdaConverter{Forward=cvt.LeftFrom(LambdaContext.Act.Lambda,all:true),Getter=cvt.RightFromFirst(LambdaContext.Act.Lambda)} ;
-						else { cvt = cvt.RightFromFirst('(').LeftFromLast(')') ; Converter = new Aid.Converters.LambdaAccessor{Forward=cvt.LeftFrom(LambdaContext.Act.Accessor),Setter=cvt.RightFrom(LambdaContext.Act.Accessor)} ; }
+						var cvt = value.LeftFromScoped(true,'/',',',':') ; value = value.RightFromFirst(cvt) ; Path = cvt.Contains(LambdaContext.Act.Accessor) ? ThisKey : null ; cvt = cvt.RightFromFirst('(').LeftFromLast(')') ;
+						if( Path==null ) Converter = new Aid.Converters.LambdaConverter{Forward=cvt.LeftFrom(LambdaContext.Act.Lambda,all:true),Back=cvt.RightFromFirst(LambdaContext.Act.Lambda)} ;
+						else Converter = new Aid.Converters.LambdaAccessor{Forward=cvt.LeftFrom(LambdaContext.Act.Accessor),Back=cvt.RightFrom(LambdaContext.Act.Accessor)} ;
 					}
 					else { Path = value.LeftFrom(true,':',',','/') ; Converter = null ; }
 					Name = value.LeftFrom(true,':',',').RightFromFirst('/',true) ; Format = value.RightFromFirst(':') ; Align = value.LeftFrom(':').RightFrom(',') ;

@@ -166,8 +166,9 @@ namespace Rob.Act
 			internal Aspect Context { get => context ; set { this.Each(t=>{if(t.Context==context)t.Context=value;}) ; context = value ; } } Aspect context ;
 			public IEnumerable<Aspect> Contexts => this.Select(t=>t.Context).Distinct() ;
 			public Quant? this[ string rek ] => this[rek,t=>rek.Contains(Traitlet.Extern)?t.Spec:t.Name]?.Value ;
-			public void Add( Traitlet trait , IEnumerable<Aspectable> set = null ) => base.Add(trait.Set(t=>{if(set!=null||t.Context==null){t.Context=Context.Set(c=>c.Join(t.Context,set));Dirty=true;}t.PropertyChanged+=ChangedItem;Spec=null;})) ;
-			public void Insert( int at , Traitlet trait , IEnumerable<Aspectable> set = null ) => base.Insert(at,trait.Set(t=>{if(set!=null||t.Context==null){t.Context=Context.Set(c=>c.Join(t.Context,set));Dirty=true;}t.PropertyChanged+=ChangedItem;Spec=null;})) ;
+			public void Add( Traitlet trait , IEnumerable<Aspectable> set = null ) => base.Add(trait.Set(t=>Join(t,set))) ;
+			public void Insert( int at , Traitlet trait , IEnumerable<Aspectable> set = null ) => base.Insert(at,trait.Set(t=>Join(t,set))) ;
+			void Join( Traitlet trait , IEnumerable<Aspectable> set = null ) { if( set!=null || trait.Context==null ) { trait.Context=Context.Set(c=>c.Join(trait.Context,set)) ; Dirty=true ; } trait.PropertyChanged += ChangedItem ; Spec=null ; }
 			public new void Add( IEnumerable<Traitlet> traits ) => traits.Each(Add) ;
 			public static Traits operator+( Traits traits , Traitlet trait ) => traits.Set(t=>t.Add(trait)) ;
 			public override bool Remove( Traitlet item ) => base.Remove(item).Set(r=>{if(item.Context==context){item.Context=null;Dirty=true;}item.PropertyChanged-=ChangedItem;Spec=null;}) ;

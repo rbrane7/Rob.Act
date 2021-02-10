@@ -257,7 +257,7 @@ namespace Rob.Act.Analyze
 			{
 				var x = rng[xaxe.Spec] ; var axe = xaxe ; Filter.Entry.Binding axb = axe.Binder ; string format( double v ) => axe.Binder.No() ? Format(v) : axb.Of(v) ;
 				for( var m=0 ; m<=width ; m+=100 ) GraphPanel.Children.Add( new Label{ Content=format(ScreenX(x.Min+m*(x.Max-x.Min)/width,x)) , Foreground=Brushes.Gray }.Set(l=>{Canvas.SetLeft(l,m-5);Canvas.SetTop(l,height-20);}) ) ;
-				for( var m=50 ; m<=width ; m+=100 ) GraphPanel.Children.Add( new Label{ Content=format(ScreenX(x.Min+m*(x.Max-x.Min)/width,x)) , Foreground=Brushes.Gray }.Set(l=>{Canvas.SetLeft(l,m-5);Canvas.SetTop(l,-10);}) ) ;
+				for( var m=50 ; m<=width ; m+=100 ) GraphPanel.Children.Add( new Label{ Content=format(ScreenX(x.Min+m*(x.Max-x.Min)/width,x)) , Foreground=Brushes.Gray }.Set(l=>{Canvas.SetLeft(l,m-5);Canvas.SetTop(l,height-12);}) ) ;
 				if( x.Min<0 && x.Max>0 ) { var xZero = ScreenX(-x.Min/(x.Max-x.Min)*width) ; GraphPanel.Children.Add( new Line{ X1 = xZero , Y1 = 0 , X2 = xZero , Y2 = height , Stroke = Brushes.Gray } ) ; }
 				var n=0 ; foreach( var ax in rng.Keys.Intersect(yaxes) )
 				{
@@ -268,9 +268,10 @@ namespace Rob.Act.Analyze
 			}
 			foreach( var asp in DrawingSources )
 			{
-				var asv = val.One(a=>a.Aspect==asp.Spec) ; var xax = asv.Axes.One(a=>a.Spec==xaxe.Spec) ; var color = new SolidColorBrush(Coloring(asp)) ; foreach( var ax in asv.Axes ) if( yaxes.Contains(ax.Spec) ) try
+				var asv = val.One(a=>a.Aspect==asp.Spec) ; var xax = asv.Axes.One(a=>a.Spec==xaxe.Spec) ; var color = new SolidColorBrush(Coloring(asp)) ; DoubleCollection dash = null ;
+				foreach( var ax in asv.Axes ) if( yaxes.Contains(ax.Spec) ) try
 				{
-					var ptss = new List<(int Count,int From)>() ; DoubleCollection dash = null ;
+					var ptss = new List<(int Count,int From)>() ;
 					{
 						int c,i,ac ; for( i=0 , c=0 , ac=ax.Val.Length ; i<ac ; ++i ) try { var stop = false ; if( xax.Val.At(i)!=null&&ax.Val.At(i)!=null ) ++c ; else stop = true ; if( stop||asp.Raw?[i]?.Mark==Mark.Stop ) { if( c>0 ) ptss.Add((c,i-c+(stop?0:1))) ; c = 0 ; } }
 						catch( System.Exception e ) { Trace.TraceWarning($"Points calculation problem at {i}/{c}/{ac} : {e}") ; }
@@ -289,7 +290,12 @@ namespace Rob.Act.Analyze
 						} ) ;
 					}
 				}
-				catch( System.Exception ex ) { Trace.TraceWarning(ex.Stringy()) ; }
+				catch( System.Exception ex ) { Trace.TraceWarning(ex.Stringy()) ; } dash = null ;
+				foreach( var (No,Tags) in asp.Raw?.Where(p=>!p.Tags.No()).Select(p=>(p.No,p.Tags)) ) if( No is int no && xax.Val.At(no) is double at && ScreenX(((at-rng[xax.Spec].Min)/(rng[xax.Spec].Max-rng[xax.Spec].Min).nil()*width??0)+asp.Offset) is double x )
+				{
+					GraphPanel.Children.Add( new Label{ Content=Tags , Foreground=color , FontStyle=FontStyles.Italic }.Set(l=>{Canvas.SetTop(l,9*SourceIndex(asp)-9);Canvas.SetLeft(l,x-3);}) ) ; // point tag
+					GraphPanel.Children.Add( new Line{ X1 = x , Y1 = 0 , X2 = x , Y2 = height , Stroke = color , StrokeDashArray = dash??=new DoubleCollection{2,6} } ) ; // tag line
+				}
 			}
 			Hypercube = rng.Where(a=>xaxe.Spec==a.Key||yaxes.Contains(a.Key)).OrderBy(e=>e.Key==xaxe.Spec?0:Array.IndexOf(yaxes,e.Key)+1).ToArray() ; var co = Coordinates.ToLookup(c=>c.Axe) ; Coordinates.Clear() ;
 			Hypercube.Each(e=>Coordinates+=co[e.Key].One().Set(c=>{c.Range=e.Value;c.Bond=axes.FirstOrDefault(a=>a.Spec==e.Key)?.Binder;})??new Coordinate(this,e.Key){Range=e.Value,Bond=axes.FirstOrDefault(a=>a.Spec==e.Key)?.Binder}) ;
