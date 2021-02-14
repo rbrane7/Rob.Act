@@ -205,15 +205,16 @@ namespace Rob.Act
 			{
 				Context = path ; Add(new Axe(Context){Axis=Axis.Date}) ; Add(new Axe(Context){Axis=Axis.Time}) ;
 				for( uint ax = 0 ; ax<Context.Dimensions ; ++ax ) if( Context[ax]!=null ) Add(new Axe(Context){Ax=ax}) ;
-				foreach( var mark in Basis.Marks ) if( Context[mark]!=null ) Add(new Axe(Context){Mark=mark}) ;
-				this.Each(a=>a.Quantizer=null) ;
+				Remark(true) ; this.Each(a=>a.Quantizer=null) ;
 			}
 			public override string Spec { get => Context.Spec ; set => base.Spec = value ; }
 			public override Aspectable Source { set {} }
 			public Axable this[ Axis ax , bool insure = false ] => this.OfType<Axe>().FirstOrDefault(a=>a.Axis==ax) ??( insure ? new Axe(Context){Axis=ax}.Set(Add) : Axe.No as Axable ) ;
+			public Axable this[ Mark ax ] => this.OfType<Axe>().FirstOrDefault(a=>a.Mark==ax) ;
 			public override void Add( Act.Axe ax ) => base.Add(ax.Set(a=>{if(!(a is Axe))a.Aspect=this;})) ;
 			public override void Remove( Act.Axe ax ) => base.Remove(ax.Set(a=>{if(!(a is Axe))a.Aspect=null;})) ;
 			public void Reform( params string[] binds ) => this.OfType<Axe>().Each(a=>a.Binder=Context.Metaxe(a.Ax).Form??binds.At(a.Axis<Axis.Top?(int)a.Axis:binds.Length-1-(int)(uint.MaxValue-a.Axis))) ;
+			public void Remark( bool direct = false ) { foreach( var mark in Basis.Marks ) if( Context[mark]!=null && (direct||this[mark]==null) ) Add(new Axe(Context){Mark=mark}) ; }
 			#region Operation
 			public Act.Axe perf( Lap lap ) => perf(pace(lap),grad(lap),resi(lap),flow(lap),gran(lap)) ;
 			public Act.Axe velo( Lap lap ) => lap.quo(this[Axis.Dist,false]as Axe,this[Axis.Time,false]as Axe) ;

@@ -288,6 +288,10 @@ namespace Rob.Act
 			/// </summary>
 			public virtual Mark Mark {get;set;} public Mark? Marklet { get => Mark.nil() ; set { if( value is Mark mark ) Mark = mark ; } }
 			/// <summary>
+			/// Shows which marking couters are set .
+			/// </summary>
+			public Mark Marker => (this[Mark.Stop]!=null?Mark.Stop:Mark.No)|(this[Mark.Lap]!=null?Mark.Lap:Mark.No)|(this[Mark.Act]!=null?Mark.Act:Mark.No) ;
+			/// <summary>
 			/// Metadata of axes . 
 			/// </summary>
 			public virtual Metax Metax {get;set;}

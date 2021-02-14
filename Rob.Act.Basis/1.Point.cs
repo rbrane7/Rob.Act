@@ -108,7 +108,7 @@ namespace Rob.Act
 			get => axis==Axis.Time ? Time.TotalSeconds : axis==Axis.Date ? Date.TotalSeconds() : this[(uint)axis] ;
 			set { if( axis<Axis.Lim ) this[(uint)axis] = value ; else if( value is Quant q ) if( axis==Axis.Time ) Time = TimeSpan.FromSeconds(q) ; else if( axis==Axis.Date ) Date = DateTime.MinValue.AddSeconds(q) ; /*else if( axis==Axis.At ) At = (int)q ;*/ }
 		}
-		public override Mark Mark { get => base.Mark ; set { if( value==Mark ) return ; base.Mark = value ; Changed("Mark") ; } }
+		public override Mark Mark { get => base.Mark ; set { if( value==Mark ) return ; var dif = Mark^value ; base.Mark = value ; Changed("Mark") ; if( Owner is Path o && (o.Marker<value||dif>Mark.No) ) o.Remark(dif) ; } }
 		public override DateTime Date { get => base.Date ; set { if( Date==value ) return ; base.Date = value ; Changed("Date") ; } }
 		public override TimeSpan Time { get => base.Time ; set { if( Time==value ) return ; base.Time=value ; Changed("Time") ; } }
 		/// <summary>

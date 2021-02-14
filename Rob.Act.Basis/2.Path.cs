@@ -53,33 +53,33 @@ namespace Rob.Act
 			using var _=Incognit ; Preclude() ; 
 			var mark = kind??Mark ; var pon = Potenties.ToDictionary(a=>a,a=>0D) ; var date = DateTime.Now ; for( var i = 0 ; i<Count ; ++i )
 			{
-				if( this[i].Owner==null ) this[i].Owner = this;
-				if( this[i].Metax==null && Derived ) Metax.Set( m => this[i].Metax=m );
+				if( this[i].Owner==null ) this[i].Owner = this ;
+				if( this[i].Metax==null && Derived ) Metax.Set(m=>this[i].Metax=m) ;
 				if( i<=0 || (this[i-1].Mark&(Mark.Stop|mark))!=0 )
 				{
 					var res = i<=0 || (this[i-1].Mark&mark)!=0 ;
-					date = this[i].Date-(this[i-1]?.Time.nil( _ => res )??default);
-					if( this[i].Dist==null && IsGeo ) this[i].Dist = this[i-1]?.Dist.Nil( _ => res )??0;
-					if( this[i].Ascent==null && Alti!=null ) this[i].Ascent = this[i-1]?.Ascent.Nil( _ => res )??0;
-					if( this[i].Deviation==null && IsGeo ) this[i].Deviation = this[i-1]?.Deviation.Nil( _ => res )??0;
-					if( this[i].Alti==null && Alti!=null ) this[i].Alti = ((Count-i).Steps( i ).FirstOrDefault( j => this[j].Alti!=null ).nil()??i-1).Get( j => this[j].Alti );
-					if( res ) foreach( var ax in Potenties ) pon[ax] = this[i][ax]??this[i-1]?[ax]??0;
-					else foreach( var ax in Potenties ) pon[ax] += (this[i][ax]??this[i-1]?[ax]??0)-(this[i-1]?[ax]??0);
+					date = this[i].Date-(this[i-1]?.Time.nil(_=>res)??default) ;
+					if( this[i].Dist==null && IsGeo ) this[i].Dist = this[i-1]?.Dist.Nil(_=>res)??0 ;
+					if( this[i].Ascent==null && Alti!=null ) this[i].Ascent = this[i-1]?.Ascent.Nil(_=>res)??0 ;
+					if( this[i].Deviation==null && IsGeo ) this[i].Deviation = this[i-1]?.Deviation.Nil(_=>res)??0 ;
+					if( this[i].Alti==null && Alti!=null ) this[i].Alti = ((Count-i).Steps(i).FirstOrDefault(j=>this[j].Alti!=null).nil()??i-1).Get(j=>this[j].Alti) ;
+					if( res ) foreach( var ax in Potenties ) pon[ax] = this[i][ax]??this[i-1]?[ax]??0 ;
+					else foreach( var ax in Potenties ) pon[ax] += (this[i][ax]??this[i-1]?[ax]??0)-(this[i-1]?[ax]??0) ;
 				}
-				if( this[i].Time==default ) this[i].Time = this[i].Date-date;
-				if( this[i].No==null ) this[i].No = i;
+				if( this[i].Time==default ) this[i].Time = this[i].Date-date ;
+				if( this[i].No==null ) this[i].No = i ;
 				//if( this[i].Bit==null ) this[i].Bit = i ;
 				if( this[i].IsGeo )
 				{
-					if( this[i].Dist==null ) this[i].Dist = this[i-1].Dist + (this[i]-this[i-1]).Euclid( this[i-1] );
+					if( this[i].Dist==null ) this[i].Dist = this[i-1].Dist + (this[i]-this[i-1]).Euclid(this[i-1]) ;
 					if( Alti!=null )
 					{
-						if( this[i].Alti==null ) this[i].Alti = this[i-1].Alti + (((Count-i).Steps( i ).FirstOrDefault( j => this[j].Alti!=null ).nil()??i-1).Get( j => (this[j].Alti-this[i-1].Alti)/j ).Nil( a => Math.Abs( a )>(this[i].Dist-this[i-1].Dist)*Tolerancy.On( Object )?.Grade )??0);
-						if( this[i].Ascent==null ) this[i].Ascent = this[i-1].Ascent + (this[i].Alti-this[i-1].Alti is Quant u && Math.Abs( u )<(this[i].Dist-this[i-1].Dist)*(Tolerancy.On( Object )?.Grade??.3) ? u : 0);
+						if( this[i].Alti==null ) this[i].Alti = this[i-1].Alti + (((Count-i).Steps(i).FirstOrDefault(j=>this[j].Alti!=null).nil()??i-1).Get(j=>(this[j].Alti-this[i-1].Alti)/j).Nil(a=>Math.Abs(a)>(this[i].Dist-this[i-1].Dist)*Tolerancy.On(Object)?.Grade)??0) ;
+						if( this[i].Ascent==null ) this[i].Ascent = this[i-1].Ascent + ( this[i].Alti-this[i-1].Alti is Quant u && Math.Abs(u)<(this[i].Dist-this[i-1].Dist)*(Tolerancy.On(Object)?.Grade??.3) ? u : 0 ) ;
 					}
-					if( this[i].Deviation==null ) this[i].Deviation = this[i-1].Deviation + (i<Count-1 && !this[i].Mark.HasFlag( Mark.Stop ) && (this[i].Geo-this[i-1].Geo).Devia( this[i+1].Geo-this[i].Geo ) is Quant v ? v : 0);
+					if( this[i].Deviation==null ) this[i].Deviation = this[i-1].Deviation + ( i<Count-1 && !this[i].Mark.HasFlag( Mark.Stop ) && (this[i].Geo-this[i-1].Geo).Devia(this[i+1].Geo-this[i].Geo) is Quant v ? v : 0 ) ;
 				}
-				foreach( var ax in Potenties ) this[i][ax] -= pon[ax]; // Adjustion of potentials
+				foreach( var ax in Potenties ) this[i][ax] -= pon[ax] ; // Adjustion of potentials
 			}
 			Conclude(this[^1]) ;
 		}
@@ -88,13 +88,14 @@ namespace Rob.Act
 			if( Alti==null ) Alti = this.Average(p=>p.Alti) ; if( this[Axis.Lon]==null ) this[Axis.Lon] = this.Average(p=>p[Axis.Lon]) ; if( this[Axis.Lat]==null ) this[Axis.Lat] = this.Average(p=>p[Axis.Lat]) ;
 			if( this[Mark.Lap]==null ) this[Mark.Lap] = this.Count(p=>p.Mark.HasFlag(Mark.Lap)).nil() ; if( this[Mark.Stop]==null ) this[Mark.Stop] = this.Count(p=>p.Mark.HasFlag(Mark.Stop)).nil() ; if( this[Mark.Act]==null ) this[Mark.Act] = this.Count(p=>p.Mark.HasFlag(Mark.Act)).nil() ;
 		}
-		void Conclude( Point point )
+		void Conclude( Point point = null , Mark? dif = null )
 		{
 			point.Set(p=>{var z=this[0];if(No==null)No=p.No-z.No;if(Bit==null)Bit=p.Bit-z.Bit;if(Time==default)Time=p.Time-z.Time;if(Dist==null)Dist=p.Dist-z.Dist;if(Ascent==null)Ascent=p.Ascent-z.Ascent;if(Deviation==null)Deviation=p.Deviation-z.Deviation;}) ;
-			foreach( var mark in Basis.Segmentables ) if( this[mark]!=null ) Segmentize(mark) ;
+			foreach( var mark in Basis.Segmentables ) if( this[mark]!=null && (dif==null||(dif.Value&mark)!=Mark.No) ) Segmentize(mark) ;
 		}
 		protected internal override void Depose() { using var _=Incognit ; base.Depose() ; for( var i=0 ; i<Count ; ++i ) this[i].Depose() ; }
 		public void Reset( Mark? kind = null , bool notify = true ) { Depose() ; Impose(kind) ; if( notify ) Spectrify() ; }
+		public void Remark( Mark dif = Mark.No , Point point = null ) { Preclude() ; Conclude(point,dif) ; Spectrum.Remark() ; }
 		protected virtual void Adapt( Path path=null )
 		{
 			using var _=Incognit ;

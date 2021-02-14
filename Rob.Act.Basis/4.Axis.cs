@@ -328,7 +328,7 @@ namespace Rob.Act
 		/// <summary>
 		/// Real exact Positions equidistantly distributed respecting creation parameter difference . 
 		/// </summary>
-		public double[] Absolution { get ; }
+		public double[] Absolution {get;}
 		/// <summary>
 		/// Specific axe to support Lap via Axe . 
 		/// </summary>
