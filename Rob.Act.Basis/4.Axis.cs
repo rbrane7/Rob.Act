@@ -62,7 +62,11 @@ namespace Rob.Act
 		public Quantile.Measure Measure( Axe on ) => new Quantile.Measure(this,on) ;
 		public Quant this[ Quant at , Axe ax ] { get { if( ax==null ) return this.Count(q=>q>=at) ; Quant rez = 0 ; for( int i=0 , count=Count ; i<count ; ++i ) if( Resolve(i)>=at ) rez += ax[i+1]-ax[i]??0 ; return rez ; } }
 		//Aid.Collections.BinSetNative<Quant> Cash => cash ??( cash = new Aid.Collections.BinArray<(Quant,int)>.Map<Quant>(Count.Steps().Select(i=>(this[i],i))) ) ; Aid.Collections.BinSetNative<Quant> cash ;
-		protected internal virtual Quant? Resolve( int at ) => Resolver(at) ;
+		/// <summary> Value of <see cref="Axe"/> at position <paramref name="at"/> . </summary>
+		/// <param name="at"> Position to evaluate at . </param>
+		/// <returns> Value at position . </returns>
+		/// <remarks> This function is not to be overriden as it would violate constructive chaining of <see cref="Axe"/> . </remarks>
+		internal Quant? Resolve( int at ) => Resolver?.Invoke(at) ;
 		public Axe Solver => Resolver.Get(_=>coaxe) ;
 		Axe Coaxe { get { try { return coaxe = Multi?Aspects.Get(a=>Resolvelet.Compile<Func<Contexts,Axe>>(use:"Rob.Act").Of(new Contexts{Base=a,This=Own, The=this})):Aspect.Get(a=>Resolvelet.Compile<Func<Context,Axe>>(use:"Rob.Act").Of(new Context{Base=a,This=Own, The=this})) ; } catch( LambdaContext.Exception ) { throw ; } catch( System.Exception e ) { throw new InvalidOperationException($"Problem resolving {Spec} !",e) ; } finally { coaxe.Set(c=>Counter=c.Counter) ; } } } Axe coaxe ;
 		/// <summary> Never null . If nul than always throws . </summary>
@@ -222,6 +226,7 @@ namespace Rob.Act
 			public Aspectable Base , This ; public Axe The ;
 			[LambdaContext.Dominant] public Axe this[ string key ] => This?[key] is Axe a && a!=The ? a : Base?[key] ;
 			public Support this[ IEnumerable<int> fragment ] => One[fragment] ;
+			public Support this[ Mark mark , IEnumerable<int> fragment ] => fragment is IEnumerable<int> f ? new Marker(mark,f,This) : No ;
 			public Path Raw => Base?.Raw ;
 			public Aspect.Traits Trait => This?.Trait ;
 			public Axe Perf( Axe lap ) => lap is Lap.Axe a ? Perf(a.Arg) : No ;
@@ -235,9 +240,17 @@ namespace Rob.Act
 			public Aspectable this[ int key ] => Base[key] ;
 			public Path Raw( int at = 0 ) => Base[at].Raw ;
 			public Support this[ IEnumerable<int> fragment ] => One[fragment] ;
+			public Support this[ Mark mark , IEnumerable<int> fragment ] => fragment is IEnumerable<int> f ? new Marker(mark,f,This) : No ;
 		}
 		public class Support : Support<IEnumerable<int>> { public IEnumerable<int> Fragment => Arg ; internal Support( IEnumerable<int> fragment , Func<int,Quant?> resolver = null , Axe source = null ) : base(fragment,resolver,source) {} }
 		public class Support<Param> : Axe { public readonly Param Arg ; internal Support( Param arg , Func<int,Quant?> resolver = null , Axe source = null ) : base(resolver,source) => Arg = arg ; }
+		public class Marker : Support
+		{
+			public Mark Mark ; HashSet<int> Frag => Fragment as HashSet<int> ;
+			internal Marker( Mark mark , IEnumerable<int> fragment , Aspectable aspect = null ) : base(new HashSet<int>(fragment)) { Mark = mark ; Aspect = aspect ; Resolver = Resolve ; }
+			Quant? Resolve( int at ) => Frag.Contains(at)!=Frag.Contains(at+1)?Put(at):Aspect?.Raw?[at]?[Mark] ;
+			Quant? Put( int at ) { if( Aspect?.Raw?[at] is Point p ) p.Mark = Mark ; return Aspect?.Raw?[at]?[Mark] ; }
+		}
 	}
 	public class Quantile : Aid.Gettable<int,Quant> , Aid.Countable<Quant>
 	{
