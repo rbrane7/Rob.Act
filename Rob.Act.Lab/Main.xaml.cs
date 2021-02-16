@@ -268,10 +268,10 @@ namespace Rob.Act.Analyze
 			}
 			foreach( var asp in DrawingSources )
 			{
-				var asv = val.One(a=>a.Aspect==asp.Spec) ; var xax = asv.Axes.One(a=>a.Spec==xaxe.Spec) ; var color = new SolidColorBrush(Coloring(asp)) ; DoubleCollection dash = null ;
+				var asv = val.One(a=>a.Aspect==asp.Spec) ; var xax = asv.Axes.One(a=>a.Spec==xaxe.Spec) ; var color = new SolidColorBrush(Coloring(asp)) ; DoubleCollection dash ;
 				foreach( var ax in asv.Axes ) if( yaxes.Contains(ax.Spec) ) try
 				{
-					var ptss = new List<(int Count,int From)>() ;
+					var ptss = new List<(int Count,int From)>() ; dash = null ;
 					{
 						int c,i,ac ; for( i=0 , c=0 , ac=ax.Val.Length ; i<ac ; ++i ) try { var stop = false ; if( xax.Val.At(i)!=null&&ax.Val.At(i)!=null ) ++c ; else stop = true ; if( stop||asp.Raw?[i]?.Mark==Mark.Stop ) { if( c>0 ) ptss.Add((c,i-c+(stop?0:1))) ; c = 0 ; } }
 						catch( System.Exception e ) { Trace.TraceWarning($"Points calculation problem at {i}/{c}/{ac} : {e}") ; }
@@ -367,6 +367,12 @@ namespace Rob.Act.Analyze
 						MapPanel.Children.Add( new Line{ X1 = x2 , Y1 = y2 , X2 = x2+(lv.dx-lv.dy)*Lape*zis , Y2 = y2+(lv.dx+lv.dy)*Lape*zis , Stroke = Brushes.Black , StrokeThickness = 1 } ) ; // lap mark
 						MapPanel.Children.Add( new Line{ X1 = x2 , Y1 = y2 , X2 = x2-(lv.dx+lv.dy)*Lape*zis , Y2 = y2+(lv.dx-lv.dy)*Lape*zis , Stroke = Brushes.Black , StrokeThickness = 1 } ) ; // lap mark
 					}
+					if( S.HasFlag(Mark.Sub) )
+					{
+						MapPanel.Children.Add( new Line{ X1 = x2 , Y1 = y2 , X2 = x2+(lv.dx-lv.dy)*Lape*zis/2 , Y2 = y2+(lv.dx+lv.dy)*Lape*zis/2 , Stroke = Brushes.Black , StrokeThickness = 1 } ) ; // sub mark
+						MapPanel.Children.Add( new Line{ X1 = x2 , Y1 = y2 , X2 = x2-(lv.dx+lv.dy)*Lape*zis/2 , Y2 = y2+(lv.dx-lv.dy)*Lape*zis/2 , Stroke = Brushes.Black , StrokeThickness = 1 } ) ; // sub mark
+					}
+					if( S.HasFlag(Mark.Ato) ) MapPanel.Children.Add( new Line{ X1 = x2 , Y1 = y2 , X2 = x2-(lv.dx+lv.dy)*Lape*zis/2 , Y2 = y2+(lv.dx-lv.dy)*Lape*zis/2 , Stroke = Brushes.Black , StrokeThickness = 1 } ) ; // ato mark
 					if( T.Void() );else MapPanel.Children.Add(new Label{ Content=T , Foreground=Brushes.Gray , FontStyle=FontStyles.Italic }.Set(l=>{Canvas.SetTop(l,y2-4);Canvas.SetLeft(l,x2-2);})) ; // point tag
 					if( axcol>zb.At((zi+1)%2)?.Count || axaro>zb.At(zi%2)?.Count )
 					{

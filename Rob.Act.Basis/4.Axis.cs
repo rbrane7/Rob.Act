@@ -128,12 +128,19 @@ namespace Rob.Act
 		public static Axe operator-( Quant x , Axe y ) => y==null ? No : new Axe( i=>x-y.Resolve(i) , y ) ;
 		public static IEnumerable<int> operator>( Axe x , Quant? val ) => x?.Count.Steps().Where(i=>x[i]>val) ;
 		public static IEnumerable<int> operator<( Axe x , Quant? val ) => x?.Count.Steps().Where(i=>x[i]<val) ;
+		public static IEnumerable<int> operator<( Axe x , IEnumerable<Quant> vals ) => x?.Count.Steps().Where(i=>vals.Any(v=>Equals(x[i],x[i+1],v))) ;
+		public static IEnumerable<int> operator>( Axe x , IEnumerable<Quant> vals ) => x?.Count.Steps().Where(i=>vals.Any(v=>Equals(x[i],x[i+1],v))) ;
 		public static IEnumerable<int> operator>=( Axe x , Quant? val ) => x?.Count.Steps().Where(i=>x[i]>=val) ;
 		public static IEnumerable<int> operator<=( Axe x , Quant? val ) => x?.Count.Steps().Where(i=>x[i]<=val) ;
+		static bool Equals( Quant? at , Quant? next , Quant val ) => at==val?true:next==val||at==null||next==null?false:at>val==next<val ;
+		public static IEnumerable<int> operator==( Axe x , Quant val ) => x?.Count.Steps().Where(i=>Equals(x[i],x[i+1],val)) ;
+		public static IEnumerable<int> operator!=( Axe x , Quant val ) => x?.Count.Steps().Where(i=>!Equals(x[i],x[i+1],val)) ;
 		public static IEnumerable<int> operator>( Quant? val , Axe x ) => x<val ;
 		public static IEnumerable<int> operator<( Quant? val , Axe x ) => x>val ;
 		public static IEnumerable<int> operator>=( Quant? val , Axe x ) => x<=val ;
 		public static IEnumerable<int> operator<=( Quant? val , Axe x ) => x>=val ;
+		public static IEnumerable<int> operator==( Quant val , Axe x ) => x==val ;
+		public static IEnumerable<int> operator!=( Quant val , Axe x ) => x!=val ;
 		public static IEnumerable<int> operator>( Axe x , Axe y ) => Math.Min(x?.Count??0,y?.Count??0).Steps().Where(i=>x[i]>y[i]) ;
 		public static IEnumerable<int> operator<( Axe x , Axe y ) => Math.Min(x?.Count??0,y?.Count??0).Steps().Where(i=>x[i]<y[i]) ;
 		public static IEnumerable<int> operator>=( Axe x , Axe y ) => Math.Min(x?.Count??0,y?.Count??0).Steps().Where(i=>x[i]>=y[i]) ;
@@ -244,13 +251,22 @@ namespace Rob.Act
 		}
 		public class Support : Support<IEnumerable<int>> { public IEnumerable<int> Fragment => Arg ; internal Support( IEnumerable<int> fragment , Func<int,Quant?> resolver = null , Axe source = null ) : base(fragment,resolver,source) {} }
 		public class Support<Param> : Axe { public readonly Param Arg ; internal Support( Param arg , Func<int,Quant?> resolver = null , Axe source = null ) : base(resolver,source) => Arg = arg ; }
+		/// <summary>
+		/// Solver of automatic <see cref="Mark"/> placement . 
+		/// </summary>
 		public class Marker : Support
 		{
-			public Mark Mark ; HashSet<int> Frag => Fragment as HashSet<int> ;
+			Mark Mark ; HashSet<int> Frag => Fragment as HashSet<int> ; Point Ori( int at ) => Aspect?.Raw?[at] ;
 			internal Marker( Mark mark , IEnumerable<int> fragment , Aspectable aspect = null ) : base(new HashSet<int>(fragment)) { Mark = mark ; Aspect = aspect ; Resolver = Resolve ; }
-			Quant? Resolve( int at ) => Frag.Contains(at)!=Frag.Contains(at+1)?Put(at):Aspect?.Raw?[at]?[Mark] ;
-			Quant? Put( int at ) { if( Aspect?.Raw?[at] is Point p ) p.Mark = Mark ; return Aspect?.Raw?[at]?[Mark] ; }
-		}
+			new Quant? Resolve( int at ) => Could?.Invoke(Mark,at)??Can(Mark,at) ? Put(at) : Ori(at)?[Mark] ;
+			Quant? Put( int at ) { var p = Ori(at) ; if( p!=null ) p.Mark = Mark ; return p?[Mark] ; }
+			bool Can( Mark mark , int at ) => Can(at)&&!Can(at-1) ;
+			bool Can( int at ) => Frag.Contains(at)!=Frag.Contains(at+1) ;
+			/// <summary>
+			/// Defines strategy to use for definition of particular <see cref="Mark"/> placement . 
+			/// </summary>
+			public static Func<Mark,int,bool> Could ;
+		} 
 	}
 	public class Quantile : Aid.Gettable<int,Quant> , Aid.Countable<Quant>
 	{
@@ -369,7 +385,7 @@ namespace Rob.Act
 				}
 			}
 			public Axis Axis { get => axis==Axis.Time ? Axis.Time : axis==Axis.Date ? Axis.Date : (Axis)ax ; set => Ax = (uint)( axis = value ) ; }
-			public Mark Mark { get => mark ; set => Axis = ( mark = value )==Mark.Lap ? Axis.Lap : value==Mark.Stop ? Axis.Stop : value==Mark.Act ? Axis.Act : value==Mark.No ? Axis.No : throw new InvalidEnumArgumentException($"Mark invalid {value} !") ; }
+			public Mark Mark { get => mark ; set => Axis = ( mark = value )==Mark.Lap ? Axis.Lap : value==Mark.Stop ? Axis.Stop : value==Mark.Act ? Axis.Act : value==Mark.Ato ? Axis.Ato : value==Mark.Sub ? Axis.Sub : value==Mark.Sup ? Axis.Sup : value==Mark.Hyp ? Axis.Hyp : value==Mark.No ? Axis.No : throw new InvalidEnumArgumentException($"Mark invalid {value} !") ; }
 			//public Axis Axis { get => axis ?? Axis4(ax) ; set => Ax = (uint)( axis = value ) ; } Axis? axis ;
 			//public virtual uint Ax { get => axis==Axis.Time ? Context.Dimension : axis==Axis.Date ? Context.Dimension+1 : ax ; set { base.Spec = ( ax = value ).Get(v=>v<(uint)Axis.Time?(axis=(Axis)v).Stringy():v<Context.Dimension?Context.Metax?[v].Name:(axis=v==Context.Dimension?Axis.Time:Axis.Date).ToString()) ; Resolver = at=>Context?[at]?[Ax] ; } } uint ax ;
 			public override string Spec { get => base.Spec ; set { if( value!=null ) if( value.Axis() is uint v && v<Context.Dimensions ) Ax = v ; else Axis = (Axis)v ; base.Spec = value ; } }

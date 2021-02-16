@@ -86,7 +86,7 @@ namespace Rob.Act
 		void Preclude()
 		{
 			if( Alti==null ) Alti = this.Average(p=>p.Alti) ; if( this[Axis.Lon]==null ) this[Axis.Lon] = this.Average(p=>p[Axis.Lon]) ; if( this[Axis.Lat]==null ) this[Axis.Lat] = this.Average(p=>p[Axis.Lat]) ;
-			if( this[Mark.Lap]==null ) this[Mark.Lap] = this.Count(p=>p.Mark.HasFlag(Mark.Lap)).nil() ; if( this[Mark.Stop]==null ) this[Mark.Stop] = this.Count(p=>p.Mark.HasFlag(Mark.Stop)).nil() ; if( this[Mark.Act]==null ) this[Mark.Act] = this.Count(p=>p.Mark.HasFlag(Mark.Act)).nil() ;
+			foreach( var mark in Basis.Segmentables ) if( this[mark]==null ) this[mark] = this.Count(p=>p.Mark.HasFlag(mark)).nil() ;
 		}
 		void Conclude( Point point = null , Mark? dif = null )
 		{

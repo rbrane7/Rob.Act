@@ -13,9 +13,9 @@ namespace Rob.Act
 	/// <summary>
 	/// Kind of separation marks .
 	/// </summary>
-	[Flags] public enum Mark { No=0 , Stop=1 , Lap=2 , Act=4 }
+	[Flags] public enum Mark { No=0 , Stop=1 , Lap=2 , Act=4 , Ato=8 , Sub=16 , Sup=32 , Hyp=64 }
 	[Flags] public enum Oper { Merge=0 , Combi=1 , Trim=2 , Smooth=4 , Relat=8 }
-	public enum Axis : uint { Lon,Longitude=Lon , Lat,Latitude=Lat , Alt,Altitude=Alt , Dist,Distance=Dist , Drag , Flow , Beat , Bit , Energy , Grade , Top , Lim=No-1 , Time=uint.MaxValue , Date=Time-1 , Lap=Date-1 , Stop=Lap-1 , Act=Stop-1 , No=Act-1 }
+	public enum Axis : uint { Lon,Longitude=Lon , Lat,Latitude=Lat , Alt,Altitude=Alt , Dist,Distance=Dist , Drag , Flow , Beat , Bit , Energy , Grade , Top , Lim=Hyp-1 , Time=uint.MaxValue , Date=Time-1 , Lap=Date-1 , Stop=Lap-1 , Act=Stop-1 , No=Act-1 , Ato=No-1 , Sub=Ato-1 , Sup=Sub-1 , Hyp=Sup-1 }
 	#pragma warning disable CS0660 // Type defines operator == or operator != but does not override Object.Equals(object o)
 	#pragma warning disable CS0661 // Type defines operator == or operator != but does not override Object.GetHashCode()
 	public struct Bipole : IFormattable
@@ -197,8 +197,8 @@ namespace Rob.Act
 			public string Of( object value ) => Reform.Form( Converter is Func<object,object> c ? c(value) : value ) ;
 		}
 
-		internal static string Serialize( this Mark mark ) => $"{(mark.HasFlag(Act.Mark.Stop)?"Stop":null)}{(mark.HasFlag(Act.Mark.Lap)?"Lap":null)}{(mark.HasFlag(Act.Mark.Act)?"Act":null)}" ;
-		internal static Mark Deserialize( this string mark ) => (mark?.Contains("Stop")==true?Act.Mark.Stop:Act.Mark.No)|(mark?.Contains("Lap")==true?Act.Mark.Lap:Act.Mark.No)|(mark?.Contains("Act")==true?Act.Mark.Act:Act.Mark.No) ;
+		internal static string Serialize( this Mark mark ) => $"{(mark.HasFlag(Act.Mark.Stop)?"Stop":null)}{(mark.HasFlag(Act.Mark.Lap)?"Lap":null)}{(mark.HasFlag(Act.Mark.Act)?"Act":null)}{(mark.HasFlag(Act.Mark.Ato)?"Ato":null)}{(mark.HasFlag(Act.Mark.Sub)?"Sub":null)}{(mark.HasFlag(Act.Mark.Sup)?"Sup":null)}{(mark.HasFlag(Act.Mark.Hyp)?"Hyp":null)}" ;
+		internal static Mark Deserialize( this string mark ) => (mark?.Contains("Stop")==true?Act.Mark.Stop:Act.Mark.No)|(mark?.Contains("Lap")==true?Act.Mark.Lap:Act.Mark.No)|(mark?.Contains("Act")==true?Act.Mark.Act:Act.Mark.No)|(mark?.Contains("Ato")==true?Act.Mark.Ato:Act.Mark.No)|(mark?.Contains("Sub")==true?Act.Mark.Sub:Act.Mark.No)|(mark?.Contains("Sup")==true?Act.Mark.Sup:Act.Mark.No)|(mark?.Contains("Hyp")==true?Act.Mark.Hyp:Act.Mark.No) ;
 	}
 	public class Metax : IEquatable<Metax> , IEnumerable<KeyValuePair<string,(uint At,string Form)>>
 	{
@@ -257,7 +257,7 @@ namespace Rob.Act
 			/// <summary>
 			/// Position relative to segments types .
 			/// </summary>
-			(Quant? Lap,Quant? Stop,Quant? Act,int? No) Post ;
+			(Quant? Lap,Quant? Stop,Quant? Act,Quant? Ato,Quant? Sub,Quant? Sup,Quant? Hyp,int? No) Post ;
 			/// <summary>
 			/// Referential date of object .
 			/// </summary>
@@ -290,7 +290,7 @@ namespace Rob.Act
 			/// <summary>
 			/// Shows which marking couters are set .
 			/// </summary>
-			public Mark Marker => (this[Mark.Stop]!=null?Mark.Stop:Mark.No)|(this[Mark.Lap]!=null?Mark.Lap:Mark.No)|(this[Mark.Act]!=null?Mark.Act:Mark.No) ;
+			public Mark Marker { get { var rez = Mark.No ; foreach( var mark in Basis.Segmentables ) if( this[mark]!=null ) rez |= mark ; return rez ; } }
 			/// <summary>
 			/// Metadata of axes . 
 			/// </summary>
@@ -301,13 +301,13 @@ namespace Rob.Act
 			public abstract uint Dimension {get;}
 			public Quant? this[ uint axis ]
 			{
-				get => axis==(uint)Axis.Time ? Time.TotalSeconds : axis==(uint)Axis.Date ? Date.TotalSeconds() : axis==(uint)Axis.Lap ? Post.Lap : axis==(uint)Axis.Stop ? Post.Stop : axis==(uint)Axis.Act ? Post.Act : axis==(uint)Axis.No ? No : Quantity.At((int)axis) ;
+				get => axis==(uint)Axis.Time ? Time.TotalSeconds : axis==(uint)Axis.Date ? Date.TotalSeconds() : axis==(uint)Axis.Lap ? Post.Lap : axis==(uint)Axis.Stop ? Post.Stop : axis==(uint)Axis.Act ? Post.Act : axis==(uint)Axis.Ato ? Post.Ato : axis==(uint)Axis.Sub ? Post.Sub : axis==(uint)Axis.Sup ? Post.Sup : axis==(uint)Axis.Hyp ? Post.Hyp : axis==(uint)Axis.No ? No : Quantity.At((int)axis) ;
 				set { if( axis>=Quantity.Length && value!=null && axis<(uint)Axis.Lim ) Quantity.Set(q=>q.CopyTo(Quantity=new Quant?[Math.Max(axis+1,Metax?.Dimension??0)],0)) ; if( axis<Quantity.Length ) Quantity[axis] = value ; }
 			}
 			public Quant? this[ Mark mark ]
 			{
-				get => mark switch { Mark.No => No , Mark.Lap => Post.Lap , Mark.Stop => Post.Stop , Mark.Act => Post.Act , _=> null } ;
-				set { switch( mark ) { case Mark.No : No = value.use(v=>(int)v) ; break ; case Mark.Lap : Post.Lap = value ; break ; case Mark.Stop : Post.Stop = value ; break ; case Mark.Act : Post.Act = value ; break ; } }
+				get => mark switch { Mark.No => No , Mark.Lap => Post.Lap , Mark.Stop => Post.Stop , Mark.Act => Post.Act , Mark.Ato => Post.Ato , Mark.Sub => Post.Sub , Mark.Sup => Post.Sup , Mark.Hyp => Post.Hyp , _ => null } ;
+				set { switch( mark ) { case Mark.No : No = value.use(v=>(int)v) ; break ; case Mark.Lap : Post.Lap = value ; break ; case Mark.Stop : Post.Stop = value ; break ; case Mark.Act : Post.Act = value ; break ; case Mark.Ato : Post.Ato = value ; break ; case Mark.Sub : Post.Sub = value ; break ; case Mark.Sup : Post.Sup = value ; break ; case Mark.Hyp : Post.Hyp = value ; break ; } }
 			}
 			public Quant? this[ string axis ]
 			{
