@@ -364,12 +364,12 @@ namespace Rob.Act.Analyze
 					if( S.HasFlag(Mark.Stop) ) MapPanel.Children.Add( new Line{ X1 = x2 , Y1 = y2 , X2 = x2-lv.dy*zis , Y2 = y2+lv.dx*zis , Stroke = Brushes.Gray , StrokeThickness = 1 } ) ; // stop mark
 					if( S.HasFlag(Mark.Lap) )
 					{
-						MapPanel.Children.Add( new Line{ X1 = x2 , Y1 = y2 , X2 = x2+(lv.dx-lv.dy)*Lape*zis , Y2 = y2+(lv.dx+lv.dy)*Lape*zis , Stroke = Brushes.Black , StrokeThickness = 1 } ) ; // lap mark
+						MapPanel.Children.Add( new Line{ X1 = x2 , Y1 = y2 , X2 = x2-(lv.dx-lv.dy)*Lape*zis , Y2 = y2-(lv.dx+lv.dy)*Lape*zis , Stroke = Brushes.Black , StrokeThickness = 1 } ) ; // lap mark
 						MapPanel.Children.Add( new Line{ X1 = x2 , Y1 = y2 , X2 = x2-(lv.dx+lv.dy)*Lape*zis , Y2 = y2+(lv.dx-lv.dy)*Lape*zis , Stroke = Brushes.Black , StrokeThickness = 1 } ) ; // lap mark
 					}
 					if( S.HasFlag(Mark.Sub) )
 					{
-						MapPanel.Children.Add( new Line{ X1 = x2 , Y1 = y2 , X2 = x2+(lv.dx-lv.dy)*Lape*zis/2 , Y2 = y2+(lv.dx+lv.dy)*Lape*zis/2 , Stroke = Brushes.Black , StrokeThickness = 1 } ) ; // sub mark
+						MapPanel.Children.Add( new Line{ X1 = x2 , Y1 = y2 , X2 = x2-(lv.dx-lv.dy)*Lape*zis/2 , Y2 = y2-(lv.dx+lv.dy)*Lape*zis/2 , Stroke = Brushes.Black , StrokeThickness = 1 } ) ; // sub mark
 						MapPanel.Children.Add( new Line{ X1 = x2 , Y1 = y2 , X2 = x2-(lv.dx+lv.dy)*Lape*zis/2 , Y2 = y2+(lv.dx-lv.dy)*Lape*zis/2 , Stroke = Brushes.Black , StrokeThickness = 1 } ) ; // sub mark
 					}
 					if( S.HasFlag(Mark.Ato) ) MapPanel.Children.Add( new Line{ X1 = x2 , Y1 = y2 , X2 = x2-(lv.dx+lv.dy)*Lape*zis/2 , Y2 = y2+(lv.dx-lv.dy)*Lape*zis/2 , Stroke = Brushes.Black , StrokeThickness = 1 } ) ; // ato mark

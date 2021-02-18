@@ -12,6 +12,7 @@ namespace Rob.Act
 	using System.Collections ;
 	using System.ComponentModel ;
 	using Quant = Double ;
+	using Region = IEnumerable<int> ;
 	using Aid.Math ;
 	using Aid;
 
@@ -85,7 +86,7 @@ namespace Rob.Act
 		#region Operations
 		/// <summary> Restricts axe to given subset of points , null elsewhere . </summary>
 		/// <param name="fragment"> Points subset to restrict axe on . </param>
-		public Support this[ IEnumerable<int> fragment ] => On(fragment) ;
+		public Support this[ Region fragment ] => On(fragment) ;
 		/// <summary> Restricts axe to given subset of points , null elsewhere . </summary>
 		/// <param name="fragment"> Points subset to restrict axe on . </param>
 		public Axe this[ Lap lap ] => By(lap) ;
@@ -109,7 +110,7 @@ namespace Rob.Act
 		public static Axe operator%( Axe x , int dif ) => x==null ? No : new Axe( i=>x.Dif(i,dif) , x ) ;
 		public static Axe operator%( Axe x , Quant dif ) => new Lap.Axe(x,dif) ;
 		public static Axe operator%( Axe x , float mod ) => x==null ? No : new Axe( i=>x.Resolve(i)%mod , x ) ;
-		public static Axe operator%( Axe x , IEnumerable<int> mod ) => x==null ? No : x.Flor(mod) ;
+		public static Axe operator%( Axe x , Region mod ) => x==null ? No : x.Flor(mod) ;
 		public static Axe operator%( Axe x , Support y ) => x==null ? No : x.Flor(y.Fragment) ;
 		public static Axe operator%( Axe x , Axe y ) => x==null ? No : x.Rift(y) ;
 		public static Axe operator*( Axe x , Axe y ) => x==null||y==null ? No : new Axe( i=>x.Resolve(i)*y.Resolve(i) , x ) ;
@@ -126,25 +127,28 @@ namespace Rob.Act
 		public static Axe operator-( Axe x , Axe y ) => x==null||y==null ? No : new Axe( i=>x.Resolve(i)-y.Resolve(i) , x ) ;
 		public static Axe operator-( Axe x , Quant y ) => x==null ? No : new Axe( i=>x.Resolve(i)-y , x ) ;
 		public static Axe operator-( Quant x , Axe y ) => y==null ? No : new Axe( i=>x-y.Resolve(i) , y ) ;
-		public static IEnumerable<int> operator>( Axe x , Quant? val ) => x?.Count.Steps().Where(i=>x[i]>val) ;
-		public static IEnumerable<int> operator<( Axe x , Quant? val ) => x?.Count.Steps().Where(i=>x[i]<val) ;
-		public static IEnumerable<int> operator<( Axe x , IEnumerable<Quant> vals ) => x?.Count.Steps().Where(i=>vals.Any(v=>Equals(x[i],x[i+1],v))) ;
-		public static IEnumerable<int> operator>( Axe x , IEnumerable<Quant> vals ) => x?.Count.Steps().Where(i=>vals.Any(v=>Equals(x[i],x[i+1],v))) ;
-		public static IEnumerable<int> operator>=( Axe x , Quant? val ) => x?.Count.Steps().Where(i=>x[i]>=val) ;
-		public static IEnumerable<int> operator<=( Axe x , Quant? val ) => x?.Count.Steps().Where(i=>x[i]<=val) ;
-		static bool Equals( Quant? at , Quant? next , Quant val ) => at==val?true:next==val||at==null||next==null?false:at>val==next<val ;
-		public static IEnumerable<int> operator==( Axe x , Quant val ) => x?.Count.Steps().Where(i=>Equals(x[i],x[i+1],val)) ;
-		public static IEnumerable<int> operator!=( Axe x , Quant val ) => x?.Count.Steps().Where(i=>!Equals(x[i],x[i+1],val)) ;
-		public static IEnumerable<int> operator>( Quant? val , Axe x ) => x<val ;
-		public static IEnumerable<int> operator<( Quant? val , Axe x ) => x>val ;
-		public static IEnumerable<int> operator>=( Quant? val , Axe x ) => x<=val ;
-		public static IEnumerable<int> operator<=( Quant? val , Axe x ) => x>=val ;
-		public static IEnumerable<int> operator==( Quant val , Axe x ) => x==val ;
-		public static IEnumerable<int> operator!=( Quant val , Axe x ) => x!=val ;
-		public static IEnumerable<int> operator>( Axe x , Axe y ) => Math.Min(x?.Count??0,y?.Count??0).Steps().Where(i=>x[i]>y[i]) ;
-		public static IEnumerable<int> operator<( Axe x , Axe y ) => Math.Min(x?.Count??0,y?.Count??0).Steps().Where(i=>x[i]<y[i]) ;
-		public static IEnumerable<int> operator>=( Axe x , Axe y ) => Math.Min(x?.Count??0,y?.Count??0).Steps().Where(i=>x[i]>=y[i]) ;
-		public static IEnumerable<int> operator<=( Axe x , Axe y ) => Math.Min(x?.Count??0,y?.Count??0).Steps().Where(i=>x[i]<=y[i]) ;
+		public static Region operator >( Axe x , Quant? val ) => x?.Count.Steps().Where(i=>x[i]>val) ;
+		public static Region operator<( Axe x , Quant? val ) => x?.Count.Steps().Where(i=>x[i]<val) ;
+		public static Region operator<( Axe x , IEnumerable<Quant> vals ) => x?.Count.Steps().Where(i=>vals.Any(v=>Affines(x[i],x[i+1],v,false))) ;
+		public static Region operator>( Axe x , IEnumerable<Quant> vals ) => x?.Count.Steps().Where(i=>vals.Any(v=>Affines(x[i],x[i-1],v,true))) ;
+		public static Region operator<=( Axe x , IEnumerable<Quant> vals ) => x?.Count.Steps().Where(i=>vals.Any(v=>Affines(x[i],x[i+1],v))) ;
+		public static Region operator>=( Axe x , IEnumerable<Quant> vals ) => x?.Count.Steps().Where(i=>vals.Any(v=>Affines(x[i],x[i-1],v))) ;
+		public static Region operator>=( Axe x , Quant? val ) => x?.Count.Steps().Where(i=>x[i]>=val) ;
+		public static Region operator<=( Axe x , Quant? val ) => x?.Count.Steps().Where(i=>x[i]<=val) ;
+		bool Affines( int at , Quant val , bool smooth = true ) => Affines(this[at],this[at-1],val,smooth?default:true)||Affines(this[at],this[at+1],val,smooth?default:false) ;
+		static bool Affines( Quant? at , Quant? to , Quant val , bool? smooth = null ) => at==val?smooth??true:to==val||at==null||to==null?smooth==null?false:smooth.Value?at>val:at<val:at>val==to<val ;
+		public static Region operator==( Axe x , Quant val ) => x?.Count.Steps().Where(i=>x.Affines(i,val)) ;
+		public static Region operator!=( Axe x , Quant val ) => x?.Count.Steps().Where(i=>x.Affines(i,val,false)) ;
+		public static Region operator>( Quant? val , Axe x ) => x<val ;
+		public static Region operator<( Quant? val , Axe x ) => x>val ;
+		public static Region operator>=( Quant? val , Axe x ) => x<=val ;
+		public static Region operator<=( Quant? val , Axe x ) => x>=val ;
+		public static Region operator==( Quant val , Axe x ) => x==val ;
+		public static Region operator!=( Quant val , Axe x ) => x!=val ;
+		public static Region operator>( Axe x , Axe y ) => Math.Min(x?.Count??0,y?.Count??0).Steps().Where(i=>x[i]>y[i]) ;
+		public static Region operator<( Axe x , Axe y ) => Math.Min(x?.Count??0,y?.Count??0).Steps().Where(i=>x[i]<y[i]) ;
+		public static Region operator>=( Axe x , Axe y ) => Math.Min(x?.Count??0,y?.Count??0).Steps().Where(i=>x[i]>=y[i]) ;
+		public static Region operator<=( Axe x , Axe y ) => Math.Min(x?.Count??0,y?.Count??0).Steps().Where(i=>x[i]<=y[i]) ;
 		public static Axe operator&( Axe x , Axe y ) => x.Centre(y) ;
 		public static Axe operator&( Axe x , Quant y ) => x.Nil(v=>v>y) ;
 		public static Axe operator&( Quant x , Axe y ) => y.Nil(v=>v<x) ;
@@ -161,11 +165,11 @@ namespace Rob.Act
 		public Axe Take( int count ) => new Axe( i=>i<count?Resolve(i):null , this ) ;
 		/// <summary> Restricts axe to given subset of points , null elsewhere . </summary>
 		/// <param name="fragment"> Points subset to restrict axe on . </param>
-		public Support On( IEnumerable<int> fragment ) => fragment.Get(f=>new HashSet<int>(f)).Get(f=>new Support(f,i=>f.Contains(i)?Resolve(i):null,this)) ?? No ;
+		public Support On( Region fragment ) => fragment.Get(f=>new HashSet<int>(f)).Get(f=>new Support(f,i=>f.Contains(i)?Resolve(i):null,this)) ?? No ;
 		/// <summary> Axe of values relative to beginning of continual subset the point belongs to . </summary>
 		/// <param name="fragment"> Fragment of continual subsets . </param>
 		/// <returns> Axe which values are ofsetted to preceding continual predesessing value with respect to <paramref name="fragment"/> . </returns>
-		public Support Flor( IEnumerable<int> fragment ) => fragment.Get(f=>f.ToArray()).Get(f=>new Support( f , i => Array.IndexOf(f,i) is int at && at>=0 ? Resolve(i)-Resolve(f[at.LastContinualPredecessorIn(f)]) : null , this )) ?? No ;
+		public Support Flor( Region fragment ) => fragment.Get(f=>f.ToArray()).Get(f=>new Support( f , i => Array.IndexOf(f,i) is int at && at>=0 ? Resolve(i)-Resolve(f[at.LastContinualPredecessorIn(f)]) : null , this )) ?? No ;
 		/// <summary> Refines this axe to <paramref name="lap"/> distance axe . </summary>
 		/// <param name="lap"> Lap representing index distance between point of this axe . </param>
 		/// <returns> Axe of exact <paramref name="lap"/> distanced points of this axe values . </returns>
@@ -232,8 +236,8 @@ namespace Rob.Act
 		{
 			public Aspectable Base , This ; public Axe The ;
 			[LambdaContext.Dominant] public Axe this[ string key ] => This?[key] is Axe a && a!=The ? a : Base?[key] ;
-			public Support this[ IEnumerable<int> fragment ] => One[fragment] ;
-			public Support this[ Mark mark , IEnumerable<int> fragment ] => fragment is IEnumerable<int> f ? new Marker(mark,f,This) : No ;
+			public Support this[ Region fragment ] => One[fragment] ;
+			public Support this[ Mark mark , Region fragment ] => fragment is Region f ? new Marker(mark,f,This) : No ;
 			public Path Raw => Base?.Raw ;
 			public Aspect.Traits Trait => This?.Trait ;
 			public Axe Perf( Axe lap ) => lap is Lap.Axe a ? Perf(a.Arg) : No ;
@@ -246,10 +250,10 @@ namespace Rob.Act
 			[LambdaContext.Dominant] public Axe this[ string key ] => This?[key] is Axe a && a!=The ? a : null ;
 			public Aspectable this[ int key ] => Base[key] ;
 			public Path Raw( int at = 0 ) => Base[at].Raw ;
-			public Support this[ IEnumerable<int> fragment ] => One[fragment] ;
-			public Support this[ Mark mark , IEnumerable<int> fragment ] => fragment is IEnumerable<int> f ? new Marker(mark,f,This) : No ;
+			public Support this[ Region fragment ] => One[fragment] ;
+			public Support this[ Mark mark , Region fragment ] => fragment is Region f ? new Marker(mark,f,This) : No ;
 		}
-		public class Support : Support<IEnumerable<int>> { public IEnumerable<int> Fragment => Arg ; internal Support( IEnumerable<int> fragment , Func<int,Quant?> resolver = null , Axe source = null ) : base(fragment,resolver,source) {} }
+		public class Support : Support<Region> { public Region Fragment => Arg ; internal Support( Region fragment , Func<int,Quant?> resolver = null , Axe source = null ) : base(fragment,resolver,source) {} }
 		public class Support<Param> : Axe { public readonly Param Arg ; internal Support( Param arg , Func<int,Quant?> resolver = null , Axe source = null ) : base(resolver,source) => Arg = arg ; }
 		/// <summary>
 		/// Solver of automatic <see cref="Mark"/> placement . 
@@ -257,11 +261,11 @@ namespace Rob.Act
 		public class Marker : Support
 		{
 			Mark Mark ; HashSet<int> Frag => Fragment as HashSet<int> ; Point Ori( int at ) => Aspect?.Raw?[at] ;
-			internal Marker( Mark mark , IEnumerable<int> fragment , Aspectable aspect = null ) : base(new HashSet<int>(fragment)) { Mark = mark ; Aspect = aspect ; Resolver = Resolve ; }
+			internal Marker( Mark mark , Region fragment , Aspectable aspect = null ) : base(new HashSet<int>(fragment)) { Mark = mark ; Aspect = aspect ; Resolver = Resolve ; }
 			new Quant? Resolve( int at ) => Could?.Invoke(Mark,at)??Can(Mark,at) ? Put(at) : Ori(at)?[Mark] ;
-			Quant? Put( int at ) { var p = Ori(at) ; if( p!=null ) p.Mark = Mark ; return p?[Mark] ; }
-			bool Can( Mark mark , int at ) => Can(at)&&!Can(at-1) ;
-			bool Can( int at ) => Frag.Contains(at)!=Frag.Contains(at+1) ;
+			Quant? Put( int at ) { var p = Ori(at) ; if( p!=null ) p.Mark |= Mark ; return p?[Mark] ; }
+			bool Can( Mark mark , int at ) => Can(at) && !Can(at-1) ;
+			bool Can( int at ) => Frag.Contains(at)!=Frag.Contains(at-1) ;
 			/// <summary>
 			/// Defines strategy to use for definition of particular <see cref="Mark"/> placement . 
 			/// </summary>

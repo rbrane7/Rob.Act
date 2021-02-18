@@ -108,7 +108,8 @@ namespace Rob.Act.Analyze
 					}
 					else { Path = value.LeftFrom(true,':',',','/') ; Converter = null ; }
 					Name = value.LeftFrom(true,':',',').RightFromFirst('/',true) ; Format = value.RightFromFirst(':') ; Align = value.LeftFrom(':').RightFrom(',') ;
-					if( Format.RightFrom(LambdaContext.Act.Accessor) is string coformat ) { Format = Format.LeftFromLast(LambdaContext.Act.Accessor) ; if( (Converter??=new Aid.Converters.LambdaConverter()) is Aid.Converters.LambdaConverter cvt ) cvt.Backward = coformat ; }
+					if( Format.RightFrom(LambdaContext.Act.Accessor) is string coformat ); else return ;
+					Format = Format.LeftFromLast(LambdaContext.Act.Accessor) ; if( (Converter??=new Aid.Converters.LambdaConverter()) is Aid.Converters.LambdaConverter cv ) cv.Backward = coformat ;
 				}
 				public string Of( object value ) => Reform.Form( Converter is IValueConverter c ? c.Convert(value,null,null,null) : value ) ;
 			}
