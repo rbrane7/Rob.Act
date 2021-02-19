@@ -93,6 +93,8 @@ namespace Rob.Act
 		/// <summary> Restricts axe to given subset of points , null elsewhere . </summary>
 		/// <param name="fragment"> Points subset to restrict axe on . </param>
 		public Axe this[ Axe axe ] => (axe?.Solver as Lap.Axe??axe) is Lap.Axe lap ? By(lap.Arg) : this ;
+		/// <summary> Function on axe . </summary>
+		public Axe this[ Func<Quant,Quant> y ] => this.Fun(y) ;
 		public static Axe operator++( Axe x ) => x==null ? No : new Axe( i=>x.Resolve(i+1) , x ) ;
 		public static Axe operator--( Axe x ) => x==null ? No : new Axe( i=>x.Resolve(i-1) , x ) ;
 		public static Quant? operator+( Axe x ) => x?.Sum() ;
@@ -110,8 +112,8 @@ namespace Rob.Act
 		public static Axe operator%( Axe x , int dif ) => x==null ? No : new Axe( i=>x.Dif(i,dif) , x ) ;
 		public static Axe operator%( Axe x , Quant dif ) => new Lap.Axe(x,dif) ;
 		public static Axe operator%( Axe x , float mod ) => x==null ? No : new Axe( i=>x.Resolve(i)%mod , x ) ;
-		public static Axe operator%( Axe x , Region mod ) => x==null ? No : x.Flor(mod) ;
-		public static Axe operator%( Axe x , Support y ) => x==null ? No : x.Flor(y.Fragment) ;
+		public static Axe operator%( Axe x , Region mod ) => x==null ? No : x.Floe(mod) ;
+		public static Axe operator%( Axe x , Support y ) => x==null ? No : x.Floe(y.Fragment) ;
 		public static Axe operator%( Axe x , Axe y ) => x==null ? No : x.Rift(y) ;
 		public static Axe operator*( Axe x , Axe y ) => x==null||y==null ? No : new Axe( i=>x.Resolve(i)*y.Resolve(i) , x ) ;
 		public static Axe operator*( Axe x , Quant y ) => x==null ? No : new Axe( i=>x.Resolve(i)*y , x ) ;
@@ -135,7 +137,7 @@ namespace Rob.Act
 		public static Region operator>=( Axe x , IEnumerable<Quant> vals ) => x?.Count.Steps().Where(i=>vals.Any(v=>Affines(x[i],x[i-1],v))) ;
 		public static Region operator>=( Axe x , Quant? val ) => x?.Count.Steps().Where(i=>x[i]>=val) ;
 		public static Region operator<=( Axe x , Quant? val ) => x?.Count.Steps().Where(i=>x[i]<=val) ;
-		bool Affines( int at , Quant val , bool smooth = true ) => Affines(this[at],this[at-1],val,smooth?default:true)||Affines(this[at],this[at+1],val,smooth?default:false) ;
+		bool Affines( int at , Quant val , bool smooth = true ) => Affines(this[at],this[at-1],val,smooth?default(bool?):true)||Affines(this[at],this[at+1],val,smooth?default(bool?):false) ;
 		static bool Affines( Quant? at , Quant? to , Quant val , bool? smooth = null ) => at==val?smooth??true:to==val||at==null||to==null?smooth==null?false:smooth.Value?at>val:at<val:at>val==to<val ;
 		public static Region operator==( Axe x , Quant val ) => x?.Count.Steps().Where(i=>x.Affines(i,val)) ;
 		public static Region operator!=( Axe x , Quant val ) => x?.Count.Steps().Where(i=>x.Affines(i,val,false)) ;
@@ -160,6 +162,7 @@ namespace Rob.Act
 		public static implicit operator Axe( int q ) => new Axe( i=>q ) ;
 		public static implicit operator Quant?( Axe a ) => +a ;
 		public Axe Round => new Axe( i=>Resolve(i).use(Math.Round) , this ) ;
+		public Axe Floor => new Axe( i=>Resolve(i).use(Math.Floor) , this ) ;
 		public Axe Skip( int count ) => new Axe( i=>Resolve(count+i) , this ) ;
 		public Axe Wait( int count ) => new Axe( i=>Resolve(i<count?0:i-count) , this ) ;
 		public Axe Take( int count ) => new Axe( i=>i<count?Resolve(i):null , this ) ;
@@ -169,7 +172,7 @@ namespace Rob.Act
 		/// <summary> Axe of values relative to beginning of continual subset the point belongs to . </summary>
 		/// <param name="fragment"> Fragment of continual subsets . </param>
 		/// <returns> Axe which values are ofsetted to preceding continual predesessing value with respect to <paramref name="fragment"/> . </returns>
-		public Support Flor( Region fragment ) => fragment.Get(f=>f.ToArray()).Get(f=>new Support( f , i => Array.IndexOf(f,i) is int at && at>=0 ? Resolve(i)-Resolve(f[at.LastContinualPredecessorIn(f)]) : null , this )) ?? No ;
+		public Support Floe( Region fragment ) => fragment?.ToArray().Get(f=>new Support( f , i => Array.IndexOf(f,i) is int at && at>=0 ? Resolve(i)-Resolve(f[at.LastContinualPredecessorIn(f)]) : null , this )) ?? No ;
 		/// <summary> Refines this axe to <paramref name="lap"/> distance axe . </summary>
 		/// <param name="lap"> Lap representing index distance between point of this axe . </param>
 		/// <returns> Axe of exact <paramref name="lap"/> distanced points of this axe values . </returns>
