@@ -264,13 +264,13 @@ namespace Rob.Act.Analyze
 			if( !rng.ContainsKey(xaxe.Spec) ) return ;
 			{
 				var x = rng[xaxe.Spec] ; var axe = xaxe ; Filter.Entry.Binding axb = axe.Binder ; string format( double v ) => axe.Binder.No() ? Format(v) : axb.Of(v) ;
-				for( var m=0 ; m<=hor ; m+=100 ) GraphPanel.Children.Add( new Label{ Content=format(AxeInnerByOuterX(x.Min+(m-left)*(x.Max-x.Min)/width,x)) , Foreground=Brushes.Gray }.Set(l=>{Canvas.SetLeft(l,m-5);Canvas.SetTop(l,ver-20);}) ) ;
-				for( var m=50 ; m<=hor ; m+=100 ) GraphPanel.Children.Add( new Label{ Content=format(AxeInnerByOuterX(x.Min+(m-left)*(x.Max-x.Min)/width,x)) , Foreground=Brushes.Gray }.Set(l=>{Canvas.SetLeft(l,m-5);Canvas.SetTop(l,ver-12);}) ) ;
+				for( var m=0 ; m<=hor ; m+=100 ) GraphPanel.Children.Add( new Label{ Content=format(AxeInnerByOuterX(x.Min+(m-left)*(x.Max-x.Min)/width,x)) , Foreground=Brushes.Gray }.Set(l=>{Canvas.SetLeft(l,m-5);Canvas.SetTop(l,ver-12);}) ) ;
+				for( var m=50 ; m<=hor ; m+=100 ) GraphPanel.Children.Add( new Label{ Content=format(AxeInnerByOuterX(x.Min+(m-left)*(x.Max-x.Min)/width,x)) , Foreground=Brushes.Gray }.Set(l=>{Canvas.SetLeft(l,m-5);Canvas.SetTop(l,ver-20);}) ) ;
 				if( x.Min<0 && x.Max>0 ) { var xZero = ScreenInnerByReAxeX(0D.By(x).Value) ; GraphPanel.Children.Add( new Line{ X1 = xZero , Y1 = 0 , X2 = xZero , Y2 = ver , Stroke = Brushes.Gray } ) ; }
 				var n=0 ; foreach( var ax in rng.Keys.Intersect(yaxes) )
 				{
 					var y = rng[ax] ; axe = axes.FirstOrDefault(a=>a.Spec==ax) ; axb = axe.Binder ;
-					for( var m=ver-50 ; m>=0 ; m-=50 ) GraphPanel.Children.Add( new Label{ Content=format(AxeInnerByOuterY(y.Min+(bot-m)*(y.Max-y.Min)/height,y)) , Foreground=Brushes.Gray }.Set(l=>{Canvas.SetTop(l,m-20);Canvas.SetLeft(l,n*50-4);}) ) ; ++n ;
+					for( var m=ver ; m>=0 ; m-=50 ) GraphPanel.Children.Add( new Label{ Content=format(AxeInnerByOuterY(y.Min+(bot-m)*(y.Max-y.Min)/height,y)) , Foreground=Brushes.Gray }.Set(l=>{Canvas.SetTop(l,m-18);Canvas.SetLeft(l,n*50-4);}) ) ; ++n ;
 					if( y.Min<0 && y.Max>0 ) { var yZero = ScreenInnerByReAxeY(0D.By(y,false).Value) ; GraphPanel.Children.Add( new Line{ X1 = 0 , Y1 = yZero , X2 = hor , Y2 = yZero , Stroke = Brushes.Gray } ) ; }
 				}
 			}
@@ -331,13 +331,13 @@ namespace Rob.Act.Analyze
 			if( !rng.ContainsKey(xaxe.Spec) ) return ;
 			{
 				var x = rng[xaxe.Spec] ; var axe = xaxe ; Filter.Entry.Binding axb = axe.Binder ; string format( double v , int p ) => axe.Binder.No() ? Format(v,p) : axb.Of(v) ;
-				for( var m=0 ; m<=hor ; m+=100 ) MapPanel.Children.Add( new Label{ Content=format(AxeInnerByOuterX(x.Min+(m-left)*(x.Max-x.Min)/width,x),5) , Foreground=Brushes.Gray }.Set(l=>{Canvas.SetLeft(l,m-5);Canvas.SetTop(l,ver-20);}) ) ;
-				for( var m=50 ; m<=hor ; m+=100 ) MapPanel.Children.Add( new Label{ Content=format(AxeInnerByOuterX(x.Min+(m-left)*(x.Max-x.Min)/width,x),5) , Foreground=Brushes.Gray }.Set(l=>{Canvas.SetLeft(l,m-5);Canvas.SetTop(l,ver-12);}) ) ;
+				for( var m=0 ; m<=hor ; m+=100 ) MapPanel.Children.Add( new Label{ Content=format(AxeInnerByOuterX(x.Min+(m-left)*(x.Max-x.Min)/width,x),5) , Foreground=Brushes.Gray }.Set(l=>{Canvas.SetLeft(l,m-5);Canvas.SetTop(l,ver-12);}) ) ;
+				for( var m=50 ; m<=hor ; m+=100 ) MapPanel.Children.Add( new Label{ Content=format(AxeInnerByOuterX(x.Min+(m-left)*(x.Max-x.Min)/width,x),5) , Foreground=Brushes.Gray }.Set(l=>{Canvas.SetLeft(l,m-5);Canvas.SetTop(l,ver-20);}) ) ;
 				if( x.Min<0 && x.Max>0 ) { var xZero = ScreenInnerByReAxeX(0D.By(x).Value) ; MapPanel.Children.Add( new Line{ X1 = xZero , Y1 = 0 , X2 = xZero , Y2 = ver , Stroke = Brushes.Gray } ) ; }
 				var n=0 ; foreach( var ax in rng.Keys.Intersect(yaxes.Take(1)) )
 				{
 					var y = rng[ax] ; axe = axes.FirstOrDefault(a=>a.Spec==ax) ; axb = axe.Binder ;
-					for( var m=ver-50 ; m>=0 ; m-=50 ) MapPanel.Children.Add( new Label{ Content=format(AxeInnerByOuterY(y.Min+(bot-m)*(y.Max-y.Min)/height,y),5) , Foreground=Brushes.Gray }.Set(l=>{Canvas.SetTop(l,m-18);Canvas.SetLeft(l,n*50-4);}) ) ; ++n ;
+					for( var m=ver ; m>=0 ; m-=50 ) MapPanel.Children.Add( new Label{ Content=format(AxeInnerByOuterY(y.Min+(bot-m)*(y.Max-y.Min)/height,y),5) , Foreground=Brushes.Gray }.Set(l=>{Canvas.SetTop(l,m-18);Canvas.SetLeft(l,n*50-4);}) ) ; ++n ;
 					if( y.Min<0 && y.Max>0 ) { var yZero = ScreenInnerByReAxeY(0D.By(y,false).Value) ; MapPanel.Children.Add( new Line{ X1 = 0 , Y1 = yZero , X2 = hor , Y2 = yZero , Stroke = Brushes.Gray } ) ; }
 				}
 			}
@@ -416,9 +416,9 @@ namespace Rob.Act.Analyze
 				var val = ax.SelectMany(v=>v.Skip(1)) ; ((double Min,double Max) x,(double Min,double Max) y) = ((ax.Min(a=>a[0]),ax.Max(a=>a[0])),(val.Min(),val.Max())) ;
 				rng.Add(new KeyValuePair<string,(double Min,double Max)>(ax.Ax.Spec,x)) ; rng.Add(new KeyValuePair<string,(double Min,double Max)>($"Q({ax.Ax.Spec}){ax.Axon?.Spec}",y)) ;
 				{
-					for( var m=0 ; m<=hor ; m+=100 ) GraphPanel.Children.Add( new Label{ Content=format(AxeInnerByOuterX(x.Min+(m-left)*(x.Max-x.Min)/width,x)) , Foreground=Brushes.Gray }.Set(l=>{Canvas.SetLeft(l,m-5);Canvas.SetTop(l,ver-20-10*k);}) ) ;
-					for( var m=50 ; m<=hor ; m+=100 ) GraphPanel.Children.Add( new Label{ Content=format(AxeInnerByOuterX(x.Min+(m-left)*(x.Max-x.Min)/width,x)) , Foreground=Brushes.Gray }.Set(l=>{Canvas.SetLeft(l,m-5);Canvas.SetTop(l,ver-10-10*k);}) ) ;
-					axa = ax.Axon ; axb = ax.Axon?.Binder ; for( var m=ver-50 ; m>=0 ; m-=50 ) GraphPanel.Children.Add( new Label{ Content=format(AxeInnerByOuterY(y.Min+(bot-m)*(y.Max-y.Min)/height,y)) , Foreground=Brushes.Gray }.Set(l=>{Canvas.SetTop(l,m-20);Canvas.SetLeft(l,-4);}) ) ;
+					for( var m=0 ; m<=hor ; m+=100 ) GraphPanel.Children.Add( new Label{ Content=format(AxeInnerByOuterX(x.Min+(m-left)*(x.Max-x.Min)/width,x)) , Foreground=Brushes.Gray }.Set(l=>{Canvas.SetLeft(l,m-5);Canvas.SetTop(l,ver-10-10*k);}) ) ;
+					for( var m=50 ; m<=hor ; m+=100 ) GraphPanel.Children.Add( new Label{ Content=format(AxeInnerByOuterX(x.Min+(m-left)*(x.Max-x.Min)/width,x)) , Foreground=Brushes.Gray }.Set(l=>{Canvas.SetLeft(l,m-5);Canvas.SetTop(l,ver-20-10*k);}) ) ;
+					axa = ax.Axon ; axb = ax.Axon?.Binder ; for( var m=ver ; m>=0 ; m-=50 ) GraphPanel.Children.Add( new Label{ Content=format(AxeInnerByOuterY(y.Min+(bot-m)*(y.Max-y.Min)/height,y)) , Foreground=Brushes.Gray }.Set(l=>{Canvas.SetTop(l,m-18);Canvas.SetLeft(l,-4);}) ) ;
 					if( x.Min<0 && x.Max>0 ) { var xZero = ScreenInnerByReAxeX(0D.By(x).Value) ; GraphPanel.Children.Add( new Line{ X1 = xZero , Y1 = 0 , X2 = xZero , Y2 = ver , Stroke = Brushes.Gray } ) ; }
 					if( y.Min<0 && y.Max>0 ) { var yZero = ScreenInnerByReAxeY(0D.By(y,false).Value) ; GraphPanel.Children.Add( new Line{ X1 = 0 , Y1 = yZero , X2 = hor , Y2 = yZero , Stroke = Brushes.Gray } ) ; }
 				}
@@ -527,8 +527,8 @@ namespace Rob.Act.Analyze
 		double ScreenInnerByReAxeX( double x ) => ScreenInnerByOuterX(x*ViewSize.Width) ;
 		double ScreenInnerByOuterY( double y ) => ( ScreenRect is Rect r ? (y+ViewOrigin.Height-r.Location.Y)*ViewSize.Height/r.Size.Height : y ) + ViewOrigin.Height ;
 		double ScreenInnerByReAxeY( double x ) => ScreenInnerByOuterY(x*ViewSize.Height) ;
-		double AxeInnerByOuterX( double x , (double Min,double Max) e ) { if( ScreenRect is Rect r ); else return x ; var q = (e.Max-e.Min)/ViewSize.Width ; var fx = (x-e.Min)/q ; return e.Min+(r.Location.X+fx*r.Width/ViewSize.Width)*q ; }
-		double AxeInnerByOuterY( double y , (double Min,double Max) e ) { if( ScreenRect is Rect r ); else return y ; var q = (e.Max-e.Min)/ViewSize.Height ; var fy = (e.Max-y)/q ; return e.Max-(r.Location.Y-fy*r.Height/ViewSize.Height)*q ; }
+		double AxeInnerByOuterX( double x , (double Min,double Max) e ) { if( ScreenRect is Rect r ); else return x ; var q = (e.Max-e.Min)/ViewSize.Width ; var fx = (x-e.Min)/q ; return e.Min+(r.Location.X-ViewOrigin.Width+fx*r.Width/ViewSize.Width)*q ; }
+		double AxeInnerByOuterY( double y , (double Min,double Max) e ) { if( ScreenRect is Rect r ); else return y ; var q = (e.Max-e.Min)/ViewSize.Height ; var fy = (e.Max-y)/q ; return e.Max-(r.Location.Y-ViewOrigin.Height+fy*r.Height/ViewSize.Height)*q ; }
 		#endregion
 
 		#region Stepping
