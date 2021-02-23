@@ -22,6 +22,7 @@ namespace Rob.Act.Analyze
 		public Func<Pathable,Aspect,bool> ActionAssocier ;
 		public double SubjectMass = 76 ;
 		public (double Grade,double Grane,byte Radius) Altiplane = default ;
+		public double ViewScreenMargin ;
 	}
 	public class State
 	{
