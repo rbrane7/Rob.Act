@@ -47,7 +47,7 @@ namespace Rob.Act
 			}
 			public static implicit operator Path( Bio work ) =>
 				new Path(work.Date,work.Data.Select(p=>new Point(p.Date){ Beat = p.Beat , Flow = p.Sat , Grade = p.Var , Energy = p.Max , Bit = work.Multi?(p.Date-work.Date).Days:null as Quant? }))
-				{ Initing = true , Action = work.Spec , Metax = new Metax{ [Axis.Energy]=("∫O₂↑",":0.0") , [Axis.Flow]=("∫µO₂",":0%") , [Axis.Grade]=("∫♥↕",":0ms") } }
+				{ Initing = true , Action = work.Spec , Metax = new Metax{ [Axis.Energy]=("∫O₂↑",":0.0",true) , [Axis.Flow]=("∫µO₂",":0%",true) , [Axis.Grade]=("∫♥↕",":0ms",true) } }
 				.Set(p=>{
 					p.Tags = $"{Basis.Device.Bio.Code} {p.O2Rate:0.0} {work.Subject}" ; var l = work.Data[^1] ;
 					p.Time = work.Time ; p.Beat = l.Beat ; p.Energy = l.Max.Nil() ; p.Grade = l.Var.Nil() ; p.Flow = l.Sat.Nil() ; p.Bit = p[^1].Bit ;

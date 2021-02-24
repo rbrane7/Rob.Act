@@ -108,14 +108,13 @@ namespace Rob.Act
 		public void Populate() { using var init = Incognit ; Metax.Reset(Spectrum.Trait) ; Spectrum.Trait.Each(t=>this[t.Spec]=t.Value) ; Spectrum.Tags.Set(Tag.Add) ; }
 		void Take( IEnumerable<Point> points , Mark kind = Mark.No )
 		{
-			using var _=Incognit ;
-			points.Set(p=>Content.AddRange(p.OrderBy(t=>t.Date))) ; if( Metax==null ) Metax = points?.FirstOrDefault(p=>p.Metax!=null)?.Metax ;
+			using var _=Incognit ; points.Set(p=>Content.AddRange(p.OrderBy(t=>t.Date))) ; if( Metax==null ) Metax = points?.FirstOrDefault(p=>p.Metax!=null)?.Metax ;
 			var date = DateTime.Now ; for( var i=0 ; i<Count ; ++i ) { if( i<=0 || (this[i-1].Mark&(Mark.Stop|kind))!=0 ) date = this[i].Date-(this[i-1]?.Time.nil(_=>(this[i-1].Mark&kind)!=0)??default) ; if( this[i].Time==default ) this[i].Time = this[i].Date-date ; }
 		}
 		internal Path On( IEnumerable<Point> points , Mark kind = Mark.No )
 		{
 			Take(points,kind) ; using var _=Incognit ;
-			for( var ax = Axis.Lon ; ax<=Axis.Alt ; ++ax ) this[ax] = this.Average(p=>p[ax]) ; foreach( var ax in Basis.Potentials ) this[ax] = this.Sum(p=>p[ax]) ;
+			for( var ax = Axis.Lon ; ax<=Axis.Alt ; ++ax ) this[ax] = this.Average(p=>p[ax]) ; foreach( var ax in Potenties ) this[ax] = this.Sum(p=>p[ax]) ;
 			Ascent = this.Sum(p=>(Quant?)p.Ascent) ; Deviation = this.Sum(p=>(Quant?)p.Deviation) ; if( Metax!=null ) foreach( var ax in Metax ) this[ax.Value.At] = this.Average(p=>p[ax.Value.At]) ;
 			for( int i=0 , c=this.Min(p=>p.Tag.Count) ; i<c ; ++i ) Tag[i] = this.Where(p=>p.Tags!=null).Aggregate(string.Empty,(a,p)=>a==null?null:a==string.Empty?p.Tag[i]:a==p.Tag[i]||p.Tag[i].No()?a:null) ;
 			return this ;
@@ -286,7 +285,7 @@ namespace Rob.Act
 		/// <summary> Derivancy causes this path to be drived from it's point sub-pathes and is used as base of <see cref="Metax"/> of points in case of top-down construction . In this case points inherit path's <see cref="Metax"/> if they doesn't have own . </summary>
 		public bool Dominant = Dominancy , Editable = Persistent ; internal bool Derived ;
 		public Metax Metaxes => metaxex ??= this.Select(p=>p.Metax).Distinct().SingleOrNo() ; Metax metaxex ;
-		public (string Name,string Form) Metaxe( uint ax , bool insure = false ) => (insure||metaxex!=null||dimensions==null&&ax<Dimensions?Metaxes?[ax]:null) ?? Metax?[ax] ?? default ;
+		public (string Name,string Form,bool Potent) Metaxe( uint ax , bool insure = false ) => (insure||metaxex!=null||dimensions==null&&ax<Dimensions?Metaxes?[ax]:null) ?? Metax?[ax] ?? default ;
 		public uint Dimensions => dimensions ??= Metaxes?.Dimension??(Count>0?this.Max(p=>p.Dimension):0) ; uint? dimensions ;
 		public override Quant? Distance { set { if( value==Distance ) return ; if( value is Quant v ) Correct(Axis.Dist,v*Transfer) ; Edited() ; } }
 		public Quant? Elevation { get => this[Count-1]?.Alti-this[0]?.Alti ; set { if( value==Elevation ) return ; if( value is Quant v && this[0][Axis.Alt] is Quant alt ) Correct(Axis.Alt,alt,alt+v) ; Edited() ; } }
@@ -457,7 +456,7 @@ namespace Rob.Act
 		new internal static class Serialization { public const string Separator = " \x1 Point \x2\n" ; public const string Derivator = "^ " ; }
 		#endregion
 
-		public override Metax Metax { set { if( Derived && Metax!=null ) Metax.Basis = value ; else base.Metax = value ; } }
+		public override Metax Metax { set { if( /*Derived &&*/ Metax!=null ) Metax.Heir = value ; else base.Metax = value ; } }
 		public IList<Point> Pointes { get => pointes ??= new Aid.Collections.ObservableList<Point>().Set(p=>Task.Factory.StartNew(()=>{this.Each(p.Add);p.CollectionChanged+=Edited;})) ; set { if( value==pointes ) return ; pointes = value ; Changed("Pointes,Points") ; } } IList<Point> pointes ;
 		internal void Edited( object _=null , NotifyCollectionChangedEventArgs arg=null )
 		{

@@ -141,6 +141,7 @@ namespace Rob.Act
 			public string Lex { get => lex ; set => Changed("Lex,Value",Resolver=(lex=value).Compile<Func<Contextable,Quant?>>()) ; } Func<Contextable,Quant?> Resolver ; string lex ;
 			void Changed<Value>( string properties , Value value ) { propertyChanged.On(this,properties,value) ; Dirty = true ; }
 			public Quant? Value { get { try { return Orphan ? null : Resolver?.Invoke(Context) ; } catch( System.Exception e ) { throw new InvalidOperationException($"Failed evaluating Trait {Spec} = {Lex} !",e) ; } } }
+			public bool IsPotential { get => potential ; set => Changed("IsPotential",potential=value) ; } bool potential ;
 			public override string ToString() => Orphan ? null : $"{Spec.Null(n=>n.No()).Get(s=>s+'=')}{new Basis.Binding(Bond).Of(Value)}" ;
 			public Traitlet() {} // Default constructor must be present to enable DataGrid implicit Add .
 			internal Traitlet( Traitlet source , IEnumerable<Aspectable> set = null ) { var det = source?.Deref(set) ; name = (det??source)?.Spec ; bond = source?.Bond.Null(b=>b.No())??det?.Bond ; lex = (det??source)?.Lex ; Resolver = (det??source)?.Resolver ; Context = det?.Context ; }
@@ -151,11 +152,11 @@ namespace Rob.Act
 			/// <summary>
 			/// Deserializes aspect from string .
 			/// </summary>
-			public static explicit operator Traitlet( string text ) => text.Separate(Serialization.Separator,braces:null).Get(t=>new Traitlet{Spec=t.At(0),Lex=t.At(1),Bond=t.At(2)} ) ;
+			public static explicit operator Traitlet( string text ) => text.Separate(Serialization.Separator,braces:null).Get(t=>new Traitlet{Spec=t.At(0),Lex=t.At(1),Bond=t.At(2),IsPotential=t.At(3)=="+"} ) ;
 			/// <summary>
 			/// Serializes aspect from string .
 			/// </summary>
-			public static explicit operator string( Traitlet trait ) => trait.Get(t=>string.Join(Serialization.Separator,t.name,t.lex,t.bond)) ;
+			public static explicit operator string( Traitlet trait ) => trait.Get(t=>string.Join(Serialization.Separator,t.name,t.lex,t.bond,t.IsPotential?"+":null)) ;
 			static class Serialization { public const string Separator = " \x1 Traitlet \x2 " ; }
 			#endregion
 		}

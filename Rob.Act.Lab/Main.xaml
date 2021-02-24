@@ -52,6 +52,7 @@
                     <DataGridTextColumn Header="Trait" Binding="{Binding Spec}" Width="1*"/>
                     <DataGridTextColumn Header="Resolver" Binding="{Binding Lex}" Width="4*"/>
                     <DataGridTextColumn Header="Binder" Binding="{Binding Bond}" Width="1*"/>
+                    <DataGridCheckBoxColumn Header="+" Binding="{Binding IsPotential}" Width=".5*"/>
                 </DataGrid.Columns>
                 <DataGrid.CommandBindings>
                     <CommandBinding Command="Delete" Executed="DataGridDeleteCommandBinding_Executed"/>

@@ -177,7 +177,8 @@ namespace Rob.Act
 		public static IEnumerable<string> ExtractTags( this string value ) => value?.TrimStart().StartsBy("?")==true ? value.RightFromFirst('?').Separate(';','&').Get(elem=>typeof(Taglet).GetEnumNames().Get(n=>n.Select(e=>elem.Arg(e)).Concat(elem.Except(e=>e.LeftFrom('=')??string.Empty,n)))) : value.Separate(' ') ?? Enumerable.Empty<string>() ;
 		#endregion
 
-		internal static IEnumerable<KeyValuePair<string,(uint At,string Form)>> Iterer( this Metax metax , uint @base = 0 ) => metax.Get(m=>m.Iterator(@base)) ?? Enumerable.Empty<KeyValuePair<string,(uint At,string Form)>>() ;
+		internal static IEnumerable<KeyValuePair<string,(uint At,string Form,bool Potent)>> Iterer( this Metax metax , uint @base = 0 ) => metax.Get(m=>m.Iterator(@base)) ?? Enumerable.Empty<KeyValuePair<string,(uint At,string Form,bool Potent)>>() ;
+		internal static uint Suprem( this IDictionary<string,(uint At,string Form,bool Potent)> map ) => map.Count<=0?0:map.Max(a=>a.Value.At)+1 ;
 		public static Quant TotalSeconds( this DateTime date ) => (date-DateTime.MinValue).TotalSeconds ;
 		public static bool Equals( this Quant x , Quant y ) => x==y || Math.Abs(x-y)/(Math.Abs(x)+Math.Abs(y))<=QuantEpsilon ;
 		public static bool Equals( this Quant? x , Quant? y ) => x==y || x is Quant a && y is Quant b && Equals(a,b) ;
@@ -200,28 +201,29 @@ namespace Rob.Act
 		internal static string Serialize( this Mark mark ) => $"{(mark.HasFlag(Act.Mark.Stop)?"Stop":null)}{(mark.HasFlag(Act.Mark.Lap)?"Lap":null)}{(mark.HasFlag(Act.Mark.Act)?"Act":null)}{(mark.HasFlag(Act.Mark.Ato)?"Ato":null)}{(mark.HasFlag(Act.Mark.Sub)?"Sub":null)}{(mark.HasFlag(Act.Mark.Sup)?"Sup":null)}{(mark.HasFlag(Act.Mark.Hyp)?"Hyp":null)}" ;
 		internal static Mark Deserialize( this string mark ) => (mark?.Contains("Stop")==true?Act.Mark.Stop:Act.Mark.No)|(mark?.Contains("Lap")==true?Act.Mark.Lap:Act.Mark.No)|(mark?.Contains("Act")==true?Act.Mark.Act:Act.Mark.No)|(mark?.Contains("Ato")==true?Act.Mark.Ato:Act.Mark.No)|(mark?.Contains("Sub")==true?Act.Mark.Sub:Act.Mark.No)|(mark?.Contains("Sup")==true?Act.Mark.Sup:Act.Mark.No)|(mark?.Contains("Hyp")==true?Act.Mark.Hyp:Act.Mark.No) ;
 	}
-	public class Metax : IEquatable<Metax> , IEnumerable<KeyValuePair<string,(uint At,string Form)>>
+	public class Metax : IEquatable<Metax> , IEnumerable<KeyValuePair<string,(uint At,string Form,bool Potent)>>
 	{
-		internal uint Base ; internal Metax Basis ;
-		readonly IDictionary<string,(uint At,string Form)> Map = new Dictionary<string,(uint At,string Form)>() ;
-		public IList<uint> Potenties { get => potenties??Act.Basis.Potenties ; set => potenties = value ; } IList<uint> potenties ;
-		public uint this[ string ax ] => Map.On(ax)?.At+Base ?? Basis?.Map.On(ax)?.At+Base+Top ?? (uint)Axis.Lim ;
-		public (string Name,string Form) this[ uint ax ] { get => this.SingleOrNil(m=>m.Value.At==ax).get(v=>(v.Key,v.Value.Form))??default ; set => Map[value.Name] = (ax,value.Form) ; }
-		public (string Name,string Form) this[ Axis ax ] { get => this[(uint)ax] ; set => this[(uint)ax] = value ; }
-		public void Reset( Aspect.Traits traits ) { if( (Basis?.Map.Count??Map.Count)>0 ) return ; uint i = 0 ; traits.Each(t=>(Basis?.Map??Map)[t.Spec]=(i++,t.Bond)) ; }
+		internal uint Base ; internal Metax Heir ;
+		readonly IDictionary<string,(uint At,string Form,bool Potent)> Map = new Dictionary<string,(uint At,string Form,bool Ponent)>() ;
+		public IEnumerable<uint> Potenties => this.Where(a=>a.Value.Potent).Select(a=>a.Value.At).Concat(Base>0?Basis.Potenties:Basis.Potenties.Except(this.Select(a=>a.Value.At))) ;
+		public uint this[ string ax ] => Heir?.Map.On(ax)?.At+Dim ?? Map.On(ax)?.At+Base ?? (uint)Axis.Lim ;
+		public (string Name,string Form,bool Potent) this[ uint ax ] { get => this.SingleOrNil(m=>m.Value.At==ax).get(v=>(v.Key,v.Value.Form,v.Value.Potent))??default ; set => Map[value.Name] = (ax,value.Form,value.Potent) ; }
+		public (string Name,string Form,bool Potent) this[ Axis ax ] { get => this[(uint)ax] ; set => this[(uint)ax] = value ; }
+		public void Reset( Aspect.Traits traits ) => traits.Each(Reset) ;
+		void Reset( Aspect.Traitlet t ) { var map = Heir?.Map??Map ; var i = map.On(t.Spec)?.At??map.Suprem() ; map[t.Spec]=(i,t.Bond,t.IsPotential) ; }
 		public bool Equals( Metax other ) => other is Metax m && Base==m.Base && this.SequenceEquate(m) ;
-		internal IEnumerable<KeyValuePair<string,(uint At,string Form)>> Iterator( uint @base ) => Map.Select(a=>new KeyValuePair<string,(uint At,string Form)>(a.Key,(a.Value.At+@base,a.Value.Form))) ;
-		public IEnumerator<KeyValuePair<string,(uint At,string Form)>> GetEnumerator() => (Iterator(Base).Concat(Basis.Iterer(Dim))).GetEnumerator() ; IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
-		public uint Dimension => Dim+(Basis?.Top??0) ; uint Dim => Base+Top ; uint Top => (uint)Map.Count ;
+		internal IEnumerable<KeyValuePair<string,(uint At,string Form,bool Potent)>> Iterator( uint @base ) => Map.Select(a=>new KeyValuePair<string,(uint At,string Form,bool Potent)>(a.Key,(a.Value.At+@base,a.Value.Form,a.Value.Potent))) ;
+		public IEnumerator<KeyValuePair<string,(uint At,string Form,bool Potent)>> GetEnumerator() => (Iterator(Base).Concat(Heir.Iterer(Dim))).GetEnumerator() ; IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
+		public uint Dimension => Dim+(Heir?.Sup??0) ; uint Dim => Base+Sup ; uint Sup => Map.Suprem() ;
 		#region De/Serialization
 		public static explicit operator Metax( string text ) => text.Null(t=>t.Void()).Get(t=>new Metax(t)) ;
-		public static explicit operator string( Metax the ) => the.Get(t=>$"{t.Base}{Serialization.Separator}{t.Map.Concat(t.Basis.Iterer(t.Top)).Select(e=>$"{e.Key}{Serialization.Infix}{e.Value.At}{Serialization.Infix}{e.Value.Form}").Stringy(Serialization.Separator)}") ;
-		static class Serialization { public const string Separator = " \x1 Axe \x2 " , Infix = "\x1:\x2" ; }
+		public static explicit operator string( Metax the ) => the.Get(t=>$"{t.Base}{Serialization.Separator}{t.Map.Concat(t.Heir.Iterer(t.Sup)).Select(e=>$"{e.Key}{Serialization.Infix}{e.Value.At}{Serialization.Infix}{e.Value.Form}{Serialization.Postfix}{(e.Value.Potent?"+":null)}").Stringy(Serialization.Separator)}") ;
+		static class Serialization { public const string Separator = " \x1 Axe \x2 " , Infix = "\x1:\x2" , Postfix = "\x1;\x2" ; }
 		#endregion
 		Metax( string text ) : this(text.LeftFrom(Serialization.Separator,all:true).Parse<uint>()??0)
 		{
 			foreach( var e in text.RightFromFirst(Serialization.Separator).SeparateTrim(Serialization.Separator,false) )
-				Map.Add(e.LeftFrom(Serialization.Infix),e.RightFromFirst(Serialization.Infix).get(v=>(v.LeftFrom(Serialization.Infix).Parse<uint>()??0,v.RightFrom(Serialization.Infix).Null(f=>f.No())))??default) ;
+				Map.Add(e.LeftFrom(Serialization.Infix),e.RightFromFirst(Serialization.Infix).get(v=>(v.LeftFrom(Serialization.Infix).Parse<uint>()??0,v.RightFrom(Serialization.Infix).LeftFrom(Serialization.Postfix,all:true).Null(f=>f.No()),v.RightFrom(Serialization.Infix).RightFrom(Serialization.Postfix)=="+"))??default) ;
 		}
 		public Metax( uint zero = 0 ) => Base = zero ;
 		public IEnumerable<string> Bonds => this.Select(e=>$"[{e.Value.At}]/{e.Key}{e.Value.Form}") ;
