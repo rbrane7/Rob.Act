@@ -12,7 +12,7 @@ namespace Rob.Act
 	{
 		public class Skierg
 		{
-			public static bool Interpolate = false ;
+			public static bool Interpolate = false ; public static Func<Quant,bool> Powerage ;
 			public static readonly string[] Axes = {"Number","Time (seconds)","Distance (meters)","Pace (seconds)","Watts","Cal/Hr","Stroke Rate","Heart Rate","Laps","Refine","Locus","Subject","Drag Factor","Date","Spec"} ;
 			public static readonly string Sign = $"\"{Axes[0]}\",\"{Axes[1]}\",\"{Axes[2]}\",\"{Axes[3]}\",\"{Axes[4]}\",\"{Axes[5]}\",\"{Axes[6]}\",\"{Axes[7]}\"" ;
 			readonly IList<(TimeSpan Time,double Distance,double Beat,uint Bit,double Energy,double Drag,double Effort,Mark Mark)> Data = new List<(TimeSpan Time,double Distance,double Beat,uint Bit,double Energy,double Drag,double Effort,Mark Mark)>() ;
@@ -48,7 +48,7 @@ namespace Rob.Act
 					var velo = 500/(pace.nil()??Quant.PositiveInfinity) ; if( time<(accu.Time-TimeSpan.FromTicks(1)).TotalSeconds-atime ) { lap = laps?.FirstOrDefault(l=>l.time>=last.time) ; atime = lap?.time ?? last.time ; adist = last.dist+(lap?.time-last.time??0)*velo ; }
 					time += atime ; dist += adist ; if( laps?.FirstOrDefault(l=>last.time<l.time&&l.time<=time).time.nil() is Quant t ) { dist -= (time-t)*velo ; time = t ; mark = Mark.Lap ; } // Limits adjustion
 					bit = Math.Max(bit,last.bit+1) ; var db = bit-last.bit ; var ib = Interpolate ? 1 : db ; var dt = TimeSpan.FromSeconds((time-last.time)*ib/db) ; accu.Bit = bit ; if( dist<last.dist ) dist = last.dist+dt.TotalSeconds*velo ; var ds = (dist-last.dist)*ib/db ;
-					for( var i=ib ; i<=db ; i+=ib )/*interpolation*/{ if( Interpolate ) { accu.Time += dt ; accu.Distance += ds ; } else { accu.Time = TimeSpan.FromSeconds(time) ; accu.Distance = dist ; } accu.Beat += beat*dt.TotalSeconds/60 ; var Dt = velo==0?dt.TotalSeconds:ds/velo ; accu.Energy += power*Dt ; accu.Drag += (idrag=drag.nil()??idrag)*ds/100 ; accu.Effort += effort*.41858*Dt ; accu.Mark = mark ; Data.Add(accu) ; }
+					for( var i=ib ; i<=db ; i+=ib )/*interpolation*/{ if( Interpolate ) { accu.Time += dt ; accu.Distance += ds ; } else { accu.Time = TimeSpan.FromSeconds(time) ; accu.Distance = dist ; } accu.Beat += beat*dt.TotalSeconds/60 ; var Dt = velo==0||(Powerage?.Invoke(power)??false)?dt.TotalSeconds:ds/velo ; accu.Energy += power*Dt ; accu.Drag += (idrag=drag.nil()??idrag)*ds/100 ; accu.Effort += effort*.41858*Dt ; accu.Mark = mark ; Data.Add(accu) ; }
 					last = (bit,time,dist,beat,power,drag,pace,effort,mark) ; accu.Mark = default ;
 				}
 			}

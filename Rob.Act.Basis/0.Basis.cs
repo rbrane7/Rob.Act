@@ -217,13 +217,18 @@ namespace Rob.Act
 		public uint Dimension => Dim+(Heir?.Sup??0) ; uint Dim => Base+Sup ; uint Sup => Map.Suprem() ;
 		#region De/Serialization
 		public static explicit operator Metax( string text ) => text.Null(t=>t.Void()).Get(t=>new Metax(t)) ;
-		public static explicit operator string( Metax the ) => the.Get(t=>$"{t.Base}{Serialization.Separator}{t.Map.Concat(t.Heir.Iterer(t.Sup)).Select(e=>$"{e.Key}{Serialization.Infix}{e.Value.At}{Serialization.Infix}{e.Value.Form}{Serialization.Postfix}{(e.Value.Potent?"+":null)}").Stringy(Serialization.Separator)}") ;
+		public static explicit operator string( Metax the ) => the.Get(t=>$"{t.Base}{Serialization.Separator}{t.Map.Union(t.Heir.Iterer(t.Sup),a=>a.Key).Select(e=>$"{e.Key}{Serialization.Infix}{e.Value.At}{Serialization.Infix}{e.Value.Form}{Serialization.Postfix}{(e.Value.Potent?"+":null)}").Stringy(Serialization.Separator)}") ;
 		static class Serialization { public const string Separator = " \x1 Axe \x2 " , Infix = "\x1:\x2" , Postfix = "\x1;\x2" ; }
 		#endregion
 		Metax( string text ) : this(text.LeftFrom(Serialization.Separator,all:true).Parse<uint>()??0)
 		{
-			foreach( var e in text.RightFromFirst(Serialization.Separator).SeparateTrim(Serialization.Separator,false) )
+			var error = false ;
+			foreach( var e in text.RightFromFirst(Serialization.Separator).SeparateTrim(Serialization.Separator,false) ) try
+			{
 				Map.Add(e.LeftFrom(Serialization.Infix),e.RightFromFirst(Serialization.Infix).get(v=>(v.LeftFrom(Serialization.Infix).Parse<uint>()??0,v.RightFrom(Serialization.Infix).LeftFrom(Serialization.Postfix,all:true).Null(f=>f.No()),v.RightFrom(Serialization.Infix).RightFrom(Serialization.Postfix)=="+"))??default) ;
+			}
+			catch { System.Diagnostics.Trace.TraceError(e) ; error = true ; }
+			if( error ) System.Diagnostics.Trace.TraceError(text) ;
 		}
 		public Metax( uint zero = 0 ) => Base = zero ;
 		public IEnumerable<string> Bonds => this.Select(e=>$"[{e.Value.At}]/{e.Key}{e.Value.Form}") ;
