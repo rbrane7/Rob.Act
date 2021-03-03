@@ -579,7 +579,7 @@ namespace Rob.Act.Analyze
 		void DataGrid_Paste_CommandBinding_Executed( object sender, ExecutedRoutedEventArgs _=null )
 		{
 			if( sender==AspectAxisGrid ) DataGrid_Paste_CommandBinding_Executed(sender,a=>new Axe{Spec=a.At(0),Resolvelet=a.At(1),Binder=a.At(2),Quantlet=a.At(3),Asrex=a.At(4).Parse(false),Aspectlet=a.At(5),Multi=a.At(6).Parse(false)}) ;
-			if( sender==AspectTraitsGrid ) DataGrid_Paste_CommandBinding_Executed(sender,a=>new Aspect.Traitlet{Spec=a.At(0),Lex=a.At(1),Bond=a.At(2)}) ;
+			if( sender==AspectTraitsGrid ) DataGrid_Paste_CommandBinding_Executed(sender,a=>new Aspect.Traitlet{Spec=a.At(0),Lex=a.At(1),Bond=a.At(2),IsPotential=a.At(3).Parse(false)}) ;
 			if( sender==AspectsGrid ) DataGrid_Paste_CommandBinding_Executed(sender,a=>new Aspect{Spec=a.At(0),Taglet=a.At(1)}) ;
 			if( sender==ActionFilterGrid ) DataGrid_Paste_CommandBinding_Executed(sender,a=>new Filter.Entry{Filter=a.At(0),Traits=a.At(1),Matrix=a.At(2),Associer=a.At(3),Matter=a.At(4),Query=a.At(5)}) ;
 			if( sender==SourceFilterGrid || sender==ActionsFilterFilterGrid ) DataGrid_Paste_CommandBinding_Executed(sender,a=>new Filter.Entry{Rex=a.At(0).Parse(false),Filter=a.At(1),Query=a.At(2)}) ;
