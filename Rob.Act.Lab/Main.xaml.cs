@@ -222,20 +222,20 @@ namespace Rob.Act.Analyze
 		IEnumerable<Aspect> DrawingSources => Sources.Except(SourcesGrid.SelectedItems.OfType<Aspect>()) ;
 		IEnumerable<Aspect> DrawingResources { get => Resources ; set { if( DrawingSourcesUpdate = value!=null ); else DrawingValue = null ; } }
 		IEnumerable<Axe> DrawingAxes => AspectAxisGrid.SelectedItems.OfType<Axe>().Select(a=>a.DeRef).ToArray() ;
-		List<(string Aspect,List<(string Spec,double?[] Val)> Axes)> DrawingValue { get => draval.Set(_=>UpdateDrawingAxes()).Set(_=>UpdateDrawingSources()).Get(_=>draval) ; set { draval = value ; DrawingRange = null ; } } List<(string Aspect,List<(string Spec,double?[] Val)> Axes)> draval ;
+		List<(string Aspect,List<(string Spec,double?[] Val,string Base)> Axes)> DrawingValue { get => draval.Set(_=>UpdateDrawingAxes()).Set(_=>UpdateDrawingSources()).Get(_=>draval) ; set { draval = value ; DrawingRange = null ; } } List<(string Aspect,List<(string Spec,double?[] Val,string Base)> Axes)> draval ;
 		Dictionary<string,(double Min,double Max)> DrawingRange ; (IList Added,IList Removed) DrawingAxesUpdate ; bool DrawingSourcesUpdate ;
 		void UpdateDrawingAxes()
 		{
 			var (added,removed) = DrawingAxesUpdate ; 
 			//if( removed?.Count>0 ) foreach( var asp in draval ) foreach( var axe in removed ) asp.Axes.IndexWhere(a=>a.Spec==axe.Spec).nil(i=>i<0).Use(asp.Axes.RemoveAt) ; // removing is not applied to optimize reuse of axe
-			if( added?.Count>0 ) foreach( var asp in draval ) { var asv = DrawingResources.One(a=>a.Spec==asp.Aspect) ; foreach( Axe axe in added ) if( asp.Axes.Any(a=>a.Spec==axe.Spec) ); else asp.Axes.Add((axe.Spec,asv[axe.Spec].ToArray())) ; }
+			if( added?.Count>0 ) foreach( var asp in draval ) { var asv = DrawingResources.One(a=>a.Spec==asp.Aspect) ; foreach( Axe axe in added ) if( asp.Axes.Any(a=>a.Spec==axe.Spec) ); else asp.Axes.Add((axe.Spec,asv[axe.Spec].ToArray(),axe.Base)) ; }
 			DrawingAxesUpdate = (null,null) ; if( added?.Count+removed?.Count>0 ) DrawingRange = null ;
 		}
 		void UpdateDrawingSources()
 		{
 			if( DrawingSourcesUpdate && DrawingResources is IEnumerable<Aspect> sources ) if( draval.Count<=0 || sources.Any(s=>!s.Regular) ) DrawingValue = null ; else
 			{
-				sources.Except(s=>s.Spec,draval.Select(s=>s.Aspect)).ToArray().Each(source=>draval.Add((source.Spec,source.Intersect(a=>a.Spec,draval[0].Axes.Select(x=>x.Spec)).Select(a=>(a.Spec,a.ToArray())).ToList()))) ;
+				sources.Except(s=>s.Spec,draval.Select(s=>s.Aspect)).ToArray().Each(source=>draval.Add((source.Spec,source.Intersect(a=>a.Spec,draval[0].Axes.Select(x=>x.Spec)).Select(a=>(a.Spec,a.ToArray(),a.Base)).ToList()))) ;
 				draval.Except(s=>s.Aspect,sources.Select(s=>s.Spec)).ToArray().Each(a=>draval.Remove(a)) ; DrawingRange = null ;
 			}
 			DrawingSourcesUpdate = false ;
@@ -254,7 +254,7 @@ namespace Rob.Act.Analyze
 				for( var m=0 ; m<=hor ; m+=10 ) GraphPanel.Children.Add( new Line{ X1 = m , Y1 = 0 , X2 = m , Y2 = ver , Stroke = brush , StrokeDashArray = dash } ) ;
 				for( var m=ver ; m>=0 ; m-=10 ) GraphPanel.Children.Add( new Line{ X1 = 0 , Y1 = m , X2 = hor , Y2 = m , Stroke = brush , StrokeDashArray = dash } ) ;
 			}
-			var val = DrawingValue ; if( val==null ) await Task.Factory.StartNew(()=> val = DrawingValue = DrawingResources.Select(asp=>(asp.Spec,asp.Where(a=>a.Spec==xaxe.Spec||yaxes.Contains(a.Spec)).Select(a=>(a.Spec,a.ToArray())).ToList())).ToList() ) ;
+			var val = DrawingValue ; if( val==null ) await Task.Factory.StartNew(()=> val = DrawingValue = DrawingResources.Select(asp=>(asp.Spec,asp.Where(a=>a.Spec==xaxe.Spec||yaxes.Contains(a.Spec)).Select(a=>(a.Spec,a.ToArray(),a.Base)).ToList())).ToList() ) ;
 			var rng = DrawingRange ; if( rng==null )
 			{
 				DrawingRange = rng = new Dictionary<string,(double Min,double Max)>() ;
@@ -299,7 +299,7 @@ namespace Rob.Act.Analyze
 					}
 				}
 				catch( System.Exception ex ) { Trace.TraceWarning(ex.Stringy()) ; } dash = null ;
-				foreach( var (No,Tags) in asp.Raw?.Where(p=>!p.Tags.No()).Select(p=>(p.No,p.Tags)) ) if( No is int no && xax.Val.At(no) is double at && ScreenInnerByOuterX((at.By(rng[xax.Spec])*width??0)+asp.Offset) is double x )
+				foreach( var (No,Tags,At) in asp.Raw?.Where(p=>!p.Tags.No()).Select(p=>(p.No,p.Tags,p[xax.Base])) ) if( No is int no && (At??xax.Val.At(no)) is double at && ScreenInnerByOuterX((at.By(rng[xax.Spec])*width??0)+asp.Offset) is double x )
 				{
 					GraphPanel.Children.Add( new Label{ Content=Tags , Foreground=color , FontStyle=FontStyles.Italic }.Set(l=>{Canvas.SetTop(l,9*SourceIndex(asp)-9);Canvas.SetLeft(l,x-3);}) ) ; // point tag
 					GraphPanel.Children.Add( new Line{ X1 = x , Y1 = 0 , X2 = x , Y2 = ver , Stroke = color , StrokeDashArray = dash??=new DoubleCollection{2,6} } ) ; // tag line
@@ -321,7 +321,7 @@ namespace Rob.Act.Analyze
 				for( var m=0 ; m<=hor ; m+=10 ) MapPanel.Children.Add( new Line{ X1 = m , Y1 = 0 , X2 = m , Y2 = ver , Stroke = brush , StrokeDashArray = dash } ) ;
 				for( var m=ver ; m>=0 ; m-=10 ) MapPanel.Children.Add( new Line{ X1 = 0 , Y1 = m , X2 = hor , Y2 = m , Stroke = brush , StrokeDashArray = dash } ) ;
 			}
-			var val = DrawingValue ; if( val==null ) await Task.Factory.StartNew(()=> val = DrawingValue = DrawingResources.Select(asp=>(asp.Spec,asp.Where(a=>a.Spec==xaxe.Spec||yaxes.Contains(a.Spec)).Select(a=>(a.Spec,a.ToArray())).ToList())).ToList() ) ;
+			var val = DrawingValue ; if( val==null ) await Task.Factory.StartNew(()=> val = DrawingValue = DrawingResources.Select(asp=>(asp.Spec,asp.Where(a=>a.Spec==xaxe.Spec||yaxes.Contains(a.Spec)).Select(a=>(a.Spec,a.ToArray(),a.Base)).ToList())).ToList() ) ;
 			var rng = DrawingRange ; if( rng==null )
 			{
 				DrawingRange = rng = new Dictionary<string,(double Min,double Max)>() ;

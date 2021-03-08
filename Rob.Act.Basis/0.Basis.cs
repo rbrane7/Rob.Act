@@ -78,8 +78,8 @@ namespace Rob.Act
 		#region Axis specifics
 		static readonly List<string> axis = Enum.GetNames(typeof(Axis)).ToList() , marks = Enum.GetNames(typeof(Mark)).ToList() ;
 		static readonly List<uint> vaxi = Enum.GetValues(typeof(Axis)).Cast<uint>().ToList() ; static readonly List<Mark> vama = Enum.GetValues(typeof(Mark)).Cast<Mark>().ToList() ;
-		internal static uint Axis( this string name ) => vaxi.At(axis.IndexOf(name)).nil(i=>i<0) ?? (uint)axis.Set(a=>{a.Add(name);vaxi.Add((uint)vaxi.Count);}).Count-1 ;
-		internal static Mark Mark( this string name ) => vama.At(marks.IndexOf(name)) ;
+		internal static uint? Axis( this string name , bool insure = false ) => axis.IndexOf(name) is int at && at>=0 ? vaxi[at] : insure ? (uint)axis.Set(a=>{a.Add(name);vaxi.Add((uint)vaxi.Count);}).Count-1 : default(uint?) ;
+		internal static Mark? Mark( this string name ) => marks.IndexOf(name) is int at && at>=0 ? vama[at] : default(Mark?) ;
 		static readonly (Axis At,Axis To) Potentialim = (Act.Axis.Dist,Act.Axis.Top-1) ;
 		public static readonly Axis[] Derivates = {Act.Axis.Dist,Act.Axis.Time} ;
 		public static readonly uint[] Potenties = Potentials.Except(Derivates).Select(v=>(uint)v).ToArray() ;
@@ -318,8 +318,8 @@ namespace Rob.Act
 			}
 			public Quant? this[ string axis ]
 			{
-				get => Metax?[axis] is uint ax ? ax<(uint)Axis.Lim ? this[ax] : this[axis.Mark()] : this[axis.Mark()] ?? this[axis.Axis()] ;
-				set { if( Metax?[axis] is uint ax ) if( ax<(uint)Axis.Lim ) this[ax] = value ; else this[axis.Mark()] = value ; else if( axis.Mark() is Mark mark ) this[mark] = value ; else this[axis.Axis()] = value ; }
+				get => axis==null ? null : Metax?[axis] is uint ax ? ax<(uint)Axis.Lim ? this[ax] : this[axis.Mark().Value] : axis.Mark() is Mark ma ? this[ma] : axis.Axis() is uint a ? this[a] : default(Quant?) ;
+				set { if( axis==null ) return ; if( Metax?[axis] is uint ax ) if( ax<(uint)Axis.Lim ) this[ax] = value ; else this[axis.Mark().Value] = value ; else if( axis.Mark() is Mark mark ) this[mark] = value ; else this[axis.Axis(true).Value] = value ; }
 			}
 			public override bool TrySetMember( SetMemberBinder binder , object value ) { this[binder.Name] = (Quant?)value ; return base.TrySetMember( binder, value ) ; }
 			public override bool TryGetMember( GetMemberBinder binder , out object result ) { result = this[binder.Name] ; return true ; }

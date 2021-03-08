@@ -32,6 +32,7 @@ namespace Rob.Act
 			if( source?.distribulet.No()!=false && source?.quantlet.No()!=false ) source = dax ; distribulet = source?.distribulet ; distributor = source?.distributor ; quantlet = source?.quantlet ; Quantizer = source?.quantile?.Quantizer ;
 		}
 		public virtual string Spec { get => spec ; set { if( value==spec ) return ; spec = value ; propertyChanged.On(this,"Spec") ; } } string spec ;
+		public virtual string Base => Solver?.Base ;
 		public string Binder { get => bond ; set { if( value==bond ) return ; bond = value ; propertyChanged.On(this,"Binder") ; } } string bond ;
 		public Aspectable Source { set { if( Selector==null && DefaultAspect==null ) Aspect = value ; else Resource.Source = value ; } }
 		public Aspectable[] Sources { set { if( Selector==null && DefaultAspects==null ) Aspects = new Aspectables(value) ; else Resource.Sources = value ; } }
@@ -370,7 +371,8 @@ namespace Rob.Act
 		/// </summary>
 		public class Axe : Act.Axe.Support<Lap>
 		{
-			internal Axe( Act.Axe context , Lap lap ) : base(lap,i=>lap.Absolution.at(i)is double a?context[a]:null,context) => Counter = ()=>lap.Absolution.Length ;
+			public override string Base => basis??base.Base ; readonly string basis ;
+			internal Axe( Act.Axe context , Lap lap ) : base(lap,i=>lap.Absolution.at(i)is double a?context[a]:null,context) { Counter = ()=>lap.Absolution.Length ; basis = context?.Spec ; }
 			internal Axe( Act.Axe context , Quant dif ) : this(context,new Lap(context,dif)) {}
 			public static implicit operator Lap( Axe a ) => a.Arg ;
 		}
@@ -395,7 +397,7 @@ namespace Rob.Act
 			public Mark Mark { get => mark ; set => Axis = ( mark = value )==Mark.Lap ? Axis.Lap : value==Mark.Stop ? Axis.Stop : value==Mark.Act ? Axis.Act : value==Mark.Ato ? Axis.Ato : value==Mark.Sub ? Axis.Sub : value==Mark.Sup ? Axis.Sup : value==Mark.Hyp ? Axis.Hyp : value==Mark.No ? Axis.No : throw new InvalidEnumArgumentException($"Mark invalid {value} !") ; }
 			//public Axis Axis { get => axis ?? Axis4(ax) ; set => Ax = (uint)( axis = value ) ; } Axis? axis ;
 			//public virtual uint Ax { get => axis==Axis.Time ? Context.Dimension : axis==Axis.Date ? Context.Dimension+1 : ax ; set { base.Spec = ( ax = value ).Get(v=>v<(uint)Axis.Time?(axis=(Axis)v).Stringy():v<Context.Dimension?Context.Metax?[v].Name:(axis=v==Context.Dimension?Axis.Time:Axis.Date).ToString()) ; Resolver = at=>Context?[at]?[Ax] ; } } uint ax ;
-			public override string Spec { get => base.Spec ; set { if( value!=null ) if( value.Axis() is uint v && v<Context.Dimensions ) Ax = v ; else Axis = (Axis)v ; base.Spec = value ; } }
+			public override string Spec { get => base.Spec ; set { if( value!=null ) if( value.Axis(true).Value is uint v && v<Context.Dimensions ) Ax = v ; else Axis = (Axis)v ; base.Spec = value ; } }
 			public Axe( Path context ) => Context = context ;
 			public override int Count => Context?.Count ?? 0 ;
 			protected override Aspectable DefaultAspect => Context?.Spectrum ;

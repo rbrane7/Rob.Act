@@ -362,7 +362,7 @@ namespace Rob.Act
 		public static Path operator&( Path path , Path lead ) => path.Set(p=>p.Rely(lead)) ;
 		public static Path operator/( Path path , uint axis ) => path.Set(p=>p.Each(i=>i/=axis)) ;
 		public static Path operator/( Path path , Axis axis ) => path / (uint)axis ;
-		public static Path operator/( Path path , string axis ) => path / axis.Axis() ;
+		public static Path operator/( Path path , string axis ) => axis.Axis() is uint ax ? path/ax : null ;
 		public static Path operator>>( Path path , int depth ) { if( path!=null ) while( depth-->0 ) path = new Path( path.Date , path.Diff ) ; return ++path ; }
 		public static Path operator<<( Path path , int depth ) { if( path!=null ) while( depth-->0 ) path = new Path( path.Date , path.Inte ) ; return ++path ; }
 		public static Path operator--( Path path ) => path - true ;
