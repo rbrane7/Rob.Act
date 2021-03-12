@@ -15,7 +15,7 @@ namespace Rob.Act
 	/// </summary>
 	[Flags] public enum Mark { No=0 , Stop=1 , Lap=2 , Act=4 , Ato=8 , Sub=16 , Sup=32 , Hyp=64 }
 	[Flags] public enum Oper { Merge=0 , Combi=1 , Trim=2 , Smooth=4 , Relat=8 }
-	public enum Axis : uint { Lon,Longitude=Lon , Lat,Latitude=Lat , Alt,Altitude=Alt , Dist,Distance=Dist , Drag , Flow , Beat , Bit , Energy , Grade , Top , Lim=Hyp-1 , Time=uint.MaxValue , Date=Time-1 , Lap=Date-1 , Stop=Lap-1 , Act=Stop-1 , No=Act-1 , Ato=No-1 , Sub=Ato-1 , Sup=Sub-1 , Hyp=Sup-1 }
+	public enum Axis : uint { Lon , Lat , Alt , Dist , Drag , Flow , Beat , Bit , Energy , Grade , Top , Lim=Hyp-1 , Time=uint.MaxValue , Date=Time-1 , Lap=Date-1 , Stop=Lap-1 , Act=Stop-1 , No=Act-1 , Ato=No-1 , Sub=Ato-1 , Sup=Sub-1 , Hyp=Sup-1 }
 	#pragma warning disable CS0660 // Type defines operator == or operator != but does not override Object.Equals(object o)
 	#pragma warning disable CS0661 // Type defines operator == or operator != but does not override Object.GetHashCode()
 	public struct Bipole : IFormattable
@@ -55,6 +55,7 @@ namespace Rob.Act
 	public struct Geos
 	{
 		public Quant Lon , Lat ;
+		public Geos( Quant lon , Quant lat ) { Lon = lon ; Lat = lat ; }
 		public static Geos operator~( Geos a ) => new Geos{Lon=a.Lat,Lat=-a.Lon} ;
 		public static Quant operator+( Geos a ) => Math.Sqrt(a|a) ;
 		public static Geos? operator~( Geos? a ) => a.use(x=>~x) ;
@@ -66,6 +67,27 @@ namespace Rob.Act
 		public static Quant operator|( Geos a , Geos b ) => a.Lon*b.Lon+a.Lat*b.Lat ;
 		public static Quant? operator|( Geos? a , Geos? b ) => a is Geos x && b is Geos y ? x|y : null as Quant? ;
 		public static implicit operator Geos?( Point point ) => point?.IsGeo==true ? new Geos{Lon=point[Axis.Lon].Value,Lat=point[Axis.Lat].Value} : null as Geos? ;
+		public static implicit operator Geos( (Quant lon,Quant lat) point ) => new Geos(point.lon,point.lat) ;
+	}
+	public struct Geom
+	{
+		public Geos G ; public Quant? Alt ; public DateTime? Dat ; public Quant Lon { get => G.Lon ; set => G.Lon = value ; } public Quant Lat { get => G.Lat ; set => G.Lat = value ; }
+		public Geom( Quant lon , Quant lat , Quant? alt = null , DateTime? dat = null ) : this((lon,lat),alt,dat) {}
+		public Geom( Geos g , Quant? alt = null , DateTime? dat = null ) { G = g ; Alt = alt ; Dat = dat ; }
+		public static Geom operator~( Geom a ) => new Geom{G=~a.G,Alt=a.Alt,Dat=a.Dat} ;
+		public static Quant operator+( Geom a ) => Math.Sqrt(a|a) ;
+		public static Geom operator-( Geom a ) => (0,0,0,a.Dat)-a ;
+		public static Geom? operator~( Geom? a ) => a.use(x=>~x) ;
+		public static Quant? operator+( Geom? a ) => a.use(x=>+x) ;
+		public static Geom? operator-( Geom? a ) => a.use(x=>-x) ;
+		public static Geom operator+( Geom a , Geom b ) => new Geom{G=a.G+b.G,Alt=a.Alt+b.Alt,Dat=a.Dat} ;
+		public static Geom operator-( Geom a , Geom b ) => new Geom{G=a.G-b.G,Alt=a.Alt-b.Alt,Dat=a.Dat} ;
+		public static Geom? operator+( Geom? a , Geom? b ) => a is Geom x && b is Geom y ? x+y : (Geom?)null ;
+		public static Geom? operator-( Geom? a , Geom? b ) => a is Geom x && b is Geom y ? x-y : (Geom?)null ;
+		public static Quant operator|( Geom a , Geom b ) => (a.Alt*b.Alt??0)+(a.G|b.G) ;
+		public static Quant? operator|( Geom? a , Geom? b ) => a is Geom x && b is Geom y ? x|y : null as Quant? ;
+		public static implicit operator Geom?( Point point ) => point?.IsGeo==true ? new Geom{Lon=point[Axis.Lon].Value,Lat=point[Axis.Lat].Value,Alt=point[Axis.Lon],Dat=point.Date} : (Geom?)null ;
+		public static implicit operator Geom( (Quant lon,Quant lat,Quant? alt,DateTime? dat) point ) => new Geom(point.lon,point.lat,point.alt,point.dat) ;
 	}
 	public interface Quantable : Aid.Gettable<uint,Quant?> , Aid.Gettable<Quant?> {}
 	/// <summary>
@@ -289,7 +311,7 @@ namespace Rob.Act
 			/// <summary>
 			/// Action specification .
 			/// </summary>
-			public virtual string Action { get => action ; set { if( action==value ) return ; var a = action ; action = value ; if( spec==Despec(a) ) Spec = null ; } } string action ;
+			public virtual string Action { get => action ; set { if( action==value ) return ; var a = action ; action = value ; if( spec==Despec(a) ) Spec = Despect ; } } string action ;
 			/// <summary>
 			/// Kind of demarkaition .
 			/// </summary>

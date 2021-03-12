@@ -67,6 +67,7 @@ namespace Rob.Act
 		public virtual Path Raw => Source?.Raw ;
 		public Aspect Base => Raw?.Spectrum ;
 		public bool Orphan => Source==null && Sources==null ;
+		public int? AtOf( IEnumerable<(string Axe,Quant Value)> value ) => value.Get(v=>Points.Best(p=>v.Sum(a=>(p[a.Axe]-a.Value).use(Math.Abs))??Quant.MaxValue)?.at) ;
 		#region Operations
 		public Axe.Support this[ IEnumerable<int> fragment ] => Axe.One[fragment] ;
 		#endregion
@@ -140,9 +141,11 @@ namespace Rob.Act
 			public string Bond { get => bond ; set => Changed("Bond",bond=value) ; } string bond ;
 			public string Lex { get => lex ; set => Changed("Lex,Value",Resolver=(lex=value).Compile<Func<Contextable,Quant?>>()) ; } Func<Contextable,Quant?> Resolver ; string lex ;
 			void Changed<Value>( string properties , Value value ) { propertyChanged.On(this,properties,value) ; Dirty = true ; }
-			public Quant? Value { get { try { return Orphan ? null : Resolver?.Invoke(Context) ; } catch( System.Exception e ) { throw new InvalidOperationException($"Failed evaluating Trait {Spec} = {Lex} !",e) ; } } }
+			public Quant? Raw => Orphan ? null : Resolver?.Invoke(Context) ;
+			public Quant? Value { get { try { return Raw ; } catch( System.Exception e ) { System.Diagnostics.Trace.TraceError($"Failed evaluating Trait {Spec} = {Lex} !",e) ; return null ; } } }
+			public string Repre { get { try { return new Basis.Binding(Bond).Of(Raw) ; } catch( System.Exception e ) { return $"Failed evaluating Trait {Spec} = {Lex} !" ; } } }
 			public bool IsPotential { get => potential ; set => Changed("IsPotential",potential=value) ; } bool potential ;
-			public override string ToString() => Orphan ? null : $"{Spec.Null(n=>n.No()).Get(s=>s+'=')}{new Basis.Binding(Bond).Of(Value)}" ;
+			public override string ToString() => Orphan ? null : $"{Spec.Null(n=>n.No()).Get(s=>s+'=')}{Repre}" ;
 			public Traitlet() {} // Default constructor must be present to enable DataGrid implicit Add .
 			internal Traitlet( Traitlet source , IEnumerable<Aspectable> set = null ) { var det = source?.Deref(set) ; name = (det??source)?.Spec ; bond = source?.Bond.Null(b=>b.No())??det?.Bond ; lex = (det??source)?.Lex ; Resolver = (det??source)?.Resolver ; Context = det?.Context ; }
 			Traitlet Deref( IEnumerable<Aspectable> aspects ) => IsRef ? Spec.RightFrom(Extern,all:true).Get(s=>(Spec.LeftFromLast(Extern)is string asp?aspects?.Where(a=>asp==a.Spec):aspects)?.SelectMany(a=>a.Trait).One(x=>x.Spec==s&&!x.IsRef)) : null ;

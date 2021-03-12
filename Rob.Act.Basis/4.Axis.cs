@@ -16,7 +16,7 @@ namespace Rob.Act
 	using Aid.Math ;
 	using Aid;
 
-	public interface Axable : Aid.Gettable<int,Quant?> , Aid.Gettable<double,Quant?> , Aid.Countable<Quant?> { string Spec {get;} }
+	public interface Axable : Gettable<int,Quant?> , Gettable<double,Quant?> , Countable<Quant?> { string Spec {get;} }
 	public class Axe : Axable , INotifyPropertyChanged
 	{
 		public const string Extern = LambdaContext.Act.Extern ;

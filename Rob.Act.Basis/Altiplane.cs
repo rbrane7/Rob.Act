@@ -21,7 +21,7 @@ namespace Rob.Act
 		readonly ISet<DateTime> Dates = new HashSet<DateTime>() ;
 		public Altiplane( Quant? grane = null ) => Grane = (grane??10).nil()??1 ;
 		public bool Include( DateTime date ) => Dates.Add(date) ;
-		public Quant? this[ Geos? point , byte? radius = null ] { get => point is Geos p ? this[p.Lon,p.Lat,radius] : null as Quant? ; set { if( point is Geos p && value is Quant v ) this[p.Lon,p.Lat] = v ; } }
+		public Quant? this[ Geos? point , byte? radius = null ] { get => point is Geos p ? this[p.Lon,p.Lat,radius] : null ; set { if( point is Geos p && value is Quant v ) this[p.Lon,p.Lat] = v ; } }
 		#region Calculus
 		public Quant? this[ Quant lon , Quant lat , byte? rad = null ]
 		{
@@ -38,11 +38,8 @@ namespace Rob.Act
 		#region Serialization
 		public virtual void Save( string file )
 		{
-			using( var wrt = new System.IO.StreamWriter(file) )
-			{
-				var space = false ; foreach( var date in Dates ) { if( space ) wrt.Write(' ') ; wrt.Write(date.ToString(DateForm)) ; space = true ; }
-				foreach( var seg in Cash ) { wrt.WriteLine() ; wrt.Write($"{seg.Key.Lon},{seg.Key.Lat} ") ; foreach( var point in seg.Value ) wrt.Write($"{point.Lon},{point.Lat}:{point.Alt}*{point.Wei};") ; }
-			}
+			using var wrt = new System.IO.StreamWriter(file) ; var space = false ; foreach( var date in Dates ) { if( space ) wrt.Write(' ') ; wrt.Write(date.ToString(DateForm)) ; space = true ; }
+			foreach( var seg in Cash ) { wrt.WriteLine() ; wrt.Write($"{seg.Key.Lon},{seg.Key.Lat} ") ; foreach( var point in seg.Value ) wrt.Write($"{point.Lon},{point.Lat}:{point.Alt}*{point.Wei};") ; }
 		}
 		public Altiplane( string file = null )
 		{
