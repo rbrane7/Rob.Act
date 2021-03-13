@@ -140,8 +140,8 @@ namespace Rob.Act
 		/// <param name="axis"> Axis to calculate .</param>
 		/// <param name="at"> Point at absolute coordinates to relate to .</param>
 		public static int GradeAccu = 7 , VeloAccu = 1 ;
-		static Quant Sqr( this Quant value ) => value*value ;
-		static Quant? Sqr( this Quant? value ) => value.use(Sqr) ;
+		public static Quant Sqr( this Quant value ) => value*value ;
+		public static Quant? Sqr( this Quant? value ) => value.use(Sqr) ;
 		/// <summary>
 		/// Square of given axis of vector at point of sphere .
 		/// </summary>

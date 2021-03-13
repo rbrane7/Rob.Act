@@ -255,7 +255,6 @@ namespace Rob.Act.Analyze
 				for( var m=0 ; m<=hor ; m+=10 ) GraphPanel.Children.Add( new Line{ X1 = m , Y1 = 0 , X2 = m , Y2 = ver , Stroke = brush , StrokeDashArray = dash } ) ;
 				for( var m=ver ; m>=0 ; m-=10 ) GraphPanel.Children.Add( new Line{ X1 = 0 , Y1 = m , X2 = hor , Y2 = m , Stroke = brush , StrokeDashArray = dash } ) ;
 			}
-			ScreenCrossing = ScreenOrigin ;
 			var val = DrawingValue ; if( val==null ) await Task.Factory.StartNew(()=> val = DrawingValue = DrawingResources.Select(asp=>(asp.Spec,asp.Where(a=>a.Spec==xaxe.Spec||yaxes.Contains(a.Spec)).Select(a=>(a.Spec,a.ToArray(),a.Base)).ToList())).ToList() ) ;
 			var rng = DrawingRange ; if( rng==null )
 			{
@@ -268,12 +267,12 @@ namespace Rob.Act.Analyze
 				var x = rng[xaxe.Spec] ; var axe = xaxe ; Filter.Entry.Binding axb = axe.Binder ; string format( double v ) => axe.Binder.No() ? Format(v) : axb.Of(v) ;
 				for( var m=0 ; m<=hor ; m+=100 ) GraphPanel.Children.Add( new Label{ Content=format(AxeInnerByOuterX(x.Min+(m-left)*(x.Max-x.Min)/width,x)) , Foreground=Brushes.Gray }.Set(l=>{Canvas.SetLeft(l,m-5);Canvas.SetTop(l,ver-12);}) ) ;
 				for( var m=50 ; m<=hor ; m+=100 ) GraphPanel.Children.Add( new Label{ Content=format(AxeInnerByOuterX(x.Min+(m-left)*(x.Max-x.Min)/width,x)) , Foreground=Brushes.Gray }.Set(l=>{Canvas.SetLeft(l,m-5);Canvas.SetTop(l,ver-20);}) ) ;
-				if( x.Min<0 && x.Max>0 ) { var xZero = ScreenInnerByReAxeX(0D.By(x).Value) ; GraphPanel.Children.Add( new Line{ X1 = xZero , Y1 = 0 , X2 = xZero , Y2 = ver , Stroke = Brushes.Gray } ) ; }
+				if( x.Min<0 && x.Max>0 ) { var xZero = ScreenInnerByRelAxeX(0D.By(x).Value) ; GraphPanel.Children.Add( new Line{ X1 = xZero , Y1 = 0 , X2 = xZero , Y2 = ver , Stroke = Brushes.Gray } ) ; }
 				var n=0 ; foreach( var ax in rng.Keys.Intersect(yaxes) )
 				{
 					var y = rng[ax] ; axe = axes.FirstOrDefault(a=>a.Spec==ax) ; axb = axe.Binder ;
 					for( var m=ver ; m>=0 ; m-=50 ) GraphPanel.Children.Add( new Label{ Content=format(AxeInnerByOuterY(y.Min+(bot-m)*(y.Max-y.Min)/height,y)) , Foreground=Brushes.Gray }.Set(l=>{Canvas.SetTop(l,m-18);Canvas.SetLeft(l,n*50-4);}) ) ; ++n ;
-					if( y.Min<0 && y.Max>0 ) { var yZero = ScreenInnerByReAxeY(0D.By(y,false).Value) ; GraphPanel.Children.Add( new Line{ X1 = 0 , Y1 = yZero , X2 = hor , Y2 = yZero , Stroke = Brushes.Gray } ) ; }
+					if( y.Min<0 && y.Max>0 ) { var yZero = ScreenInnerByRelAxeY(0D.By(y,false).Value) ; GraphPanel.Children.Add( new Line{ X1 = 0 , Y1 = yZero , X2 = hor , Y2 = yZero , Stroke = Brushes.Gray } ) ; }
 				}
 			}
 			foreach( var asp in DrawingSources )
@@ -309,6 +308,8 @@ namespace Rob.Act.Analyze
 			}
 			Hypercube = rng.Where(a=>xaxe.Spec==a.Key||yaxes.Contains(a.Key)).OrderBy(e=>e.Key==xaxe.Spec?0:Array.IndexOf(yaxes,e.Key)+1).ToArray() ; var co = Coordinates.ToLookup(c=>c.Axe) ; Coordinates.Clear() ;
 			Hypercube.Each(e=>Coordinates+=co[e.Key].One().Set(c=>{c.Range=e.Value;c.Bond=axes.FirstOrDefault(a=>a.Spec==e.Key)?.Binder;})??new Coordinate(this,e.Key){Range=e.Value,Bond=axes.FirstOrDefault(a=>a.Spec==e.Key)?.Binder}) ;
+			ScreenCrossing = Focusation.At is int fo && val[0].Axes.FirstOrDefault(a=>a.Spec==xaxe.Spec).Val.At(fo) is double fx && val[0].Axes.FirstOrDefault(a=>a.Spec==yaxes[0]).Val.At(fo) is double fy ?
+				ScreenInnerByRelAxe(fx.By(rng[xaxe.Spec]).Value,fy.By(rng[yaxes[0]],false).Value) : ScreenCrossing ;
 		}
 		async void MapDrawAspect()
 		{
@@ -323,7 +324,6 @@ namespace Rob.Act.Analyze
 				for( var m=0 ; m<=hor ; m+=10 ) MapPanel.Children.Add( new Line{ X1 = m , Y1 = 0 , X2 = m , Y2 = ver , Stroke = brush , StrokeDashArray = dash } ) ;
 				for( var m=ver ; m>=0 ; m-=10 ) MapPanel.Children.Add( new Line{ X1 = 0 , Y1 = m , X2 = hor , Y2 = m , Stroke = brush , StrokeDashArray = dash } ) ;
 			}
-			ScreenCrossing = ScreenOrigin ;
 			var val = DrawingValue ; if( val==null ) await Task.Factory.StartNew(()=> val = DrawingValue = DrawingResources.Select(asp=>(asp.Spec,asp.Where(a=>a.Spec==xaxe.Spec||yaxes.Contains(a.Spec)).Select(a=>(a.Spec,a.ToArray(),a.Base)).ToList())).ToList() ) ;
 			var rng = DrawingRange ; if( rng==null )
 			{
@@ -336,12 +336,12 @@ namespace Rob.Act.Analyze
 				var x = rng[xaxe.Spec] ; var axe = xaxe ; Filter.Entry.Binding axb = axe.Binder ; string format( double v , int p ) => axe.Binder.No() ? Format(v,p) : axb.Of(v) ;
 				for( var m=0 ; m<=hor ; m+=100 ) MapPanel.Children.Add( new Label{ Content=format(AxeInnerByOuterX(x.Min+(m-left)*(x.Max-x.Min)/width,x),5) , Foreground=Brushes.Gray }.Set(l=>{Canvas.SetLeft(l,m-5);Canvas.SetTop(l,ver-12);}) ) ;
 				for( var m=50 ; m<=hor ; m+=100 ) MapPanel.Children.Add( new Label{ Content=format(AxeInnerByOuterX(x.Min+(m-left)*(x.Max-x.Min)/width,x),5) , Foreground=Brushes.Gray }.Set(l=>{Canvas.SetLeft(l,m-5);Canvas.SetTop(l,ver-20);}) ) ;
-				if( x.Min<0 && x.Max>0 ) { var xZero = ScreenInnerByReAxeX(0D.By(x).Value) ; MapPanel.Children.Add( new Line{ X1 = xZero , Y1 = 0 , X2 = xZero , Y2 = ver , Stroke = Brushes.Gray } ) ; }
+				if( x.Min<0 && x.Max>0 ) { var xZero = ScreenInnerByRelAxeX(0D.By(x).Value) ; MapPanel.Children.Add( new Line{ X1 = xZero , Y1 = 0 , X2 = xZero , Y2 = ver , Stroke = Brushes.Gray } ) ; }
 				var n=0 ; foreach( var ax in rng.Keys.Intersect(yaxes.Take(1)) )
 				{
 					var y = rng[ax] ; axe = axes.FirstOrDefault(a=>a.Spec==ax) ; axb = axe.Binder ;
 					for( var m=ver ; m>=0 ; m-=50 ) MapPanel.Children.Add( new Label{ Content=format(AxeInnerByOuterY(y.Min+(bot-m)*(y.Max-y.Min)/height,y),5) , Foreground=Brushes.Gray }.Set(l=>{Canvas.SetTop(l,m-18);Canvas.SetLeft(l,n*50-4);}) ) ; ++n ;
-					if( y.Min<0 && y.Max>0 ) { var yZero = ScreenInnerByReAxeY(0D.By(y,false).Value) ; MapPanel.Children.Add( new Line{ X1 = 0 , Y1 = yZero , X2 = hor , Y2 = yZero , Stroke = Brushes.Gray } ) ; }
+					if( y.Min<0 && y.Max>0 ) { var yZero = ScreenInnerByRelAxeY(0D.By(y,false).Value) ; MapPanel.Children.Add( new Line{ X1 = 0 , Y1 = yZero , X2 = hor , Y2 = yZero , Stroke = Brushes.Gray } ) ; }
 				}
 			}
 			(double X,double Y) sha = ((Coordinates.FirstOrDefault(c=>c.Axe==xaxe.Spec)?.Info??State.Coordination(xaxe.Spec)).Evaluate()??0,(Coordinates.FirstOrDefault(c=>c.Axe==yaxes[0])?.Info??State.Coordination(yaxes[0])).Evaluate()??0) ;
@@ -408,6 +408,8 @@ namespace Rob.Act.Analyze
 			}
 			Hypercube = rng.Where(a=>xaxe.Spec==a.Key||yaxes.Contains(a.Key)).OrderBy(e=>e.Key==xaxe.Spec?0:Array.IndexOf(yaxes,e.Key)+1).ToArray() ; var co = Coordinates.ToLookup(c=>c.Axe) ; Coordinates.Clear() ;
 			Hypercube.Each(e=>Coordinates+=co[e.Key].One().Set(c=>{c.Range=e.Value;c.Bond=axes.FirstOrDefault(a=>a.Spec==e.Key)?.Binder;})??new Coordinate(this,e.Key){Range=e.Value,Bond=axes.FirstOrDefault(a=>a.Spec==e.Key)?.Binder}) ;
+			ScreenCrossing = Focusation.At is int at && val[0].Axes.FirstOrDefault(a=>a.Spec==xaxe.Spec).Val.At(at) is double fx && val[0].Axes.FirstOrDefault(a=>a.Spec==yaxes[0]).Val.At(at) is double fy ?
+				ScreenInnerByRelAxe(fx.By(rng[xaxe.Spec]).Value,fy.By(rng[yaxes[0]],false).Value) : ScreenCrossing ;
 		}
 		static readonly double Lape = Math.Cos(Math.PI/4) ;
 		async void GraphDrawQuantile()
@@ -432,8 +434,8 @@ namespace Rob.Act.Analyze
 					for( var m=0 ; m<=hor ; m+=100 ) GraphPanel.Children.Add( new Label{ Content=format(AxeInnerByOuterX(x.Min+(m-left)*(x.Max-x.Min)/width,x)) , Foreground=Brushes.Gray }.Set(l=>{Canvas.SetLeft(l,m-5);Canvas.SetTop(l,ver-10-10*k);}) ) ;
 					for( var m=50 ; m<=hor ; m+=100 ) GraphPanel.Children.Add( new Label{ Content=format(AxeInnerByOuterX(x.Min+(m-left)*(x.Max-x.Min)/width,x)) , Foreground=Brushes.Gray }.Set(l=>{Canvas.SetLeft(l,m-5);Canvas.SetTop(l,ver-20-10*k);}) ) ;
 					axa = ax.Axon ; axb = ax.Axon?.Binder ; for( var m=ver ; m>=0 ; m-=50 ) GraphPanel.Children.Add( new Label{ Content=format(AxeInnerByOuterY(y.Min+(bot-m)*(y.Max-y.Min)/height,y)) , Foreground=Brushes.Gray }.Set(l=>{Canvas.SetTop(l,m-18);Canvas.SetLeft(l,-4);}) ) ;
-					if( x.Min<0 && x.Max>0 ) { var xZero = ScreenInnerByReAxeX(0D.By(x).Value) ; GraphPanel.Children.Add( new Line{ X1 = xZero , Y1 = 0 , X2 = xZero , Y2 = ver , Stroke = Brushes.Gray } ) ; }
-					if( y.Min<0 && y.Max>0 ) { var yZero = ScreenInnerByReAxeY(0D.By(y,false).Value) ; GraphPanel.Children.Add( new Line{ X1 = 0 , Y1 = yZero , X2 = hor , Y2 = yZero , Stroke = Brushes.Gray } ) ; }
+					if( x.Min<0 && x.Max>0 ) { var xZero = ScreenInnerByRelAxeX(0D.By(x).Value) ; GraphPanel.Children.Add( new Line{ X1 = xZero , Y1 = 0 , X2 = xZero , Y2 = ver , Stroke = Brushes.Gray } ) ; }
+					if( y.Min<0 && y.Max>0 ) { var yZero = ScreenInnerByRelAxeY(0D.By(y,false).Value) ; GraphPanel.Children.Add( new Line{ X1 = 0 , Y1 = yZero , X2 = hor , Y2 = yZero , Stroke = Brushes.Gray } ) ; }
 				}
 				if( x.Max!=x.Min && y.Max!=y.Min ) for( int j = 1 , cnt = ax.One()?.Length??0 ; j<cnt ; ++j ) if( selas.Contains(relas[j-1]) ) GraphPanel.Children.Add( new Polyline{
 					Stroke = new SolidColorBrush( Coloring(relas[j-1]/* is Aspect asp?SourceIndex(asp):j-1)*/) ) , StrokeDashArray = k==0?null:new DoubleCollection{k} ,
@@ -483,7 +485,7 @@ namespace Rob.Act.Analyze
 			public (double Min,double Max) Range ;
 			public string Bond { set => Binding = value ; } Filter.Entry.Binding Binding ;
 			public string At { get => at ; set { if( value==at ) return ; Size = (at=value).Parse<uint>() ; PropertyChanged.On(this,"At") ; } } string at ;
-			public uint? Size { get =>size ; set { if( value==size ) return ; size = value ; PropertyChanged.On(this,"Size") ; if( Context.MapTab.IsSelected ) Context.Map_Draw(Context) ; At = value.Stringy() ; } } uint? size ;
+			public uint? Size { get => size ; set { if( value==size ) return ; size = value ; PropertyChanged.On(this,"Size") ; if( Context.MapTab.IsSelected ) Context.Map_Draw(Context) ; At = value.Stringy() ; } } uint? size ;
 		}
 		public Aid.Collections.ObservableList<Coordinate> Coordinates {get;private set;} = new Aid.Collections.ObservableList<Coordinate>() ;
 		public System.Windows.Point? MousePoint
@@ -521,15 +523,8 @@ namespace Rob.Act.Analyze
 			foreach( var asp in Sources ) if( asp.AtOf(value) is int at ) { Focusation.At = at ; return ; }
 		}
 		(int? At,Dictionary<object,DataGrid> Grid) Focusation = (null,new Dictionary<object,DataGrid>()) ;
-		void TabItem_MouseLeftButtonUp( object sender , MouseButtonEventArgs e )
-		{
-			if( sender is TabItem tab && Focusation.At is int at && Focusation.Grid.By(tab.Content) is DataGrid grid ) { grid.SelectedIndex = at ; grid.Focus() ; grid.ScrollIntoView(grid.SelectedItem) ; }
-		}
-		void DataGrid_SelectionChanged( object sender , SelectionChangedEventArgs e )
-		{
-			Focusation.At = null ; if( sender is DataGrid grid ); else return ;
-			if( grid.SelectedItem==null ) ScreenOrigin = null ;
-		}
+		void TabItem_MouseLeftButtonUp( object sender , MouseButtonEventArgs e ) { if( sender is TabItem tab && Focusation.At is int at && Focusation.Grid.By(tab.Content) is DataGrid grid ) { grid.SelectedIndex = at ; grid.Focus() ; grid.ScrollIntoView(grid.SelectedItem) ; } }
+		void DataGrid_SelectionChanged( object sender , SelectionChangedEventArgs e ) { if( sender is DataGrid grid ); else return ; if( grid.SelectedItem==null ) ScreenCrossing = null ; Focusation.At = grid.SelectedIndex.nil(v=>v<0) ; }
 		double AxeXByMouse( System.Windows.Point m , KeyValuePair<string,(double Min,double Max)> a ) => (m.X-ViewOrigin.Width)/ViewSize.Width*(a.Value.Max-a.Value.Min)+a.Value.Min ;
 		double AxeYByMouse( System.Windows.Point m , KeyValuePair<string,(double Min,double Max)> a ) => (ViewSize.Height+ViewOrigin.Height-m.Y)/ViewSize.Height*(a.Value.Max-a.Value.Min)+a.Value.Min ;
 		double? AxeZByMouse( string a )
@@ -541,13 +536,14 @@ namespace Rob.Act.Analyze
 		#endregion
 
 		#region Focusing
-		System.Windows.Point? mousePoint , screenPoint ; Rect? ScreenRect ;
-		System.Windows.Point? ScreenOrigin { get => screenPoint ; set { ScreenCrossing = null ; screenPoint = value.Get(_=>ScreenMouse) ; if( value !=null ) { ScreenCrossing = value ; TransitionSet() ; } } }
+		System.Windows.Point? mousePoint , screenPoint , screenCrossing ; Rect? ScreenRect ;
+		System.Windows.Point? ScreenOrigin { get => screenPoint ; set { ScreenCrossing = null ; screenPoint = value.Get(_=>ScreenMouse) ; if( value!=null ) { ScreenCrossing = value ; TransitionSet() ; } } }
 		System.Windows.Point? ScreenCrossing
 		{
+			get => screenCrossing ;
 			set
 			{
-				if( value is System.Windows.Point point )
+				if( (screenCrossing=value) is System.Windows.Point point )
 				{
 					ViewPanel.Children.Add( ScreenCross.X = new Line{ Stroke=Brushes.Orange , X1=0 , X2=MainFrameSize.Width , Y1=point.Y , Y2=point.Y } ) ;
 					ViewPanel.Children.Add( ScreenCross.Y = new Line{ Stroke=Brushes.Orange , Y1=0 , Y2=MainFrameSize.Height , X1=point.X , X2=point.X } ) ;
@@ -560,10 +556,11 @@ namespace Rob.Act.Analyze
 		void DisplayTable_MouseUp( object sender , MouseButtonEventArgs e ) { if( ScreenMouse==ScreenOrigin || Keyboard.Modifiers!=ModifierKeys.None ) return ; var scr = ScreenOrigin.Get(s=>ScreenMouse.use(p=>new Rect(s,p))) ; if( scr==ScreenRect ) return ; ScreenRect = scr ; if( GraphTab.IsSelected ) Graph_Draw(sender) ; if( MapTab.IsSelected ) Map_Draw(sender) ; }
 		void DisplayTable_MouseDoubleClick( object sender , MouseButtonEventArgs e ) { ScreenOrigin = null ; ScreenRect = null ; if( GraphTab.IsSelected ) Graph_Draw(sender,e) ; else if( MapTab.IsSelected ) Map_Draw(sender,e) ; }
 		System.Windows.Point ScreenInnerByOuter( double x , double y ) => new System.Windows.Point(ScreenInnerByOuterX(x),ScreenInnerByOuterY(y)) ;
+		System.Windows.Point ScreenInnerByRelAxe( double x , double y ) => new System.Windows.Point(ScreenInnerByRelAxeX(x),ScreenInnerByRelAxeY(y)) ;
 		double ScreenInnerByOuterX( double x ) => ( ScreenRect is Rect r ? (x+ViewOrigin.Width-r.Location.X)*ViewSize.Width/r.Size.Width : x ) + ViewOrigin.Width ;
-		double ScreenInnerByReAxeX( double x ) => ScreenInnerByOuterX(x*ViewSize.Width) ;
+		double ScreenInnerByRelAxeX( double x ) => ScreenInnerByOuterX(x*ViewSize.Width) ;
 		double ScreenInnerByOuterY( double y ) => ( ScreenRect is Rect r ? (y+ViewOrigin.Height-r.Location.Y)*ViewSize.Height/r.Size.Height : y ) + ViewOrigin.Height ;
-		double ScreenInnerByReAxeY( double x ) => ScreenInnerByOuterY(x*ViewSize.Height) ;
+		double ScreenInnerByRelAxeY( double x ) => ScreenInnerByOuterY(x*ViewSize.Height) ;
 		double AxeInnerByOuterX( double x , (double Min,double Max) e ) { if( ScreenRect is Rect r ); else return x ; var q = (e.Max-e.Min)/ViewSize.Width ; var fx = (x-e.Min)/q ; return e.Min+(r.Location.X-ViewOrigin.Width+fx*r.Width/ViewSize.Width)*q ; }
 		double AxeInnerByOuterY( double y , (double Min,double Max) e ) { if( ScreenRect is Rect r ); else return y ; var q = (e.Max-e.Min)/ViewSize.Height ; var fy = (e.Max-y)/q ; return e.Max-(r.Location.Y-ViewOrigin.Height+fy*r.Height/ViewSize.Height)*q ; }
 		#endregion
