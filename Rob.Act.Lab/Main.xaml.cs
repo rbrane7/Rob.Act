@@ -308,8 +308,14 @@ namespace Rob.Act.Analyze
 			}
 			Hypercube = rng.Where(a=>xaxe.Spec==a.Key||yaxes.Contains(a.Key)).OrderBy(e=>e.Key==xaxe.Spec?0:Array.IndexOf(yaxes,e.Key)+1).ToArray() ; var co = Coordinates.ToLookup(c=>c.Axe) ; Coordinates.Clear() ;
 			Hypercube.Each(e=>Coordinates+=co[e.Key].One().Set(c=>{c.Range=e.Value;c.Bond=axes.FirstOrDefault(a=>a.Spec==e.Key)?.Binder;})??new Coordinate(this,e.Key){Range=e.Value,Bond=axes.FirstOrDefault(a=>a.Spec==e.Key)?.Binder}) ;
-			ScreenCrossing = Focusation.At is int fo && val[0].Axes.FirstOrDefault(a=>a.Spec==xaxe.Spec).Val.At(fo) is double fx && val[0].Axes.FirstOrDefault(a=>a.Spec==yaxes[0]).Val.At(fo) is double fy ?
-				ScreenInnerByRelAxe(fx.By(rng[xaxe.Spec]).Value,fy.By(rng[yaxes[0]],false).Value) : ScreenCrossing ;
+			if( Focusation.At is int fo && val[0].Axes.FirstOrDefault(a=>a.Spec==xaxe.Spec).Val.At(fo) is double fx && val[0].Axes.FirstOrDefault(a=>a.Spec==yaxes[0]).Val.At(fo) is double fy )
+			{
+				foreach( var cor in Coordinates ) cor.Value = val[0].Axes.FirstOrDefault(a=>a.Spec==cor.Axe).Val.At(fo) ;
+				ScreenCrossing = ScreenInnerByRelAxe(fx.By(rng[xaxe.Spec]).Value,fy.By(rng[yaxes[0]],false).Value) ;
+				GraphPanel.Children.Add(new Label{ Content=Coordinates[c=>c.Axe==xaxe.Spec].View , Foreground=Brushes.Orange , FontStyle=FontStyles.Italic }.Set(l=>{Canvas.SetTop(l,-6);Canvas.SetLeft(l,ScreenCrossing.Value.X-2);})) ;
+				if( Coordinates[c=>c.Axe==yaxes[0]].View is string ylab ) GraphPanel.Children.Add(new Label{ Content=ylab , Foreground=Brushes.Orange , FontStyle=FontStyles.Italic }.Set(l=>{Canvas.SetTop(l,ScreenCrossing.Value.Y-17);Canvas.SetLeft(l,hor-2-ylab.Length*6);})) ;
+			}
+			else ScreenCrossing = ScreenCrossing ;
 		}
 		async void MapDrawAspect()
 		{
@@ -408,8 +414,14 @@ namespace Rob.Act.Analyze
 			}
 			Hypercube = rng.Where(a=>xaxe.Spec==a.Key||yaxes.Contains(a.Key)).OrderBy(e=>e.Key==xaxe.Spec?0:Array.IndexOf(yaxes,e.Key)+1).ToArray() ; var co = Coordinates.ToLookup(c=>c.Axe) ; Coordinates.Clear() ;
 			Hypercube.Each(e=>Coordinates+=co[e.Key].One().Set(c=>{c.Range=e.Value;c.Bond=axes.FirstOrDefault(a=>a.Spec==e.Key)?.Binder;})??new Coordinate(this,e.Key){Range=e.Value,Bond=axes.FirstOrDefault(a=>a.Spec==e.Key)?.Binder}) ;
-			ScreenCrossing = Focusation.At is int at && val[0].Axes.FirstOrDefault(a=>a.Spec==xaxe.Spec).Val.At(at) is double fx && val[0].Axes.FirstOrDefault(a=>a.Spec==yaxes[0]).Val.At(at) is double fy ?
-				ScreenInnerByRelAxe(fx.By(rng[xaxe.Spec]).Value,fy.By(rng[yaxes[0]],false).Value) : ScreenCrossing ;
+			if( Focusation.At is int fo && val[0].Axes.FirstOrDefault(a=>a.Spec==xaxe.Spec).Val.At(fo) is double fx && val[0].Axes.FirstOrDefault(a=>a.Spec==yaxes[0]).Val.At(fo) is double fy )
+			{
+				foreach( var cor in Coordinates ) cor.Value = val[0].Axes.FirstOrDefault(a=>a.Spec==cor.Axe).Val.At(fo) ;
+				ScreenCrossing = ScreenInnerByRelAxe(fx.By(rng[xaxe.Spec]).Value,fy.By(rng[yaxes[0]],false).Value) ;
+				MapPanel.Children.Add(new Label{ Content=Coordinates[c=>c.Axe==xaxe.Spec].View , Foreground=Brushes.Orange , FontStyle=FontStyles.Italic }.Set(l=>{Canvas.SetTop(l,-6);Canvas.SetLeft(l,ScreenCrossing.Value.X-2);})) ;
+				if( Coordinates[c=>c.Axe==yaxes[0]].View is string ylab ) MapPanel.Children.Add(new Label{ Content=ylab , Foreground=Brushes.Orange , FontStyle=FontStyles.Italic }.Set(l=>{Canvas.SetTop(l,ScreenCrossing.Value.Y-17);Canvas.SetLeft(l,hor-2-ylab.Length*6);})) ;
+			}
+			else ScreenCrossing = ScreenCrossing ;
 		}
 		static readonly double Lape = Math.Cos(Math.PI/4) ;
 		async void GraphDrawQuantile()
