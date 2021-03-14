@@ -28,6 +28,7 @@ namespace Rob.Act
 		public static readonly Dictionary<string,(Quant Grade,Quant Devia,Quant Velo,byte Rad)> Tolerancy = new Dictionary<string,(Quant Grade,Quant Devia,Quant Velo,byte Rad)>{ ["Polling"]=(.20,.25,20,5) , ["ROLLER_SKIING"]=(.20,3,25,5) , ["SKIING_CROSS_COUNTRY"]=(.20,3,20,5) } ;
 		public static readonly IDictionary<string,Profile> SubjectProfile = new Dictionary<string,Profile>{ ["Rob"]=new Profile{Mass=76,Span=1.92,Tranq=4} } ;
 		public static IList<Altiplane> Altiplanes ;
+		public static Mediator Medium ;
 		Altiplane AltOf => Altiplanes.Get(ap=>Tolerancy.On(Object).Get(m=>ap.FirstOrDefault(a=>a.Grade>=m.Grade)??new Altiplane(m.Grade){Radius=m.Rad}.Set(ap.Add))) ;
 
 		#region Construct

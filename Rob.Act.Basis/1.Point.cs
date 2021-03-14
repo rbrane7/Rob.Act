@@ -110,7 +110,7 @@ namespace Rob.Act
 		}
 		public override Mark Mark { get => base.Mark ; set { if( value==Mark ) return ; var dif = Mark^value ; base.Mark = value ; Changed("Mark") ; if( Owner is Path o && (o.Marker<value||dif>Mark.No) ) o.Remark(dif) ; } }
 		public override DateTime Date { get => base.Date ; set { if( Date==value ) return ; base.Date = value ; Changed("Date") ; } }
-		public override TimeSpan Time { get => base.Time ; set { if( Time==value ) return ; base.Time=value ; Changed("Time") ; } }
+		public override TimeSpan Time { get => base.Time ; set { if( Time==value ) return ; base.Time = value ; Changed("Time") ; } }
 		/// <summary>
 		/// Position within owner .
 		/// </summary>
@@ -170,7 +170,7 @@ namespace Rob.Act
 
 		#region Handling
 		public event PropertyChangedEventHandler PropertyChanged { add => propertyChanged += value.DispatchResolve() ; remove => propertyChanged -= value.DispatchResolve() ; } protected PropertyChangedEventHandler propertyChanged ;
-		protected virtual void Changed( string property ) { propertyChanged.On(this,property) ; (this as Path).Null(p=>p.Initing)?.Edited() ; (Owner as Path).Null(p=>p.Initing)?.Edited() ; }
+		protected virtual void Changed( string property ) { propertyChanged.On(this,property) ; Path.Medium?.Interact(this) ; (this as Path).Null(p=>p.Initing)?.Edited() ; (Owner as Path).Null(p=>p.Initing)?.Edited() ; }
 		#endregion
 
 		#region Equalization

@@ -13,6 +13,7 @@
     <Compile Include="..\Rob.Act.Basis\4.Axis.cs" Link="4.Axis.cs" />
     <Compile Include="..\Rob.Act.Basis\5.Aspect.cs" Link="5.Aspect.cs" />
     <Compile Include="..\Rob.Act.Basis\Altiplane.cs" Link="Altiplane.cs" />
+    <Compile Include="..\Rob.Act.Basis\Mediator.cs" Link="Mediator.cs" />
   </ItemGroup>
 
   <ItemGroup>
