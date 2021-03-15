@@ -18,10 +18,13 @@ namespace Rob.Act
 		public readonly Quant Grane ;
 		readonly Dictionary<(short Lon,short Lat),Segment> Cash = new Dictionary<(short Lon,short Lat),Segment>() ;
 		public byte Radius ;
-		readonly ISet<DateTime> Dates = new HashSet<DateTime>() ;
+		public bool Dirty {get;private set;}
 		public Mediator( Quant? grane = null ) => Grane = (grane??10).nil()??1 ;
-		public bool Include( DateTime date ) => Dates.Add(date) ;
-		public void Interact( Point point ) { }
+		/// <summary>
+		/// Applies traites .
+		/// </summary>
+		public void Interact( Point point ) { if( Dirty = Modifies(point) ); else return ; }
+		bool Modifies( Point point ) => false ;
 		public Quant? this[ Geos? point , byte? radius = null ] { get => point is Geos p ? this[p.Lon,p.Lat,radius] : null ; set { if( point is Geos p && value is Quant v ) this[p.Lon,p.Lat] = v ; } }
 		#region Calculus
 		public Quant? this[ Quant lon , Quant lat , byte? rad = null ]
@@ -39,7 +42,7 @@ namespace Rob.Act
 		#region Serialization
 		public virtual void Save( string file )
 		{
-			using var wrt = new System.IO.StreamWriter(file) ; var space = false ; foreach( var date in Dates ) { if( space ) wrt.Write(' ') ; wrt.Write(date.ToString(DateForm)) ; space = true ; }
+			using var wrt = new System.IO.StreamWriter(file) ;
 			foreach( var seg in Cash ) { wrt.WriteLine() ; wrt.Write($"{seg.Key.Lon},{seg.Key.Lat} ") ; foreach( var point in seg.Value ) wrt.Write($"{point.Lon},{point.Lat}:{point.Alt}*{point.Wei};") ; }
 		}
 		public Mediator( string file = null )
@@ -47,7 +50,6 @@ namespace Rob.Act
 			Grane = file.RightFrom(ArgSep).LeftFrom(ExtSign).Parse(0D) ;
 			if( System.IO.File.Exists(file) ) using( var rdr = new System.IO.StreamReader(file) )
 			{
-				rdr.ReadLine().Separate(' ',false).Each(d=>Dates.Add(d.Parse<DateTime>(DateForm).Value)) ;
 				for( string seg ; !(seg=rdr.ReadLine()).No() ; )
 				{
 					var val = Cash[seg.LeftFrom(' ').get(s=>(s.LeftFrom(',').Parse<short>().Value,s.RightFrom(',').Parse<short>().Value)).Value] = new Segment() ;
@@ -73,13 +75,14 @@ namespace Rob.Act
 	{
 		public class Mediator : Act.Mediator
 		{
-			public bool Dirty {get;private set;}
 			public readonly Quant Grade ;
 			public Mediator( Quant grade , Quant grane = 10 ) : base(grane) => Grade = grade ;
-			public virtual void Interact( Path path )
+			/// <summary>
+			/// Takes traits .
+			/// </summary>
+			public void Interact( Path path )
 			{
-				if( path==null || !Include(path.Date) ) return ; Dirty = true ;
-				for( var i=0 ; i<path.Count ; ++i )
+				for( var i=0 ; i<path?.Count ; ++i )
 				{
 					var alt = path[i].Alti ;
 					//for( var j=Math.Max(0,i-170) ; j<Math.Min(i+171,path.Count) ; ++j ) if( path[i].Alti is Quant a && path[j].Alti is Quant b && Math.Abs(a-b)>Grade*(path[i]-path[j]).Euclid(path[i]) ) alt = null ;
@@ -87,7 +90,6 @@ namespace Rob.Act
 				}
 			}
 			public Mediator( string file ) : base(file) => Grade = file.RightFrom(FileSign).LeftFrom(ArgSep).Parse(.999) ;
-			public override void Save( string file ) { base.Save(file) ; Dirty = false ; }
 		}
 	}
 	static class MediExtension

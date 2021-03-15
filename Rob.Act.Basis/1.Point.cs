@@ -170,7 +170,7 @@ namespace Rob.Act
 
 		#region Handling
 		public event PropertyChangedEventHandler PropertyChanged { add => propertyChanged += value.DispatchResolve() ; remove => propertyChanged -= value.DispatchResolve() ; } protected PropertyChangedEventHandler propertyChanged ;
-		protected virtual void Changed( string property ) { propertyChanged.On(this,property) ; Path.Medium?.Interact(this) ; (this as Path).Null(p=>p.Initing)?.Edited() ; (Owner as Path).Null(p=>p.Initing)?.Edited() ; }
+		protected virtual void Changed( string property ) { propertyChanged.On(this,property) ; (this as Path).Null(p=>p.Initing)?.Edited() ; (Owner as Path).Null(p=>p.Initing)?.Edited() ; Path.Medium?.Interact(this) ; }
 		#endregion
 
 		#region Equalization
