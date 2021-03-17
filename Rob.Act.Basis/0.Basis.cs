@@ -196,7 +196,7 @@ namespace Rob.Act
 		#endregion
 
 		#region Tags
-		public static IEnumerable<string> ExtractTags( this string value ) => value?.TrimStart().StartsBy("?")==true ? value.RightFromFirst('?').Separate(';','&').Get(elem=>typeof(Taglet).GetEnumNames().Get(n=>n.Select(e=>elem.Arg(e)).Concat(elem.Except(e=>e.LeftFrom('=')??string.Empty,n)))) : value.Separate(' ') ?? Enumerable.Empty<string>() ;
+		public static IEnumerable<string> ExtractTags( this string value ) => value?.TrimStart().StartsBy("?")==true ? value.RightFromFirst('?').Separate(';','&').Get(elem=>Tagger.Names.Get(n=>n.Select(e=>elem.Arg(e)).Concat(elem.Except(e=>e.LeftFrom('=')??string.Empty,n)))) : value.Separate(' ') ?? Enumerable.Empty<string>() ;
 		#endregion
 
 		internal static IEnumerable<KeyValuePair<string,(uint At,string Form,bool Potent)>> Iterer( this Metax metax , uint @base = 0 ) => metax.Get(m=>m.Iterator(@base)) ?? Enumerable.Empty<KeyValuePair<string,(uint At,string Form,bool Potent)>>() ;

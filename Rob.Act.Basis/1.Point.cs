@@ -12,7 +12,7 @@ using System.Text.RegularExpressions;
 namespace Rob.Act
 {
 	using Quant = Double ;
-	public enum Taglet { Object , Drag , Subject , Locus , Refine , Grade , Flow }
+	public enum Taglet { Object , Subject , Locus , Refine , Grade , Flow , Drag }
 	public interface Tagable : IEquatable<Tagable> , IEnumerable<string> { void Add( string item ) ; string this[ int key ] {get;set;} string this[ Taglet tag ] {get;set;} string this[ string key ] {get;set;} int Count {get;} void Clear() ; void Adopt( Tagable tags ) ; string Uri {get;} }
 	public class Tagger : List<string> , Tagable
 	{
@@ -23,7 +23,7 @@ namespace Rob.Act
 		public string this[ Taglet key ] { get => this[(int)key] ; set { if( this[key]==value ) return ; this[(int)key] = value ; Notifier?.Invoke(key.ToString()) ; } }
 		public string this[ string key ] { get => key.Parse<Taglet>() is Taglet t ? this[t] : MatchIndex(key) is int i ? this[i] : null ; set { if( key.Parse<Taglet>() is Taglet t ) { this[t] = value ; return ; } if( MatchIndex(key) is int i ) this[i] = value ; else Add(value) ; Notifier?.Invoke(key) ; } }
 		public bool this[ params string[] tag ] { get => this[ tag as IEnumerable<string> ] ; set => this[ tag as IEnumerable<string> ] = value ; }
-		public bool this[ IEnumerable<string> tag ] { get => this[tag] = false ; set { if( value ) Clear() ; AddRange(tag) ; Notifier?.Invoke(null) ; } }
+		public bool this[ IEnumerable<string> tag ] { get => this[tag] = false ; set { if( value ) Clear() ; AddRange(tag) ; var drag = this[1] ; if( Serialization.IsSurelyDrag(drag) ) { RemoveAt(1) ; this[Taglet.Drag] = drag.Null() ; } Notifier?.Invoke(null) ; } }
 		public new void Add( string tag ) { if( tag==null ) return ; base.Add(tag) ; Notifier?.Invoke(null) ; }
 		public void Adopt( Tagable tags ) { Clear() ; tags.Set(AddRange) ; }
 		int? MatchIndex( string key ) => MatchIndexes(key).singleOrNil() ;
@@ -36,8 +36,12 @@ namespace Rob.Act
 		#region De/Serialization
 		public static explicit operator string( Tagger the ) => the.Stringy(Serialization.Separator) ;
 		public static explicit operator Tagger( string text ) => text.Null(v=>v.Void()).Get(t=>new Tagger(t)) ;
-		Tagger( string text ) => AddRange(text.Separate(Serialization.Separator)) ;
-		class Serialization { public const string Separator = " \x1 Tag \x2 " ; }
+		Tagger( string text ) { this[text.Separate(Serialization.Separator)] = false ; }
+		class Serialization
+		{
+			public const string Separator = " \x1 Tag \x2 " ;
+			internal static bool IsSurelyDrag( string tag ) => tag?.All(l=>char.IsDigit(l)||l=='.'||l=='+'||l=='-'||l=='^')==true || tag==string.Empty ;
+		}
 		#endregion
 	}
 	public class Point : Pre.Point , Accessible<Axis,Quant?> , INotifyPropertyChanged

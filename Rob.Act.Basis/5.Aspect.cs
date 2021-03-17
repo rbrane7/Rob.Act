@@ -67,7 +67,7 @@ namespace Rob.Act
 		public virtual Path Raw => Source?.Raw ;
 		public Aspect Base => Raw?.Spectrum ;
 		public bool Orphan => Source==null && Sources==null ;
-		public int? AtOf( IEnumerable<(string Axe,Quant Value)> value ) => value.Get(v=>Points.Best(p=>v.Sum(a=>(p[a.Axe]-a.Value).Sqr())??Quant.MaxValue)?.at) ;
+		public (int at,Point one,Quant value)? AtOf( IEnumerable<(string Axe,Quant Value)> value ) => value.Get(v=>Points.Best(p=>v.Sum(a=>(p[a.Axe]-a.Value).Sqr())??Quant.MaxValue)) ;
 		#region Operations
 		public Axe.Support this[ IEnumerable<int> fragment ] => Axe.One[fragment] ;
 		#endregion

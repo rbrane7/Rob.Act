@@ -50,7 +50,7 @@ namespace Rob.Act.Analyze
 			if( Context.AspectFilter.Any(f=>f.Dirty) ) { Context.AspectFilter.Each(f=>f.Dirty=false) ; Main.Setup.StatePath.Set(p=>System.IO.Directory.CreateDirectory(p)).Path("AspectFilter.stt").WriteAll((string)Context.AspectFilter) ; }
 			if( Recoordinate ) { Recoordinate = false ; Main.Setup.StatePath.Set(p=>System.IO.Directory.CreateDirectory(p)).Path("Coordinater.stt").WriteAll(Coordinater?.Select(e=>$"{e.Key}:{e.Value}").Stringy(Environment.NewLine)) ; }
 			if( Main.Setup.Altiplane.Grade!=default ) Path.Altiplanes?.Where(a=>a.Dirty).Each(a=>a.Save(Main.Setup.StatePath.Set(p=>System.IO.Directory.CreateDirectory(p)).Path($"{Altiplane.FileSign}{a.Grade:.000}{Altiplane.ArgSep}{a.Grane:000}{Path.Altiplane.ExtSign}"))) ;
-			if( Path.Medium?.Dirty==true ) Context.Book.Entries.OfType<Path>().Each(Path.Medium.Interact) ;
+			if( Path.Medium?.Dirty==true ) { Context.Book.Entries.OfType<Path>().Each(Path.Medium.Interact) ; Path.Medium.Dirty = false ; }
 		}
 		internal Main Context { get => context ; set { context = value ; Saver?.Dispose() ; Saver = new System.Threading.Timer(Save,null,Main.Setup.SavePeriod,Main.Setup.SavePeriod) ; Load() ; } } Main context ;
 	}
