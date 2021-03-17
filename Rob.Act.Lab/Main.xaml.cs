@@ -275,9 +275,11 @@ namespace Rob.Act.Analyze
 					if( y.Min<0 && y.Max>0 ) { var yZero = ScreenInnerByRelAxeY(0D.By(y,false).Value) ; GraphPanel.Children.Add( new Line{ X1 = 0 , Y1 = yZero , X2 = hor , Y2 = yZero , Stroke = Brushes.Gray } ) ; }
 				}
 			}
+			Dictionary<string,SolidColorBrush> coloring = null ;
 			foreach( var asp in DrawingSources )
 			{
 				var asv = val.One(a=>a.Aspect==asp.Spec) ; var xax = asv.Axes.One(a=>a.Spec==xaxe.Spec) ; var color = new SolidColorBrush(Coloring(asp)) ; DoubleCollection dash ;
+				if( coloring!=null || crossed && Focusation.Source!=null ) (coloring??=new Dictionary<string,SolidColorBrush>())[asp.Spec] = color ; // preparation for screen cross
 				foreach( var ax in asv.Axes ) if( yaxes.Contains(ax.Spec) ) try
 				{
 					var ptss = new List<(int Count,int From)>() ; dash = null ;
@@ -308,21 +310,20 @@ namespace Rob.Act.Analyze
 			}
 			Hypercube = rng.Where(a=>xaxe.Spec==a.Key||yaxes.Contains(a.Key)).OrderBy(e=>e.Key==xaxe.Spec?0:Array.IndexOf(yaxes,e.Key)+1).ToArray() ; var co = Coordinates.ToLookup(c=>c.Axe) ; Coordinates.Clear() ;
 			Hypercube.Each(e=>Coordinates+=co[e.Key].One().Set(c=>{c.Range=e.Value;c.Bond=axes.FirstOrDefault(a=>a.Spec==e.Key)?.Binder;})??new Coordinate(this,e.Key){Range=e.Value,Bond=axes.FirstOrDefault(a=>a.Spec==e.Key)?.Binder}) ;
-			if( crossed && Focusation.Source?.At is int fo ); else return ;
-			var src = val.at(a=>a.Aspect==Focusation.Source?.Spec)??val[0] ; var ay = -1 ; var fx = 0D ; foreach( var cor in Coordinates )
+			if( crossed && Focusation.Source!=null ) foreach( var foc in Focusation.Source ) if( foc.At is int fo && (val.at(a=>a.Aspect==foc.Spec)??val[0]) is var src && -1 is int ay && 0D is double fx && coloring.By(src.Aspect) is SolidColorBrush cof ) foreach( var cor in Coordinates )
 			{
 				if( ++ay>=0 && ( cor.Value = src.Axes.at(a=>a.Spec==cor.Axe)?.Val.At(fo) ) is double fa )
 				if( ay==0 ) fx = fa ; else if( ay==1 )
 				{
-					ScreenCrossing = ScreenInnerByRelAxe(fx.By(rng[xaxe.Spec]).Value,fa.By(rng[cor.Axe],false).Value) ;
-					GraphPanel.Children.Add( new Label{ Content=Coordinates[c=>c.Axe==xaxe.Spec].View , Foreground=Brushes.Orange , FontStyle=FontStyles.Italic }.Set(l=>{Canvas.SetTop(l,-6);Canvas.SetLeft(l,ScreenCrossing.Value.X-2);}).Set(ScreenCross.Val.Add) ) ;
-					if( Coordinates[c=>c.Axe==yaxes[0]].View is string ylab ) GraphPanel.Children.Add( new Label{ Content=ylab , Foreground=Brushes.Orange , FontStyle=FontStyles.Italic }.Set(l=>{Canvas.SetTop(l,ScreenCrossing.Value.Y-17);Canvas.SetLeft(l,hor-2-ylab.Length*6);}).Set(ScreenCross.Val.Add) ) ;
+					ScreenCrossing = (ScreenInnerByRelAxe(fx.By(rng[xaxe.Spec]).Value,fa.By(rng[cor.Axe],false).Value),cof) ;
+					GraphPanel.Children.Add( new Label{ Content=Coordinates[c=>c.Axe==xaxe.Spec].View , Foreground=Brushes.Orange , FontStyle=FontStyles.Italic }.Set(l=>{Canvas.SetTop(l,-6);Canvas.SetLeft(l,ScreenCrossing.Value.at.X-2);}).Set(ScreenCross.Val.Add) ) ;
+					if( Coordinates[c=>c.Axe==yaxes[0]].View is string ylab ) GraphPanel.Children.Add( new Label{ Content=ylab , Foreground=cof , FontStyle=FontStyles.Italic }.Set(l=>{Canvas.SetTop(l,ScreenCrossing.Value.at.Y-17);Canvas.SetLeft(l,hor-2-ylab.Length*6);}).Set(ScreenCross.Val.Add) ) ;
 				}
 				else
 				{
 					var sy = ScreenInnerByRelAxeY(fa.By(rng[cor.Axe],false).Value) ;
-					GraphPanel.Children.Add( new Line{ Stroke=Brushes.Orange , X1=0 , X2=MainFrameSize.Width , Y1=sy , Y2=sy , StrokeThickness=0.4+0.3*(Coordinates.Count-ay)/Coordinates.Count }.Set(ScreenCross.Axe.Add) ) ;
-					if( cor.View is string ylab ) GraphPanel.Children.Add( new Label{ Content=ylab , Foreground=Brushes.Orange , FontStyle=FontStyles.Italic }.Set(l=>{Canvas.SetTop(l,sy-17);Canvas.SetLeft(l,hor-2-ylab.Length*6);}).Set(ScreenCross.Val.Add) ) ;
+					GraphPanel.Children.Add( new Line{ Stroke=cof , X1=0 , X2=MainFrameSize.Width , Y1=sy , Y2=sy , StrokeThickness=0.4+0.3*(Coordinates.Count-ay)/Coordinates.Count }.Set(ScreenCross.Axe.Add) ) ;
+					if( cor.View is string ylab ) GraphPanel.Children.Add( new Label{ Content=ylab , Foreground=cof , FontStyle=FontStyles.Italic }.Set(l=>{Canvas.SetTop(l,sy-17);Canvas.SetLeft(l,hor-2-ylab.Length*6);}).Set(ScreenCross.Val.Add) ) ;
 				}
 			}
 		}
@@ -423,13 +424,13 @@ namespace Rob.Act.Analyze
 			}
 			Hypercube = rng.Where(a=>xaxe.Spec==a.Key||yaxes.Contains(a.Key)).OrderBy(e=>e.Key==xaxe.Spec?0:Array.IndexOf(yaxes,e.Key)+1).ToArray() ; var co = Coordinates.ToLookup(c=>c.Axe) ; Coordinates.Clear() ;
 			Hypercube.Each(e=>Coordinates+=co[e.Key].One().Set(c=>{c.Range=e.Value;c.Bond=axes.FirstOrDefault(a=>a.Spec==e.Key)?.Binder;})??new Coordinate(this,e.Key){Range=e.Value,Bond=axes.FirstOrDefault(a=>a.Spec==e.Key)?.Binder}) ;
-			if( crossed ) if( Focusation.Source?.At is int fo && val[0].Axes.FirstOrDefault(a=>a.Spec==xaxe.Spec).Val.At(fo) is double fx && val[0].Axes.FirstOrDefault(a=>a.Spec==yaxes[0]).Val.At(fo) is double fy )
+			if( crossed ) if( Focusation.Source.At(0).At is int fo && val[0].Axes.FirstOrDefault(a=>a.Spec==xaxe.Spec).Val.At(fo) is double fx && val[0].Axes.FirstOrDefault(a=>a.Spec==yaxes[0]).Val.At(fo) is double fy )
 			{
 				foreach( var cor in Coordinates ) cor.Value = val[0].Axes.FirstOrDefault(a=>a.Spec==cor.Axe).Val.At(fo) ;
-				ScreenCrossing = ScreenInnerByRelAxe(fx.By(rng[xaxe.Spec]).Value,fy.By(rng[yaxes[0]],false).Value) ;
-				MapPanel.Children.Add( new Label{ Content=Coordinates[c=>c.Axe==xaxe.Spec].View , Foreground=Brushes.Orange , FontStyle=FontStyles.Italic }.Set(l=>{Canvas.SetTop(l,-6);Canvas.SetLeft(l,ScreenCrossing.Value.X-2);}).Set(ScreenCross.Val.Add) ) ;
-				if( Coordinates[c=>c.Axe==yaxes[0]].View is string ylab ) MapPanel.Children.Add( new Label{ Content=ylab , Foreground=Brushes.Orange , FontStyle=FontStyles.Italic }.Set(l=>{Canvas.SetTop(l,ScreenCrossing.Value.Y-17);Canvas.SetLeft(l,hor-2-ylab.Length*6);}).Set(ScreenCross.Val.Add) ) ;
-				if( Coordinates[c=>c.Axe==yaxes.At(1)].View is string zlab ) MapPanel.Children.Add( new Label{ Content=zlab , Foreground=Brushes.Orange , FontStyle=FontStyles.Italic }.Set(l=>{Canvas.SetTop(l,ScreenCrossing.Value.Y-17);Canvas.SetLeft(l,ScreenCrossing.Value.X-2);}).Set(ScreenCross.Val.Add) ) ;
+				ScreenCrossing = (ScreenInnerByRelAxe(fx.By(rng[xaxe.Spec]).Value,fy.By(rng[yaxes[0]],false).Value),Brushes.Orange) ;
+				MapPanel.Children.Add( new Label{ Content=Coordinates[c=>c.Axe==xaxe.Spec].View , Foreground=Brushes.Orange , FontStyle=FontStyles.Italic }.Set(l=>{Canvas.SetTop(l,-6);Canvas.SetLeft(l,ScreenCrossing.Value.at.X-2);}).Set(ScreenCross.Val.Add) ) ;
+				if( Coordinates[c=>c.Axe==yaxes[0]].View is string ylab ) MapPanel.Children.Add( new Label{ Content=ylab , Foreground=Brushes.Orange , FontStyle=FontStyles.Italic }.Set(l=>{Canvas.SetTop(l,ScreenCrossing.Value.at.Y-17);Canvas.SetLeft(l,hor-2-ylab.Length*6);}).Set(ScreenCross.Val.Add) ) ;
+				if( Coordinates[c=>c.Axe==yaxes.At(1)].View is string zlab ) MapPanel.Children.Add( new Label{ Content=zlab , Foreground=Brushes.Orange , FontStyle=FontStyles.Italic }.Set(l=>{Canvas.SetTop(l,ScreenCrossing.Value.at.Y-17);Canvas.SetLeft(l,ScreenCrossing.Value.at.X-2);}).Set(ScreenCross.Val.Add) ) ;
 			}
 			else ScreenCrossing = ScreenCrossing ;
 		}
@@ -474,7 +475,7 @@ namespace Rob.Act.Analyze
 		static string Format( double value , int prec = 3 ) => value.ToString("#."+new string('#',DecDigits(value,prec))) ;
 		IEnumerable<KeyValuePair<string,(double Min,double Max)>> Hypercube ; (double Width,double Height) ViewSize , ViewOrigin ; (Line X,Line Y) MouseCross ; (IList<Line> Axe,IList<Label> Val) ScreenCross = (new List<Line>(),new List<Label>()) ;
 		(double Width,double Height) ViewScreenBorder => (DisplayTable.Margin.Left+DisplayTable.Margin.Right+4,30) ;
-		static readonly Color[] Colos = new[]{ new Color{A=255,R=255,G=0,B=0} , new Color{A=255,R=0,G=255,B=0} , new Color{A=255,R=0,G=0,B=255} , new Color{A=255,R=191,G=191,B=0} , new Color{A=255,R=0,G=191,B=191} , new Color{A=255,R=191,G=0,B=191} , new Color{A=255,R=223,G=159,B=0} , new Color{A=255,R=159,G=223,B=0} , new Color{A=255,R=0,G=223,B=159} , new Color{A=255,R=0,G=159,B=223} , new Color{A=255,R=159,G=0,B=223} , new Color{A=255,R=223,G=0,B=159} } ;
+		static readonly Color[] Colos = new[]{ new Color{A=255,R=255,G=0,B=0} , new Color{A=255,R=0,G=200,B=0} , new Color{A=255,R=0,G=0,B=255} , new Color{A=255,R=191,G=191,B=0} , new Color{A=255,R=0,G=191,B=191} , new Color{A=255,R=191,G=0,B=191} , new Color{A=255,R=223,G=159,B=0} , new Color{A=255,R=159,G=223,B=0} , new Color{A=255,R=0,G=223,B=159} , new Color{A=255,R=0,G=159,B=223} , new Color{A=255,R=159,G=0,B=223} , new Color{A=255,R=223,G=0,B=159} } ;
 		static readonly FontStretch[] Fostres = new[]{ FontStretches.UltraExpanded , FontStretches.ExtraExpanded , FontStretches.Expanded , FontStretches.SemiExpanded , FontStretches.Normal , FontStretches.SemiCondensed , FontStretches.Condensed , FontStretches.ExtraCondensed , FontStretches.UltraCondensed } ;
 		static readonly FontWeight[] Foweis = new[]{ /*FontWeights.ExtraBlack , FontWeights.Black ,*/ FontWeights.ExtraBold , FontWeights.Bold , FontWeights.SemiBold , FontWeights.Medium , FontWeights.Normal , FontWeights.Light , FontWeights.ExtraLight , FontWeights.Thin } ;
 		Color Coloring( int index ) => index<0 ? Colors.Black : Colos[index%Colos.Length] ;
@@ -540,12 +541,12 @@ namespace Rob.Act.Analyze
 				if( i==0 ) value.Add((hyp[i].Key,AxeInnerByOuterX(AxeXByMouse(point,hyp[i]),hyp[i].Value))) ;
 				else if( i==1 ) value.Add((hyp[i].Key,AxeInnerByOuterY(AxeYByMouse(point,hyp[i]),hyp[i].Value))) ;
 				//else if( map && AxeZByMouse(hyp[i].Key) is double v ) value.Add((hyp[i].Key,v)) ;
-			foreach( var asp in Resources ) if( asp.AtOf(value)?.at is int at ) { Focusation.Source = (at,asp.Spec) ; return ; }
-			//Focusation.Source = Resources.Select(r=>(r.AtOf(value)?.at,r.Spec)).ToArray() ;
+			//foreach( var asp in Resources ) if( asp.AtOf(value)?.at is int at ) { Focusation.Source = (at,asp.Spec) ; return ; }
+			Focusation.Source = Resources.Select(r=>(r.AtOf(value)?.at,r.Spec)).ToArray() ;
 		}
-		((int At,string Spec)? Source,Dictionary<object,DataGrid> Grid) Focusation = (null,new Dictionary<object,DataGrid>()) ;
-		void TabItem_MouseLeftButtonUp( object sender , MouseButtonEventArgs e ) { if( sender is TabItem tab && Focusation.Source?.At is int at && Focusation.Grid.By(tab.Content) is DataGrid grid ) { grid.SelectedIndex = at ; grid.Focus() ; grid.ScrollIntoView(grid.SelectedItem) ; } }
-		void DataGrid_SelectionChanged( object sender , SelectionChangedEventArgs e ) { if( sender is DataGrid grid ); else return ; if( grid.SelectedItem==null ) ScreenCrossing = null ; Focusation.Source = grid.SelectedIndex.nil(v=>v<0).use(i=>(i,null as string)) ; }
+		((int? At,string Spec)[] Source,Dictionary<object,DataGrid> Grid) Focusation = (null,new Dictionary<object,DataGrid>()) ;
+		void TabItem_MouseLeftButtonUp( object sender , MouseButtonEventArgs e ) { if( sender is TabItem tab && Focusation.Source.At(0).At is int at && Focusation.Grid.By(tab.Content) is DataGrid grid ) { grid.SelectedIndex = at ; grid.Focus() ; grid.ScrollIntoView(grid.SelectedItem) ; } }
+		void DataGrid_SelectionChanged( object sender , SelectionChangedEventArgs e ) { if( sender is DataGrid grid ); else return ; if( grid.SelectedItem==null ) ScreenCrossing = null ; Focusation.Source = new[]{(grid.SelectedIndex.nil(v=>v<0),null as string)} ; }
 		double AxeXByMouse( System.Windows.Point m , KeyValuePair<string,(double Min,double Max)> a ) => (m.X-ViewOrigin.Width)/ViewSize.Width*(a.Value.Max-a.Value.Min)+a.Value.Min ;
 		double AxeYByMouse( System.Windows.Point m , KeyValuePair<string,(double Min,double Max)> a ) => (ViewSize.Height+ViewOrigin.Height-m.Y)/ViewSize.Height*(a.Value.Max-a.Value.Min)+a.Value.Min ;
 		double? AxeZByMouse( string a )
@@ -557,17 +558,17 @@ namespace Rob.Act.Analyze
 		#endregion
 
 		#region Focusing
-		System.Windows.Point? mousePoint , screenPoint , screenCrossing ; Rect? ScreenRect ;
-		System.Windows.Point? ScreenOrigin { get => screenPoint ; set { ScreenCrossing = null ; screenPoint = value.Get(_=>ScreenMouse) ; if( value!=null ) { ScreenCrossing = value ; TransitionSet() ; } } }
-		System.Windows.Point? ScreenCrossing
+		System.Windows.Point? mousePoint , screenPoint ; Rect? ScreenRect ; (System.Windows.Point at,Brush color)? screenCrossing ;
+		System.Windows.Point? ScreenOrigin { get => screenPoint ; set { ScreenCrossing = null ; screenPoint = value.Get(_=>ScreenMouse) ; if( value!=null ) { ScreenCrossing = (value.Value,Brushes.Orange) ; TransitionSet() ; } } }
+		(System.Windows.Point at,Brush color)? ScreenCrossing
 		{
 			get => screenCrossing ;
 			set
 			{
-				if( (screenCrossing=value) is System.Windows.Point point )
+				if( (screenCrossing=value) is (System.Windows.Point at,Brush color) cross )
 				{
-					ViewPanel.Children.Add( new Line{ Stroke=Brushes.Orange , X1=0 , X2=MainFrameSize.Width , Y1=point.Y , Y2=point.Y , StrokeThickness=0.5 }.Set(ScreenCross.Axe.Add) ) ;
-					ViewPanel.Children.Add( new Line{ Stroke=Brushes.Orange , Y1=0 , Y2=MainFrameSize.Height , X1=point.X , X2=point.X , StrokeThickness=0.5 }.Set(ScreenCross.Axe.Add) ) ;
+					ViewPanel.Children.Add( new Line{ Stroke=cross.color , X1=0 , X2=MainFrameSize.Width , Y1=cross.at.Y , Y2=cross.at.Y , StrokeThickness=0.5 }.Set(ScreenCross.Axe.Add) ) ;
+					ViewPanel.Children.Add( new Line{ Stroke=Brushes.Orange , Y1=0 , Y2=MainFrameSize.Height , X1=cross.at.X , X2=cross.at.X , StrokeThickness=0.5 }.Set(ScreenCross.Axe.Add) ) ;
 				}
 				else { ScreenCross.Axe.Each(ViewPanel.Children.Remove) ; ScreenCross.Val.Each(ViewPanel.Children.Remove) ; ScreenCross.Axe.Clear() ; ScreenCross.Val.Clear() ; }
 			}
