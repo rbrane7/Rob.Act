@@ -20,13 +20,13 @@ namespace Rob.Act
 			readonly Dictionary<(Frame Lon,Frame Lat),Core> Cash = new Dictionary<(Frame Lon,Frame Lat),Core>() ;
 			public byte Radius ;
 			protected Core this[ Geos? point ] { get => point is Geos p ? this[p.Lon,p.Lat] : null ; set { if( point is Geos p && value is Core v ) this[p.Lon,p.Lat] = v ; } }
-			Core this[ Quant lon , Quant lat ] { get => Vicinity(((Frame)(lon/Grane),(Frame)(lat/Grane))).Best(c=>+(c.Geo-(lon,lat)))?.one ; set { if( value is Core ) this[(Frame)(lon/Grane),(Frame)(lat/Grane)] = value ; } }
+			Core this[ Quant lon , Quant lat ] { get => Vicinity((lon.By(Grane),lat.By(Grane))).Best(c=>+(c.Geo-(lon,lat)))?.one ; set { if( value is Core ) this[lon.By(Grane),lat.By(Grane)] = value ; } }
 			Core this[ Frame lon , Frame lat ] { get => this[(lon,lat)] ; set => this[(lon,lat)] = value ; }
 			Core this[ (Frame lon,Frame lat) point ] { get => Cash.By(point) ; set => Cash[point] = value ; }
-			IEnumerable<Core> Vicinity( (Frame Lon,Frame Lat) point ) { for( var i=-VicinityRad ; i<=VicinityRad ; ++i ) for( var j=-VicinityRad ; j<=VicinityRad ; ++j ) if( this[((short)(point.Lon+i),(short)(point.Lat+j))] is Core s ) yield return s ; }
+			IEnumerable<Core> Vicinity( (Frame Lon,Frame Lat) point ) { for( var i=-VicinityRad ; i<=VicinityRad ; ++i ) for( var j=-VicinityRad ; j<=VicinityRad ; ++j ) if( this[(point.Lon+i,point.Lat+j)] is Core s ) yield return s ; }
 			#endregion
 			#region Base
-			protected override bool Applicable( Point point ) => !point.Tags.No() && point.IsGeo ;
+			protected override bool Applicable( Point point ) => !point.Tags.No() && point.IsGeos ;
 			/// <summary>
 			/// Applies traits of point .
 			/// </summary>
@@ -53,18 +53,20 @@ namespace Rob.Act
 	{
 		public class Marklane : Markage.Land
 		{
-			class Map : Dictionary<Core,IList<Point>> { public new IList<Point> this[ Core core ] { get => this.By(core) ; set => this[core] = value ; } }
+			class Map : Dictionary<Core,IList<Point>> { public new IList<Point> this[ Core core ] { get => this.By(core) ; set => base[core] = value ; } }
 			/// <summary>
 			/// Takes traits of frommedium to path and points .
 			/// </summary>
 			public override void Interact( Path path )
 			{
 				Map map = null ; path.Each(p=>this[p].Set(c=>((map??=new Map())[c]??=new List<Point>()).Add(p))) ; if( map==null ) return ;
-				foreach( var item in map ) item.Key.Affect(item.Value.Best(p=>+(p.Geo.Value-item.Key.Geo))?.one) ;
+				using( new Aid.Closure(()=>Blocked=true,()=>Blocked=false) ) foreach( var item in map ) item.Key.Affect( item.Value.Best(p=>+(p.Geo.Value-item.Key.Geo))?.one ) ;
 			}
+			protected override bool Applicable( Point point ) => !Blocked && base.Applicable(point) ; bool Blocked ;
 		}
 	}
 	static class MerklaneExtension
 	{
+		internal static Frame By( this Quant value , Quant grane ) => (Frame)Math.Round(value/grane) ;
 	}
 }
