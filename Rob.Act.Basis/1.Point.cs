@@ -23,30 +23,32 @@ namespace Rob.Act
 		public string this[ Taglet key ] { get => this[(int)key] ; set { if( this[key]==value ) return ; this[(int)key] = value ; Notifier?.Invoke(key.ToString()) ; } }
 		public string this[ string key ] { get => key.Parse<Taglet>() is Taglet t ? this[t] : MatchIndex(key) is int i ? this[i] : null ; set { if( key.Parse<Taglet>() is Taglet t ) { this[t] = value ; return ; } if( MatchIndex(key) is int i ) this[i] = value ; else Add(value) ; Notifier?.Invoke(key) ; } }
 		public bool this[ params string[] tag ] { get => this[ tag as IEnumerable<string> ] ; set => this[ tag as IEnumerable<string> ] = value ; }
-		public bool this[ IEnumerable<string> tag ] { get => this[tag] = false ; set { if( value ) Clear() ; AddRange(tag) ; var drag = this[1] ; if( Serialization.IsSurelyDrag(drag) ) { RemoveAt(1) ; this[Taglet.Drag] = drag.Null() ; } Notifier?.Invoke(null) ; } }
+		public bool this[ IEnumerable<string> tag ] { get => this[tag] = false ; set { if( value ) Clear() ; AddRange(tag) ; var drag = this[1] ; if( Serialization.IsDraglike(drag) || drag.No()&&Serialization.IsJectlike(this[0])&&Serialization.IsJectlike(this[2]) ) { RemoveAt(1) ; this[Taglet.Drag] = drag.Null() ; } Notifier?.Invoke(null) ; } }
 		public new void Add( string tag ) { if( tag==null ) return ; base.Add(tag) ; Notifier?.Invoke(null) ; }
 		public void Adopt( Tagable tags ) { Clear() ; tags.Set(AddRange) ; }
 		int? MatchIndex( string key ) => MatchIndexes(key).singleOrNil() ;
 		IEnumerable<int> MatchIndexes( string key ) => key.Get(k=>new Regex(k).Get(r=>this.IndexesWhere(r.IsMatch))) ;
 		void InsureCapacity( int capacity ) { while( Count<=capacity ) base.Add(null) ; }
-		public override string ToString() => this.Stringy(' ') ;
+		public override string ToString() => ToString(false) ;
+		public string ToString( bool leaf = false ) => (leaf?this.Skip(2):this).Stringy(' ') ;
 		public string Uri => Count.Steps().Select(i=>i<Names.Length?$"{Names[i]}={this[i]}":this[i]).Stringy('&','?') ;
 		public bool Equals( Tagable other ) => other is Tagger t && this.SequenceEquate(t,Equals) ;
 		static bool Equals( string x , string y ) => x.Null(v=>v.No())==y.Null(v=>v.No()) ;
 		#region De/Serialization
 		public static explicit operator string( Tagger the ) => the.Stringy(Serialization.Separator) ;
 		public static explicit operator Tagger( string text ) => text.Null(v=>v.Void()).Get(t=>new Tagger(t)) ;
-		Tagger( string text ) { this[text.Separate(Serialization.Separator)] = false ; }
+		Tagger( string text ) => this[text.Separate(Serialization.Separator)] = false ;
 		class Serialization
 		{
 			public const string Separator = " \x1 Tag \x2 " ;
-			internal static bool IsSurelyDrag( string tag ) => tag?.All(l=>char.IsDigit(l)||l=='.'||l=='+'||l=='-'||l=='^')==true || tag==string.Empty ;
+			internal static bool IsDraglike( string tag ) => tag?.All(l=>char.IsDigit(l)||l=='.'||l=='+'||l=='-'||l=='^')==true ;
+			internal static bool IsJectlike( string tag ) => tag?.Any(l=>char.IsLetter(l))==true ;
 		}
 		#endregion
 	}
 	public class Point : Pre.Point , Accessible<Axis,Quant?> , INotifyPropertyChanged
 	{
-		protected internal Pathable Owner ;
+		protected internal Pathable Owner { get => owner ; set { owner = value ; Path.Medium?.Interact(this) ; } } Pathable owner ;
 		#region Construction
 		public Point( DateTime date , Pathable owner = null ) : base(date) => Owner = owner ;
 		public Point( Point point , Pathable owner = null ) : base(point) => Owner = owner??point?.Owner ;
@@ -86,19 +88,28 @@ namespace Rob.Act
 		/// Deviation of the path .
 		/// </summary>
 		public Bipole? Deviation {get;set;}
+		/// <summary>
+		/// Is this point a leaf one ? The one owned by <see cref="Path"/> but not the derived <see cref="Path"/> . 
+		/// This property is intended to distinguish points , Leafs , which strictly inherit <see cref="Subject"/> and <see cref="Object"/> properties from <see cref="Owner"/> . 
+		/// </summary>
+		public bool IsLeaf => DistinguishLeaf && (Owner as Path)?.Derived==false ;
+		/// <summary>
+		/// Are leaf points distinguished form non-leaf ones , <see cref="IsLeaf"/> property . 
+		/// </summary>
+		public static bool DistinguishLeaf ;
 		#endregion
 
 		#region Tags
 		void TagChanged( string p ) { tag = null ; if( Spec==Despect ) Spec = null ; Changed(p??"Tags") ; }
 		public override Tagable Tag => tags ?? System.Threading.Interlocked.CompareExchange(ref tags,new Tagger(TagChanged),null) ?? tags ; Tagger tags ;
-		public string Tags { get => tag ??= tags.Stringy() ; set { if( value==tag ) return ; tag = null ; (Tag as Tagger)[value.ExtractTags()] = true ; Changed("Subject,Object,Locus,Refine") ; } } string tag ;
-		public string Subject { get => tags?[Taglet.Subject]??Owner?.Subject ; set { if( value?.Length>0 ) Tag[Taglet.Subject] = value ; else tags.Set(t=>t[Taglet.Subject]=value) ; } }
-		public string Object { get => tags?[Taglet.Object]??Owner?.Object ; set { if( value?.Length>0 ) Tag[Taglet.Object] = value ; else tags.Set(t=>t[Taglet.Object]=value) ; } }
-		public string Locus { get => tags?[Taglet.Locus]??Owner?.Locus ; set { if( value?.Length>0 ) Tag[Taglet.Locus] = value ; else tags.Set(t=>t[Taglet.Locus]=value) ; } }
-		public string Refine { get => tags?[Taglet.Refine]??Owner?.Refine ; set { if( value?.Length>0 ) Tag[Taglet.Refine] = value ; else tags.Set(t=>t[Taglet.Refine]=value) ; } }
-		public string Dragstr { get => tags?[Taglet.Drag]??(Owner as Path)?.Dragstr ; set { if( value?.Length>0 ) Tag[Taglet.Drag] = value ; else tags.Set(t=>t[Taglet.Drag]=value) ; } }
-		public string Gradstr { get => tags?[Taglet.Grade]??(Owner as Path)?.Gradstr ; set { if( value?.Length>0 ) Tag[Taglet.Grade] = value ; else tags.Set(t=>t[Taglet.Grade]=value) ; } }
-		public string Flowstr { get => tags?[Taglet.Flow]??(Owner as Path)?.Flowstr ; set { if( value?.Length>0 ) Tag[Taglet.Flow] = value ; else tags.Set(t=>t[Taglet.Flow]=value) ; } }
+		public string Tags { get => tag ??= tags?.ToString(IsLeaf) ; set { if( value==tag ) return ; tag = null ; (Tag as Tagger)[value.ExtractTags(IsLeaf)] = true ; Changed("Subject,Object,Locus,Refine") ; } } string tag ;
+		public string Subject { get => tags?[Taglet.Subject].Null()??Owner?.Subject ; set { if( value?.Length>0 ) Tag[Taglet.Subject] = value ; else tags.Set(t=>t[Taglet.Subject]=value) ; } }
+		public string Object { get => tags?[Taglet.Object].Null()??Owner?.Object ; set { if( value?.Length>0 ) Tag[Taglet.Object] = value ; else tags.Set(t=>t[Taglet.Object]=value) ; } }
+		public string Locus { get => tags?[Taglet.Locus].Null()??Owner?.Locus ; set { if( value?.Length>0 ) Tag[Taglet.Locus] = value ; else tags.Set(t=>t[Taglet.Locus]=value) ; } }
+		public string Refine { get => tags?[Taglet.Refine].Null()??Owner?.Refine ; set { if( value?.Length>0 ) Tag[Taglet.Refine] = value ; else tags.Set(t=>t[Taglet.Refine]=value) ; } }
+		public string Dragstr { get => tags?[Taglet.Drag].Null()??(Owner as Path)?.Dragstr ; set { if( value?.Length>0 ) Tag[Taglet.Drag] = value ; else tags.Set(t=>t[Taglet.Drag]=value) ; } }
+		public string Gradstr { get => tags?[Taglet.Grade].Null()??(Owner as Path)?.Gradstr ; set { if( value?.Length>0 ) Tag[Taglet.Grade] = value ; else tags.Set(t=>t[Taglet.Grade]=value) ; } }
+		public string Flowstr { get => tags?[Taglet.Flow].Null()??(Owner as Path)?.Flowstr ; set { if( value?.Length>0 ) Tag[Taglet.Flow] = value ; else tags.Set(t=>t[Taglet.Flow]=value) ; } }
 		public string Restr { get => $"{Gradstr} {Flowstr} {Dragstr}" ; set { value.Separate(' ').Set(v=>{ using(Incognite){ Gradstr = v.At(0) ; Flowstr = v.At(1) ; Dragstr = v.At(2) ; } Energize() ; }) ; } }
 		void Energize() { var dflt = Basis.Energing.On(Object) ; Reslet = (Gradstr.Gradlet(dflt?.Grade),Flowstr.Flowlet(dflt?.Flow),Dragstr.Draglet(dflt?.Drag)) ; }
 		#endregion
@@ -154,6 +165,7 @@ namespace Rob.Act
 
 		#region Query
 		public bool IsGeo => this[Axis.Lon]!=null || this[Axis.Lat]!=null ;
+		public bool IsGeos => this[Axis.Lon]!=null & this[Axis.Lat]!=null ;
 		public Quant Transfer => Basis.Device.Skierg.Code==Object ? Math.Pow(Draglet??1,1D/3D) : 1 ;
 		public Quant Resister => Object==Basis.Device.Skierg.Code ? Basis.Device.Skierg.Draw : Drag??Path.SubjectProfile.By(Subject)?.Resi??0 ;
 		public override string Exposion => "{0}={1}bW".Comb("{0}/{1}".Comb(Power.Get(p=>$"{Math.Round(p)}W"),Beatrate.Get(b=>$"{Math.Round(b)}`b")),Beatage.use(Math.Round))+$" {Speed*3.6:0.00}km/h" ;
@@ -174,7 +186,7 @@ namespace Rob.Act
 
 		#region Handling
 		public event PropertyChangedEventHandler PropertyChanged { add => propertyChanged += value.DispatchResolve() ; remove => propertyChanged -= value.DispatchResolve() ; } protected PropertyChangedEventHandler propertyChanged ;
-		protected virtual void Changed( string property ) { propertyChanged.On(this,property) ; (this as Path).Null(p=>p.Initing)?.Edited() ; (Owner as Path).Null(p=>p.Initing)?.Edited() ; Path.Medium?.Interact(this) ; }
+		protected virtual void Changed( string property ) { propertyChanged.On(this,property) ; (this as Path).Null(p=>p.Initing)?.Edited() ; (Owner as Path).Null(p=>p.Initing)?.Edited() ; if( !Initing ) Path.Medium?.Interact(this) ; }
 		#endregion
 
 		#region Equalization

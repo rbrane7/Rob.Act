@@ -283,7 +283,11 @@ namespace Rob.Act
 		#region State
 		int Depth = 1 ; // Defines the size of vicinity of points .
 		readonly List<Point> Content = new List<Point>() ;
-		/// <summary> Derivancy causes this path to be drived from it's point sub-pathes and is used as base of <see cref="Metax"/> of points in case of top-down construction . In this case points inherit path's <see cref="Metax"/> if they doesn't have own . </summary>
+		/// <summary>
+		/// Derivancy causes this path to be drived from it's point sub-pathes and is used as base of <see cref="Metax"/> of points in case of top-down construction . 
+		/// In this case points inherit path's <see cref="Metax"/> if they doesn't have own . 
+		/// Derivancy also doesn't force points to inherit <see cref="Point.Subject"/> ans <see cref="Point.Object"/> traits . 
+		/// </summary>
 		public bool Dominant = Dominancy , Editable = Persistent ; internal bool Derived ;
 		public Metax Metaxes => metaxex ??= this.Select(p=>p.Metax).Distinct().SingleOrNo() ; Metax metaxex ;
 		public (string Name,string Form,bool Potent) Metaxe( uint ax , bool insure = false ) => (insure||metaxex!=null||dimensions==null&&ax<Dimensions?Metaxes?[ax]:null) ?? Metax?[ax] ?? default ;

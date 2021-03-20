@@ -26,14 +26,15 @@ namespace Rob.Act
 		public Quant? this[ Quant lon , Quant lat , byte? rad = null ]
 		{
 			get => Vicinity(((short)(lon/Locus),(short)(lat/Locus))).Close(((short)(lon%Locus*Factor),(short)(lat%Locus*Factor)),(rad??Radius)*Grane).Calculate() ;
-			set { if( value is Quant alt ) Insure(((short)(lon/Locus),(short)(lat/Locus))).Join(((short)((short)(lon%Locus*Factor/Grane)*Grane),(short)((short)(lat%Locus*Factor/Grane)*Grane),(short)alt,1)) ; }
+			set { if( value is Quant alt ) this[(short)(lon/Locus),(short)(lat/Locus)].Join(((short)((short)(lon%Locus*Factor/Grane)*Grane),(short)((short)(lat%Locus*Factor/Grane)*Grane),(short)alt,1)) ; }
 		}
+		Segment this[ short lon , short lat ] { get => this[(lon,lat)] ??= new Segment() ; set => this[(lon,lat)] = value ; }
+		Segment this[ (short lon,short lat) point ] { get => Cash.By(point) ; set => Cash[point] = value ; }
 		IEnumerable<(short Lon,short Lat,short Alt,ushort Wei)> Vicinity( (short Lon,short Lat) point )
 		{
-			for( var i=-VicinityRad ; i<=VicinityRad ; ++i ) for( var j=-VicinityRad ; j<=VicinityRad ; ++j ) if( Cash.By(((short)(point.Lon+i),(short)(point.Lat+j))) is Segment s )
+			for( var i=-VicinityRad ; i<=VicinityRad ; ++i ) for( var j=-VicinityRad ; j<=VicinityRad ; ++j ) if( this[((short)(point.Lon+i),(short)(point.Lat+j))] is Segment s )
 				foreach( var ap in s ) yield return ((short)(ap.Lon+i*Locus*Factor),(short)(ap.Lat+j*Locus*Factor),ap.Alt,ap.Wei) ;
 		}
-		Segment Insure( (short Lon,short Lat) point ) => Cash.By(point) ??( Cash[point] = new Segment() ) ;
 		#endregion
 		#region Serialization
 		public virtual void Save( string file )
@@ -49,7 +50,7 @@ namespace Rob.Act
 				rdr.ReadLine().Separate(' ',false).Each(d=>Dates.Add(d.Parse<DateTime>(DateForm).Value)) ;
 				for( string seg ; !(seg=rdr.ReadLine()).No() ; )
 				{
-					var val = Cash[seg.LeftFrom(' ').get(s=>(s.LeftFrom(',').Parse<short>().Value,s.RightFrom(',').Parse<short>().Value)).Value] = new Segment() ;
+					var val = this[seg.LeftFrom(' ').get(s=>(s.LeftFrom(',').Parse<short>().Value,s.RightFrom(',').Parse<short>().Value)).Value] = new Segment() ;
 					foreach( var point in seg.RightFrom(' ').Separate(';',false) )
 					{
 						var key = point.LeftFrom(':') ; var value = point.RightFrom(':') ;

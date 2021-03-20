@@ -66,7 +66,7 @@ namespace Rob.Act
 		public static Geos? operator-( Geos? a , Geos? b ) => a is Geos x && b is Geos y ? x-y : null as Geos? ;
 		public static Quant operator|( Geos a , Geos b ) => a.Lon*b.Lon+a.Lat*b.Lat ;
 		public static Quant? operator|( Geos? a , Geos? b ) => a is Geos x && b is Geos y ? x|y : null as Quant? ;
-		public static implicit operator Geos?( Point point ) => point?.IsGeo==true ? new Geos{Lon=point[Axis.Lon].Value,Lat=point[Axis.Lat].Value} : null as Geos? ;
+		public static implicit operator Geos?( Point point ) => point?.IsGeos==true ? new Geos{Lon=point[Axis.Lon].Value,Lat=point[Axis.Lat].Value} : null as Geos? ;
 		public static implicit operator Geos( (Quant lon,Quant lat) point ) => new Geos(point.lon,point.lat) ;
 	}
 	public struct Geom
@@ -196,7 +196,13 @@ namespace Rob.Act
 		#endregion
 
 		#region Tags
-		public static IEnumerable<string> ExtractTags( this string value ) => value?.TrimStart().StartsBy("?")==true ? value.RightFromFirst('?').Separate(';','&').Get(elem=>Tagger.Names.Get(n=>n.Select(e=>elem.Arg(e)).Concat(elem.Except(e=>e.LeftFrom('=')??string.Empty,n)))) : value.Separate(' ') ?? Enumerable.Empty<string>() ;
+		/// <summary>
+		/// Extracts tags from one string .
+		/// </summary>
+		/// <param name="value"> String to extract from . </param>
+		/// <param name="leaf"> If true , first two tags are extracted as nulls , which are <see cref="Point.Object"/> and <see cref="Point.Subjct"/> , which are forced to be drived from owner if point <see cref="Point.IsLeaf"/> . </param>
+		/// <returns> Extracted tags as non-null enumerable . </returns>
+		public static IEnumerable<string> ExtractTags( this string value , bool leaf = false ) => value?.TrimStart().StartsBy("?")==true ? value.RightFromFirst('?').Separate(';','&').Get(elem=>Tagger.Names.Get(n=>n.Select(e=>elem.Arg(e)).Concat(elem.Except(e=>e.LeftFrom('=')??string.Empty,n)))) : value.Separate(' ').Get(t=>leaf?Enumerable.Repeat<string>(null,2).Concat(t):t) ?? Enumerable.Empty<string>() ;
 		#endregion
 
 		internal static IEnumerable<KeyValuePair<string,(uint At,string Form,bool Potent)>> Iterer( this Metax metax , uint @base = 0 ) => metax.Get(m=>m.Iterator(@base)) ?? Enumerable.Empty<KeyValuePair<string,(uint At,string Form,bool Potent)>>() ;

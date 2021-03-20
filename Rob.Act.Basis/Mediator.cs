@@ -19,13 +19,18 @@ namespace Rob.Act
 		/// Applies traits of point .
 		/// </summary>
 		public void Interact( Point point ) => this.Each(m=>m.Interact(point)) ;
+		public Aid.Closure Incognit => new Aid.Closure(()=>Inco=true,()=>Inco=false) ;
+		public bool Inco { set => this.Each(m=>m.Inco=value) ; }
 	}
 	public abstract class Medium
 	{
-		public bool Dirty {get;protected internal set;}
-		public void Interact( Point point ) => Dirty |= Apply(point) ;
+		public bool Dirty { get => Inco ? false : dirty ; protected internal set => dirty = value ; } bool dirty ;
+		public bool Inco { get => inco>0 ; set { if( value ) ++inco ; else --inco ; } } int inco ;
+		public void Interact( Point point ) => Dirty |= Applicable(point) && Applied(point) ;
 		public abstract void Interact( Path path ) ;
-		protected abstract bool Apply( Point point ) ;
+		protected abstract bool Applied( Point point ) ;
+		protected abstract bool Applicable( Point point ) ;
+		public Aid.Closure Incognit => new Aid.Closure(()=>++inco,()=>--inco) ;
 	}
 	public partial class Path
 	{

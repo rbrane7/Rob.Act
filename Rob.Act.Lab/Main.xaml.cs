@@ -317,13 +317,13 @@ namespace Rob.Act.Analyze
 				{
 					ScreenCrossing = (ScreenInnerByRelAxe(fx.By(rng[xaxe.Spec]).Value,fa.By(rng[cor.Axe],false).Value),cof) ;
 					GraphPanel.Children.Add( new Label{ Content=Coordinates[c=>c.Axe==xaxe.Spec].View , Foreground=Brushes.Orange , FontStyle=FontStyles.Italic }.Set(l=>{Canvas.SetTop(l,-6);Canvas.SetLeft(l,ScreenCrossing.Value.at.X-2);}).Set(ScreenCross.Val.Add) ) ;
-					if( Coordinates[c=>c.Axe==yaxes[0]].View is string ylab ) GraphPanel.Children.Add( new Label{ Content=ylab , Foreground=cof , FontStyle=FontStyles.Italic }.Set(l=>{Canvas.SetTop(l,ScreenCrossing.Value.at.Y-17);Canvas.SetLeft(l,hor-2-ylab.Length*6);}).Set(ScreenCross.Val.Add) ) ;
+					if( Coordinates[c=>c.Axe==yaxes[0]].View is string ylab ) GraphPanel.Children.Add( new Label{ Content=ylab , Foreground=cof , FontStyle=FontStyles.Italic }.Set(l=>{Canvas.SetTop(l,ScreenCrossing.Value.at.Y-17);Canvas.SetLeft(l,hor-7-ylab.Length*6);}).Set(ScreenCross.Val.Add) ) ;
 				}
 				else
 				{
 					var sy = ScreenInnerByRelAxeY(fa.By(rng[cor.Axe],false).Value) ;
 					GraphPanel.Children.Add( new Line{ Stroke=cof , X1=0 , X2=MainFrameSize.Width , Y1=sy , Y2=sy , StrokeThickness=0.4+0.3*(Coordinates.Count-ay)/Coordinates.Count }.Set(ScreenCross.Axe.Add) ) ;
-					if( cor.View is string ylab ) GraphPanel.Children.Add( new Label{ Content=ylab , Foreground=cof , FontStyle=FontStyles.Italic }.Set(l=>{Canvas.SetTop(l,sy-17);Canvas.SetLeft(l,hor-2-ylab.Length*6);}).Set(ScreenCross.Val.Add) ) ;
+					if( cor.View is string ylab ) GraphPanel.Children.Add( new Label{ Content=ylab , Foreground=cof , FontStyle=FontStyles.Italic }.Set(l=>{Canvas.SetTop(l,sy-17);Canvas.SetLeft(l,hor-7-ylab.Length*6);}).Set(ScreenCross.Val.Add) ) ;
 				}
 			}
 		}
