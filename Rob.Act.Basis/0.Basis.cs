@@ -68,6 +68,8 @@ namespace Rob.Act
 		public static Quant? operator|( Geos? a , Geos? b ) => a is Geos x && b is Geos y ? x|y : null as Quant? ;
 		public static implicit operator Geos?( Point point ) => point?.IsGeos==true ? new Geos{Lon=point[Axis.Lon].Value,Lat=point[Axis.Lat].Value} : null as Geos? ;
 		public static implicit operator Geos( (Quant lon,Quant lat) point ) => new Geos(point.lon,point.lat) ;
+		public static bool operator==( Geos x , Geos y ) => x.Lon==y.Lon && x.Lat==y.Lat ;
+		public static bool operator!=( Geos x , Geos y ) => !(x==y) ;
 	}
 	public struct Geom
 	{

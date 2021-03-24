@@ -46,7 +46,7 @@ namespace Rob.Act
 		}
 		#endregion
 	}
-	public class Point : Pre.Point , Accessible<Axis,Quant?> , INotifyPropertyChanged
+	public class Point : Pre.Point , Accessible<Axis,Quant?> , INotifyPropertyChanged , Medium.Sharable
 	{
 		protected internal Pathable Owner { get => owner ; set { owner = value ; Path.Medium?.Interact(this) ; } } Pathable owner ;
 		#region Construction
