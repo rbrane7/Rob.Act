@@ -67,14 +67,14 @@ namespace Rob.Act
 		{
 			public static bool Persisting ;
 			public static Quant Tolerancy = 1e-3 ;
-			public static TimeSpan Independency = new TimeSpan(0,1,0) ;
+			public static TimeSpan Independency = new TimeSpan(0,1,0) , Discrepancy = new TimeSpan(0,0,7) ;
 			class Map : Dictionary<Core,IList<(Point point,bool geo)>> { public new IList<(Point point,bool geo)> this[ Core core ] { get => this.By(core) ; set => base[core] = value ; } }
 			struct Pointery : Aid.Supcomparable<Pointery>
 			{
 				public Point The ; public bool Geo ; public Core Ori ;
 				Quant Dist => +(The.Geo-Ori.Geo).Value ;
 				public int? CompareTo( Pointery other ) =>
-					!(Geo&&other.Geo) || (The.Time-other.The.Time).Abs()>Independency ? (int?)null : // relative time within action defines independency of two points
+					!(Geo&&other.Geo) || (The.Date-other.The.Date).Abs()>Independency&&(The.Time-other.The.Time).Abs()>Discrepancy ? (int?)null : // relative time within action defines independency of two points
 					(The.Tags==Ori.Tags)!=(other.The.Tags==Ori.Tags) ? The.Tags==Ori.Tags ? int.MinValue : int.MaxValue : // Tags defines first leve of affinity
 					Dist.CompareTo(other.Dist).nil() ?? -1 ; // sharrp relation : only one of dependants will be selected
 			}
