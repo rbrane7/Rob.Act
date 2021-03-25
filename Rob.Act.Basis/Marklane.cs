@@ -39,7 +39,7 @@ namespace Rob.Act
 			/// <returns> True if there was any medium modification . </returns>
 			protected override bool Applied( Point point )
 			{
-				if( this[point,null] is var res && res.core is Core core ) if( core.Equals(point)&&res.geo ) return false ; else core.Take(point,res.geo) ;
+				if( this[point,null] is var res && res.core is Core core ) if( core.Equals(point)&&res.geo || !point.Mark.HasFlag(Mark.Own) ) return false ; else core.Take(point,res.geo) ;
 				else if( Insensible(point) ) return false ; else this[point] = new Core(this,point) ;
 				return true ;
 			}
@@ -48,14 +48,15 @@ namespace Rob.Act
 			protected class Core : IEquatable<Point> , Sharable
 			{
 				Land Context ;
-				public static readonly Mark Globals = Mark.Lap|Mark.Ato|Mark.Sub|Mark.Sup|Mark.Hyp|Mark.Act ;
-				public Geos Geo ;
+				public static readonly Mark Globals = Mark.Lap|Mark.Ato|Mark.Sub|Mark.Sup|Mark.Hyp|Mark.Act|Mark.Aim ;
+				public Geos Geo , Aim ;
 				public (Frame Lon,Frame Lat)? Ori { get => ori ; set { if( ori==value ) return ; if( ori is (Frame Lon,Frame Lat) o ) Context.Cash.Remove(o) ; ori = value ; } } (Frame Lon,Frame Lat)? ori ;
 				public Mark Mark {get;private set;}
 				public string Tags { get => tags ; private set { if( tags==value ) return ; tags.Set(s=>Context.Unic.Remove(s)) ; (tags=value).Set(s=>Context.Unic[s]=this) ; } } string tags ;
 				public Core( Land context , Point point ) { Context = context ; point.Set(p=>Take(p,false)) ; }
 				public bool Equals( Point point ) => Mark==(point.Mark&Globals) && Tags==point.Tags ;
-				public void Take( Point point , bool geo ) { Mark = point.Mark&Globals ; Tags = point.Tags ; if( !geo ) { Ori = null ; Context[Geo=point.Geo.Value] = this ; } }
+				public void Take( Point point , bool geo ) { var reaim = Mark.HasFlag(Mark.Aim)!=point.Mark.HasFlag(Mark.Aim) ; Mark = point.Mark&Globals ; Tags = point.Tags ; if( !geo ) { Ori = null ; Context[Geo=point.Geo.Value] = this ; Reaim(point) ; } else if( reaim ) Reaim(point) ; }
+				void Reaim( Point point ) { if( Mark.HasFlag(Mark.Aim) ) Aim = point.Aim??default ; else Aim = default ; }
 				public void Affect( (Point point,bool geo)_ ) { _.point.Mark = _.point.Mark&~Globals|(_.geo?Mark&Globals:Mark.No) ; _.point.Tags = _.geo ? Tags : null ; }
 				public void Affect( IEnumerable<(Point point,bool geo)> points ) => points.Each(Affect) ;
 			}
@@ -76,7 +77,7 @@ namespace Rob.Act
 				public int? CompareTo( Pointery other ) =>
 					!(Geo&&other.Geo) || (The.Date-other.The.Date).Abs()>Independency&&(The.Time-other.The.Time).Abs()>Discrepancy ? (int?)null : // relative time within action defines independency of two points
 					(The.Tags==Ori.Tags)!=(other.The.Tags==Ori.Tags) ? The.Tags==Ori.Tags ? int.MinValue : int.MaxValue : // Tags defines first leve of affinity
-					Dist.CompareTo(other.Dist).nil() ?? -1 ; // sharrp relation : only one of dependants will be selected
+					Dist.CompareTo(other.Dist).nil() ?? The.Date.CompareTo(other.The.Date) ; // sharrp relation : only one of dependants will be selected
 			}
 			/// <summary>
 			/// Takes traits of frommedium to path and points .
@@ -85,7 +86,11 @@ namespace Rob.Act
 			{
 				try
 				{
-					Map map = null ; foreach( var point in path ) if( this[point,null] is var c && c.core is Core core ) ((map??=new Map())[core]??=new List<(Point point,bool geo)>()).Add((point,c.geo)) ;
+					Map map = null ; Geos? lap = null ; foreach( var point in path )
+					{
+						if( this[point,null] is var c && c.core is Core core && (core.Aim==default||(core.Aim&point.Aim)>0.5) ) ((map??=new Map())[core]??=new List<(Point point,bool geo)>()).Add((point,c.geo)) ;
+						lap = point.Geo ;
+					}
 					if( map!=null ) using( new Aid.Closure(()=>Blocked=true,()=>Blocked=false) )
 					{
 						using( path.Incognit ) foreach( var item in map )

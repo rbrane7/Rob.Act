@@ -65,9 +65,9 @@ namespace Rob.Act.Analyze
 		}
 		protected override void OnClosing( CancelEventArgs e ) { Doct?.Dispose() ; base.OnClosing(e) ; }
 		protected override void OnClosed( EventArgs e ) { base.OnClosed(e) ; Process.GetCurrentProcess().Kill() ; }
-		void NewAction( string file , Predicate<Pathable> filter = null ) => file.Reconcile().Internalize().Set(p=>p.Origin=file).Set(Translation.Partitionate).Set(p=>p.Spectrum.Reform(Setup.SpectrumBinds)).Set(p=>{Book|=(filter as Predicate<Pathable>)?.Invoke(p)!=false?p:null;if(Book.Contains(p)){ActionEnhancing(p,ActiveRefiner);Dispatcher.Invoke(SaveBook);}}) ;
-		void NewAction( object subject , System.IO.FileSystemEventArgs arg ) => NewAction(arg.FullPath,Setup?.WorkoutsFilter) ;
-		void NewAspect( string file , Predicate<Aspect> filter = null ) => ((Aspect)file.ReadAllText()).Set(a=>a.Origin=file).Set(a=>Aspects+=(filter as Predicate<Aspect>)?.Invoke(a)!=false?a:null) ;
+		Path NewAction( string file , Predicate<Pathable> filter = null ) => file.Reconcile().Internalize().Set(p=>p.Origin=file).Set(Translation.Partitionate).Set(p=>p.Spectrum.Reform(Setup.SpectrumBinds)).Set(p=>{Book|=filter?.Invoke(p)!=false?p:null;if(Book.Contains(p)){ActionEnhancing(p,ActiveRefiner);Dispatcher.Invoke(SaveBook);}}) ;
+		void NewAction( object subject , System.IO.FileSystemEventArgs arg ) => NewAction(arg.FullPath,Setup?.WorkoutsFilter).Set(p=>Path.Medium?.Interact(p)) ;
+		void NewAspect( string file , Predicate<Aspect> filter = null ) => ((Aspect)file.ReadAllText()).Set(a=>a.Origin=file).Set(a=>Aspects+=filter?.Invoke(a)!=false?a:null) ;
 		public Book Book { get ; private set ; } = new Book("Main") ;
 		public Filter ActionFilterFilter { get => actionFilterFilter ; internal set { if( value==actionFilterFilter ) return ; actionFilterFilter = value ; PropertyChanged.On(this,"ActionFilterFilter") ; } } Filter actionFilterFilter ;
 		public Filter ActionFilter { get => actionFilter ; internal set { if( value==actionFilter ) return ; actionFilter = value ; PropertyChanged.On(this,"ActionFilter") ; } } Filter actionFilter ;

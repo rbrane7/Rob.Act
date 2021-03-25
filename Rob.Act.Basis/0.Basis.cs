@@ -13,7 +13,7 @@ namespace Rob.Act
 	/// <summary>
 	/// Kind of separation marks .
 	/// </summary>
-	[Flags] public enum Mark { No=0 , Stop=1 , Lap=2 , Act=4 , Ato=8 , Sub=16 , Sup=32 , Hyp=64 }
+	[Flags] public enum Mark { No=0 , Stop=1 , Lap=2 , Act=4 , Ato=8 , Sub=16 , Sup=32 , Hyp=64 , Aim=128 , Own=256 }
 	[Flags] public enum Oper { Merge=0 , Combi=1 , Trim=2 , Smooth=4 , Relat=8 }
 	public enum Axis : uint { Lon , Lat , Alt , Dist , Drag , Flow , Beat , Bit , Energy , Grade , Top , Lim=Hyp-1 , Time=uint.MaxValue , Date=Time-1 , Lap=Date-1 , Stop=Lap-1 , Act=Stop-1 , No=Act-1 , Ato=No-1 , Sub=Ato-1 , Sup=Sub-1 , Hyp=Sup-1 }
 	#pragma warning disable CS0660 // Type defines operator == or operator != but does not override Object.Equals(object o)
@@ -65,7 +65,9 @@ namespace Rob.Act
 		public static Geos? operator+( Geos? a , Geos? b ) => a is Geos x && b is Geos y ? x+y : null as Geos? ;
 		public static Geos? operator-( Geos? a , Geos? b ) => a is Geos x && b is Geos y ? x-y : null as Geos? ;
 		public static Quant operator|( Geos a , Geos b ) => a.Lon*b.Lon+a.Lat*b.Lat ;
+		public static Quant? operator&( Geos a , Geos b ) => (a|b)/(+a*+b).nil() ;
 		public static Quant? operator|( Geos? a , Geos? b ) => a is Geos x && b is Geos y ? x|y : null as Quant? ;
+		public static Quant? operator&( Geos? a , Geos? b ) => (a|b)/(+a*+b) ;
 		public static implicit operator Geos?( Point point ) => point?.IsGeos==true ? new Geos{Lon=point[Axis.Lon].Value,Lat=point[Axis.Lat].Value} : null as Geos? ;
 		public static implicit operator Geos( (Quant lon,Quant lat) point ) => new Geos(point.lon,point.lat) ;
 		public static bool operator==( Geos x , Geos y ) => x.Lon==y.Lon && x.Lat==y.Lat ;
@@ -110,8 +112,8 @@ namespace Rob.Act
 		public static bool IsPotential( this Axis ax ) => Potentialim.At<=ax && ax<=Potentialim.To ;
 		public static IEnumerable<Axis> Potentials { get { for( var ax=Potentialim.At ; ax<=Potentialim.To ; ++ax ) yield return ax ; yield return Act.Axis.Time ; } }
 		public static IEnumerable<Axis> Absoltutes { get { for( var ax=(Axis)0 ; ax<Act.Axis.Top ; ++ax ) if( ax<Potentialim.At || Potentialim.To<ax ) yield return ax ; yield return Act.Axis.Date ; } }
-		public static IEnumerable<Mark> Marks => vama ;
-		public static IEnumerable<Mark> Segmentables => vama.Where(m=>m!=Act.Mark.No) ;
+		public static IEnumerable<Mark> Marks => vama.Where(m=>m<=Act.Mark.Hyp) ;
+		public static IEnumerable<Mark> Segmentables => vama.Where(m=>m>Act.Mark.No&&m<=Act.Mark.Hyp) ;
 		internal static Quant ActLim( this Axis axis , string activity ) => 50 ;
 		public static class Device
 		{
@@ -228,8 +230,8 @@ namespace Rob.Act
 			public string Of( object value ) => Reform.Form( Converter is Func<object,object> c ? c(value) : value ) ;
 		}
 
-		internal static string Serialize( this Mark mark ) => $"{(mark.HasFlag(Act.Mark.Stop)?"Stop":null)}{(mark.HasFlag(Act.Mark.Lap)?"Lap":null)}{(mark.HasFlag(Act.Mark.Act)?"Act":null)}{(mark.HasFlag(Act.Mark.Ato)?"Ato":null)}{(mark.HasFlag(Act.Mark.Sub)?"Sub":null)}{(mark.HasFlag(Act.Mark.Sup)?"Sup":null)}{(mark.HasFlag(Act.Mark.Hyp)?"Hyp":null)}" ;
-		internal static Mark Deserialize( this string mark ) => (mark?.Contains("Stop")==true?Act.Mark.Stop:Act.Mark.No)|(mark?.Contains("Lap")==true?Act.Mark.Lap:Act.Mark.No)|(mark?.Contains("Act")==true?Act.Mark.Act:Act.Mark.No)|(mark?.Contains("Ato")==true?Act.Mark.Ato:Act.Mark.No)|(mark?.Contains("Sub")==true?Act.Mark.Sub:Act.Mark.No)|(mark?.Contains("Sup")==true?Act.Mark.Sup:Act.Mark.No)|(mark?.Contains("Hyp")==true?Act.Mark.Hyp:Act.Mark.No) ;
+		internal static string Serialize( this Mark mark ) => $"{(mark.HasFlag(Act.Mark.Stop)?"Stop":null)}{(mark.HasFlag(Act.Mark.Lap)?"Lap":null)}{(mark.HasFlag(Act.Mark.Act)?"Act":null)}{(mark.HasFlag(Act.Mark.Ato)?"Ato":null)}{(mark.HasFlag(Act.Mark.Sub)?"Sub":null)}{(mark.HasFlag(Act.Mark.Sup)?"Sup":null)}{(mark.HasFlag(Act.Mark.Hyp)?"Hyp":null)}{(mark.HasFlag(Act.Mark.Aim)?"Aim":null)}{(mark.HasFlag(Act.Mark.Own)?"Own":null)}" ;
+		internal static Mark Deserialize( this string mark ) => (mark?.Contains("Stop")==true?Act.Mark.Stop:Act.Mark.No)|(mark?.Contains("Lap")==true?Act.Mark.Lap:Act.Mark.No)|(mark?.Contains("Act")==true?Act.Mark.Act:Act.Mark.No)|(mark?.Contains("Ato")==true?Act.Mark.Ato:Act.Mark.No)|(mark?.Contains("Sub")==true?Act.Mark.Sub:Act.Mark.No)|(mark?.Contains("Sup")==true?Act.Mark.Sup:Act.Mark.No)|(mark?.Contains("Hyp")==true?Act.Mark.Hyp:Act.Mark.No)|(mark?.Contains("Aim")==true?Act.Mark.Aim:Act.Mark.No)|(mark?.Contains("Own")==true?Act.Mark.Own:Act.Mark.No) ;
 	}
 	public class Metax : IEquatable<Metax> , IEnumerable<KeyValuePair<string,(uint At,string Form,bool Potent)>>
 	{
