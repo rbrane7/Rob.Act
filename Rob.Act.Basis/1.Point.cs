@@ -48,6 +48,7 @@ namespace Rob.Act
 	}
 	public class Point : Pre.Point , Accessible<Axis,Quant?> , INotifyPropertyChanged , Medium.Sharable
 	{
+		public static Quant Vicinability = 3 ;
 		protected internal Pathable Owner { get => owner ; set { owner = value ; Path.Medium?.Interact(this) ; } } Pathable owner ;
 		#region Construction
 		public Point( DateTime date , Pathable owner = null ) : base(date) => Owner = owner ;
@@ -130,6 +131,7 @@ namespace Rob.Act
 		/// Position within owner .
 		/// </summary>
 		public override int? No { get => base.No ; set { if( No==value ) return ; base.No = value ; Changed("No") ; } }
+		public virtual byte? Vicination => (((this+1)?.Distance-Distance??Distance-(this-1)?.Distance)/Vicinability).use(v=>(byte)Math.Ceiling(v)) ; // (Distance/No/Vicinability).use(v=>(byte)Math.Ceiling(v)) ;
 		#endregion
 
 		#region Trait
@@ -173,6 +175,8 @@ namespace Rob.Act
 		#endregion
 
 		#region Operation
+		public static Point operator+( Point point , int dist ) => (point?.No).Get(n=>point.Owner?[n+dist]) as Point ;
+		public static Point operator-( Point point , int dist ) => (point?.No).Get(n=>point.Owner?[n-dist]) as Point ;
 		public static Point operator|( Point prime , Quant?[] quantities ) => prime.Set(p=>{ for( uint i=0 ; i<quantities?.Length ; ++i ) if( p[i]==null ) p[i] = quantities[i] ; }) ;
 		public static Point operator|( Point point , IEnumerable<Point> points ) => point | point.Date.Give(points) ;
 		public static implicit operator Quant?[]( Point point ) => point as Pre.Point ;

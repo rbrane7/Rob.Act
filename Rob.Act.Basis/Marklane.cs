@@ -20,12 +20,12 @@ namespace Rob.Act
 			readonly IDictionary<(Frame Lon,Frame Lat),Core> Cash = new Dictionary<(Frame Lon,Frame Lat),Core>() ;
 			readonly IDictionary<string,Core> Unic = new Dictionary<string,Core>() ;
 			protected Core this[ Point point ] { get => this[point,null].core ; set { if( point.Geo is Geos p ) this[p] = value ; } }
-			protected (Core core,bool geo) this[ Point point , bool?_ ] => point.Geo is Geos p && this[p] is Core c ? (c,true) : (Unic.By(point.Tags),false) ;
-			Core this[ Geos point ] { get => this[point.Lon,point.Lat] ; set => this[point.Lon,point.Lat] = value ; }
-			Core this[ Quant lon , Quant lat ] { get => Vicinity((lon.By(Grane),lat.By(Grane))).optimal(c=>(+(c.Geo-(lon,lat))).nil(v=>v>Grane*Vicination))?.one ; set => this[lon.By(Grane),lat.By(Grane)] = value ; }
+			protected (Core core,bool geo) this[ Point point , byte? vici = null ] => point.Geo is Geos p && this[p,vici] is Core c ? (c,true) : (Unic.By(point.Tags),false) ;
+			Core this[ Geos point , byte? vici = null ] { get => this[point.Lon,point.Lat,vici] ; set => this[point.Lon,point.Lat] = value ; }
+			Core this[ Quant lon , Quant lat , byte? vici = null ] { get => Vicinity((lon.By(Grane),lat.By(Grane)),vici).optimal(c=>(+(c.Geo-(lon,lat))).nil(v=>v>Grane*(vici??Vicination)))?.one ; set => this[lon.By(Grane),lat.By(Grane)] = value ; }
 			Core this[ Frame lon , Frame lat ] { get => this[(lon,lat)] ; set => this[(lon,lat)] = value ; }
 			Core this[ (Frame lon,Frame lat) point ] { get => Cash.By(point) ; set { if( value==null ) { this[point].Set(c=>Unic.Remove(c.Tags)) ; Cash.Remove(point) ; } else Unic[value.Tags] = Cash[point] = value.Set(c=>c.Ori=point) ; } }
-			IEnumerable<Core> Vicinity( (Frame Lon,Frame Lat) point ) { for( var i=-Vicination ; i<=Vicination ; ++i ) for( var j=-Vicination ; j<=Vicination ; ++j ) if( this[point.Lon+i,point.Lat+j] is Core s ) yield return s ; }
+			IEnumerable<Core> Vicinity( (Frame Lon,Frame Lat) point , byte? vici = null ) { var vic = vici??Vicination ; for( var i=-vic ; i<=vic ; ++i ) for( var j=-vic ; j<=vic ; ++j ) if( this[point.Lon+i,point.Lat+j] is Core s ) yield return s ; }
 			#endregion
 			#region Base
 			/// <summary>
@@ -86,9 +86,9 @@ namespace Rob.Act
 			{
 				try
 				{
-					Map map = null ; Geos? lap = null ; foreach( var point in path )
+					Map map = null ; Geos? lap = null ; var vici = path.Vicination ; foreach( var point in path )
 					{
-						if( this[point,null] is var c && c.core is Core core && (core.Aim==default||(core.Aim&point.Aim)>0.5) ) ((map??=new Map())[core]??=new List<(Point point,bool geo)>()).Add((point,c.geo)) ;
+						if( this[point,vici] is var c && c.core is Core core && (core.Aim==default||(core.Aim&point.Aim)>0.5) ) ((map??=new Map())[core]??=new List<(Point point,bool geo)>()).Add((point,c.geo)) ;
 						lap = point.Geo ;
 					}
 					if( map!=null ) using( new Aid.Closure(()=>Blocked=true,()=>Blocked=false) )

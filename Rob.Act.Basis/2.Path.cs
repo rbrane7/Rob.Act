@@ -335,6 +335,7 @@ namespace Rob.Act
 		public Quant? xDrift => ((Spectrum[Axis.Energy] as Axe).Drift(Spectrum[Axis.Beat] as Axe))?.Skip(150)?.Min() is Quant v ? Math.Log(v) : null as Quant? ;
 		public override double? Beatrate => (Count-1).Steps().Quotient(i=>Content[i+1].Beat-Content[i].Beat,i=>(Content[i+1].Time-Content[i].Time).TotalSeconds) ;
 		public override double? Bitrate => (Count-1).Steps().Quotient(i=>Content[i+1].Bit-Content[i].Bit,i=>(Content[i+1].Time-Content[i].Time).TotalSeconds) ;
+		public override byte? Vicination => (Distance/No/Vicinability).use(v=>(byte)Math.Ceiling(v)) ;
 		#endregion
 
 		#region Access
