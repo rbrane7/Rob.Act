@@ -41,7 +41,7 @@ namespace Rob.Act
 			/// <summary>
 			/// Takes traits of frommedium to path and points .
 			/// </summary>
-			public void Interact( Path path ) => this.Where(m=>m.Dirty).Each(m=>m.Interact(path)) ;
+			public void Interact( Path path , bool direct = false ) => this.Where(m=>direct||m.Dirty).Each(m=>m.Interact(path)) ;
 			public override bool Dirty => Incognite ? false : base.Dirty ;
 			public bool Incognite { get => inco>0 ; set { if( value ) ++inco ; else --inco ; } } int inco ;
 			public Aid.Closure Interrupt => new Aid.Closure(()=>Incognite=true,()=>Incognite=false) ;

@@ -32,7 +32,7 @@ namespace Rob.Act
 			/// Only points with Tags whic
 			/// </summary>
 			protected override bool Applicable( Point point ) => !( point.Tags.No() || point is Path ) && point.IsGeos ;
-			bool Insensible( Sharable point ) => (point.Mark&Core.Globals)==Mark.No && !point.Tags.Contains(' ') ;
+			bool Insensible( Sharable point ) => (point.Mark&Core.Globals)==Mark.No && !point.Tags.Contains(' ') || point.Tags[0]==' ' ;
 			/// <summary>
 			/// Applies traits of point .
 			/// </summary>

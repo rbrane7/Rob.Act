@@ -66,7 +66,7 @@ namespace Rob.Act.Analyze
 		protected override void OnClosing( CancelEventArgs e ) { Doct?.Dispose() ; base.OnClosing(e) ; }
 		protected override void OnClosed( EventArgs e ) { base.OnClosed(e) ; Process.GetCurrentProcess().Kill() ; }
 		Path NewAction( string file , Predicate<Pathable> filter = null ) => file.Reconcile().Internalize().Set(p=>p.Origin=file).Set(Translation.Partitionate).Set(p=>p.Spectrum.Reform(Setup.SpectrumBinds)).Set(p=>{Book|=filter?.Invoke(p)!=false?p:null;if(Book.Contains(p)){ActionEnhancing(p,ActiveRefiner);Dispatcher.Invoke(SaveBook);}}) ;
-		void NewAction( object subject , System.IO.FileSystemEventArgs arg ) => NewAction(arg.FullPath,Setup?.WorkoutsFilter).Set(p=>Path.Medium?.Interact(p)) ;
+		void NewAction( object subject , System.IO.FileSystemEventArgs arg ) => NewAction(arg.FullPath,Setup?.WorkoutsFilter).Set(p=>Path.Medium?.Interact(p,true)) ;
 		void NewAspect( string file , Predicate<Aspect> filter = null ) => ((Aspect)file.ReadAllText()).Set(a=>a.Origin=file).Set(a=>Aspects+=filter?.Invoke(a)!=false?a:null) ;
 		public Book Book { get ; private set ; } = new Book("Main") ;
 		public Filter ActionFilterFilter { get => actionFilterFilter ; internal set { if( value==actionFilterFilter ) return ; actionFilterFilter = value ; PropertyChanged.On(this,"ActionFilterFilter") ; } } Filter actionFilterFilter ;
