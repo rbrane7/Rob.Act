@@ -544,9 +544,13 @@ namespace Rob.Act.Analyze
 			//foreach( var asp in Resources ) if( asp.AtOf(value)?.at is int at ) { Focusation.Source = (at,asp.Spec) ; return ; }
 			Focusation.Source = Resources.Select(r=>(r.AtOf(value)?.at,r.Spec)).ToArray() ;
 		}
-		((int? At,string Spec)[] Source,Dictionary<object,DataGrid> Grid) Focusation = (null,new Dictionary<object,DataGrid>()) ;
-		void TabItem_MouseLeftButtonUp( object sender , MouseButtonEventArgs e ) { if( sender is TabItem tab && Focusation.Source.At(0).At is int at && Focusation.Grid.By(tab.Content) is DataGrid grid ) { grid.SelectedIndex = at ; grid.Focus() ; grid.ScrollIntoView(grid.SelectedItem) ; } }
+		#region Focusation
+		((int? At,string Spec)[] Source,Dictionary<object,DataGrid> Grid,DataGridRow Row) Focusation = (null,new Dictionary<object,DataGrid>(),null) ;
+		void TabItem_MouseLeftButtonUp( object sender , MouseButtonEventArgs e ) { if( sender is TabItem tab && Focusation.Source.At(0).At is int at && Focusation.Grid.By(tab.Content) is DataGrid grid ) Highlight(grid,at,Focusation.Row) ; }
+		//void Highlight( DataGrid grid , int at ) { grid.SelectedIndex = at ; grid.Focus() ; grid.ScrollIntoView(grid.SelectedItem) ; } // Slection variant
+		void Highlight( DataGrid grid , int at , DataGridRow old = null ) { grid.Focus() ; grid.ScrollIntoView(grid.Items[at]) ; if( old is DataGridRow row ) row.Background = Brushes.Transparent ; if( grid.ItemContainerGenerator.ContainerFromIndex(at) is DataGridRow cont ) (Focusation.Row=cont).Background = Brushes.Orange ; }
 		void DataGrid_SelectionChanged( object sender , SelectionChangedEventArgs e ) { if( sender is DataGrid grid ); else return ; if( grid.SelectedItem==null ) ScreenCrossing = null ; Focusation.Source = new[]{(grid.SelectedIndex.nil(v=>v<0),null as string)} ; }
+		#endregion
 		double AxeXByMouse( System.Windows.Point m , KeyValuePair<string,(double Min,double Max)> a ) => (m.X-ViewOrigin.Width)/ViewSize.Width*(a.Value.Max-a.Value.Min)+a.Value.Min ;
 		double AxeYByMouse( System.Windows.Point m , KeyValuePair<string,(double Min,double Max)> a ) => (ViewSize.Height+ViewOrigin.Height-m.Y)/ViewSize.Height*(a.Value.Max-a.Value.Min)+a.Value.Min ;
 		double? AxeZByMouse( string a )
