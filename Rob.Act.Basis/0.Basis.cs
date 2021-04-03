@@ -350,7 +350,7 @@ namespace Rob.Act
 			}
 			public Quant? this[ string axis ]
 			{
-				get => axis==null ? null : Metax?[axis] is uint ax ? ax<(uint)Axis.Lim ? this[ax] : this[axis.Mark().Value] : axis.Mark() is Mark ma ? this[ma] : axis.Axis() is uint a ? this[a] : default(Quant?) ;
+				get => axis==null ? null : Metax?[axis] is uint ax ? ax<(uint)Axis.Lim ? this[ax] : axis.Mark() is Mark mr ? this[mr] : default(Quant?) : axis.Mark() is Mark ma ? this[ma] : axis.Axis() is uint a ? this[a] : default(Quant?) ;
 				set { if( axis==null ) return ; if( Metax?[axis] is uint ax ) if( ax<(uint)Axis.Lim ) this[ax] = value ; else this[axis.Mark().Value] = value ; else if( axis.Mark() is Mark mark ) this[mark] = value ; else this[axis.Axis(true).Value] = value ; }
 			}
 			public override bool TrySetMember( SetMemberBinder binder , object value ) { this[binder.Name] = (Quant?)value ; return base.TrySetMember( binder, value ) ; }
