@@ -14,7 +14,7 @@
         <converters:LambdaConverter x:Key="MinConvert" Forward="the(double)*60"/>
         <converters:LambdaConverter x:Key="StringsConcatConvert" Forward="Stringy(' ')"/>
         <local:QuantileSubversion x:Key="QuantitieConversion"/>
-        <converters:LambdaConverter x:Key="PartitionerVisibilityConverter" Forward=".==true?System.Windows.Visibility.Visible:System.Windows.Visibility.Collapsed"/>
+        <converters:LambdaConverter x:Key="VisibilityConverter" Forward=".==true?System.Windows.Visibility.Visible:System.Windows.Visibility.Collapsed"/>
         <Style TargetType="DataGridColumnHeader"><Setter Property="FontSize" Value="9"/></Style>
         <Style TargetType="TabItem"><Setter Property="FontSize" Value="9"/></Style>
     </Window.Resources>
@@ -31,13 +31,13 @@
             <DataGrid Name="AspectAxisGrid" ItemsSource="{Binding Aspect}" AutoGenerateColumns="False" Margin="2" SelectionChanged="AspectAxisGrid_SelectionChanged" CanUserResizeRows="False">
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="Axe" Binding="{Binding Spec}" Width="1*"/>
-                    <DataGridTextColumn Header="Resolver" Binding="{Binding Resolvelet}" Width="4*"/>
+                    <DataGridTextColumn Header="Resolver" Binding="{Binding Resolvelet}" Width="4*"><DataGridTextColumn.CellStyle><Style TargetType="DataGridCell"><Setter Property="ToolTip" Value="{Binding Resolvelet}"></Setter></Style></DataGridTextColumn.CellStyle></DataGridTextColumn>
                     <DataGridTextColumn Header="Counter" Binding="{Binding Countlet}" Width="1*" Visibility="Collapsed"/>
                     <DataGridTextColumn Header="Distributor" Binding="{Binding Distribulet}" Width="1*" Visibility="Collapsed"/>
-                    <DataGridTextColumn Header="Binder" Binding="{Binding Binder}" Width="1.5*"/>
-                    <DataGridTextColumn Header="Quantizer" Binding="{Binding Quantlet}" Width="1*"/>
+                    <DataGridTextColumn Header="Binder" Binding="{Binding Binder}" Width="1.5*"><DataGridTextColumn.CellStyle><Style TargetType="DataGridCell"><Setter Property="ToolTip" Value="{Binding Binder}"></Setter></Style></DataGridTextColumn.CellStyle></DataGridTextColumn>
+                    <DataGridTextColumn Header="Quantizer" Binding="{Binding Quantlet}" Width="1*"><DataGridTextColumn.CellStyle><Style TargetType="DataGridCell"><Setter Property="ToolTip" Value="{Binding Quantlet}"></Setter></Style></DataGridTextColumn.CellStyle></DataGridTextColumn>
                     <DataGridCheckBoxColumn Header="Rex" Binding="{Binding Asrex}"/>
-                    <DataGridTextColumn Header="Aspect" Binding="{Binding Aspectlet}" Width=".5*"/>
+                    <DataGridTextColumn Header="Aspect" Binding="{Binding Aspectlet}" Width=".5*"><DataGridTextColumn.CellStyle><Style TargetType="DataGridCell"><Setter Property="ToolTip" Value="{Binding Aspectlet}"></Setter></Style></DataGridTextColumn.CellStyle></DataGridTextColumn>
                     <DataGridCheckBoxColumn Header="s" Binding="{Binding Multi}"/>
                 </DataGrid.Columns>
                 <DataGrid.CommandBindings>
@@ -50,8 +50,8 @@
             <DataGrid Name="AspectTraitsGrid" Grid.Column="1" ItemsSource="{Binding Aspect.Trait}" AutoGenerateColumns="False" Margin="2" SelectionChanged="AspectTraitsGrid_SelectionChanged" CanUserResizeRows="False">
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="Trait" Binding="{Binding Spec}" Width="1*"/>
-                    <DataGridTextColumn Header="Resolver" Binding="{Binding Lex}" Width="4*"/>
-                    <DataGridTextColumn Header="Binder" Binding="{Binding Bond}" Width="1*"/>
+                    <DataGridTextColumn Header="Resolver" Binding="{Binding Lex}" Width="4*"><DataGridTextColumn.CellStyle><Style TargetType="DataGridCell"><Setter Property="ToolTip" Value="{Binding Lex}"></Setter></Style></DataGridTextColumn.CellStyle></DataGridTextColumn>
+                    <DataGridTextColumn Header="Binder" Binding="{Binding Bond}" Width="1*"><DataGridTextColumn.CellStyle><Style TargetType="DataGridCell"><Setter Property="ToolTip" Value="{Binding Bond}"></Setter></Style></DataGridTextColumn.CellStyle></DataGridTextColumn>
                     <DataGridCheckBoxColumn Header="+" Binding="{Binding IsPotential}" Width=".5*"/>
                 </DataGrid.Columns>
                 <DataGrid.CommandBindings>
@@ -61,7 +61,7 @@
                     <CommandBinding Command="Backspace" Executed="DataGrid_Cut_CommandBinding_Executed"/>
                 </DataGrid.CommandBindings>
             </DataGrid>
-            <!--<DataGrid Name="PartitionerGrid" Grid.ColumnSpan="2" ItemsSource="{Binding Aspect.Trait}" AutoGenerateColumns="False" Margin="2" Visibility="{Binding IsSelected,ElementName=MatrixTab,Converter={StaticResource PartitionerVisibilityConverter}}" Panel.ZIndex="1">
+            <!--<DataGrid Name="PartitionerGrid" Grid.ColumnSpan="2" ItemsSource="{Binding Aspect.Trait}" AutoGenerateColumns="False" Margin="2" Visibility="{Binding IsSelected,ElementName=MatrixTab,Converter={StaticResource VisibilityConverter}}" Panel.ZIndex="1">
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="Spec" Binding="{Binding Spec}" Width="1*"/>
                     <DataGridTextColumn Header="Filter" Binding="{Binding Lex}" Width="7*"/>
@@ -81,12 +81,12 @@
             <Button Content="Add Aspect" Name="AddAspectButton" Click="AddAspectButton_Click" Grid.Row="1" Margin="2" Panel.ZIndex="2"/>
             <Button Content="Save Aspects" Name="SaveAspectsButton" Click="SaveAspectsButton_Click" Margin="2" Grid.Row="1" Grid.Column="1"/>
         </Grid>-->
-        <DataGrid Name="CoordinatesGrid" ItemsSource="{Binding Coordinates}" Panel.ZIndex="1" Margin="2" HeadersVisibility="None" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" CanUserResizeRows="False">
+        <DataGrid Name="CoordinatesGrid" ItemsSource="{Binding Coordinates}" Panel.ZIndex="1" Margin="2" HeadersVisibility="None" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" CanUserResizeRows="False" MouseRightButtonUp="CoordinatesGrid_MouseRightButtonUp">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Axe" Binding="{Binding Axe}"/>
-                <DataGridTextColumn Header="Value" Binding="{Binding View}"/>
-                <DataGridTextColumn Header="Byte" Binding="{Binding Byte}"/>
-                <DataGridTextColumn Header="At" Binding="{Binding At}" Width="*"/>
+                <DataGridTextColumn Header="Value" Binding="{Binding View}" Width="*"><DataGridTextColumn.CellStyle><Style TargetType="DataGridCell"><Setter Property="ToolTip" Value="{Binding View}"></Setter></Style></DataGridTextColumn.CellStyle></DataGridTextColumn>
+                <DataGridTextColumn Header="Byte" Binding="{Binding Byte}" Visibility="Collapsed"><DataGridTextColumn.CellStyle><Style TargetType="DataGridCell"><Setter Property="ToolTip" Value="{Binding Byte}"></Setter></Style></DataGridTextColumn.CellStyle></DataGridTextColumn>
+                <DataGridTextColumn Header="At" Binding="{Binding At}" Width="*" Visibility="Collapsed"><DataGridTextColumn.CellStyle><Style TargetType="DataGridCell"><Setter Property="ToolTip" Value="{Binding At}"></Setter></Style></DataGridTextColumn.CellStyle></DataGridTextColumn>
             </DataGrid.Columns>
             <DataGrid.CommandBindings>
                 <CommandBinding Command="ExtendSelectionLeft" PreviewCanExecute="Coordinates_Left_CommandBinding_Executed"/>
@@ -234,7 +234,7 @@
                 </TabControl>
             </TabItem>
         </TabControl>
-        <DataGrid Name="BookGrid" Grid.Row="1" Grid.Column="2" ItemsSource="{Binding Book}" AutoGeneratedColumns="BookGrid_AutoGeneratedColumns" SelectionChanged="BookGrid_SelectionChanged" Margin="2" CanUserResizeRows="False">
+        <DataGrid Name="BookGrid" Grid.Row="1" Grid.Column="2" ItemsSource="{Binding Book}" AutoGeneratedColumns="BookGrid_AutoGeneratedColumns" SelectionChanged="BookGrid_SelectionChanged" Margin="2" CanUserResizeRows="False" MouseRightButtonUp="BookGrid_MouseRightButtonUp">
             <DataGrid.CommandBindings>
                 <CommandBinding Command="Delete" Executed="DataGridDeleteCommandBinding_Executed"/>
                 <CommandBinding Command="Stop" Executed="DataGrid_Stop_CommandBinding_Executed"/>
@@ -250,12 +250,12 @@
         <DataGrid Name="ActionFilterGrid" Grid.Row="0" Grid.Column="2" ItemsSource="{Binding ActionFilter}" AutoGenerateColumns="False" SelectionChanged="ActionFilterGrid_SelectionChanged" Margin="2" CanUserResizeRows="False">
             <DataGrid.Columns>
                 <!--<DataGridCheckBoxColumn Header="Rex" Binding="{Binding Rex}"/>-->
-                <DataGridTextColumn Header="Actions" Binding="{Binding Filter}" Width="2*"/>
-                <DataGridTextColumn Header="Traits" Binding="{Binding Traits}" Width="1*"/>
-                <DataGridTextColumn Header="Matrix" Binding="{Binding Matrix}" Width="1*"/>
-                <DataGridTextColumn Header="Aspects" Binding="{Binding Associer}" Width="1*"/>
-                <DataGridTextColumn Header="Matter" Binding="{Binding Matter}" Width="1*"/>
-                <DataGridTextColumn Header="Query" Binding="{Binding Query}" Width="1*"/>
+                <DataGridTextColumn Header="Actions" Binding="{Binding Filter}" Width="2*"><DataGridTextColumn.CellStyle><Style TargetType="DataGridCell"><Setter Property="ToolTip" Value="{Binding Filter}"></Setter></Style></DataGridTextColumn.CellStyle></DataGridTextColumn>
+                <DataGridTextColumn Header="Traits" Binding="{Binding Traits}" Width="1*"><DataGridTextColumn.CellStyle><Style TargetType="DataGridCell"><Setter Property="ToolTip" Value="{Binding Traits}"></Setter></Style></DataGridTextColumn.CellStyle></DataGridTextColumn>
+                <DataGridTextColumn Header="Matrix" Binding="{Binding Matrix}" Width="1*"><DataGridTextColumn.CellStyle><Style TargetType="DataGridCell"><Setter Property="ToolTip" Value="{Binding Matrix}"></Setter></Style></DataGridTextColumn.CellStyle></DataGridTextColumn>
+                <DataGridTextColumn Header="Aspects" Binding="{Binding Associer}" Width="1*"><DataGridTextColumn.CellStyle><Style TargetType="DataGridCell"><Setter Property="ToolTip" Value="{Binding Associer}"></Setter></Style></DataGridTextColumn.CellStyle></DataGridTextColumn>
+                <DataGridTextColumn Header="Matter" Binding="{Binding Matter}" Width="1*"><DataGridTextColumn.CellStyle><Style TargetType="DataGridCell"><Setter Property="ToolTip" Value="{Binding Matter}"></Setter></Style></DataGridTextColumn.CellStyle></DataGridTextColumn>
+                <DataGridTextColumn Header="Query" Binding="{Binding Query}" Width="1*"><DataGridTextColumn.CellStyle><Style TargetType="DataGridCell"><Setter Property="ToolTip" Value="{Binding Query}"></Setter></Style></DataGridTextColumn.CellStyle></DataGridTextColumn>
             </DataGrid.Columns>
             <DataGrid.CommandBindings>
                 <CommandBinding Command="Delete" Executed="DataGridDeleteCommandBinding_Executed"/>

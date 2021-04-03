@@ -20,6 +20,7 @@ using Aid.Extension;
 using System.Collections.Specialized;
 using System.Globalization;
 using Aid.IO;
+using Aid.Extension.Public;
 
 namespace Rob.Act.Analyze
 {
@@ -95,7 +96,7 @@ namespace Rob.Act.Analyze
 			public struct Binding
 			{
 				static readonly string ThisKey = typeof(Aid.Converters.ObjectAccessible).GetProperties().One().Name ;
-				public string Path , Name , Format , Align ; public IValueConverter Converter ;
+				public string Path , Name , Format , Align ; public IValueConverter Converter ; Func<object,object> Pather ;
 				public string Form => Align.No() ? Format : Format.No() ? $"{{0,{Align}}}" : $"{{0,{Align}:{Format}}}" ;
 				public string Reform => Align.No()&&!Format.No() ? $"{{0:{Format}}}" : Form ;
 				public static implicit operator Binding( string value ) => new Binding(value) ;
@@ -103,16 +104,19 @@ namespace Rob.Act.Analyze
 				{
 					if( value?.TrimStart().StartsBy("(")==true )
 					{
-						var cvt = value.LeftFromScoped(true,'/',',',':') ; value = value.RightFromFirst(cvt) ; Path = cvt.Contains(LambdaContext.Act.Accessor) ? ThisKey : null ; cvt = cvt.RightFromFirst('(').LeftFromLast(')') ;
+						var cvt = value.LeftFromScoped(true,'/',',',':') ; value = value.RightFromFirst(cvt) ; Path = cvt.Contains(LambdaContext.Act.Accessor) ? ThisKey : null ; Pather = null ; cvt = cvt.RightFromFirst('(').LeftFromLast(')') ;
 						if( Path==null ) Converter = new Aid.Converters.LambdaConverter{Forward=cvt.LeftFrom(LambdaContext.Act.Lambda,all:true),Back=cvt.RightFromFirst(LambdaContext.Act.Lambda)} ;
 						else Converter = new Aid.Converters.LambdaAccessor{Forward=cvt.LeftFrom(LambdaContext.Act.Accessor),Back=cvt.RightFrom(LambdaContext.Act.Accessor)} ;
 					}
-					else { Path = value.LeftFrom(true,':',',','/') ; Converter = null ; }
+					else { Path = value.LeftFrom(true,':',',','/') ; Converter = null ; Pather = $".{Path}".Compile<Func<object,object>>() ; }
 					Name = value.LeftFrom(true,':',',').RightFromFirst('/',true) ; Format = value.RightFromFirst(':') ; Align = value.LeftFrom(':').RightFrom(',') ;
 					if( Format.RightFrom(LambdaContext.Act.Accessor) is string coformat ); else return ;
 					Format = Format.LeftFromLast(LambdaContext.Act.Accessor) ; if( (Converter??=new Aid.Converters.LambdaConverter()) is Aid.Converters.LambdaConverter cv ) cv.Backward = coformat ;
 				}
-				public string Of( object value ) => Reform.Form( Converter is IValueConverter c ? c.Convert(value,null,null,null) : value ) ;
+				public string Of( object value ) => View(Value(value)) ;
+				object Value( object value ) => Converter is IValueConverter c ? c.Convert(value,null,null,null) : value ;
+				public string View( object value ) => Reform.Form( value ) ;
+				public object On( object value ) => Converter is IValueConverter c ? c.Convert(Pather.Of(value,value),null,null,null) : Pather.Of(value,value) ;
 			}
 		}
 		const string Separator = " \x1 Filter \x2\n" ;

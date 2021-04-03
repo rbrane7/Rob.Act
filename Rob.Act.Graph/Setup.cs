@@ -23,6 +23,7 @@ namespace Rob.Act.Analyze
 		public double SubjectMass = 76 ;
 		public (double Grade,double Grane,byte Radius) Altiplane = default ;
 		public double ViewScreenMargin ;
+		public IEnumerable<(string[] Tags,string Code)> Aggregates ;
 	}
 	public class State
 	{
