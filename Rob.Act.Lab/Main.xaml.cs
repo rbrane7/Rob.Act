@@ -32,7 +32,12 @@ namespace Rob.Act.Analyze
 	public partial class Main : Window , INotifyPropertyChanged
 	{
 		public static Settings Setup => setup?.Result ; static readonly Aid.Prog.Setup<Settings> setup ;
-		static Main() { AppDomain.CurrentDomain.Load(typeof(Translation).Assembly.FullName) ; new Aid.Prog.Setup(e=>Trace.TraceError($"Setup {e}")).Go() ; setup = (Resetup,e=>Trace.TraceError($"Setup Settings {e}")) ; Doct = (Setup.Doctee.Uri(),e=>Trace.TraceError($"Doctor {e}")) ; }
+		static Main()
+		{
+			AppDomain.CurrentDomain.Load(typeof(Translation).Assembly.FullName) ; Aid.The.Run.Basis = Environment.GetCommandLineArgs().At(1).Get(v=>System.IO.Path.GetDirectoryName(v)) ?? Environment.CurrentDirectory ;
+			new Aid.Prog.Setup(e=>Trace.TraceError($"Setup {e}")).Go() ; setup = (Resetup,e=>Trace.TraceError($"Setup Settings {e}")) ;
+			Doct = (Setup.Doctee.Uri(),e=>Trace.TraceError($"Doctor {e}")) ;
+		}
 		static Aid.Prog.Doct Doct ;
 		public static readonly Aspect Laboratory = new Aspect() ;
 		readonly Presources Presources ;
@@ -59,6 +64,7 @@ namespace Rob.Act.Analyze
 		{
 			InitializeComponent() ; Presources = new Presources(BookGrid,this) ; AppDomain.CurrentDomain.Load(typeof(AxeOperations).Assembly.FullName) ; ViewPanel = GraphPanel ; DataContext = this ;
 			Doct += (this,"Main") ; Aspectables.The = (()=>Book.Entries.Select(p=>p.Spectrum).Union(Aspects.Entries),()=>Aspects.Entries) ; SourcesGrid.ItemContainerGenerator.ItemsChanged += SourcesGrid_ItemsChanged ; Task.Factory.StartNew(Load) ;
+			Title += $" {Aid.The.Run.Basis}" ;
 		}
 		void Load()
 		{
