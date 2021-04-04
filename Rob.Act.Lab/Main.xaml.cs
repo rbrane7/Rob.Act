@@ -34,7 +34,7 @@ namespace Rob.Act.Analyze
 		public static Settings Setup => setup?.Result ; static readonly Aid.Prog.Setup<Settings> setup ;
 		static Main()
 		{
-			AppDomain.CurrentDomain.Load(typeof(Translation).Assembly.FullName) ; Aid.The.Run.Basis = Environment.GetCommandLineArgs().At(1).Get(v=>System.IO.Path.GetDirectoryName(v)) ?? Environment.CurrentDirectory ;
+			AppDomain.CurrentDomain.Load(typeof(Translation).Assembly.FullName) ; Aid.The.Run.Basis = ( Environment.GetCommandLineArgs().At(1).Get(v=>System.IO.Path.GetDirectoryName(v)) ?? Environment.CurrentDirectory ).Null() ;
 			new Aid.Prog.Setup(e=>Trace.TraceError($"Setup {e}")).Go() ; setup = (Resetup,e=>Trace.TraceError($"Setup Settings {e}")) ;
 			Doct = (Setup.Doctee.Uri(),e=>Trace.TraceError($"Doctor {e}")) ;
 		}
