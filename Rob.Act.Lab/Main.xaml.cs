@@ -34,9 +34,10 @@ namespace Rob.Act.Analyze
 		public static Settings Setup => setup?.Result ; static readonly Aid.Prog.Setup<Settings> setup ;
 		static Main()
 		{
-			AppDomain.CurrentDomain.Load(typeof(Translation).Assembly.FullName) ; Aid.The.Run.Basis = ( Environment.GetCommandLineArgs().At(1).Get(v=>System.IO.Path.GetDirectoryName(v)) ?? Environment.CurrentDirectory ).Null() ;
-			new Aid.Prog.Setup(e=>Trace.TraceError($"Setup {e}")).Go() ; setup = (Resetup,e=>Trace.TraceError($"Setup Settings {e}")) ;
-			Doct = (Setup.Doctee.Uri(),e=>Trace.TraceError($"Doctor {e}")) ;
+			AppDomain.CurrentDomain.Load(typeof(Translation).Assembly.FullName) ; var setp = Environment.GetCommandLineArgs().At(1) ;
+			if( System.IO.Path.GetDirectoryName(setp) is string dir && dir!=Aid.The.Run.Basis ) if( dir==Environment.CurrentDirectory ) Environment.CurrentDirectory = Aid.The.Run.Basis ; else Aid.The.Run.Basis = Environment.CurrentDirectory ;
+			new Aid.Prog.Setup(e=>Trace.TraceError($"Setup {e}"),setp).Go() ; setup = (setp,Resetup,e=>Trace.TraceError($"Setup Settings {e}")) ;
+			Doct = (Setup.Doctee.Uri(),e=>Trace.TraceError($"Doctor {e}")) ; Trace.TraceInformation($"{setp} with {Aid.The.Run.Basis}") ;
 		}
 		static Aid.Prog.Doct Doct ;
 		public static readonly Aspect Laboratory = new Aspect() ;
@@ -64,7 +65,7 @@ namespace Rob.Act.Analyze
 		{
 			InitializeComponent() ; Presources = new Presources(BookGrid,this) ; AppDomain.CurrentDomain.Load(typeof(AxeOperations).Assembly.FullName) ; ViewPanel = GraphPanel ; DataContext = this ;
 			Doct += (this,"Main") ; Aspectables.The = (()=>Book.Entries.Select(p=>p.Spectrum).Union(Aspects.Entries),()=>Aspects.Entries) ; SourcesGrid.ItemContainerGenerator.ItemsChanged += SourcesGrid_ItemsChanged ; Task.Factory.StartNew(Load) ;
-			Title += $" {Aid.The.Run.Basis}" ;
+			Title += $" {setup.Config} Doctee {Setup.Doctee.Arg("Name")}" ;
 		}
 		void Load()
 		{
