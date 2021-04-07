@@ -34,10 +34,9 @@ namespace Rob.Act.Analyze
 		public static Settings Setup => setup?.Result ; static readonly Aid.Prog.Setup<Settings> setup ;
 		static Main()
 		{
-			AppDomain.CurrentDomain.Load(typeof(Translation).Assembly.FullName) ; var setp = Environment.GetCommandLineArgs().At(1) ;
-			if( System.IO.Path.GetDirectoryName(setp) is string dir && dir!=Aid.The.Run.Basis ) if( dir==Environment.CurrentDirectory ) Environment.CurrentDirectory = Aid.The.Run.Basis ; else Aid.The.Run.Basis = Environment.CurrentDirectory ;
-			new Aid.Prog.Setup(e=>Trace.TraceError($"Setup {e}"),setp).Go() ; setup = (setp,Resetup,e=>Trace.TraceError($"Setup Settings {e}")) ;
-			Doct = (Setup.Doctee.Uri(),e=>Trace.TraceError($"Doctor {e}")) ; Trace.TraceInformation($"{setp} with {Aid.The.Run.Basis}") ;
+			AppDomain.CurrentDomain.Load(typeof(Translation).Assembly.FullName) ;
+			new Aid.Prog.Setup.App("Init.log") ; setup = (Resetup,e=>Trace.TraceError($"Setup Settings {e}")) ;
+			Doct = (Setup.Doctee.Uri(),e=>Trace.TraceError($"Doctor {e}")) ; Trace.TraceInformation($"{Aid.Prog.Setup.Basis} with {Aid.The.Run.Basis}") ;
 		}
 		static Aid.Prog.Doct Doct ;
 		public static readonly Aspect Laboratory = new Aspect() ;
@@ -65,7 +64,7 @@ namespace Rob.Act.Analyze
 		{
 			InitializeComponent() ; Presources = new Presources(BookGrid,this) ; AppDomain.CurrentDomain.Load(typeof(AxeOperations).Assembly.FullName) ; ViewPanel = GraphPanel ; DataContext = this ;
 			Doct += (this,"Main") ; Aspectables.The = (()=>Book.Entries.Select(p=>p.Spectrum).Union(Aspects.Entries),()=>Aspects.Entries) ; SourcesGrid.ItemContainerGenerator.ItemsChanged += SourcesGrid_ItemsChanged ; Task.Factory.StartNew(Load) ;
-			Title += $" {setup.Config} Doctee {Setup.Doctee.Arg("Name")}" ;
+			Title = $"{setup.Config} {Setup.Doctee}" ;
 		}
 		void Load()
 		{
@@ -74,9 +73,9 @@ namespace Rob.Act.Analyze
 				foreach( var a in System.IO.Directory.GetFiles(Setup.StatePath,$"{Altiplane.FileSign}*{Path.Altiplane.ExtSign}") ) { Trace.TraceInformation($"Loading {a}") ; Path.Altiplanes.Add(new Path.Altiplane(a){Radius=g.Radius}) ; }
 				if( Path.Altiplanes.Count==0 ) Path.Altiplanes.Add(new Path.Altiplane(g.Grade,g.Grane){Radius=g.Radius}) ;
 			}) ;
-			Setup.WorkoutsPaths.SeparateTrim(',').SelectMany(l=>l.MatchingFiles()).EachGuard(f=>{Trace.TraceInformation($"Loading {f}");NewAction(f,Setup?.WorkoutsFilter);},(f,e)=>Trace.TraceError($"{f} faulted by {e}")) ;
-			Setup.AspectsPaths.SeparateTrim(',').SelectMany(l=>l.MatchingFiles()).EachGuard(f=>{Trace.TraceInformation($"Loading {f}");NewAspect(f,Setup?.AspectsFilter);},(f,e)=>Trace.TraceError($"{f} faulted by {e}")) ;
-			WorkoutsWatchers = Setup.WorkoutsPaths.SeparateTrim(',').Select(l=>new FileSystemWatcher(l){EnableRaisingEvents=true}.Set(w=>{ w.Edited += NewAction ; w.Deleted += (s,a)=>Book-=p=>p.Origin==a.FullPath ; })).ToArray() ;
+			Setup.WorkoutsPaths.SeparateTrim('|').SelectMany(l=>l.MatchingFiles()).EachGuard(f=>{Trace.TraceInformation($"Loading {f}");NewAction(f,Setup?.WorkoutsFilter);},(f,e)=>Trace.TraceError($"{f} faulted by {e}")) ;
+			Setup.AspectsPaths.SeparateTrim('|').SelectMany(l=>l.MatchingFiles()).EachGuard(f=>{Trace.TraceInformation($"Loading {f}");NewAspect(f,Setup?.AspectsFilter);},(f,e)=>Trace.TraceError($"{f} faulted by {e}")) ;
+			WorkoutsWatchers = Setup.WorkoutsPaths.SeparateTrim('|').Select(l=>new FileSystemWatcher(l){EnableRaisingEvents=true}.Set(w=>{ w.Edited += NewAction ; w.Deleted += (s,a)=>Book-=p=>p.Origin==a.FullPath ; })).ToArray() ;
 			State = new State{ Context = this } ;
 		}
 		protected override void OnClosing( CancelEventArgs e ) { Doct?.Dispose() ; base.OnClosing(e) ; }
