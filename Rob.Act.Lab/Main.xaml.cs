@@ -64,7 +64,7 @@ namespace Rob.Act.Analyze
 		{
 			InitializeComponent() ; Presources = new Presources(BookGrid,this) ; AppDomain.CurrentDomain.Load(typeof(AxeOperations).Assembly.FullName) ; ViewPanel = GraphPanel ; DataContext = this ;
 			Doct += (this,"Main") ; Aspectables.The = (()=>Book.Entries.Select(p=>p.Spectrum).Union(Aspects.Entries),()=>Aspects.Entries) ; SourcesGrid.ItemContainerGenerator.ItemsChanged += SourcesGrid_ItemsChanged ; Task.Factory.StartNew(Load) ;
-			Title = $"{setup.Config} {Setup.Doctee}" ;
+			Title = $"{System.IO.Path.GetFileName(setup.Config)} {Setup.Doctee} {System.IO.Path.GetDirectoryName(setup.Config)}" ;
 		}
 		void Load()
 		{

@@ -1,8 +1,7 @@
 {
   "profiles": {
     "Rob.Act.Lab": {
-      "commandName": "Project",
-      "commandLineArgs": "C:\\Users\\robin\\OneDrive\\Documents\\Action\\Lab\\Instance\\2021\\Rob.Act.Lab.setup"
+      "commandName": "Project"
     }
   }
 }

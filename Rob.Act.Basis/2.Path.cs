@@ -52,7 +52,7 @@ namespace Rob.Act
 		void Impose( Mark? kind = null )
 		{
 			using var _=Incognit ; Preclude() ; 
-			var mark = kind??Mark ; var pon = Potenties.ToDictionary(a=>a,a=>0D) ; var date = DateTime.Now ; for( var i = 0 ; i<Count ; ++i )
+			var mark = kind??Mark ; var pon = Potenties.ToDictionary(a=>a,a=>0D) ; var lav = Potenties.ToDictionary(a=>a,a=>0D) ; var date = DateTime.Now ; for( var i = 0 ; i<Count ; ++i )
 			{
 				if( this[i].Owner==null ) this[i].Owner = this ;
 				if( this[i].Metax==null && Derived ) Metax.Set(m=>this[i].Metax=m) ;
@@ -65,7 +65,7 @@ namespace Rob.Act
 					if( this[i].Deviation==null && IsGeo ) this[i].Deviation = this[i-1]?.Deviation.Nil(_=>res)??0 ;
 					if( this[i].Alti==null && Alti!=null ) this[i].Alti = ((Count-i).Steps(i).FirstOrDefault(j=>this[j].Alti!=null).nil()??i-1).Get(j=>this[j].Alti) ;
 					if( res ) foreach( var ax in Potenties ) pon[ax] = this[i][ax]??this[i-1]?[ax]??0 ;
-					else foreach( var ax in Potenties ) pon[ax] += (this[i][ax]??this[i-1]?[ax]??0)-(this[i-1]?[ax]??0) ;
+					else foreach( var ax in Potenties ) pon[ax] += (this[i][ax]??this[i-1]?[ax]??lav[ax])-(this[i-1]?[ax]??lav[ax]) ;
 				}
 				if( this[i].Time==default ) this[i].Time = this[i].Date-date ;
 				if( this[i].No==null ) this[i].No = i ;
@@ -80,7 +80,7 @@ namespace Rob.Act
 					}
 					if( this[i].Deviation==null ) this[i].Deviation = this[i-1].Deviation + ( i<Count-1 && !this[i].Mark.HasFlag( Mark.Stop ) && (this[i].Geo-this[i-1].Geo).Devia(this[i+1].Geo-this[i].Geo) is Quant v ? v : 0 ) ;
 				}
-				foreach( var ax in Potenties ) this[i][ax] -= pon[ax] ; // Adjustion of potentials
+				foreach( var ax in Potenties ) { this[i][ax] -= pon[ax] ; this[i][ax].Use(v=>lav[ax]=v) ; } // Adjustion of potentials
 			}
 			Conclude(this[^1]) ;
 		}
