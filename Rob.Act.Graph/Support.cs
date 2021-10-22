@@ -87,7 +87,7 @@ namespace Rob.Act.Analyze
 			public bool Empty => Filter.No() && Traits.No() && Matrix.No() && Associer.No() && Matter.No() && Query.No() ;
 			public bool Dirty ;
 			public static explicit operator string( Entry entry ) => entry.Get(e=>string.Join(Separator,e.Rex?" ":string.Empty,e.Filter,e.Traits,e.Matrix,e.Associer,e.Matter,e.Query)) ;
-			public static implicit operator Entry( string entry ) => entry.Get(e=>{ var f = e.Separate(Separator) ; return f.Length<=1 ? null : new Entry{ rex = f[0]==" " , filter = f.At(1) , traits = f.At(2) , matrix = f.At(3) , associer = f.At(4) , matter = f.At(5) , query = f.At(6) } ; }) ;
+			public static implicit operator Entry( string entry ) => entry.Get(e=>{ var f = e.Separate(Separator,braces:null) ; return f.Length<=1 ? null : new Entry{ rex = f[0]==" " , filter = f.At(1) , traits = f.At(2) , matrix = f.At(3) , associer = f.At(4) , matter = f.At(5) , query = f.At(6) } ; }) ;
 			public Func<Objective,bool> ToFilter<Objective>() => Rex ? Filter.Matcherex<Objective>() : Filter.Compile<Func<Objective,bool>>() ;
 			public Func<IEnumerable<Objective>,IEnumerable<Objective>> ToQuery<Objective>() => Query.Compile<Func<IEnumerable<Objective>,IEnumerable<Objective>>>() ;
 			public Func<Objective,bool> ToAssocier<Objective>() => Associer.Compile<Func<Objective,bool>>() ;
@@ -121,7 +121,7 @@ namespace Rob.Act.Analyze
 		}
 		const string Separator = " \x1 Filter \x2\n" ;
 		public static explicit operator string( Filter filter ) => filter.Get(f=>string.Join(Separator,f.Entries.Where(e=>!e.Empty).Select(e=>(string)e))) ;
-		public static implicit operator Filter( string filter ) => filter.Get(f=>new Filter{Sensible=true}.Set(t=>f.Separate(Separator).Each(e=>t.Add(e)))) ;
+		public static implicit operator Filter( string filter ) => filter.Get(f=>new Filter{Sensible=true}.Set(t=>f.Separate(Separator,braces:null).Each(e=>t.Add(e)))) ;
 	}
 	public struct Associable { public Pathable path ; public Aspect aspect ; public  static implicit operator Associable( (Pathable path,Aspect aspect) arg ) => new Associable{path=arg.path,aspect=arg.aspect} ; }
 }

@@ -115,6 +115,7 @@ namespace Rob.Act
 		public static IEnumerable<Mark> Marks => vama.Where(m=>m<=Act.Mark.Hyp) ;
 		public static IEnumerable<Mark> Segmentables => vama.Where(m=>m>Act.Mark.No&&m<=Act.Mark.Hyp) ;
 		internal static Quant ActLim( this Axis axis , string activity ) => 50 ;
+		public static readonly Quant YearDays = (new DateTime(2,1,1)-new DateTime(1,1,1)).TotalDays ;
 		public static class Device
 		{
 			public static class Skierg { public static readonly string Code = typeof(Skierg).Logo().RightFrom('.',true) ; public const Quant Draw = 2.8 ; }

@@ -266,6 +266,7 @@
         </DataGrid>
         <Grid Grid.Row="2" Grid.Column="2">
             <Grid.RowDefinitions><RowDefinition/><RowDefinition/></Grid.RowDefinitions>
+            <GridSplitter Grid.ColumnSpan="3" Grid.Row="0" VerticalAlignment="Bottom" Height="3" HorizontalAlignment="Stretch"/>
             <DataGrid Name="ActionsFilterFilterGrid" ItemsSource="{Binding ActionFilterFilter}" AutoGenerateColumns="False" SelectionChanged="ActionFilterFilterGrid_SelectionChanged" Margin="2" CanUserResizeRows="False" HeadersVisibility="None">
                 <DataGrid.Columns>
                     <DataGridCheckBoxColumn Header="Rex" Binding="{Binding Rex}"/>

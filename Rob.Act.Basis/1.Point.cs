@@ -37,7 +37,7 @@ namespace Rob.Act
 		#region De/Serialization
 		public static explicit operator string( Tagger the ) => the.Stringy(Serialization.Separator) ;
 		public static explicit operator Tagger( string text ) => text.Null(v=>v.Void()).Get(t=>new Tagger(t)) ;
-		Tagger( string text ) => this[text.Separate(Serialization.Separator)] = false ;
+		Tagger( string text ) => this[text.Separate(Serialization.Separator,braces:null)] = false ;
 		class Serialization
 		{
 			public const string Separator = " \x1 Tag \x2 " ;
@@ -127,6 +127,8 @@ namespace Rob.Act
 		public override Mark Mark { get => base.Mark ; set { if( value==Mark ) return ; var dif = Mark^value ; base.Mark = value ; Changed("Mark") ; if( Owner is Path o && (o.Marker<value||dif>Mark.No) ) o.Remark(dif) ; } }
 		public override DateTime Date { get => base.Date ; set { if( Date==value ) return ; base.Date = value ; Changed("Date") ; } }
 		public override TimeSpan Time { get => base.Time ; set { if( Time==value ) return ; base.Time = value ; Changed("Time") ; } }
+		public virtual Quant? Age => (Owner as Path)?.Age ;
+		public virtual Quant? Fage => (Owner as Path)?.Fage ;
 		/// <summary>
 		/// Position within owner .
 		/// </summary>

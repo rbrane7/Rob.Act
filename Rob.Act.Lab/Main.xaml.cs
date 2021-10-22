@@ -49,7 +49,6 @@ namespace Rob.Act.Analyze
 			if( Setup?.SubjectMass.Equates(past?.SubjectMass)==false ) Basis.Mass = Setup.SubjectMass ;
 			if( Setup?.Aggregates.Equates(past?.Aggregates)==false )
 			{
-
 				foreach( var ag in past.Aggregates.Except(Setup.Aggregates,a=>a.Code) ) main.Aggregation.RemoveWhere(a=>a.Code==ag.Code) ;
 				foreach( var ag in Setup.Aggregates.Except(past.Aggregates,a=>a.Code) ) main.Aggregation.Add((ag.Tags.Select(t=>new Regex(t)).ToList(),ag.Code.Compile<Func<IEnumerable<(object,Pathable)>,object>>(),ag.Code)) ;
 				foreach( var ag in Setup.Aggregates.Join(past.Aggregates,o=>o.Code,i=>i.Code,(o,i)=>(In:o.Tags,Out:i.Tags,o.Code)) )
@@ -466,6 +465,7 @@ namespace Rob.Act.Analyze
 				MapPanel.Children.Add( new Label{ Content=Coordinates[c=>c.Axe==xaxe.Spec].View , Foreground=Brushes.Orange , FontStyle=FontStyles.Italic }.Set(l=>{Canvas.SetTop(l,-6);Canvas.SetLeft(l,ScreenCrossing.Value.at.X-2);}).Set(ScreenCross.Val.Add) ) ;
 				if( Coordinates[c=>c.Axe==yaxes[0]]?.View is string ylab ) MapPanel.Children.Add( new Label{ Content=ylab , Foreground=Brushes.Orange , FontStyle=FontStyles.Italic }.Set(l=>{Canvas.SetTop(l,ScreenCrossing.Value.at.Y-17);Canvas.SetLeft(l,hor-2-ylab.Length*6);}).Set(ScreenCross.Val.Add) ) ;
 				if( Coordinates[c=>c.Axe==yaxes.At(1)]?.View is string zlab ) MapPanel.Children.Add( new Label{ Content=zlab , Foreground=Brushes.Orange , FontStyle=FontStyles.Italic }.Set(l=>{Canvas.SetTop(l,ScreenCrossing.Value.at.Y-17);Canvas.SetLeft(l,ScreenCrossing.Value.at.X-2);}).Set(ScreenCross.Val.Add) ) ;
+				if( Coordinates[c=>c.Axe==yaxes.At(2)]?.View is string alab ) MapPanel.Children.Add( new Label{ Content=alab , Foreground=Brushes.Orange , FontStyle=FontStyles.Italic }.Set(l=>{Canvas.SetTop(l,ScreenCrossing.Value.at.Y-5);Canvas.SetLeft(l,ScreenCrossing.Value.at.X-2);}).Set(ScreenCross.Val.Add) ) ;
 			}
 			else ScreenCrossing = ScreenCrossing ;
 		}
@@ -697,7 +697,7 @@ namespace Rob.Act.Analyze
 		void DataGrid_Paste_CommandBinding_Executed( object sender , Func<string[],object> item )
 		{
 			if( sender as DataGrid is DataGrid grid && grid.ItemsSource is IList items ); else return ; var seli = grid.SelectedIndex.nil(i=>i<0)??items.Count ;
-			foreach( var line in Clipboard.GetText().SeparateTrim(Environment.NewLine,voids:false) ) if( line.Separate('\t') is string[] traits ) item?.Invoke(traits).Set(i=>items.Insert(seli,i)) ;
+			foreach( var line in Clipboard.GetText().SeparateTrim(Environment.NewLine,voids:false,braces:"{}") ) if( line.Separate('\t',braces:"{}") is string[] traits ) item?.Invoke(traits).Set(i=>items.Insert(seli,i)) ;
 		}
 		void DataGrid_Cut_CommandBinding_Executed( object sender, ExecutedRoutedEventArgs _=null ) { if( sender is DataGrid grid ); else return ; ApplicationCommands.Copy.Execute(null,grid) ; ApplicationCommands.Delete.Execute(null,grid) ; }
 		#endregion

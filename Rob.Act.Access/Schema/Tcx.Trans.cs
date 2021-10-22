@@ -44,7 +44,7 @@ namespace Rob.Act.Tcx
 	public partial class Activity_t
 	{
 		[XmlIgnore] public ActivityLap_t First => Lap.At(0) ; [XmlIgnore] public ActivityLap_t Last => Lap.At(Lap.Length-1) ;
-		internal IEnumerable<Point> Iterator { get { if( Lap==null ) yield break ; foreach( var lap in Lap ) foreach( var point in lap.Iterator ) yield return point.Set(p=>p.Mark|=Last==lap&&p.Mark.HasFlag(Mark.Stop)?Mark.Lap:Mark.No) ; } }
+		internal IEnumerable<Point> Iterator { get { if( Lap==null ) yield break ; foreach( var lap in Lap ) foreach( var point in lap.Iterator ) yield return point ; } }
 		public static implicit operator Path( Activity_t act ) => act.Get( a => new Path(a.Id,a.Iterator,Translation.Kind,(Axis.Beat,60),(Axis.Bit,60)) { Action = a.Sport.Stringy() } ) ;
 		public static implicit operator Activity_t( Path path ) => path.Get( p => new Activity_t { Id = p.Date , Lap = (p/Mark.Stop).Select(s=>(ActivityLap_t)s).ToArray() } ) ;
 	}

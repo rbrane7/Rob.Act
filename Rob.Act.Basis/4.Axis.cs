@@ -96,13 +96,15 @@ namespace Rob.Act
 		public Axe this[ Axe axe ] => (axe?.Solver as Lap.Axe??axe) is Lap.Axe lap ? By(lap.Arg) : this ;
 		/// <summary> Function on axe . </summary>
 		public Axe this[ Func<Quant,Quant> y ] => this.Fun(y) ;
-		public static Axe operator++( Axe x ) => x==null ? No : new Axe( i=>x.Resolve(i+1) , x ) ;
-		public static Axe operator--( Axe x ) => x==null ? No : new Axe( i=>x.Resolve(i-1) , x ) ;
+		public static Axe operator++( Axe x ) => x==null ? No : x.Positive ;
+		public static Axe operator--( Axe x ) => x==null ? No : x.Negative ;
 		public static Quant? operator+( Axe x ) => x?.Sum() ;
 		public static Axe operator-( Axe x ) => x==null ? No : new Axe( i=>-x.Resolve(i) , x ) ;
 		public static Axe operator^( Axe x , Axe y ) => x==null ? No : x.Drift(y) ;
 		public static Axe operator^( Axe x , Quant y ) => x==null ? No : new Axe( i => x.Resolve(i) is Quant a ? Math.Pow(a,y) : null as Quant? , x ) ;
 		public static Axe operator^( Quant x , Axe y ) => y==null ? No : new Axe( i => y.Resolve(i) is Quant a ? Math.Pow(x,a) : null as Quant? , y ) ;
+		public static Axe operator^( Axe x , int y ) => x==null ? No : new Axe( i => x.Resolve(i) is Quant a ? Math.Pow(a,y) : null as Quant? , x ) ;
+		public static Axe operator^( int x , Axe y ) => y==null ? No : new Axe( i => y.Resolve(i) is Quant a ? Math.Pow(x,a) : null as Quant? , y ) ;
 		public static Axe operator^( Axe x , bool _ ) => x==null ? No : new Axe( i => x.Resolve(i) is Quant a ? a>0?Math.Log(a):null as Quant? : null as Quant? , x ) ;
 		public static Axe operator^( bool _ , Axe y ) => y==null ? No : new Axe( i => y.Resolve(i) is Quant a ? Math.Exp(a) : null as Quant? , y ) ;
 		//public static Axe operator^( Axe x , Axe y ) => x==null||y==null ? No : new Axe( i => x.Resolve(i) is Quant a && y.Resolve(i) is Quant b ? Math.Pow(a,b) : null as Quant? , a=>Math.Max(x.Count,y.Count) ) ;
@@ -130,7 +132,7 @@ namespace Rob.Act
 		public static Axe operator-( Axe x , Axe y ) => x==null||y==null ? No : new Axe( i=>x.Resolve(i)-y.Resolve(i) , x ) ;
 		public static Axe operator-( Axe x , Quant y ) => x==null ? No : new Axe( i=>x.Resolve(i)-y , x ) ;
 		public static Axe operator-( Quant x , Axe y ) => y==null ? No : new Axe( i=>x-y.Resolve(i) , y ) ;
-		public static Region operator >( Axe x , Quant? val ) => x?.Count.Steps().Where(i=>x[i]>val) ;
+		public static Region operator>( Axe x , Quant? val ) => x?.Count.Steps().Where(i=>x[i]>val) ;
 		public static Region operator<( Axe x , Quant? val ) => x?.Count.Steps().Where(i=>x[i]<val) ;
 		public static Region operator<( Axe x , IEnumerable<Quant> vals ) => x?.Count.Steps().Where(i=>vals.Any(v=>Affines(x[i],x[i+1],v,false))) ;
 		public static Region operator>( Axe x , IEnumerable<Quant> vals ) => x?.Count.Steps().Where(i=>vals.Any(v=>Affines(x[i],x[i-1],v,true))) ;
@@ -152,7 +154,7 @@ namespace Rob.Act
 		public static Region operator<( Axe x , Axe y ) => Math.Min(x?.Count??0,y?.Count??0).Steps().Where(i=>x[i]<y[i]) ;
 		public static Region operator>=( Axe x , Axe y ) => Math.Min(x?.Count??0,y?.Count??0).Steps().Where(i=>x[i]>=y[i]) ;
 		public static Region operator<=( Axe x , Axe y ) => Math.Min(x?.Count??0,y?.Count??0).Steps().Where(i=>x[i]<=y[i]) ;
-		public static Axe operator&( Axe x , Axe y ) => x.Centre(y) ;
+		public static Axe operator&( Axe x , Axe y ) => (y?.Solver as Lap.Axe??y) is Lap.Axe m ? m.Arg.cntr(x,m.Ctx) : x.Centre(y) ;
 		public static Axe operator&( Axe x , Quant y ) => x.Nil(v=>v>y) ;
 		public static Axe operator&( Quant x , Axe y ) => y.Nil(v=>v<x) ;
 		public static Axe operator&( Axe x , Func<Quant,bool> y ) => x.Nil(v=>!y(v)) ;
@@ -164,9 +166,22 @@ namespace Rob.Act
 		public static implicit operator Quant?( Axe a ) => +a ;
 		public Axe Round => new Axe( i=>Resolve(i).use(Math.Round) , this ) ;
 		public Axe Floor => new Axe( i=>Resolve(i).use(Math.Floor) , this ) ;
+		public Axe Ceil => new Axe( i=>Resolve(i).use(Math.Ceiling) , this ) ;
+		public Axe Positive => new Axe( i=>Resolve(i).use(v=>Math.Max(0,v)) , this ) ;
+		public Axe Negative => new Axe( i=>Resolve(i).use(v=>Math.Min(0,v)) , this ) ;
 		public Axe Skip( int count ) => new Axe( i=>Resolve(count+i) , this ) ;
 		public Axe Wait( int count ) => new Axe( i=>Resolve(i<count?0:i-count) , this ) ;
 		public Axe Take( int count ) => new Axe( i=>i<count?Resolve(i):null , this ) ;
+		public Region Exts( bool max , int? prox = default ) => Count.Steps().Where(i=>Exts(i,max,prox)) ;
+		public Region Sups( int? prox = default ) => Exts(true,prox) ;
+		public Region Infs( int? prox = default ) => Exts(false,prox) ;
+		bool Exts( int at , bool max , int? prox )
+		{
+			if( this[at] is Quant val ); else return false ; var sign = prox.use(Math.Sign)??1 ;
+			if( sign>0 ) for( int i=at-prox??0 , c=at+prox??Count ; i!=c ; ++i ) if( i==at ); else if( this[i] is Quant cov && ((max?val>cov:val<cov)||val==cov&&at<i) ); else return false ;
+			if( sign<0 ) for( int i=at-prox??0 , c=at+prox??Count ; i!=c ; --i ) if( i==at ); else if( this[i] is Quant cov && ((max?val<cov:val>cov)||val==cov&&at<i) ) return false ;
+			return true ;
+		}
 		/// <summary> Restricts axe to given subset of points , null elsewhere . </summary>
 		/// <param name="fragment"> Points subset to restrict axe on . </param>
 		public Support On( Region fragment ) => fragment.Get(f=>new HashSet<int>(f)).Get(f=>new Support(f,i=>f.Contains(i)?Resolve(i):null,this)) ?? No ;
@@ -215,15 +230,18 @@ namespace Rob.Act
 		/// <returns> Value of drift <paramref name="at"/> poositon for <paramref name="dis"/>tance <paramref name="upon"/> axis . </returns>
 		Quant? Drift( Axe upon , int at , int dis ) => Quo(upon,at,dis)/Quo(upon,at+dis,dis).Nil() ;
 		public Axe Rift( Axe upon , uint quo = 9 ) => upon==null ? No : new Axe( i=>Drift(upon,i,((Count-i)>>1)-1) , this ) ;
-		/// <summary> <see cref="Rob.Act.Lap"/> for given parameter <paramref name="dif"/> and this Axe . </summary>
+		/// <summary> <see cref="Act.Lap"/> for given parameter <paramref name="dif"/> and this Axe . </summary>
 		public Lap Lap( Quant dif ) => new Lap(this,dif) ;
-		/// <summary> <see cref="Rob.Act.Lap"/> for given parameter <paramref name="dif"/> and this Axe . </summary>
+		/// <summary> <see cref="Act.Lap"/> for given parameter <paramref name="dif"/> and this Axe . </summary>
 		public Axe By( Quant dif ) => By(Lap(dif)) ;
 		public Axe Nil( Predicate<Quant> nil ) => new Axe( i=>Resolve(i).Nil(nil) , this ) ;
 		public Axe Fun( Func<Quant,Quant> fun ) => new Axe( i=>Resolve(i).use(fun) , this ) ;
 		public Axe PacePower( Quant grade = 0 , Quant? resi = null , Quant flow = 0 , Quant grane = 0 ) => new Axe( i=>Resolve(i).PacePower(grade,(Aspect as Aspect)?.Resistance(resi)??0,flow,grane,Aspect?.Raw?.Profile?.Mass) , this ) ;
 		public Axe PowerPace( Quant grade = 0 , Quant? resi = null , Quant flow = 0 , Quant grane = 0 ) => new Axe( i=>Resolve(i).PowerPace(grade,resi??Aspect?.Raw?.Resister??0,flow,Aspect?.Raw?.Profile?.Mass) , this ) ;
-		public Axe Centre( Axe mesure ) => this*mesure/+mesure ;
+		public Axe Centre( Axe measure ) => this*measure/+measure ;
+		public Axe Centre( Axe measure , int dif ) => dif.cntr(this,measure) ;
+		public Axe Centre( Axe measure , Lap dif ) => dif.cntr(this,measure) ;
+		public Axe Centre( Axe measure , Axe dif ) => dif.cntr(this,measure) ;
 		#endregion
 		#region De/Serialization
 		/// <summary>
@@ -258,7 +276,7 @@ namespace Rob.Act
 			public Support this[ Mark mark , Region fragment ] => fragment is Region f ? new Marker(mark,f,This) : No ;
 		}
 		public class Support : Support<Region> { public Region Fragment => Arg ; internal Support( Region fragment , Func<int,Quant?> resolver = null , Axe source = null ) : base(fragment,resolver,source) {} }
-		public class Support<Param> : Axe { public readonly Param Arg ; internal Support( Param arg , Func<int,Quant?> resolver = null , Axe source = null ) : base(resolver,source) => Arg = arg ; }
+		public class Support<Param> : Axe { public readonly Param Arg ; public readonly Axe Ctx ; internal Support( Param arg , Func<int,Quant?> resolver = null , Axe source = null ) : base(resolver,source) { Arg = arg ; Ctx = source ; } }
 		/// <summary>
 		/// Solver of automatic <see cref="Mark"/> placement . 
 		/// </summary>
@@ -428,6 +446,9 @@ namespace Rob.Act
 		public static Axe d( this int dif , Axe x , Axe y ) => dif.quo(x,y) ;
 		public static Axe d( this Lap dif , Axe x , Axe y ) => dif.quo(x,y) ;
 		public static Axe d( this Axe dif , Axe x , Axe y ) => dif.quo(x,y) ;
+		public static Axe cntr( this int dif , Axe y , Axe m ) => y==null ? Axe.No : m==null||dif==0 ? y : new Axe( i=>{ var me = m[i+dif]-m[i] ; return me==0 ? null : dif.Steps(i).Sum(j=>y[j]*(m[j+Math.Sign(dif)]-m[j]))/me ; } , y ) ;
+		public static Axe cntr( this Lap dif , Axe y , Axe m ) => y==null ? Axe.No : new Axe( i=>{ var d = (int)(dif[i]??0) ; var me = m[i+d]-m[i]??0 ; return me==0 ? null : d.Steps(i).Sum(j=>y[j]*(m[j+Math.Sign(d)]-m[j]))/me ; } , y ) ;
+		public static Axe cntr( this Axe dif , Axe y , Axe m ) => dif is Lap.Axe a ? a.Arg.cntr(y,m) : y??Axe.No ;
 		public static IEnumerable<Quant> Refine( this IEnumerable<Quant?> source ) => source?.OfType<Quant>().Distinct().OrderBy(q=>q) ;
 		/// <summary>
 		/// Seeks last continualpredecessor (subsequent) in <paramref name="file"/> of <paramref name="at"/> position . 

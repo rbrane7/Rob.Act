@@ -19,6 +19,8 @@ namespace Rob.Act
 		public static Profile Default => dflt ??( dflt = Path.SubjectProfile.By(The)??Path.SubjectProfile.One().Value ) ; static Profile dflt ;
 		public Quant Mass , Span , Tranq ;
 		public Quant Resi => Span*Basis.AirResistance ;
+		public DateTime Birth ;
+		public Quant Fetus ;
 	}
 	public partial class Path : Point , IList<Point> , Gettable<DateTime,Point> , INotifyCollectionChanged , Pathable
 	{
@@ -26,7 +28,7 @@ namespace Rob.Act
 		public static double Margin ; public static string Filext = "path" ;
 		public static readonly Dictionary<string,Quant?[]> Meta = new Dictionary<string,Quant?[]>{ ["Tabata"]=new Quant?[]{1,2} } ;
 		public static readonly Dictionary<string,(Quant Grade,Quant Devia,Quant Velo,byte Rad)> Tolerancy = new Dictionary<string,(Quant Grade,Quant Devia,Quant Velo,byte Rad)>{ ["Polling"]=(.20,.25,20,5) , ["ROLLER_SKIING"]=(.20,3,25,5) , ["SKIING_CROSS_COUNTRY"]=(.20,3,20,5) } ;
-		public static readonly IDictionary<string,Profile> SubjectProfile = new Dictionary<string,Profile>{ ["Rob"]=new Profile{Mass=76,Span=1.92,Tranq=4} } ;
+		public static readonly IDictionary<string,Profile> SubjectProfile = new Dictionary<string,Profile>{ ["Rob"]=new Profile{Mass=76,Span=1.92,Tranq=4,Birth=new DateTime(1967,7,19),Fetus=.75} } ;
 		public static IList<Altiplane> Altiplanes ;
 		public static Mediator Medium ;
 		Altiplane AltOf => Altiplanes.Get(ap=>Tolerancy.On(Object).Get(m=>ap.FirstOrDefault(a=>a.Grade>=m.Grade)??new Altiplane(m.Grade){Radius=m.Rad}.Set(ap.Add))) ;
@@ -51,7 +53,7 @@ namespace Rob.Act
 		#region Setup
 		void Impose( Mark? kind = null )
 		{
-			using var _=Incognit ; Preclude() ; 
+			using var _=Incognit ; Preclude() ;
 			var mark = kind??Mark ; var pon = Potenties.ToDictionary(a=>a,a=>0D) ; var lav = Potenties.ToDictionary(a=>a,a=>0D) ; var date = DateTime.Now ; for( var i = 0 ; i<Count ; ++i )
 			{
 				if( this[i].Owner==null ) this[i].Owner = this ;
@@ -323,7 +325,7 @@ namespace Rob.Act
 		public Quant? MaxPerform => (Count-1).Steps().Max(i=>(Content[i+1].Energy-Content[i].Energy).Quotient(Content[i+1].Time.TotalSeconds-Content[i].Time.TotalSeconds)) ;
 		public Quant? MinEffort => (Count-1).Steps().Select(i=>(Content[i+1].Energy-Content[i].Energy).Quotient(Content[i+1].Time.TotalSeconds-Content[i].Time.TotalSeconds)).Skip(5).ToArray().Get(a=>(a.Length-2).Steps(1).Min(i=>9.Steps(1).All(j=>(a.At(i-j)??Quant.MaxValue)>=a[i]&&a[i]<=(a.At(i+j)??Quant.MaxValue))?a[i]:null)) ;
 		public Quant? MinMaxEffort => MinMaxPower(9) ;
-		public Quant? MinMaxPower( int ext ) => (Count-1).Steps().Select(i=>(Content[i+1].Energy-Content[i].Energy).Quotient(Content[i+1].Time.TotalSeconds-Content[i].Time.TotalSeconds)).Skip(5).ToArray().Get(a=>(a.Length-2).Steps(1).Min(i=>ext.Steps(1).All(j=>(a.At(i-j)??Quant.MinValue)<=a[i]&&a[i]>=(a.At(i+j)??Quant.MinValue))?a[i]:null)) ;
+		public Quant? MinMaxPower( int ext , int refine = 1 , int from = 1 ) => (Count-1).Steps().Select(i=>(Content[i+1].Energy-Content[i].Energy).Quotient(Content[i+1].Time.TotalSeconds-Content[i].Time.TotalSeconds)).Skip(5).ToArray().Get(a=>(a.Length-1-refine).Steps(from).Min(i=>ext.Steps(1).All(j=>(a.At(i-j)??Quant.MinValue)<=a[i]&&a[i]>=(a.At(i+j)??Quant.MinValue))?a[i]:null)) ;
 		public Quant? AeroEffort { get { var min = MinEffort ; var max = MinMaxEffort ; var mav = (Count-1).Steps().Count(i=>(Content[i+1].Energy-Content[i].Energy).Quotient(Content[i+1].Time.TotalSeconds-Content[i].Time.TotalSeconds)>=max*0.9) ; var miv = (Count-1).Steps().Count(i=>(Content[i+1].Energy-Content[i].Energy).Quotient(Content[i+1].Time.TotalSeconds-Content[i].Time.TotalSeconds)<=min*1.2) ; return (min*miv+max*mav)/(miv+mav)*Durability ; } } // => (Meta.By(Action).At(0)*MinEffort+Meta.By(Action).At(1)*MinMaxEffort)/(Meta.By(Action).At(0)+Meta.By(Action).At(1)) ;
 		public Quant? MaxBeat => (Count-1).Steps().Max(i=>(Content[i+1].Beat-Content[i].Beat).Quotient((Content[i+1].Time-Content[i].Time).TotalSeconds)) ;
 		public Quant? MinBeat => (Count-1).Steps().Min(i=>(Content[i+1].Beat-Content[i].Beat).Quotient((Content[i+1].Time-Content[i].Time).TotalSeconds)) ;
@@ -336,6 +338,8 @@ namespace Rob.Act
 		public override double? Beatrate => (Count-1).Steps().Quotient(i=>Content[i+1].Beat-Content[i].Beat,i=>(Content[i+1].Time-Content[i].Time).TotalSeconds) ;
 		public override double? Bitrate => (Count-1).Steps().Quotient(i=>Content[i+1].Bit-Content[i].Bit,i=>(Content[i+1].Time-Content[i].Time).TotalSeconds) ;
 		public override byte? Vicination => (Distance/No/Vicinability).use(v=>(byte)Math.Ceiling(v)) ;
+		public override Quant? Age => Profile?.Birth.get(b=>(Date-b).TotalDays/Basis.YearDays) ;
+		public override Quant? Fage => Age+Profile?.Fetus ;
 		#endregion
 
 		#region Access
