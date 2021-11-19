@@ -84,12 +84,6 @@
       <SubType>Designer</SubType>
     </None>
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Rob.Act.Basis\Rob.Act.Base.csproj">
-      <Project>{22c68e61-0d96-4d04-92de-e63b6e392447}</Project>
-      <Name>Rob.Act.Base</Name>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

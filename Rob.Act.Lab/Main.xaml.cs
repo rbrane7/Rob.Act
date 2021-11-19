@@ -56,7 +56,7 @@ namespace Rob.Act.Analyze
 			}
 		}
 		public State State { get => state ; private set => state = (value??new State()).Set(s=>s.Context=this) ; } State state ;
-		FileSystemWatcher[] WorkoutsWatchers ;
+		//FileSystemWatcher[] WorkoutsWatchers ;
 		public event PropertyChangedEventHandler PropertyChanged ;
 		void PropertyChangedOn<Value>( string properties , Value value ) => Dispatcher.Invoke(()=>{ PropertyChanged.On(this,properties,value) ; if( properties.Consists("Sources") ) Redraw() ; }) ;
 		public Main()
@@ -74,7 +74,7 @@ namespace Rob.Act.Analyze
 			}) ;
 			Setup.WorkoutsPaths.SeparateTrim('|').SelectMany(l=>l.MatchingFiles()).EachGuard(f=>{Trace.TraceInformation($"Loading {f}");NewAction(f,Setup?.WorkoutsFilter);},(f,e)=>Trace.TraceError($"{f} faulted by {e}")) ;
 			Setup.AspectsPaths.SeparateTrim('|').SelectMany(l=>l.MatchingFiles()).EachGuard(f=>{Trace.TraceInformation($"Loading {f}");NewAspect(f,Setup?.AspectsFilter);},(f,e)=>Trace.TraceError($"{f} faulted by {e}")) ;
-			WorkoutsWatchers = Setup.WorkoutsPaths.SeparateTrim('|').Select(l=>new FileSystemWatcher(l){EnableRaisingEvents=true}.Set(w=>{ w.Edited += NewAction ; w.Deleted += (s,a)=>Book-=p=>p.Origin==a.FullPath ; })).ToArray() ;
+			//WorkoutsWatchers = Setup.WorkoutsPaths.SeparateTrim('|').Select(l=>new FileSystemWatcher(l){EnableRaisingEvents=true}.Set(w=>{ w.Edited += NewAction ; w.Deleted += (s,a)=>Book-=p=>p.Origin==a.FullPath ; })).ToArray() ;
 			State = new State{ Context = this } ;
 		}
 		protected override void OnClosing( CancelEventArgs e ) { Doct?.Dispose() ; base.OnClosing(e) ; }
@@ -185,23 +185,30 @@ namespace Rob.Act.Analyze
 			if( traits!=null && sender is DataGrid grid ) grid.Columns.Clear() ; else return ; if( keep ) Actras.Clear() ;
 			foreach( Filter.Entry.Binding tr in traits ) { grid.Columns.Add(new DataGridTextColumn{Header=tr.Name,Binding=new Binding(tr.Path){Converter=tr.Converter,StringFormat=tr.Form}}) ; Actras.Add(tr) ; }
 		}
-		void BookGrid_MouseRightButtonUp( object sender, MouseButtonEventArgs e )
+		void BookGrid_MouseRightButtonUp( object sender , MouseButtonEventArgs e )
 		{
-			if( sender is DataGrid grid && Actras.Count>0 ); else return ;
-			foreach( var col in grid.Columns ) if( Actras.at(col.DisplayIndex) is Filter.Entry.Binding tr )
-				col.Header = col.Header is string name && tr.Name==name && Aggregation[tr.Name] is Func<IEnumerable<(object,Pathable)>,object> ag ? tr.View(ag(Book.Select(p=>(tr.On(p),p)))).Null() ?? tr.Name : tr.Name ;
+			if( sender is DataGrid grid && Actras.Count>0 ) foreach( var col in grid.Columns ) if( Actras.at(col.DisplayIndex) is Filter.Entry.Binding tr )
+				col.Header = col.Header is string name && tr.Name==name && Aggregation.Apt(tr.Name) is Func<IEnumerable<(object,Pathable)>,object> ag ? tr.View(ag(Book.Select(p=>(tr.On(p),p)))).Null() ?? tr.Name : tr.Name ;
 		}
 		IList<Filter.Entry.Binding> Actras = new List<Filter.Entry.Binding>() ;
-		public readonly Aggregator Aggregation = new Aggregator
+		public readonly Aggregator Aggregation = new Aggregator() ;
+		public class Aggregator : List<(IList<Regex> Tags,Func<IEnumerable<(object,Pathable)>,object> Join,string Code)>
 		{
-			(new List<Regex>{new Regex("Dist|∫[^♀]")},new Func<IEnumerable<(object value,Pathable path)>,object>(v=> v.Sum(e=>e.value as double?) ),null) ,
-			(new List<Regex>{new Regex("Time|∫♀")},new Func<IEnumerable<(object value,Pathable path)>,object>(v=> v.Aggregate(TimeSpan.Zero,(a,t)=>a+((t.value as TimeSpan?)??TimeSpan.Zero)) ),null) ,
-			(new List<Regex>{new Regex("Date")},new Func<IEnumerable<(object value,Pathable path)>,object>(v=> (v.Max(e=>e.value as DateTime?)-v.Min(e=>e.value as DateTime?)).use(t=>DateTime.MinValue+t) ),null) ,
-			(new List<Regex>{null,new Regex("Speed|♂|☼|♥")},new Func<IEnumerable<(object value,Pathable path)>,object>(v=> v.Average(e=>e.value as double?) ),null) ,
-			(new List<Regex>{new Regex("Speed|♂|☼|♥")},new Func<IEnumerable<(object value,Pathable path)>,object>(v=> v.Centre(e=>e.value as double?,e=>e.path.Time.TotalSeconds) ),null) ,
-			(new List<Regex>{new Regex("Action|Act")},new Func<IEnumerable<(object value,Pathable path)>,object>(v=> v.Distinct(e=>e.value as string).Stringy('|').Null(s=>s.Length>10) ),null) ,
-		} ;
-		public class Aggregator : List<(IEnumerable<Regex> Tags,Func<IEnumerable<(object,Pathable)>,object> Join,string Code)> { public Func<IEnumerable<(object value,Pathable path)>,object> this[ string axe ] => this.optimal(e=>e.Tags.IndexIf(t=>t?.IsMatch(axe)==true))?.one.Join ; }
+			public static Aggregator Basis = new Aggregator
+			{
+				(new List<Regex>{new Regex("Dist|∫[^♀]")},new Func<IEnumerable<(object value,Pathable path)>,object>(v=> v.Sum(e=>e.value as double?) ),"Sum") ,
+				(new List<Regex>{new Regex("Time|∫♀")},new Func<IEnumerable<(object value,Pathable path)>,object>(v=> v.Aggregate(TimeSpan.Zero,(a,t)=>a+((t.value as TimeSpan?)??TimeSpan.Zero)) ),"SumTime") ,
+				(new List<Regex>{new Regex("Date")},new Func<IEnumerable<(object value,Pathable path)>,object>(v=> (v.Max(e=>e.value as DateTime?)-v.Min(e=>e.value as DateTime?)).use(t=>DateTime.MinValue+t) ),"CenterDate") ,
+				(new List<Regex>{null,new Regex("Speed|♂|☼|♥")},new Func<IEnumerable<(object value,Pathable path)>,object>(v=> v.Average(e=>e.value as double?) ),"Average") ,
+				(new List<Regex>{new Regex("Speed|♂|☼|♥")},new Func<IEnumerable<(object value,Pathable path)>,object>(v=> v.Centre(e=>e.value as double?,e=>e.path.Time.TotalSeconds) ),"CentreTimely") ,
+				(new List<Regex>{new Regex("Action|Act")},new Func<IEnumerable<(object value,Pathable path)>,object>(v=> v.Distinct(e=>e.value as string).Stringy('|').Null(s=>s.Length>10) ),"ConcatPipely") ,
+				(new List<Regex>{new Regex("Pace|♀")},new Func<IEnumerable<(object value,Pathable path)>,object>(v=> v.Centre(e=>(e.value as TimeSpan?)?.TotalSeconds,e=>(e.path as Path).Dist??0).use(TimeSpan.FromSeconds) ),"CentrePace") ,
+			} ;
+			IEnumerable<(IList<Regex> Tags,Func<IEnumerable<(object,Pathable)>,object> Join,string Code)> Content => this==Basis ? this : this.Union(Basis) ;
+			public Func<IEnumerable<(object value,Pathable path)>,object> Apt( string axe ) => Content.optimal(e=>e.Tags.IndexIf(t=>t?.IsMatch(axe)==true))?.one.Join ;
+			public IList<Regex> this[ string code ] => Content.at(one=>one.Code==code)?.Tags ;
+			public (IList<Regex> Tags,Func<IEnumerable<(object,Pathable)>,object> Join,string Code)[] this[ Regex rex ] => Content.Where(one=>rex.IsMatch(one.Code)).ToArray() ;
+		}
 		async void SourcesGrid_ItemsChanged( object sender , System.Windows.Controls.Primitives.ItemsChangedEventArgs e )
 		{
 			var gen = sender as ItemContainerGenerator ; for( int i=0 , c=gen.Items.Count ; i<c ; ++i )

@@ -333,8 +333,8 @@ namespace Rob.Act
 		public Quant? MaxExposure => MaxEffort/MaxBeat ;
 		public string MaxExposion => "{0}={1}".Comb("{0}/{1}".Comb(MaxEffort.Get(e=>$"{e:0}W"),MaxBeat.Get(v=>$"{Math.Round(v*60)}′♥")),MaxExposure.Get(e=>$"{Math.Round(e)}♥W")) ;
 		Quant Durability => Math.Max(0,1.1-20/Time.TotalSeconds) ;
-		public Quant? Drift => ((Spectrum[Axis.Energy] as Axe).Drift(Spectrum[Axis.Beat] as Axe))?.LastOrDefault() is Quant v ? Math.Log(v) : null as Quant? ;
-		public Quant? xDrift => ((Spectrum[Axis.Energy] as Axe).Drift(Spectrum[Axis.Beat] as Axe))?.Skip(150)?.Min() is Quant v ? Math.Log(v) : null as Quant? ;
+		public Quant? Drift => (Spectrum[Axis.Energy] as Axe).Drift(Spectrum[Axis.Beat] as Axe)?.LastOrDefault() is Quant v ? Math.Log(v) : null as Quant? ;
+		public Quant? xDrift => (Spectrum[Axis.Energy] as Axe).Drift(Spectrum[Axis.Beat] as Axe)?.Skip(150)?.Min() is Quant v ? Math.Log(v) : null as Quant? ;
 		public override double? Beatrate => (Count-1).Steps().Quotient(i=>Content[i+1].Beat-Content[i].Beat,i=>(Content[i+1].Time-Content[i].Time).TotalSeconds) ;
 		public override double? Bitrate => (Count-1).Steps().Quotient(i=>Content[i+1].Bit-Content[i].Bit,i=>(Content[i+1].Time-Content[i].Time).TotalSeconds) ;
 		public override byte? Vicination => (Distance/No/Vicinability).use(v=>(byte)Math.Ceiling(v)) ;
