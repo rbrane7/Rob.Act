@@ -21,7 +21,7 @@ namespace Rob.Act
 			if( data.StartsBy(Csv.Bio.Sign) ) return new Csv.Bio(data) ;
 			return (Path)data ;
 		}
-		public static string Externalize( this Path path , string ext ) { switch( ext ) { case "gpx" : return ((Gpx.gpxType)path).Serialize("utf-8","1.0") ; case "tcx" : return ((Tcx.TrainingCenterDatabase_t)path).Serialize("utf-8","1.0") ; case "skierg.csv" : return (Csv.Skierg)path ; default : return (string)path ; } }
+		public static string Externalize( this Path path , string ext ) => ext switch { "gpx" => ((Gpx.gpxType)path).Serialize("utf-8","1.0") , "tcx" => ((Tcx.TrainingCenterDatabase_t)path).Serialize("utf-8","1.0") , "skierg.csv" => (Csv.Skierg)path , _ => (string)path , } ;
 		public static string Reconcile( this string file , bool primary = false )
 		{
 			string cofile = null ; if( file.EndsWith(".tcx") && file.Contains("concept2-logbook-workout-") ) { cofile = file ; file = file.Replace("logbook-workout","result").Replace(".tcx",Csv.Ext) ; }
@@ -43,7 +43,7 @@ namespace Rob.Act
 				var time = text.RightFromFirst("<TotalTimeSeconds>").LeftFrom("</TotalTimeSeconds>") ; var dist = text.RightFrom("<DistanceMeters>").LeftFrom("</DistanceMeters>") ;
 				var drag = text.RightFrom("<DragFactor>").LeftFrom("</DragFactor>") ?? text.RightFrom("<Drag>").LeftFrom("</Drag>") ?? "100" ;
 				var action = text.RightFrom("<Action>").LeftFrom("</Action>") ; var subject = text.RightFrom("<Subject>").LeftFrom("</Subject>") ; var locus = text.RightFrom("<Locus>").LeftFrom("</Locus>") ; var refine = text.RightFrom("<Refine>").LeftFrom("</Refine>") ;
-				string laps = null ; if( (rest=rest.Substring(text.Length+6)).Consists("<Lap") ) for( var (tacu,dacu) = (time.Parse(0D),dist.Parse(0D)) ; (text=rest.Get(t=>t.LeftFrom("<Track")??t.LeftFrom("</Lap>")))!=null ; rest = rest.Substring(text.Length+6) )
+				string laps = null ; if( (rest=rest[(text.Length+6)..]).Consists("<Lap") ) for( var (tacu,dacu) = (time.Parse(0D),dist.Parse(0D)) ; (text=rest.Get(t=>t.LeftFrom("<Track")??t.LeftFrom("</Lap>")))!=null ; rest = rest[(text.Length+6)..] )
 				{
 					if( laps==null ) laps = $"{tacu},{dacu};" ; // first element if we add active ones
 					tacu += text.RightFromFirst("<TotalTimeSeconds>").LeftFrom("</TotalTimeSeconds>").Parse(0D) ; dacu += text.RightFrom("<DistanceMeters>").LeftFrom("</DistanceMeters>").Parse(0D) ;

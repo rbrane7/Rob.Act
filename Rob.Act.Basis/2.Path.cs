@@ -307,7 +307,7 @@ namespace Rob.Act
 		public event NotifyCollectionChangedEventHandler CollectionChanged { add => collectionChanged += value.DispatchResolve() ; remove => collectionChanged -= value.DispatchResolve() ; } NotifyCollectionChangedEventHandler collectionChanged ;
 		public class Correctioner : Dictionary<Axis,ISet<(int at,Quant value)>> , IDictionary
 		{
-			Path Context ;
+			readonly Path Context ;
 			public IDictionary<Axis,ISet<(int at,Quant value)>> Base => this ;
 			public Correctioner( Path context ) => Context = context ;
 			ISet<(int at,Quant value)> Ones( Axis ax ) => TryGetValue(ax,out var v) ? v : new SortedSet<(int at,Quant value)>(new Aid.Comparer<(int at,Quant value)>((x,y)=>x.at-y.at)).Set(c=>Add(ax,c)) ;

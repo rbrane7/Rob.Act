@@ -12,8 +12,9 @@ using Aid.Extension;
 namespace Rob.Act
 {
 	using Quant = Double ;
-	public interface Contextable { [LambdaContext.Dominant] Axe this[ string key ] {get;} Axe.Support this[ IEnumerable<int> fragment ] {get;} Path Raw {get;} Aspect.Traits Trait {get;} }
-	public interface Contextables { [LambdaContext.Dominant] Axe this[ string key ] {get;} Axe.Support this[ IEnumerable<int> fragment ] {get;} Aspectable this[ int at ] {get;} Path Raw( int at = 0 ) ; }
+	/// <summary> Defines operations which are supported for context resolvers in common , for both axe definition and trait definition contexts . </summary>
+	public interface Contextable { [LambdaContext.Dominant] Axe this[ string key ] {get;} Axe this[ Quant value ] {get;} Axe this[ Func<int,Quant?> fun ] {get;} Axe.Support this[ IEnumerable<int> fragment ] {get;} Path Raw {get;} Aspect.Traits Trait {get;} }
+	public interface Contextables { [LambdaContext.Dominant] Axe this[ string key ] {get;} Axe this[ Quant value ] {get;} Axe this[ Func<int,Quant?> fun ] {get;} Axe.Support this[ IEnumerable<int> fragment ] {get;} Aspectable this[ int at ] {get;} Path Raw( int at = 0 ) ; }
 	public interface Aspectable : Aid.Gettable<int,Axe> , Contextable , Resourcable , Aid.Countable<Axe> { string Spec {get;} Aspect Base {get;} }
 	public interface Resourcable { Aspectable Source {set;} Aspectable[] Sources {set;} Aspect.Point.Iterable Points {get;} }
 	public struct Aspectables : Aid.Gettable<int,Aspectable> , Aid.Gettable<Aspectable> , Aid.Countable<Aspectable> , Resourcable
@@ -47,6 +48,7 @@ namespace Rob.Act
 		void Join( IEnumerable<Axe> source , IEnumerable<Aspectable> set = null ) => source?.Except(this,a=>a.Spec)?.Select(a=>new Axe(a,set)).Set(AddRange) ;
 		public Aspect( IEnumerable<Axe> axes = null , Traits trait = null ) : base(axes??Enumerable.Empty<Axe>()) { foreach( var ax in this ) { ax.Own = this ; ax.PropertyChanged += OnChanged ; } Trait = (trait??new Traits()).Set(t=>t.Context=this) ; }
 		public Aspect() : this(axes:null) {} // Default constructor must be present to enable DataGrid implicit Add .
+		/// <remarks> Returns null if unsolved , which is significat for possibility of explicit resolution . </remarks>
 		[LambdaContext.Dominant] public Axe this[ string key ] => this.One(a=>a.Spec==key) ?? Base.Null(b=>b==this)?[key] ;
 		public virtual string Spec { get => spec ; set { if( value==spec ) return ; spec = value ; propertyChanged.On(this,"Spec") ; Dirty = true ; } } string spec ;
 		public string Origin { get => origin ; set { origin = value.Set(v=>Spec=System.IO.Path.GetFileNameWithoutExtension(v).LeftFrom('?',all:true)) ; Dirty = true ; } } string origin ;
@@ -69,6 +71,8 @@ namespace Rob.Act
 		public bool Orphan => Source==null && Sources==null ;
 		public (int at,Point one,Quant value)? AtOf( IEnumerable<(string Axe,Quant Value)> value ) => value.Get(v=>Points.Optimal(p=>v.Sum(a=>(p[a.Axe]-a.Value).Sqr())??Quant.MaxValue)) ;
 		#region Operations
+		Axe Contextable.this[ Quant value ] => new Axe.Support(resolver:i=>value) ;
+		public Axe this[ Func<int,Quant?> fun ] => new Axe.Support(resolver:fun) ;
 		public Axe.Support this[ IEnumerable<int> fragment ] => Axe.One[fragment] ;
 		#endregion
 		public struct Point : Quantable , IEnumerable<Quant?>

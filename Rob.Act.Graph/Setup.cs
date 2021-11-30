@@ -14,7 +14,7 @@ namespace Rob.Act.Analyze
 		public Predicate<Pathable> WorkoutsFilter ;
 		public Predicate<Aspect> AspectsFilter ;
 		public string StatePath ;
-		public TimeSpan SavePeriod = new TimeSpan(0,0,10) ;
+		public TimeSpan SavePeriod = new(0,0,10) ;
 		public string[] ActionTraits ;
 		public string[] MatrixTraits ;
 		public string[] SpectrumBinds ;

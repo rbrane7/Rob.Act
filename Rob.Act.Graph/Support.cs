@@ -43,22 +43,22 @@ namespace Rob.Act.Analyze
 	}
 	public class TraitConversion : IValueConverter
 	{
-		public static TraitConversion The = new TraitConversion() ; static readonly IDictionary<string,Filter.Entry.Binding> Binder = new Dictionary<string,Filter.Entry.Binding>() ;
+		public static TraitConversion The = new() ; static readonly Dictionary<string,Filter.Entry.Binding> Binder = new() ;
 		static Filter.Entry.Binding Bind( string form ) => Binder.TryGetValue(form??string.Empty,out var v) ? v : Binder[form??string.Empty] = form ;
 		static string Evaluate( Aspect.Traitlet trait ) { try { return Bind(trait.Bond).Of(trait.Raw) ; } catch { return $"Failed evaluating Trait {trait.Spec} = {trait.Lex} !" ; } }
 		public object Convert( object value , Type targetType , object parameter , CultureInfo culture ) => value is Aspect.Traits t ? t[(int)parameter].Get(Evaluate) : null ;
 		public object ConvertBack( object value , Type targetType , object parameter , CultureInfo culture ) => null ;
 	}
-	interface Quantilable : Aid.Countable<double[]> { Axe Ax {get;} Axe Axon {get;} Task<int> Count() ; }
+	interface Quantilable : Aid.Countable<double[]> { Axe Ax {get;} Axe Axon {get;} new Task<int> Count() ; }
 	struct AxeQuantiles : Quantilable
 	{
 		public Axe Ax {get;internal set;} public Axe Axon {get;internal set;} internal IEnumerable<double[]> Content ; public int Count => Content?.Count()??0 ;
 		public IEnumerator<double[]> GetEnumerator() => Content?.GetEnumerator()??Enumerable.Empty<double[]>().GetEnumerator() ; IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
-		async Task<int> Quantilable.Count() => Count ;
+		Task<int> Quantilable.Count() => Task.FromResult(Count) ;
 		public class Para : Aid.Collections.ObservableList<double[]> , Quantilable
 		{
 			public bool Ready ; int ready ;
-			public Axe Ax {get;} public Axe Axon {get;} IEnumerable<Aspect> Source ;
+			public Axe Ax {get;} public Axe Axon {get;} readonly IEnumerable<Aspect> Source ;
 			public Para( Axe ax , Axe axon , params Aspect[] source ) { Ax = ax ; Axon = axon ; Source = source ; }
 			void Insure()
 			{
@@ -96,10 +96,10 @@ namespace Rob.Act.Analyze
 			public struct Binding
 			{
 				static readonly string ThisKey = typeof(Aid.Converters.ObjectAccessible).GetProperties().One().Name ;
-				public string Path , Name , Format , Align ; public IValueConverter Converter ; Func<object,object> Pather ;
+				public string Path , Name , Format , Align ; public IValueConverter Converter ; readonly Func<object,object> Pather ;
 				public string Form => Align.No() ? Format : Format.No() ? $"{{0,{Align}}}" : $"{{0,{Align}:{Format}}}" ;
 				public string Reform => Align.No()&&!Format.No() ? $"{{0:{Format}}}" : Form ;
-				public static implicit operator Binding( string value ) => new Binding(value) ;
+				public static implicit operator Binding( string value ) => new(value) ;
 				public Binding( string value )
 				{
 					if( value?.TrimStart().StartsBy("(")==true )
@@ -123,5 +123,5 @@ namespace Rob.Act.Analyze
 		public static explicit operator string( Filter filter ) => filter.Get(f=>string.Join(Separator,f.Entries.Where(e=>!e.Empty).Select(e=>(string)e))) ;
 		public static implicit operator Filter( string filter ) => filter.Get(f=>new Filter{Sensible=true}.Set(t=>f.Separate(Separator,braces:null).Each(e=>t.Add(e)))) ;
 	}
-	public struct Associable { public Pathable path ; public Aspect aspect ; public  static implicit operator Associable( (Pathable path,Aspect aspect) arg ) => new Associable{path=arg.path,aspect=arg.aspect} ; }
+	public struct Associable { public Pathable path ; public Aspect aspect ; public  static implicit operator Associable( (Pathable path,Aspect aspect) arg ) => new(){ path = arg.path , aspect = arg.aspect } ; }
 }

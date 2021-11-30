@@ -190,7 +190,7 @@ namespace Rob.Act
 		#region Transformators
 		public static Quant? PowerPace( this Quant? power , Quant grade = 0 , Quant drag = 0 , Quant flow = 0 , Quant? mass = null )
 		{
-			if( power is Quant p );else return null ; var g = grade*Gravity.Force*(mass??Mass) ; var d = drag ; var f = flow ; if( p==0 && d*g>=0 ) return null ;
+			if( power is not Quant p ) return null ; var g = grade*Gravity.Force*(mass??Mass) ; var d = drag ; var f = flow ; if( p==0 && d*g>=0 ) return null ;
 			return p==0 ? 1/Math.Sqrt(Math.Abs(g/3*d)) : 1/(d*g<0?p+Math.Sign(p)*Math.Sqrt(Math.Abs(g/3*d)):p).Radix(u=>(g+(f+d*u)*u)*u-p,u=>g+(2*f+3*d*u)*u).Nil() ;
 		}
 		public static Quant? PacePower( this Quant? pace , Quant grade = 0 , Quant drag = 0 , Quant flow = 0 , Quant grane = 0 , Quant? mass = null ) =>
