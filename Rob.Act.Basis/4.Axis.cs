@@ -302,9 +302,7 @@ namespace Rob.Act
 		}
 		public class Support : Support<Region> { public Region Fragment => Arg ; internal Support( Region fragment = default , Func<int,Quant?> resolver = null , Axe source = null ) : base(fragment,resolver,source) {} }
 		public class Support<Param> : Axe { public readonly Param Arg ; public readonly Axe Ctx ; internal Support( Param arg , Func<int,Quant?> resolver = null , Axe source = null ) : base(resolver,source) { Arg = arg ; Ctx = source ; } }
-		/// <summary>
-		/// Solver of automatic <see cref="Mark"/> placement . 
-		/// </summary>
+		/// <summary> Solver of automatic <see cref="Mark"/> placement . </summary>
 		public class Marker : Support
 		{
 			readonly Mark Mark ; HashSet<int> Frag => Fragment as HashSet<int> ; Point Ori( int at ) => Aspect?.Raw?[at] ;
@@ -370,17 +368,13 @@ namespace Rob.Act
 			}
 		}
 	}
-	/// <summary>
-	/// Container of real relative difference indexes for given axe and given difference paramener . 
-	/// </summary>
+	/// <summary> Container of real relative difference indexes for given axe and given difference paramener . </summary>
 	public struct Lap
 	{
 		readonly double[] Content ;
 		public Lap? Sub => sub as Lap? ; readonly object sub ;
 		public bool Dual => sub!=null ;
-		/// <summary>
-		/// Constructs container od differences of poisitions proportional to <paramref name="dif"/> by axe value . 
-		/// </summary>
+		/// <summary> Constructs container od differences of poisitions proportional to <paramref name="dif"/> by axe value . </summary>
 		/// <param name="context"> Axe to construct differences by . </param>
 		/// <param name="dif"> Difference parameter which by <paramref name="context"/> value exactly corresponds to index difference from position in axe <paramref name="context"/> . </param>
 		public Lap( Act.Axe context , Quant dif , Quant? codif = null )
@@ -408,13 +402,9 @@ namespace Rob.Act
 		/// </summary>
 		/// <param name="at"> Index to get pear distanced exactly by <see cref="Lap"/> construct parameter . </param>
 		public double? this[ double at ] => Absolution.Inter(at) ; //{ get { var f = Math.Floor(at) ; var c = Math.Ceiling(at) ; return c==f ? Absolution.at((int)at) : Absolution.at((int)f)*(c-at)+Absolution.at((int)c)*(at-f) ; } }
-		/// <summary>
-		/// Real exact Positions equidistantly distributed respecting creation parameter difference . 
-		/// </summary>
+		/// <summary> Real exact Positions equidistantly distributed respecting creation parameter difference . </summary>
 		public double[] Absolution {get;}
-		/// <summary>
-		/// Specific axe to support Lap via Axe . 
-		/// </summary>
+		/// <summary> Specific axe to support Lap via Axe . </summary>
 		public class Axe : Act.Axe.Support<Lap>
 		{
 			public override string Base => basis??base.Base ; readonly string basis ;
