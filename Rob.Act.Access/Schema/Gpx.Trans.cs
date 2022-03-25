@@ -21,7 +21,7 @@ namespace Rob.Act.Gpx
 			return new Path(w.Date(),w.Iterator,Translation.Kind,(Axis.Beat,60),(Axis.Bit,60))
 			{
 				Initing = true , Object = obj , Action = w.trk?.Select(t=>t.name.Action()).Stringy(',') , Subject = w.trk?.Select(t=>t.link.At(0)?.href.Subject()).Distinct().Stringy(',') ,
-				Locus = w.trk?.Select(t=>t.name.Locus()).Distinct().Stringy(',') , Refine = w.trk?.Select(t=>t.name.Refine()).Distinct().Stringy(',') ,
+				Locus = w.trk?.Select(t=>t.name.Locus()).Distinct().Stringy(',') , Refine = w.trk?.Select(t=>t.name.Refine()).Distinct().Stringy(',') , Detail = w.trk?.Select(t=>t.name.Detail()).Distinct().Stringy(',') ,
 				Dragstr = w.trk?.Select(t=>t.name.Dragstr().Set(v=>lev=v.Contains('^')).Draglet(dflt?.Drag)).Average().Dragstr(dflt?.Drag.nil(_=>!lev)) ,
 				Gradstr = w.trk?.Select(t=>t.name.Gradstr().Set(v=>lev=v.Contains('^')).Gradlet(dflt?.Grade)).Average().Gradstr(dflt?.Grade.nil(_=>!lev)) ,
 				Flowstr = w.trk?.Select(t=>t.name.Flowstr().Set(v=>lev=v.Contains('^')).Flowlet(dflt?.Flow)).Average().Flowstr(dflt?.Flow.nil(_=>!lev)) ,
@@ -35,7 +35,7 @@ namespace Rob.Act.Gpx
 		[XmlIgnore] public bool Close ;
 		[XmlIgnore] public trksegType First => trkseg.At(0) ; [XmlIgnore] public trksegType Last => trkseg.At(trkseg.Length-1) ;
 		internal IEnumerable<Point> Iterator { get { if( trkseg==null ) yield break ; foreach( var segment in trkseg ) foreach( var point in segment.Iterator ) yield return point.Set(p=>p.Mark|=Close&&Last==segment&&p.Mark.HasFlag(Mark.Stop)?Mark.Act:Mark.No) ; } }
-		public static implicit operator Path( trkType track ) => track.Get( t => new Path(true,t.First.First.time,t.Iterator,Translation.Kind,(Axis.Beat,60),(Axis.Bit,60)){ Object = t.type , Action = t.name.Action() , Subject = t.link.At(0)?.href.Subject() , Locus = t.name.Locus() , Refine = t.name.Refine() , Dragstr = t.name.Dragstr() , Gradstr = t.name.Gradstr() , Flowstr = t.name.Flowstr() , Initing = false } ).Correct().Altify().Altismooth().Energize() ;
+		public static implicit operator Path( trkType track ) => track.Get( t => new Path(true,t.First.First.time,t.Iterator,Translation.Kind,(Axis.Beat,60),(Axis.Bit,60)){ Object = t.type , Action = t.name.Action() , Subject = t.link.At(0)?.href.Subject() , Locus = t.name.Locus() , Refine = t.name.Refine() , Detail = t.name.Detail() , Dragstr = t.name.Dragstr() , Gradstr = t.name.Gradstr() , Flowstr = t.name.Flowstr() , Initing = false } ).Correct().Altify().Altismooth().Energize() ;
 		public static implicit operator trkType( Path path ) => path.Get( p => new trkType { type = p.Object , name = p.Name() , trkseg = (p/Mark.Stop).Where(s=>s.Count>1).Select(s=>(trksegType)s).ToArray() } ) ;
 	}
 	public partial class trksegType
@@ -77,6 +77,7 @@ namespace Rob.Act.Gpx
 		internal static string Action( this string value ) => value.LeftFrom('?',all:true)?.Trim() ;
 		internal static string Locus( this string value ) => value.RightFromFirst('?').Separate('&',';').Arg(Tagger.Names[(int)Taglet.Locus]) ;
 		internal static string Refine( this string value ) => value.RightFromFirst('?').Separate('&',';').Arg(Tagger.Names[(int)Taglet.Refine]) ;
+		internal static string Detail( this string value ) => value.RightFromFirst('?').Separate('&',';').Arg(Tagger.Names[(int)Taglet.Detail]) ;
 		internal static string Dragstr( this string value ) => value.RightFromFirst('?').Separate('&',';').Arg(Tagger.Names[(int)Taglet.Drag]) ;
 		internal static string Gradstr( this string value ) => value.RightFromFirst('?').Separate('&',';').Arg(Tagger.Names[(int)Taglet.Grade]) ;
 		internal static string Flowstr( this string value ) => value.RightFromFirst('?').Separate('&',';').Arg(Tagger.Names[(int)Taglet.Flow]) ;

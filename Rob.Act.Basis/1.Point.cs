@@ -12,11 +12,12 @@ using System.Text.RegularExpressions;
 namespace Rob.Act
 {
 	using Quant = Double ;
-	public enum Taglet { Object , Subject , Locus , Refine , Grade , Flow , Drag }
+	public enum Taglet { Object , Subject , Locus , Refine , Grade , Flow , Drag , Detail }
 	public interface Tagable : IEquatable<Tagable> , IEnumerable<string> { void Add( string item ) ; string this[ int key ] {get;set;} string this[ Taglet tag ] {get;set;} string this[ string key ] {get;set;} int Count {get;} void Clear() ; void Adopt( Tagable tags ) ; string Uri {get;} }
 	public class Tagger : List<string> , Tagable
 	{
 		public static readonly string[] Names = Enum.GetNames(typeof(Taglet)) ;
+		public static readonly string Aclutinator = System.Uri.SchemeDelimiter ;
 		internal Action<string> Notifier {private get;set;}
 		internal Tagger( Action<string> notifier = null ) => Notifier = notifier ;
 		public new string this[ int key ] { get => (uint)key<Count ? base[key] : null ; set { if( this[key]==value ) return ; if( value!=null ) InsureCapacity(key) ; if( (uint)key<Count );else return ; base[key] = value ; Notifier?.Invoke(null) ; } }
@@ -108,6 +109,7 @@ namespace Rob.Act
 		public string Object { get => tags?[Taglet.Object].Null()??Owner?.Object ; set { if( value?.Length>0 ) Tag[Taglet.Object] = value ; else tags.Set(t=>t[Taglet.Object]=value) ; } }
 		public string Locus { get => tags?[Taglet.Locus].Null()??Owner?.Locus ; set { if( value?.Length>0 ) Tag[Taglet.Locus] = value ; else tags.Set(t=>t[Taglet.Locus]=value) ; } }
 		public string Refine { get => tags?[Taglet.Refine].Null()??Owner?.Refine ; set { if( value?.Length>0 ) Tag[Taglet.Refine] = value ; else tags.Set(t=>t[Taglet.Refine]=value) ; } }
+		public string Detail { get => tags?[Taglet.Detail].Null()??Owner?.Detail ; set { if( value?.Length>0 ) Tag[Taglet.Detail] = value ; else tags.Set(t=>t[Taglet.Detail]=value) ; } }
 		public string Dragstr { get => tags?[Taglet.Drag].Null()??(Owner as Path)?.Dragstr ; set { if( value?.Length>0 ) Tag[Taglet.Drag] = value ; else tags.Set(t=>t[Taglet.Drag]=value) ; } }
 		public string Gradstr { get => tags?[Taglet.Grade].Null()??(Owner as Path)?.Gradstr ; set { if( value?.Length>0 ) Tag[Taglet.Grade] = value ; else tags.Set(t=>t[Taglet.Grade]=value) ; } }
 		public string Flowstr { get => tags?[Taglet.Flow].Null()??(Owner as Path)?.Flowstr ; set { if( value?.Length>0 ) Tag[Taglet.Flow] = value ; else tags.Set(t=>t[Taglet.Flow]=value) ; } }

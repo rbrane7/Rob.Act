@@ -24,6 +24,7 @@ namespace Rob.Act.Analyze
 		public (double Grade,double Grane,byte Radius) Altiplane = default ;
 		public double ViewScreenMargin ;
 		public IEnumerable<(string[] Tags,string Code)> Aggregates ;
+		public IEnumerable<(Func<Uri,bool> crit,string app)> External ;
 	}
 	public class State
 	{

@@ -14,9 +14,9 @@ namespace Rob.Act
 		{
 			public static bool Interpolate = false ; public static Func<Quant,bool> Powerage ;
 			public static readonly string[] Axes = {"Number","Time (seconds)","Distance (meters)","Pace (seconds)","Watts","Cal/Hr","Stroke Rate","Heart Rate","Laps","Refine","Locus","Subject","Drag Factor","Date","Spec"} ;
-			public static readonly string Sign = $"\"{Axes[0]}\",\"{Axes[1]}\",\"{Axes[2]}\",\"{Axes[3]}\",\"{Axes[4]}\",\"{Axes[5]}\",\"{Axes[6]}\",\"{Axes[7]}\"" ;
 			readonly IList<(TimeSpan Time,double Distance,double Beat,uint Bit,double Energy,double Drag,double Effort,Mark Mark)> Data = new List<(TimeSpan Time,double Distance,double Beat,uint Bit,double Energy,double Drag,double Effort,Mark Mark)>() ;
 			readonly DateTime Date = DateTime.Now ; readonly string Spec , Subject , Locus , Refine ;
+			public static bool Sign( string data ) => Axes.Take(8).All(a=>data.Consists(a)) ;
 			/// <summary>
 			/// Skierg data processing and clening . 
 			/// </summary>
@@ -31,7 +31,7 @@ namespace Rob.Act
 				uint idrag = 0 ; Quant atime = 0 , adist = 0 ; IEnumerable<(Quant time,Quant dist)> laps = null ;
 				foreach( var line in data.SeparateTrim('\n').Select(l=>l.Trim()) )
 				{
-					if( line.StartsBy(Sign) )
+					if( Sign(line) )
 					{
 						Data.Add(accu) ;
 						laps = line.RightFrom(Axes[^7]+'=').LeftFrom('"').SeparateTrim(';',false)?.Select(e=>(e.LeftFrom(',').Parse<Quant>(0),e.RightFrom(',').Parse<Quant>(0))).ToArray() ;

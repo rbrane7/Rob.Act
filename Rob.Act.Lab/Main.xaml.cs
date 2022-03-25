@@ -32,6 +32,8 @@ namespace Rob.Act.Analyze
 	public partial class Main : Window , INotifyPropertyChanged
 	{
 		public static Settings Setup => setup?.Result ; static readonly Aid.Prog.Setup<Settings> setup ;
+		static string External( Uri uri ) => Setup?.External.One(i=>i.crit.Of(uri,true)).app ;
+			//?? ( uri.Scheme switch { string s when s==Uri.UriSchemeHttp||s==Uri.UriSchemeHttps => @"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe" , _ => null } ) ;
 		static Main()
 		{
 			AppDomain.CurrentDomain.Load(typeof(Translation).Assembly.FullName) ;
@@ -72,7 +74,7 @@ namespace Rob.Act.Analyze
 				foreach( var a in System.IO.Directory.GetFiles(Setup.StatePath,$"{Altiplane.FileSign}*{Path.Altiplane.ExtSign}") ) { Trace.TraceInformation($"Loading {a}") ; Path.Altiplanes.Add(new Path.Altiplane(a){Radius=g.Radius}) ; }
 				if( Path.Altiplanes.Count==0 ) Path.Altiplanes.Add(new Path.Altiplane(g.Grade,g.Grane){Radius=g.Radius}) ;
 			}) ;
-			Setup.WorkoutsPaths.SeparateTrim('|').SelectMany(l=>l.MatchingFiles()).EachGuard(f=>{Trace.TraceInformation($"Loading {f}");NewAction(f,Setup?.WorkoutsFilter);},(f,e)=>Trace.TraceError($"{f} faulted by {e}")) ;
+			Setup.WorkoutsPaths.SeparateTrim('|').SelectMany(l=>l.MatchingFiles()).EachGuard(f=>NewAction(f,Setup?.WorkoutsFilter).Set(a=>Trace.TraceInformation($"{(Setup?.WorkoutsFilter?.Invoke(a)!=false?"Loaded":"Ignored")} {f}")),(f,e)=>Trace.TraceError($"{f} faulted by {e}")) ;
 			Setup.AspectsPaths.SeparateTrim('|').SelectMany(l=>l.MatchingFiles()).EachGuard(f=>{Trace.TraceInformation($"Loading {f}");NewAspect(f,Setup?.AspectsFilter);},(f,e)=>Trace.TraceError($"{f} faulted by {e}")) ;
 			/*WorkoutsWatchers =*/ Setup.WorkoutsPaths.SeparateTrim('|').Select(l=>new FileSystemWatcher(l){EnableRaisingEvents=true}.Set(w=>{ w.Edited += NewAction ; w.Deleted += (s,a)=>Book-=p=>p.Origin==a.FullPath ; })).Each() ;
 			State = new State{ Context = this } ;
@@ -187,6 +189,9 @@ namespace Rob.Act.Analyze
 		}
 		void BookGrid_MouseRightButtonUp( object sender , MouseButtonEventArgs e )
 		{
+			if( Keyboard.IsKeyDown(Key.LeftCtrl) ) (BookGrid.SelectedItem as Pathable)?.Detail.Link(0).Start(External) ; else
+			if( Keyboard.IsKeyDown(Key.LeftShift) ) (BookGrid.SelectedItem as Pathable)?.Detail.Link(1).Start(External) ; else
+			if( Keyboard.IsKeyDown(Key.LeftAlt) ) (BookGrid.SelectedItem as Pathable)?.Detail.Link(2).Start(External) ; else
 			if( sender is DataGrid grid && Actras.Count>0 ) foreach( var col in grid.Columns ) if( Actras.at(col.DisplayIndex) is Filter.Entry.Binding tr )
 			col.Header = col.Header is string name && tr.Name==name && Aggregation.Apt(tr.Name) is Func<IEnumerable<(object,Pathable)>,object> ag ? tr.View(ag(Book.Select(p=>(tr.On(p),p)))).Null() ?? tr.Name : tr.Name ;
 		}
@@ -745,5 +750,7 @@ namespace Rob.Act.Analyze
 		public static IEnumerable<Aspect> Reprojection( this IList<Aspect> sources ) => sources.Each((s,a,i)=>a.Sources=s.Skip(i).Concat(s.Take(i)).ToArray()) ;
 		public static double? By( this double value , (double Min,double Max) extent , bool positive = true ) => (positive?value-extent.Min:extent.Max-value)/(extent.Max-extent.Min).nil() ;
 		public static (double Width,double Height) Margin( this (double Width,double Height) frame , (double Width,double Height) margin ) => (frame.Width-2*margin.Width,frame.Height-2*margin.Height) ;
+		public static string Link( this string detail , int at ) { at = detail.IndexOf(at,Uri.SchemeDelimiter) ; if( at<0 ) return null ; while( at>0 && detail[at-1].IsSymbolChar() ) --at ; return detail.Substring(at).LeftFrom(true,' ','\n') ; }
+		public static void Start( this string link , Func<Uri,string> extra ) { if( link.Uri() is Uri uri ) if( extra(uri) is string app ) Process.Start( app , link ) ; else Process.Start( link ) ; }
 	}
 }
