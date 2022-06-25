@@ -1,19 +1,22 @@
 ﻿/*@ Rob.Act.Analyze.Settings @*/ type
 {
+	WorkoutsFilter = =>Refine?.Any(c=>'©℗®'>c)==true ,
 	Doctee = 'doctee://localhost:43202/Action/Analyze?Name=Rana' ,
-	/*WorkoutsPaths = @'C:\Users\teplyr\Downloads\concept2*.tcx|C:\Users\teplyr\Downloads\*.gpx|C:\Users\teplyr\Downloads\*.Bio.csv|C:\Users\teplyr\Downloads\*.par|C:\Users\teplyr\Downloads\*.path' ,*/
-	/*WorkoutsPaths = @'C:\Users\teplyr\Downloads\2021-03-06-193529-XCS-Robert’s-Apple Watch.path|C:\Users\teplyr\Downloads\2021-03-10-192114-XCS-Robert’s-Apple Watch.path' ,*/
-	WorkoutsPaths = @'C:\Users\teplyr\Downloads\2022-01-29-144417-XCS.C.160-Jil.Race-Rob.6-watch.*' ,
-	WorkoutsPath = @'C:\Users\teplyr\Downloads\*.path' ,
-	AspectsPaths = @'C:\Users\robin\OneDrive\Documents\Action\Lab\Context\*.asp' , AspectsPath = @'C:\Users\robin\OneDrive\Documents\Action\Lab\Context\*.asp' ,
-	StatePath = @'C:\Users\robin\OneDrive\Documents\Action\Lab\Context' , WorkoutsFilter = p=>p.Date.Year==2022 , /*AspectsFilter = =>Spec!='Test' ,*/
+	WorkoutsPaths = @'C:\Users\teplyr\Downloads\concept2*.tcx | C:\Users\teplyr\Downloads\*.gpx | C:\Users\teplyr\Downloads\*.Bio.csv | C:\Users\teplyr\Downloads\*.par | C:\Users\teplyr\Downloads\*.path' ,
+	/*WorkoutsPaths = @'C:\Users\teplyr\Downloads\2021-03-06-193529-XCS-Robert’s-Apple Watch.path | C:\Users\teplyr\Downloads\2021-03-10-192114-XCS-Robert’s-Apple Watch.path' ,*/
+	/*WorkoutsPaths = @'C:\Users\teplyr\Downloads\2022-01-29-144417-XCS.C.160-Jil.Race-Rob.6-watch.*' ,*/
+	/*WorkoutsPaths = @'C:\Users\teplyr\Downloads\concept2-logbook-workout-56133704.*|C:\Users\teplyr\Downloads\concept2-logbook-workout-56133705.*' ,*/
+	WorkoutsPath = @'C:\Users\teplyr\Downloads\*.path' , /*WorkoutsSeed = f=>date.Now-f.CreationTime<time(1,0,0,0,0) ,*/
+	AspectsPaths = @'C:\Users\robin\OneDrive\Documents\Action\Lab\Context\*.asp' , AspectsPath = @'C:\Users\robin\OneDrive\Documents\Action\Lab\Context\*.asp' , /*AspectsFilter = =>Spec!='Test' ,*/
+	StatePath = @'C:\Users\robin\OneDrive\Documents\Action\Lab\Context' ,
 	ActionTraits = []{ 'Action' , 'Refine' , 'Date:yyyy-MM-dd HH:mm:ss' , 'Time/∫♀:hh\\:mm\\:ss' , 'Dist/∫♂:0m' , 'Power/☼:0W' , '(1000*60/Beatrate)/⅟♥:0‴' , '(1000/MaxBeat)/⅟♥↓:0‴' , 'Beatage/☼∕♥:0.0♥W' , '(((Power+Beatage)*3+1000*60/Beatrate+1000/MaxBeat)/3)/∑:0' , 'Drift,5:.000' , 'xDrift,5:.000' , 'Draglet/Drag:0.00' , 'Tags' } ,
 	MatrixTraits = []{ 'Date:yyyy-MM-dd HH:mm:ss' , 'Time/∫♀:hh\\:mm\\:ss\\.ff' , 'Distance/∫♂:0.0m' , 'Alt/∫¤:0.0m' , 'Asc/Asc:0.0m' , 'Dev/Dev:0.0m' , 'Energy/∫☼:0J' , 'Flow:0J' , 'Beat/∫♥:0' , 'Bit/∫○:0' , 'Draglet/ØDrag:0.00' , 'Gradelet/ØGrade:.000' , 'Bendlet/ØBend:.000' , 'Speed/Ø♂:0.00m/s' , 'Power/Ø☼:0W' , 'Force/Ø►:0N' , 'Beatage/Ø☼∕♥:0J∕♥' , 'Bitage/Ø☼∕○:0J∕○' , 'Beatrate/Ø♥:0/min' , 'Bitrate/Ø○:0/min' , 'Marklet/Mark' , 'Tags' } ,
 	SpectrumBinds = []{ ':0.00000' , ':0.00000' , ':0.0m==>./`m' , ':0.0m' , ':0.00m' , string.Empty , ':0♥' , ':0○' , ':0J' , ':0.00m' , string.Empty,':0.000',':0.000',':0.000',':0.000',':0',':0.000',':0.000',':0.000', '(date.MinValue.AddSeconds(.)):yy-MM-dd\.HH\:mm\:ss\.f' , '(time.FromSeconds(.)):h\:mm\:ss\.f' } ,
 	ActionAssocier = (p,a)=>p.Action==a.Spec ,
 	Altiplane = (0.0D,10D,4B) ,
 	ViewScreenMargin = 10 ,
-	External = []{ (Uri=>'http'<Scheme,@"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe") } ,
+	External = []{ (Uri=>'http'<Scheme,@"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe") , (Uri=>'file'<Scheme,@"C:\Windows\explorer.exe") } ,
+	Internal = [System.Windows.Input.Key,[Rob.Act.Path=>]][]{ (type.F2,=>IncludeSpecToOrigin()) } ,
 }
 ;
 System.Diagnostics.{ Trace.Listeners.Add(Aid.Diagnostics.StoreListener(@"Destiny=Run\Local.log"){TraceOutputOptions=type.DateTime}) ; Trace.AutoFlush = true ; Trace.TraceInformation('Started') } ;

@@ -247,7 +247,7 @@
                 <KeyBinding Command="Save" Key="Return" Modifiers="Ctrl" CommandParameter="0"/>
             </DataGrid.InputBindings>
         </DataGrid>
-        <DataGrid Name="ActionFilterGrid" Grid.Row="0" Grid.Column="2" ItemsSource="{Binding ActionFilter}" AutoGenerateColumns="False" SelectionChanged="ActionFilterGrid_SelectionChanged" Margin="2" CanUserResizeRows="False">
+        <DataGrid Name="ActionFilterGrid" Grid.Row="0" Grid.Column="2" ItemsSource="{Binding ActionFilter}" AutoGenerateColumns="False" SelectionChanged="ActionFilterGrid_SelectionChanged" Margin="2" CanUserResizeRows="False" MouseRightButtonUp="ActionsFilterGrid_MouseRightButtonUp">
             <DataGrid.Columns>
                 <!--<DataGridCheckBoxColumn Header="Rex" Binding="{Binding Rex}"/>-->
                 <DataGridTextColumn Header="Actions" Binding="{Binding Filter}" Width="2*"><DataGridTextColumn.CellStyle><Style TargetType="DataGridCell"><Setter Property="ToolTip" Value="{Binding Filter}"></Setter></Style></DataGridTextColumn.CellStyle></DataGridTextColumn>

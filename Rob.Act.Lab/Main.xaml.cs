@@ -74,15 +74,15 @@ namespace Rob.Act.Analyze
 				foreach( var a in System.IO.Directory.GetFiles(Setup.StatePath,$"{Altiplane.FileSign}*{Path.Altiplane.ExtSign}") ) { Trace.TraceInformation($"Loading {a}") ; Path.Altiplanes.Add(new Path.Altiplane(a){Radius=g.Radius}) ; }
 				if( Path.Altiplanes.Count==0 ) Path.Altiplanes.Add(new Path.Altiplane(g.Grade,g.Grane){Radius=g.Radius}) ;
 			}) ;
-			Setup.WorkoutsPaths.SeparateTrim('|').SelectMany(l=>l.MatchingFiles()).EachGuard(f=>NewAction(f,Setup?.WorkoutsFilter).Set(a=>Trace.TraceInformation($"{(Setup?.WorkoutsFilter?.Invoke(a)!=false?"Loaded":"Ignored")} {f}")),(f,e)=>Trace.TraceError($"{f} faulted by {e}")) ;
+			Setup.WorkoutsPaths.SeparateTrim('|').SelectMany(l=>l.MatchingFiles(Setup?.WorkoutsSeed)).EachGuard(f=>NewAction(f,Setup?.WorkoutsFilter).Set(a=>Trace.TraceInformation($"{(Setup?.WorkoutsFilter?.Invoke(a)!=false?"Loaded":"Ignored")} {f}")),(f,e)=>Trace.TraceError($"{f} faulted by {e}")) ;
 			Setup.AspectsPaths.SeparateTrim('|').SelectMany(l=>l.MatchingFiles()).EachGuard(f=>{Trace.TraceInformation($"Loading {f}");NewAspect(f,Setup?.AspectsFilter);},(f,e)=>Trace.TraceError($"{f} faulted by {e}")) ;
 			/*WorkoutsWatchers =*/ Setup.WorkoutsPaths.SeparateTrim('|').Select(l=>new FileSystemWatcher(l){EnableRaisingEvents=true}.Set(w=>{ w.Edited += NewAction ; w.Deleted += (s,a)=>Book-=p=>p.Origin==a.FullPath ; })).Each() ;
 			State = new State{ Context = this } ;
 		}
 		protected override void OnClosing( CancelEventArgs e ) { Doct?.Dispose() ; base.OnClosing(e) ; }
 		protected override void OnClosed( EventArgs e ) { base.OnClosed(e) ; Process.GetCurrentProcess().Kill() ; }
-		Path NewAction( string file , Predicate<Pathable> filter = null ) => file.Reconcile().Internalize().Set(p=>p.Origin=file).Set(Translation.Partitionate).Set(p=>p.Spectrum.Reform(Setup.SpectrumBinds)).Set(p=>{Book|=filter?.Invoke(p)!=false?p:null;if(Book.Contains(p)){ActionEnhancing(p,ActiveRefiner);Dispatcher.Invoke(SaveBook);}}) ;
-		void NewAction( object subject , System.IO.FileSystemEventArgs arg ) => NewAction(arg.FullPath,Setup?.WorkoutsFilter).Set(p=>Path.Medium?.Interact(p,true)) ;
+		Path NewAction( string file , Predicate<Pathable> filter = null ) => file?.Reconcile().Internalize().Set(p=>p.Origin=file).Set(Translation.Partitionate).Set(p=>p.Spectrum.Reform(Setup.SpectrumBinds)).Set(p=>{Book|=filter?.Invoke(p)!=false?p:null;if(Book.Contains(p)){ActionEnhancing(p,ActiveRefiner);Dispatcher.Invoke(SaveBook);}}) ;
+		void NewAction( object subject , System.IO.FileSystemEventArgs arg ) => NewAction(arg.FullPath.Null(f=>Setup?.WorkoutsSeed?.Invoke(new System.IO.FileInfo(f))==false),Setup?.WorkoutsFilter).Set(p=>Path.Medium?.Interact(p,true)) ;
 		void NewAspect( string file , Predicate<Aspect> filter = null ) => ((Aspect)file.ReadAllText()).Set(a=>a.Origin=file).Set(a=>Aspects+=filter?.Invoke(a)!=false?a:null) ;
 		public Book Book { get ; private set ; } = new("Main") ;
 		public Filter ActionFilterFilter { get => actionFilterFilter ; internal set { if( value==actionFilterFilter ) return ; actionFilterFilter = value ; PropertyChanged.On(this,"ActionFilterFilter") ; } } Filter actionFilterFilter ;
@@ -187,8 +187,15 @@ namespace Rob.Act.Analyze
 			if( traits!=null && sender is DataGrid grid ) grid.Columns.Clear() ; else return ; if( keep ) Actras.Clear() ;
 			foreach( Filter.Entry.Binding tr in traits ) { grid.Columns.Add(new DataGridTextColumn{Header=tr.Name,Binding=new Binding(tr.Path){Converter=tr.Converter,StringFormat=tr.Form}}) ; Actras.Add(tr) ; }
 		}
+		void ActionsFilterGrid_MouseRightButtonUp( object sender , MouseButtonEventArgs e )
+		{
+			if( Keyboard.IsKeyDown(Key.LeftShift) ) foreach( var item in Setup.Internal ) if( Keyboard.IsKeyDown(item.key) ) foreach( var path in Book.Cast<Path>() ) item.act(path) ;
+		}
 		void BookGrid_MouseRightButtonUp( object sender , MouseButtonEventArgs e )
 		{
+			if( Keyboard.IsKeyDown(Key.LeftShift) ) foreach( var item in Setup.Internal ) if( Keyboard.IsKeyDown(item.key) ) foreach( var path in BookGrid.SelectedItems.Cast<Path>() ) item.act(path) ;
+			if( Keyboard.IsKeyDown(Key.F2) ) (BookGrid.SelectedItem as Path)?.IncludeSpecToOrigin() ; else
+			if( Keyboard.IsKeyDown(Key.Escape) ) (BookGrid.SelectedItem as Pathable)?.Origin.Start(External) ; else
 			if( Keyboard.IsKeyDown(Key.LeftCtrl) ) (BookGrid.SelectedItem as Pathable)?.Detail.Link(0).Start(External) ; else
 			if( Keyboard.IsKeyDown(Key.LeftShift) ) (BookGrid.SelectedItem as Pathable)?.Detail.Link(1).Start(External) ; else
 			if( Keyboard.IsKeyDown(Key.LeftAlt) ) (BookGrid.SelectedItem as Pathable)?.Detail.Link(2).Start(External) ; else
@@ -751,6 +758,6 @@ namespace Rob.Act.Analyze
 		public static double? By( this double value , (double Min,double Max) extent , bool positive = true ) => (positive?value-extent.Min:extent.Max-value)/(extent.Max-extent.Min).nil() ;
 		public static (double Width,double Height) Margin( this (double Width,double Height) frame , (double Width,double Height) margin ) => (frame.Width-2*margin.Width,frame.Height-2*margin.Height) ;
 		public static string Link( this string detail , int at ) { at = detail.IndexOf(at,Uri.SchemeDelimiter) ; if( at<0 ) return null ; while( at>0 && detail[at-1].IsSymbolChar() ) --at ; return detail.Substring(at).LeftFrom(true,' ','\n') ; }
-		public static void Start( this string link , Func<Uri,string> extra ) { if( link.Uri() is Uri uri ) if( extra(uri) is string app ) Process.Start( app , link ) ; else Process.Start( link ) ; }
+		public static void Start( this string link , Func<Uri,string> extra ) { var uri = link.Uri() ; if( extra(uri) is string app ) Process.Start( app , link ) ; else Process.Start( link ) ; }
 	}
 }

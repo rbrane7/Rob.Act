@@ -239,6 +239,14 @@ namespace Rob.Act
 
 		internal static string Serialize( this Mark mark ) => $"{(mark.HasFlag(Act.Mark.Stop)?"Stop":null)}{(mark.HasFlag(Act.Mark.Lap)?"Lap":null)}{(mark.HasFlag(Act.Mark.Act)?"Act":null)}{(mark.HasFlag(Act.Mark.Ato)?"Ato":null)}{(mark.HasFlag(Act.Mark.Sub)?"Sub":null)}{(mark.HasFlag(Act.Mark.Sup)?"Sup":null)}{(mark.HasFlag(Act.Mark.Hyp)?"Hyp":null)}{(mark.HasFlag(Act.Mark.Aim)?"Aim":null)}{(mark.HasFlag(Act.Mark.Own)?"Own":null)}" ;
 		internal static Mark Deserialize( this string mark ) => (mark?.Contains("Stop")==true?Act.Mark.Stop:Act.Mark.No)|(mark?.Contains("Lap")==true?Act.Mark.Lap:Act.Mark.No)|(mark?.Contains("Act")==true?Act.Mark.Act:Act.Mark.No)|(mark?.Contains("Ato")==true?Act.Mark.Ato:Act.Mark.No)|(mark?.Contains("Sub")==true?Act.Mark.Sub:Act.Mark.No)|(mark?.Contains("Sup")==true?Act.Mark.Sup:Act.Mark.No)|(mark?.Contains("Hyp")==true?Act.Mark.Hyp:Act.Mark.No)|(mark?.Contains("Aim")==true?Act.Mark.Aim:Act.Mark.No)|(mark?.Contains("Own")==true?Act.Mark.Own:Act.Mark.No) ;
+		internal static void MoveOriginTo( this string origin , string target )
+		{
+			var tap = System.IO.Path.GetDirectoryName(target) ; var orip = System.IO.Path.GetDirectoryName(origin) ;
+			if( System.IO.Path.GetFileNameWithoutExtension(origin) is not string orik || System.IO.Path.GetFileNameWithoutExtension(target) is not string tagik ) return ;
+			foreach( var file in System.IO.Directory.GetFiles(orip,$"{orik}.*") ) System.IO.File.Move(file,tap.Path(System.IO.Path.GetFileName(file).Replace(orik,tagik))) ;
+			if( orik.Contains("logbook-workout") && System.IO.Path.ChangeExtension(origin.Replace("logbook-workout","result"),".csv") is string det && System.IO.File.Exists(det) ) System.IO.File.Move(det,tap.Pathex(tagik.Replace("logbook-workout","result"),".csv")) ;
+			else if( orik.Contains("result") && System.IO.Path.ChangeExtension(origin.Replace("result","logbook-workout"),".tcx") is string alt && System.IO.File.Exists(alt) ) System.IO.File.Move(alt,tap.Pathex(tagik.Replace("result","logbook-workout"),".tcx")) ;
+		}
 	}
 	public class Metax : IEquatable<Metax> , IEnumerable<KeyValuePair<string,(uint At,string Form,bool Potent)>>
 	{

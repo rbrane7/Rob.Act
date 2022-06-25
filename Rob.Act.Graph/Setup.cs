@@ -11,6 +11,7 @@ namespace Rob.Act.Analyze
 	{
 		public string Doctee ;
 		public string WorkoutsPaths , AspectsPaths , AspectsPath , WorkoutsPath ;
+		public Predicate<System.IO.FileInfo> WorkoutsSeed ;
 		public Predicate<Pathable> WorkoutsFilter ;
 		public Predicate<Aspect> AspectsFilter ;
 		public string StatePath ;
@@ -25,6 +26,7 @@ namespace Rob.Act.Analyze
 		public double ViewScreenMargin ;
 		public IEnumerable<(string[] Tags,string Code)> Aggregates ;
 		public IEnumerable<(Func<Uri,bool> crit,string app)> External ;
+		public IEnumerable<(System.Windows.Input.Key key,Action<Path> act)> Internal ;
 	}
 	public class State
 	{

@@ -248,13 +248,34 @@ namespace Rob.Act
 				public Aspectable Context {get;set;}
 				public int Count => Context?.Raw?.Count ?? 0 ; //Math.Max((Context as Aspect)?.Context.Count??0,Context.Where(a=>!(a is Axe)&&a.Counts).Null(e=>e.Count()<=0)?.Max(a=>a.Count)??0) ;
 				public IEnumerator<Point> GetEnumerator() { for( int i=0 , count=Count ; i<count ; ++i ) yield return this[i] ; } IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
-				public Point this[ int at ] => new Point(Context as Aspect,at) ;
+				public Point this[ int at ] => new(Context as Aspect,at) ;
 			}
 			#region De/Serialization
 			public static explicit operator string( Aspect aspect ) => aspect.Get(a=>string.Join(Serialization.Separator,a.Where(x=>!(x is Axe)).Select(x=>(string)x))+(a.Count(x=>!(x is Axe))>0?Serialization.Separator:null)+(string)a.Trait) ;
 			#endregion
 		}
-		public Aspect Spectrum { get => aspect ??= new Aspect(this) ; internal set => aspect = value.Set(s=>s.Context=this) ; } Aspect aspect ;
-		public string Origin { get => Spectrum.Origin ; set { Spectrum.Origin = value ; var asp = (Act.Aspect)System.IO.Path.ChangeExtension(value,Aspect.Filex).ReadAllText() ; if( asp==null ) return ; foreach( var ax in asp ) if( Spectrum[ax.Spec]==null ) Spectrum.Add(ax) ; foreach( var trait in asp.Trait ) Spectrum.Trait.Add(trait) ; } }
+		public Aspect Spectrum { get => aspect ??= new(this) ; internal set => aspect = value.Set(s=>s.Context=this) ; } Aspect aspect ;
+		public string Origin
+		{
+			get => Spectrum.Origin ;
+			set
+			{
+				if( !value.Void() )
+				{
+					var ori = Origin ;
+					if( !value.Contains('\\') && System.IO.Path.GetDirectoryName(ori) is string orip ) value = orip.Path(value) ;
+					if( System.IO.Path.GetExtension(ori) is string ore && !value.EndsBy(ore) ) value += ore ;
+					if( !System.IO.File.Exists(value) ) ori.MoveOriginTo(value) ;
+				}
+				Spectrum.Origin = value ; var asp = (Act.Aspect)System.IO.Path.ChangeExtension(value,Aspect.Filex).ReadAllText() ; if( asp==null ) return ;
+				foreach( var ax in asp ) if( Spectrum[ax.Spec]==null ) Spectrum.Add(ax) ; foreach( var trait in asp.Trait ) Spectrum.Trait.Add(trait) ;
+				propertyChanged.On(this,"Origin") ;
+			}
+		}
+		public void IncludeSpecToOrigin( bool locus = false )
+		{
+			var ori = Origin ; var spec = $"{Locus.Null(_=>!locus).Get(l=>$".{l}")}.{Action}.{Refine}" ; if( ori.Contains(spec) ) return ;
+			Origin = $"{System.IO.Path.GetDirectoryName(ori).Pathex(System.IO.Path.GetFileNameWithoutExtension(ori)+spec,System.IO.Path.GetExtension(ori))}" ;
+		}
 	}
 }
