@@ -1,6 +1,6 @@
 ﻿/*@ Rob.Act.Analyze.Settings @*/ type
 {
-	Doctee = 'doctee://localhost:43202/Action/Analyze?Name=Rana' ,
+	Doctee = 'doctee://localhost:43203/Action/Analyze?Name=Rana' ,
 	WorkoutsPaths = @'C:\Users\teplyr\Downloads\concept2*.tcx | C:\Users\teplyr\Downloads\*.gpx | C:\Users\teplyr\Downloads\*.Bio.csv | C:\Users\teplyr\Downloads\*.par | C:\Users\teplyr\Downloads\*.path' ,
 	/*WorkoutsPaths = @'C:\Users\teplyr\Downloads\2021-03-06-193529-XCS-Robert’s-Apple Watch.path | C:\Users\teplyr\Downloads\2021-03-10-192114-XCS-Robert’s-Apple Watch.path' ,*/
 	/*WorkoutsPaths = @'C:\Users\teplyr\Downloads\2022-01-29-144417-XCS.C.160-Jil.Race-Rob.6-watch.*' ,*/

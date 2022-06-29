@@ -154,7 +154,7 @@ namespace Rob.Act
 		#region Quotient
 		public virtual Quant? Distance { get => Dist/Transfer ; set => Dist = value*Transfer ; }
 		public Quant? Speed => Distance.Quotient(Time.TotalSeconds) ;
-		public Quant? Pace => Time.TotalSeconds/Distance ;
+		public Quant? Pace => Time.TotalSeconds.Quotient(Distance) ;
 		public Quant? Power => Object==Basis.Device.Skierg.Code ? Time.TotalSeconds.Quotient(Dist).PacePower(drag:Basis.Device.Skierg.Draw) : Energy.Quotient(Time.TotalSeconds) ;
 		public Quant? Force => Energy.Quotient(Distance) ;
 		public virtual Quant? Beatage => Energy.Quotient(Beat) ;

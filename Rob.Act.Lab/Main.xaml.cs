@@ -32,8 +32,7 @@ namespace Rob.Act.Analyze
 	public partial class Main : Window , INotifyPropertyChanged
 	{
 		public static Settings Setup => setup?.Result ; static readonly Aid.Prog.Setup<Settings> setup ;
-		static string External( Uri uri ) => Setup?.External.One(i=>i.crit.Of(uri,true)).app ;
-			//?? ( uri.Scheme switch { string s when s==Uri.UriSchemeHttp||s==Uri.UriSchemeHttps => @"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe" , _ => null } ) ;
+		static string External( Uri uri ) => Setup?.External.One(i=>i.crit.Of(uri,true)).app ;//?? ( uri.Scheme switch { string s when s==Uri.UriSchemeHttp||s==Uri.UriSchemeHttps => @"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe" , _ => null } ) ;
 		static Main()
 		{
 			AppDomain.CurrentDomain.Load(typeof(Translation).Assembly.FullName) ;
@@ -65,7 +64,7 @@ namespace Rob.Act.Analyze
 		{
 			InitializeComponent() ; Presources = new Presources(BookGrid,this) ; AppDomain.CurrentDomain.Load(typeof(AxeOperations).Assembly.FullName) ; ViewPanel = GraphPanel ; DataContext = this ;
 			Doct += (this,"Main") ; Aspectables.The = (()=>Book.Entries.Select(p=>p.Spectrum).Union(Aspects.Entries),()=>Aspects.Entries) ; SourcesGrid.ItemContainerGenerator.ItemsChanged += SourcesGrid_ItemsChanged ; Task.Factory.StartNew(Load) ;
-			Title = $"{System.IO.Path.GetFileName(setup.Config)} {Setup.Doctee} {System.IO.Path.GetDirectoryName(setup.Config)}" ;
+			Title = $"{Aid.The.Run.Appi} {Setup.Doctee} {setup.Config}" ;
 		}
 		void Load()
 		{
