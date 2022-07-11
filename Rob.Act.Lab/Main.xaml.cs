@@ -56,7 +56,7 @@ namespace Rob.Act.Analyze
 					if( main.Aggregation.at(a=>a.Code==ag.Code).Value is var agr && agr.Tags is IList<Regex> tags ) { tags.Clear() ; ag.In.Each(c=>tags.Add(c.Get(e=>new Regex(e)))) ; }
 			}
 		}
-		public State State { get => state ; private set => state = (value??new State()).Set(s=>s.Context=this) ; } State state ;
+		public State State { get => state ; private set => state = (value??new()).Set(s=>s.Context=this) ; } State state ;
 		//FileSystemWatcher[] WorkoutsWatchers ;
 		public event PropertyChangedEventHandler PropertyChanged ;
 		void PropertyChangedOn<Value>( string properties , Value value ) => Dispatcher.Invoke(()=>{ PropertyChanged.On(this,properties,value) ; if( properties.Consists("Sources") ) Redraw() ; }) ;
@@ -64,7 +64,7 @@ namespace Rob.Act.Analyze
 		{
 			InitializeComponent() ; Presources = new Presources(BookGrid,this) ; AppDomain.CurrentDomain.Load(typeof(AxeOperations).Assembly.FullName) ; ViewPanel = GraphPanel ; DataContext = this ;
 			Doct += (this,"Main") ; Aspectables.The = (()=>Book.Entries.Select(p=>p.Spectrum).Union(Aspects.Entries),()=>Aspects.Entries) ; SourcesGrid.ItemContainerGenerator.ItemsChanged += SourcesGrid_ItemsChanged ; Task.Factory.StartNew(Load) ;
-			Title = $"{Aid.The.Run.Appi} {Setup.Doctee} {setup.Config}" ;
+			Title = $"{Aid.The.Run.Appi} {System.Reflection.Assembly.GetEntryAssembly().GetName().Version} {Setup.Doctee} {setup.Config}" ;
 		}
 		void Load()
 		{
