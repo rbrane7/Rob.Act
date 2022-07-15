@@ -27,7 +27,7 @@ namespace Rob.Act
 			string cofile = null ; if( file.EndsWith(".tcx") && file.Contains("concept2-logbook-workout-") ) { cofile = file ; file = file.Replace("logbook-workout","result").Replace(".tcx",Csv.Ext) ; }
 			if( !primary )
 			{
-				if( cofile!=null )
+				if( cofile is not null )
 				{
 					if( Path.Primary && System.IO.Path.ChangeExtension(cofile,Path.Filext) is string p && cofile!=p && System.IO.File.Exists(p) ) return null ; // we prefer .path files over all serialization forms
 					if( System.IO.File.Exists($"{cofile}.{Partitioner.Ext}") ) return null ; // we prefer ..par corrections over original serialization forms if they are not named
@@ -36,21 +36,33 @@ namespace Rob.Act
 				if( System.IO.File.Exists($"{file}.{Partitioner.Ext}") ) return null ; // we prefer ..par corrections over original serialization forms if they are not named
 			}
 			var data = file.ReadAllText(false) ; if( data==null ) return null ;
-			if( (cofile??=file.Replace("result","logbook-workout").Replace(Csv.Ext,".tcx"))!=file && System.IO.File.Exists(cofile) )
-			{	// Now cofile is always just heder , not point-to-point data .
-				var rest = cofile.ReadAllText(false) ; var text = rest.Get(t=>t.LeftFrom("<Track")??t.LeftFrom("</Lap>")) ;
-				var date = text.RightFromFirst("<Lap StartTime=\"").LeftFrom("\"") ; var spec = text.RightFromFirst("<Id>").LeftFrom("</Id>") ;
-				var time = text.RightFromFirst("<TotalTimeSeconds>").LeftFrom("</TotalTimeSeconds>") ; var dist = text.RightFrom("<DistanceMeters>").LeftFrom("</DistanceMeters>") ;
-				var drag = text.RightFrom("<DragFactor>").LeftFrom("</DragFactor>") ?? text.RightFrom("<Drag>").LeftFrom("</Drag>") ?? "100" ;
-				var action = text.RightFrom("<Action>").LeftFrom("</Action>") ; var subject = text.RightFrom("<Subject>").LeftFrom("</Subject>") ; var locus = text.RightFrom("<Locus>").LeftFrom("</Locus>") ; var refine = text.RightFrom("<Refine>").LeftFrom("</Refine>") ;
-				string laps = null ; if( (rest=rest[(text.Length+6)..]).Consists("<Lap") ) for( var (tacu,dacu) = (time.Parse(0D),dist.Parse(0D)) ; (text=rest.Get(t=>t.LeftFrom("<Track")??t.LeftFrom("</Lap>")))!=null ; rest = rest[(text.Length+6)..] )
+			string sign = data.LeftFrom('\n')?.Trim() , rest , dart , dres ; /* first signing line of data */
+			string Part( string data ) => data.LeftFrom(sign,from:sign.Length,all:true) ; static string Intra( string data ) => data.Null(v=>v.Contains("</Activity>")) ;
+			if( (cofile??=file.Replace("result","logbook-workout").Replace(Csv.Ext,".tcx"))!=file && System.IO.File.Exists(cofile) ) for
+			(
+				rest = cofile.ReadAllText(false).RightFromFirst("<Activity") , dart = Part(data) , dres = data.Sub(dart.Length) , data = null ;
+				!rest.No() ; rest = rest.RightFromFirst("<Activity") , dart = Part(dres) , dres = dres.Sub(dart?.Length??0)
+			) // Now cofile is always just heder , not point-to-point data .
+			{
+				var text = rest.LeftFrom("<Track") ?? rest.LeftFrom("</Lap>") ;
+				var date = text.RightFromFirst("<Lap StartTime=\"").LeftFrom("\"")?.Trim() ; var spec = text.RightFromFirst("<Id>").LeftFrom("</Id>") ;
+				var time = text.RightFromFirst("<TotalTimeSeconds>").LeftFrom("</TotalTimeSeconds>") ; var dist = text.RightFromFirst("<DistanceMeters>").LeftFrom("</DistanceMeters>") ;
+				var drag = text.RightFromFirst("<DragFactor>").LeftFrom("</DragFactor>") ?? text.RightFromFirst("<Drag>").LeftFrom("</Drag>") ?? "100" ;
+				var action = text.RightFromFirst("<Action>").LeftFrom("</Action>") ; var subject = text.RightFromFirst("<Subject>").LeftFrom("</Subject>") ;
+				var locus = text.RightFromFirst("<Locus>").LeftFrom("</Locus>") ; var refine = text.RightFromFirst("<Refine>").LeftFrom("</Refine>") ;
+				string laps = null ; if( (rest=rest[(text.Length+6)..]).Consists("<Lap") )
+				for( var (tacu,dacu) = (time.Parse(0D),dist.Parse(0D)) ; Intra(text=rest.Get(t=>t.LeftFrom("<Track")??t.LeftFrom("</Lap>"))) is not null ; rest = rest[(text.Length+6)..] )
 				{
 					if( laps==null ) laps = $"{tacu},{dacu};" ; // first element if we add active ones
-					tacu += text.RightFromFirst("<TotalTimeSeconds>").LeftFrom("</TotalTimeSeconds>").Parse(0D) ; dacu += text.RightFrom("<DistanceMeters>").LeftFrom("</DistanceMeters>").Parse(0D) ;
+					tacu += text.RightFromFirst("<TotalTimeSeconds>").LeftFrom("</TotalTimeSeconds>").Parse(0D) ; dacu += text.RightFromFirst("<DistanceMeters>").LeftFrom("</DistanceMeters>").Parse(0D) ;
 					/*if( text.Contains("<Intensity>Resting</Intensity>") )*/ laps += $"{tacu},{dacu};" ;
 				}
-				else { var lavs = data.Trim().RightFrom('\n').Separate(',') ; lavs[0] = (lavs[0].Trim('"').Parse<uint>()+1).Stringy() ?? lavs[0] ; lavs[1] = time ; lavs[2] = dist ; data += lavs.Stringy(',') ; data += $",\"{drag}\"{Environment.NewLine}" ; } // append of final misssing line
-				var first = data.LeftFrom('\n')?.Trim() ; var nef = first+$",\"Refine={refine}\",\"Locus={locus}\",\"Subject={subject}\",\"Drag Factor={drag}\",\"Date={date}\",\"Spec={action??spec}\"{laps.Get(l=>$",\"Laps={laps}\"")}" ; data = data.Replace(first,nef) ;
+				else
+				{
+					var lavs = dart.RightFrom('\n').Separate(',') ; lavs[0] = (lavs[0].Trim('"').Parse<uint>()+1).Stringy() ?? lavs[0] ; lavs[1] = time ; lavs[2] = dist ;
+					dart += lavs.Stringy(',') ; dart += $",\"{drag}\"{Environment.NewLine}" ; /* append of final misssing line */
+				}
+				data += dart.Replace(sign,sign+$",\"Refine={refine}\",\"Locus={locus}\",\"Subject={subject}\",\"Drag Factor={drag}\",\"Date={date}\",\"Spec={action??spec}\"{laps.Get(l=>$",\"Laps={laps}\"")}") ;
 			}
 			else if( file.EndsWith(Partitioner.Ext) ) data = $"{Partitioner.Sign}{file.LeftFromLast(Partitioner.Ext)}{Environment.NewLine}{data}" ;
 			else if( file.EndsWith(Csv.Bio.Ext) && file.LeftFrom(Csv.Bio.Ext).RightFrom('.') is string sbj ) data = data.LeftFrom(true,CrLf)+$",Subject={sbj}"+data.RightFromFirst(CrLf,with:true) ;
