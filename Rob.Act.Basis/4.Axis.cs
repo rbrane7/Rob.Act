@@ -39,7 +39,7 @@ namespace Rob.Act
 		public bool Multi { get => multi ; set { if( value==multi ) return ; multi = value ; Aspect = null ; propertyChanged.On(this,"Multi,Aspects") ; } } bool multi ;
 		public bool Regular => !Multi || Selector!=null ;
 		public bool Asrex { get => rex ; set { if( value==rex ) return ; rex = value ; Selectlet = selectlet ; propertyChanged.On(this,"Asrex,Aspects") ; } } bool rex ;
-		Axe Deref( IEnumerable<Aspectable> aspects ) => IsRef ? Spec.RightFrom(Extern,all:true).Get(s=>(Spec.LeftFromLast(Extern)is string asp?aspects?.Where(a=>asp==a.Spec):aspects)?.SelectMany(a=>a).One(x=>x.Spec==s&&!x.IsRef)) : null ;
+		Axe Deref( IEnumerable<Aspectable> aspects ) => IsRef ? Spec.RightFrom(Extern,all:true).Get(s=>(Spec.LeftFromLast(Extern)is string asp?aspects?.Where(a=>asp==a.Spec):aspects)?.SelectMany(a=>a).SingleOrNo(x=>x.Spec==s&&!x.IsRef)) : null ;
 		public Axe DeRef => Deref(Act.Aspect.Set)??this ; public bool IsRef => (resolver==null||resolver==No.resolver) && resolvelet.No() ;
 		protected virtual Aspectable DefaultAspect => Multi ? null : Selection?.SingleOrNo() ;
 		protected virtual Aspectable[] DefaultAspects => Multi ? Selection?.ToArray() : null ;
@@ -213,6 +213,56 @@ namespace Rob.Act
 		/// <param name="dif"> Index difference from position <paramref name="at"/> . </param>
 		/// <returns> Difference value of axe . </returns>
 		Quant? Dif( int at , int dif , bool shift = false ) => dif==0 ? Dif(at,dif:shift) : (Resolve(at+dif-(shift?1:0))-Resolve(at-(shift?1:0)))*Math.Sign(dif) ;
+		/// <summary> Calculates value difference of this axe between value <paramref name="at"/> positin and position differing by <paramref name="dif"/> . </summary>
+		/// <param name="at"> Position where to calculate differce . </param>
+		/// <param name="dif"> Index difference from position <paramref name="at"/> . </param>
+		/// <param name="fif"> Final non-integer tail of difference . </param>
+		/// <returns> Difference value of axe . </returns>
+		Quant? Diff( int at , uint dif , double eif = default , double fif = default )
+		{
+		#if true
+			(Quant val,Quant at)? min = default , max = default ;
+			if( eif!=default ) if( this[at+eif] is Quant v ) min = max = (v,eif) ;
+			for( var i = 0 ; i<=dif ; ++i ) if( Resolve(at+i) is Quant v ) { if( v>=min?.val );else min = (v,i) ; if( v<=max?.val );else max = (v,i) ; }
+			if( fif!=default ) if( this[at+dif+fif] is Quant v ) { if( v>=min?.val );else min = (v,dif+eif) ; if( v<=max?.val );else max = (v,dif+eif) ; }
+			return (max?.val-min?.val)*(max?.at-min?.at).use(Math.Sign) ?? ( min is null && max is null ? null : 0 ) ;
+		#else
+			Quant? dal = null , dam = null , lav = null ;
+			for( var i = 0 ; i<=dif ; ++i ) if( Resolve(at+i) is Quant v )
+				if( lav is null ) { lav = v ; if( eif!=default ) if( (this[at+eif]-lav)*Math.Sign(eif) is Quant ld ) dal = dam = ld ; } else
+				{
+					var d = v-lav.Value ; lav = v ;
+					if( dal is null ) dal = d ; else if( d!=0 ) if( dal+d is Quant dan ) { if( dam is null || Math.Abs(dan)>Math.Abs(dam.Value) ) dam = dan ; dal = dan ; }
+				}
+			if( fif!=default ) if( (this[at+dif+fif]-lav)*Math.Sign(fif) is Quant ld ) { if( dal is null ) dal = ld ; else dal += ld ; if( dal.use(Math.Abs)>dam.use(Math.Abs) ) dam = dal ; }
+			return dam ?? dal ;
+		#endif
+		}
+		/// <summary> Calculates value difference of this axe between value <paramref name="at"/> positin and position differing by <paramref name="dif"/> . </summary>
+		/// <param name="at"> Position where to calculate differce . </param>
+		/// <param name="dif"> Index difference from position <paramref name="at"/> . </param>
+		/// <returns> Difference value of axe . </returns>
+		Quant? Diff( int at , int dif , double fif = default ) => dif<0 ? -Diff(at+dif,(uint)-dif,eif:fif) : Diff(at,(uint)dif,fif:fif) ;
+		/// <summary>
+		/// Calculates value difference of this axe between value <paramref name="at"/> positin and position differing exactly by real <paramref name="dif"/> . 
+		/// Calculation uses linear interpolation for intermediary positions . 
+		/// </summary>
+		/// <param name="at"> Position where to calculate differce . </param>
+		/// <param name="dif"> Exact real index difference from position <paramref name="at"/> . </param>
+		/// <returns> Difference value of axe . </returns>
+		/// <remarks> Optimized variant of <see cref="Dif(int, Quant, Quant)"/> for single limit relative to <see cref="at"/> position . </remarks>
+		Quant? Diff( int at , double dif ) => Diff(at,(int)dif,dif.Frac()) ;
+		/// <summary>
+		/// Calculates value difference of this axe between value <paramref name="at"/> positin and position differing exactly by real <paramref name="dif"/> . 
+		/// Calculation uses linear interpolation for intermediary positions . 
+		/// </summary>
+		/// <param name="at"> Position where to calculate differce . </param>
+		/// <param name="dif"> Exact real index difference from position <paramref name="at"/> of upper limit . </param>
+		/// <param name="cif"> Exact real index difference from position <paramref name="at"/> of lower limit . </param>
+		/// <returns> Difference value of axe . </returns>
+		Quant? Diff( int at , double dif , double cif ) => dif<cif ? Diff(at+(int)dif,(uint)(cif-dif),dif.Frac(),cif.Frac()) : Diff(at+(int)cif,(uint)(dif-cif),cif.Frac(),dif.Frac()) ;
+		public Axe Extent( int dif ) => new( i=>Diff(i,dif) , this ) ;
+		public Axe Extent( Lap dif ) => new( i => dif[i] is double d ? dif.Dual ? dif[i,1] is double c ? Diff(i,d,c) : null : Diff(i,d) : null , this ) ;
 		/// <summary> Calculates value difference of this axe between value <paramref name="at"/> positin and position differing by <paramref name="dif"/> . </summary>
 		/// <param name="at"> Position where to calculate differce . </param>
 		/// <param name="dif"> Index difference from position <paramref name="at"/> . </param>
@@ -462,11 +512,18 @@ namespace Rob.Act
 		public static Axe quo( this uint dif , Axe x , Axe y ) => dif==0 ? x/y : (x%dif)/(y%dif) ;
 		public static Axe quo( this Lap dif , Axe x , Axe y ) => (x/dif)/(y/dif) ;
 		public static Axe quo( this Axe dif , Axe x , Axe y ) => dif is Lap.Axe a ? a.Arg.quo(x,y) : Axe.No ;
+		public static Axe Quo( this int dif , Axe x , Axe y ) => x is null || y is null ? Axe.No : dif==0 ? x/y : x.Extent(dif)/y.Extent(dif) ;
+		public static Axe Quo( this Lap dif , Axe x , Axe y ) => x is null || y is null ? Axe.No : x.Extent(dif)/y.Extent(dif) ;
+		public static Axe Quo( this Axe dif , Axe x , Axe y ) => dif is Lap.Axe a ? a.Arg.Quo(x,y) : Axe.No ;
 		public static Axe d( this int dif , Axe x , Axe y ) => dif.quo(x,y) ;
 		public static Axe d( this uint dif , Axe x , Axe y ) => dif.quo(x,y) ;
 		public static Axe d( this Lap dif , Axe x , Axe y ) => dif.quo(x,y) ;
 		public static Axe d( this Axe dif , Axe x , Axe y ) => dif.quo(x,y) ;
 		public static Axe d( this Axe x , Axe y ) => y is Lap.Axe d ? d.Arg.d(x,d.Ctx) : x is Lap.Axe e ? e.Arg.d(y,e.Ctx) : 1.d(x,y) ;
+		public static Axe D( this int dif , Axe x , Axe y ) => dif.Quo(x,y) ;
+		public static Axe D( this Lap dif , Axe x , Axe y ) => dif.Quo(x,y) ;
+		public static Axe D( this Axe dif , Axe x , Axe y ) => dif.Quo(x,y) ;
+		public static Axe D( this Axe x , Axe y ) => y is Lap.Axe d ? d.Arg.D(x,d.Ctx) : x is Lap.Axe e ? e.Arg.D(y,e.Ctx) : 1.D(x,y) ;
 		public static Axe cntr( this int dif , Axe y , Axe m ) => y==null ? Axe.No : m==null||dif==0 ? y : new Axe( i=>{ var me = m[i+dif]-m[i] ; return me==0 ? null : dif.Steps(i).Sum(j=>y[j]*(m[j+Math.Sign(dif)]-m[j]))/me ; } , y ) ;
 		public static Axe cntr( this Lap dif , Axe y , Axe m ) => y==null ? Axe.No : new Axe( i=>{ var d = (int)(dif[i]??0) ; var c = (int)(dif[i,1]??0) ; var me = m[i+d]-m[i+c]??0 ; return me==0 ? null : (d-c).Steps(i).Sum(j=>y[j]*(m[j+Math.Sign(d-c)]-m[j]))/me ; } , y ) ;
 		public static Axe cntr( this Axe dif , Axe y , Axe m ) => dif is Lap.Axe a ? a.Arg.cntr(y,m) : y??Axe.No ;

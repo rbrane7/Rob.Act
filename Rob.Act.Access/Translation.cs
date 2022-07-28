@@ -59,7 +59,7 @@ namespace Rob.Act
 				}
 				else
 				{
-					var lavs = dart.RightFrom('\n').Separate(',') ; lavs[0] = (lavs[0].Trim('"').Parse<uint>()+1).Stringy() ?? lavs[0] ; lavs[1] = time ; lavs[2] = dist ;
+					var lavs = dart.Trim().RightFrom('\n').Separate(',') ; lavs[0] = (lavs[0].Trim('"').Parse<uint>()+1).Stringy() ?? lavs[0] ; lavs[1] = time ; lavs[2] = dist ;
 					dart += lavs.Stringy(',') ; dart += $",\"{drag}\"{Environment.NewLine}" ; /* append of final misssing line */
 				}
 				data += dart.Replace(sign,sign+$",\"Refine={refine}\",\"Locus={locus}\",\"Subject={subject}\",\"Drag Factor={drag}\",\"Date={date}\",\"Spec={action??spec}\"{laps.Get(l=>$",\"Laps={laps}\"")}") ;

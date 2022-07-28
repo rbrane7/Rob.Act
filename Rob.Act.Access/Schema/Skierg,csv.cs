@@ -26,7 +26,7 @@ namespace Rob.Act
 			/// </remarks>
 			public Skierg( string data )
 			{
-				bool First() => Data.Count<=0 ;
+				bool First() => Data.Count<=1 ;
 				(TimeSpan Time,Quant Distance,Quant Beat,uint Bit,Quant Energy,Quant Drag,Quant Effort,Mark Mark) accu = default ;
 				(uint bit,double time,double dist,uint beat,uint power,uint drag,double pace,uint effort,Mark mark) last = default ;
 				uint idrag = 0 ; Quant atime = 0 , adist = 0 ; IEnumerable<(Quant time,Quant dist)> laps = null ;
@@ -34,7 +34,7 @@ namespace Rob.Act
 				{
 					if( Sign(line) )
 					{
-						Data.Add(accu) ; var lapo = laps?.LastOrDefault()??default ;
+						Data.Add(accu) ; var lapo = laps?.LastOrDefault() ?? default ;
 						laps = line.RightFrom(Axes[^7]+'=').LeftFrom('"').SeparateTrim(';',false)?.Select(e=>(e.LeftFrom(',').Parse<Quant>(0)+lapo.time,e.RightFrom(',').Parse<Quant>(0)+lapo.dist)).ToArray() ;
 						if( line.RightFrom(Axes[^6]+'=').LeftFrom('"') is string refine && !Refine.Includes(refine) ) if( Refine.No() ) Refine = refine ; else Refine += $"+{refine}" ;
 						if( line.RightFrom(Axes[^5]+'=').LeftFrom('"') is string locus && !Locus.Includes(locus) ) if( Locus.No() ) Locus = locus ; else Locus += $" {locus}" ;
@@ -42,6 +42,7 @@ namespace Rob.Act
 						if( line.RightFrom(Axes[^3]+'=').LeftFrom('"').Parse<uint>() is uint drg ) idrag = drg ;
 						if( line.RightFrom(Axes[^2]+'=').LeftFrom('"').Parse<DateTime>() is DateTime date && First() ) Date = date ; // Date is used only of the leader one
 						if( line.RightFrom(Axes[^1]+'=').LeftFrom('"') is string spec && !Spec.Includes(spec) ) if( Spec.No() ) Spec = spec ; else Spec += $" {spec}" ;
+						continue ;
 					}
 					var vals = line.Separate(',').Select(v=>v.Trim('"')).ToArray() ; if( vals.At(7)==null ) continue ;
 					(uint bit,double time,double dist,uint beat,uint power,uint drag,double pace,uint effort,Mark mark) =
