@@ -89,9 +89,10 @@ namespace Rob.Act.Analyze
 			public static explicit operator string( Entry entry ) => entry.Get(e=>string.Join(Separator,e.Rex?" ":string.Empty,e.Filter,e.Traits,e.Matrix,e.Associer,e.Matter,e.Query)) ;
 			public static implicit operator Entry( string entry ) => entry.Get(e=>{ var f = e.Separate(Separator,braces:null) ; return f.Length<=1 ? null : new Entry{ rex = f[0]==" " , filter = f.At(1) , traits = f.At(2) , matrix = f.At(3) , associer = f.At(4) , matter = f.At(5) , query = f.At(6) } ; }) ;
 			public Func<Objective,bool> ToFilter<Objective>() => Rex ? Filter.Matcherex<Objective>() : Filter.Compile<Func<Objective,bool>>() ;
+			public Func<Objective,IEnumerable<Objective>,bool> ToViciner<Objective>( string naming = null ) => Rex ? Filter.Matcherex<Objective>().Get(f=>new Func<Objective,IEnumerable<Objective>,bool>((p,c)=>f(p))) : Filter.Compile<Func<Objective,IEnumerable<Objective>,bool>>(naming??",context") ;
 			public Func<IEnumerable<Objective>,IEnumerable<Objective>> ToQuery<Objective>() => Query.Compile<Func<IEnumerable<Objective>,IEnumerable<Objective>>>() ;
 			public Func<Objective,bool> ToAssocier<Objective>() => Associer.Compile<Func<Objective,bool>>() ;
-			public (Func<Objective,bool> Filter,Func<Enhancer,bool> Associer,Func<IEnumerable<Objective>,IEnumerable<Objective>> Query) ToRefiner<Objective,Enhancer>() => (ToFilter<Objective>(),ToAssocier<Enhancer>(),ToQuery<Objective>()) ;
+			public (Func<Objective,IEnumerable<Objective>,bool> Filter,Func<Enhancer,bool> Associer,Func<IEnumerable<Objective>,IEnumerable<Objective>> Query) ToRefiner<Objective,Enhancer>( string naming = null ) => (ToViciner<Objective>(naming),ToAssocier<Enhancer>(),ToQuery<Objective>()) ;
 			public override string ToString() => Filter ;
 			public struct Binding
 			{
