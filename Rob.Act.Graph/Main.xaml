@@ -22,7 +22,7 @@
             <Setter Property="FontSize" Value="9"/>
         </Style>
     </Window.Resources>
-    <Grid Name="MainFrame">
+    <Grid Name="MainFrame" KeyDown="MainFrame_KeyDown" KeyUp="MainFrame_KeyUp">
         <Grid.ColumnDefinitions>
             <ColumnDefinition/>
             <ColumnDefinition Width="7*"/>
