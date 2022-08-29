@@ -45,6 +45,7 @@
             <GridSplitter Grid.Column="0" VerticalAlignment="Stretch" Width="3" HorizontalAlignment="Right"/>
             <DataGrid Name="AspectAxisGrid" ItemsSource="{Binding Aspect}" AutoGenerateColumns="False" Margin="2" SelectionChanged="AspectAxisGrid_SelectionChanged" CanUserResizeRows="False">
                 <DataGrid.Columns>
+                    <DataGridCheckBoxColumn Header="∆" Binding="{Binding Delta}"/>
                     <DataGridTextColumn Header="Axe" Binding="{Binding Spec}" Width="1*"/>
                     <DataGridTextColumn Header="Resolver" Binding="{Binding Resolvelet}" Width="4*">
                         <DataGridTextColumn.CellStyle>
@@ -393,8 +394,8 @@
         </DataGrid>
         <Grid Grid.Row="2" Grid.Column="2">
             <Grid.RowDefinitions>
-                <RowDefinition/>
-                <RowDefinition/>
+                <RowDefinition Height="1*"/>
+                <RowDefinition Height="0*"/>
             </Grid.RowDefinitions>
             <GridSplitter Grid.ColumnSpan="3" Grid.Row="0" VerticalAlignment="Bottom" Height="3" HorizontalAlignment="Stretch"/>
             <DataGrid Name="ActionsFilterFilterGrid" ItemsSource="{Binding ActionFilterFilter}" AutoGenerateColumns="False" SelectionChanged="ActionFilterFilterGrid_SelectionChanged" Margin="2" CanUserResizeRows="False" HeadersVisibility="None">

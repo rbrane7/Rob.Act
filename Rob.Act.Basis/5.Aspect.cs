@@ -14,7 +14,7 @@ namespace Rob.Act
 	using Quant = Double ;
 	/// <summary> Defines operations which are supported for context resolvers in common , for both axe definition and trait definition contexts . </summary>
 	public interface Contextable { [LambdaContext.Dominant] Axe this[ string key ] {get;} Axe this[ Quant value ] {get;} Axe this[ Func<int,Quant?> fun ] {get;} Axe.Support this[ IEnumerable<int> fragment ] {get;} Path Raw {get;} Aspect.Traits Trait {get;} }
-	public interface Contextables { [LambdaContext.Dominant] Axe this[ string key ] {get;} Axe this[ Quant value ] {get;} Axe this[ Func<int,Quant?> fun ] {get;} Axe.Support this[ IEnumerable<int> fragment ] {get;} Aspectable this[ int at ] {get;} Path Raw( int at = 0 ) ; }
+	public interface Contextables : IEnumerable<Aspectable> { [LambdaContext.Dominant] Axe this[ string key ] {get;} Axe this[ Quant value ] {get;} Axe this[ Func<int,Quant?> fun ] {get;} Axe.Support this[ IEnumerable<int> fragment ] {get;} Aspectable this[ int at ] {get;} Path Raw( int at = 0 ) ; }
 	public interface Aspectable : Aid.Gettable<int,Axe> , Contextable , Resourcable , Aid.Countable<Axe> { string Spec {get;} Aspect Base {get;} }
 	public interface Resourcable { Aspectable Source {set;} Aspectable[] Sources {set;} Aspect.Point.Iterable Points {get;} }
 	public struct Aspectables : Aid.Gettable<int,Aspectable> , Aid.Gettable<Aspectable> , Aid.Countable<Aspectable> , Resourcable
@@ -33,7 +33,7 @@ namespace Rob.Act
 		struct Iterator : Aspect.Point.Iterable
 		{
 			internal Aid.Countable<Aspectable> Context {get;set;}
-			public int Count => Context?.Count>0 ? Context.Max(s=>s?.Count(a=>!a.Multi)>0?s.Where(a=>!a.Multi).Max(a=>a?.Count??0):0) : 0 ;
+			public int Count => Context?.Count>0 ? Context.Max(s=>s?.Count(a=>a.Multi==false)>0?s.Where(a=>a.Multi==false).Max(a=>a?.Count??0):0) : 0 ;
 			Aspectable Aspect.Point.Iterable.Context { get => throw new NotSupportedException("Single context not supported on multi-context version !") ; set => throw new NotSupportedException("Single context not supported on multi-context version !") ; }
 			public IEnumerator<Aspect.Point> GetEnumerator() => throw new NotSupportedException("Points iterator not supported on multi-context version !") ; IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
 			public Aspect.Point this[ int at ] => throw new NotSupportedException("Points not supported on multi-context version !") ;
@@ -55,11 +55,11 @@ namespace Rob.Act
 		public string Score { get => $"{Spec} {Trait} {Tags}" ; set => propertyChanged.On(this,"Score") ; }
 		public Traits Trait { get; }
 		public string Taglet { get => taglet ; set { if( value==taglet ) return ; taglet = value.Null(v=>v.No()) ; Tager = null ; tag = null ; propertyChanged.On(this,"Taglet") ; Dirty = true ; } } string taglet ;
-		public Action<Aspect> Tager { get => tager ??( tager = taglet.Compile<Action<Aspect>>() ) ; set { tager = value ; tags?.Clear() ; if( value==null ) tags = null ; propertyChanged.On(this,"Tager,Tags") ; } } Action<Aspect> tager ;
+		public Action<Aspect> Tager { get => tager ??= taglet.Compile<Action<Aspect>>() ; set { tager = value ; tags?.Clear() ; if( value==null ) tags = null ; propertyChanged.On(this,"Tager,Tags") ; } } Action<Aspect> tager ;
 		public Tagger Tag => ( tags ?? Tager.Get(t=>System.Threading.Interlocked.CompareExchange(ref tags,new Tagger(p=>{tag=null;propertyChanged.On(this,p??"Tags");}),null)) ?? tags ).Set(t=>{if(t.Count<=0&&!notag)using(new Aid.Closure(()=>notag=true,()=>notag=false))Tager.On(this);}) ; Tagger tags ; bool notag ;
-		public string Tags { get => tag ??( tag = Tag.Stringy() ) ; set { if( value==tag ) return ; tag = null ; Tag[value.ExtractTags()] = true ; Score = value ; } } string tag ;
-		public virtual Aspectable Source { get => source ; set { source = value ; this.Where(a=>!a.Multi).Each(a=>a.Source=value) ; Spec += $" {value?.Spec}" ; } } Aspectable source ;
-		public virtual Aspectable[] Sources { get => sources ; set { sources = value ; this.Where(a=>a.Multi).Each(a=>a.Sources=value) ; } } Aspectable[] sources ;
+		public string Tags { get => tag ??= Tag.Stringy() ; set { if( value==tag ) return ; tag = null ; Tag[value.ExtractTags()] = true ; Score = value ; } } string tag ;
+		public virtual Aspectable Source { get => source ; set { source = value ; this.Where(a=>a.Multi==false).Each(a=>a.Source=value) ; Spec += $" {value?.Spec}" ; } } Aspectable source ;
+		public virtual Aspectable[] Sources { get => sources ; set { sources = value ; this.Where(a=>a.Multi!=false).Each(a=>a.Sources=value) ; } } Aspectable[] sources ;
 		public bool Regular => this.All(a=>a.Regular) ;
 		IEnumerable<Aspectable> Resources => this.SelectMany(a=>a.Resources).Distinct() ;
 		public virtual Point.Iterable Points => new Point.Iterator{ Context = this } ;
@@ -80,8 +80,16 @@ namespace Rob.Act
 			public interface Iterable : IEnumerable<Point> { int Count {get;} Aspectable Context {get;set;} Point this[ int at ] {get;} }
 			readonly Aspect Context ; readonly int At ; Act.Point Raw => Matrix?[At] ; Path Matrix => Context?.Raw ;
 			public Point( Aspect context , int at ) { Context = context ; At = at ; }
-			public Quant? this[ uint key ] { get => ((Context as Path.Aspect)?[(int)key] is Path.Axe a?Matrix.Corrections?[a.Axis,At]:null) ?? Context[(int)key][At] ; set { if( (Context as Path.Aspect)?[(int)key] is Path.Axe a ) { if( (value??a[At]) is Quant v ) Matrix.Correction[a.Axis] = (At,v) ; } else throw new InvalidOperationException($"Can't set {key} axe of {Context} aspect !") ; } }
-			public Quant? this[ string key ] { get => ((Context as Path.Aspect)?[key] is Path.Axe a?Matrix.Corrections?[a.Axis,At]:null) ?? Context[key][At] ; set { if( (Context as Path.Aspect)?[key] is Path.Axe a ) { if( (value??a[At]) is Quant v ) Matrix.Correction[a.Axis] = (At,v) ; } else throw new InvalidOperationException($"Can't set {key} axe of {Context} aspect !") ; } }
+			public Quant? this[ uint key ]
+			{
+				get => ((Context as Path.Aspect)?[(int)key] is Path.Axe a?Matrix.Corrections?[a.Axis,At]:null) ?? Context[(int)key][At] ;
+				set { if( (Context as Path.Aspect)?[(int)key] is Path.Axe a ) { if( (value??a[At]) is Quant v ) Matrix.Correction[a.Axis] = (At,v) ; } else throw new InvalidOperationException($"Can't set {key} axe of {Context} aspect !") ; }
+			}
+			public Quant? this[ string key ]
+			{
+				get => ((Context as Path.Aspect)?[key] is Path.Axe a?Matrix.Corrections?[a.Axis,At]:null) ?? Context[key][At] ;
+				set { if( (Context as Path.Aspect)?[key] is Path.Axe a ) { if( (value??a[At]) is Quant v ) Matrix.Correction[a.Axis] = (At,v) ; } else throw new InvalidOperationException($"Can't set {key} axe of {Context} aspect !") ; }
+			}
 			public IEnumerator<Quant?> GetEnumerator() { var at = At ; return Context.Select(a=>a[at]).GetEnumerator() ; } IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
 			public Mark Mark { get => Raw?.Mark??Mark.No ; set { if( Raw is Act.Point raw ) raw.Mark = value ; } }
 			public Mark? Marklet { get => Mark.nil() ; set => Mark = value??Mark.No ; }
@@ -91,7 +99,7 @@ namespace Rob.Act
 				public Aspectable Context {get;set;}
 				public int Count => Context?.Count>0 ? Context.Max(a=>a.Count) : Context?.Raw?.Count??0 ;
 				public IEnumerator<Point> GetEnumerator() { for( int i=0 , count=Count ; i<count ; ++i ) yield return this[i] ; } IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
-				public Point this[ int at ] => new Point(Context as Aspect,at) ;
+				public Point this[ int at ] => new(Context as Aspect,at) ;
 			}
 			public class Parit<Iter> : Aid.Collections.ObservableList<Point> , Iterable where Iter : Iterable , new()
 			{

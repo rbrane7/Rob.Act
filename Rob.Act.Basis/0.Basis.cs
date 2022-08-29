@@ -60,8 +60,8 @@ namespace Rob.Act
 		public static Quant operator+( Geos a ) => Math.Sqrt(a|a) ;
 		public static Geos? operator~( Geos? a ) => a.use(x=>~x) ;
 		public static Quant? operator+( Geos? a ) => a.use(x=>+x) ;
-		public static Geos operator+( Geos a , Geos b ) => new Geos{Lon=a.Lon+b.Lon,Lat=a.Lat+b.Lat} ;
-		public static Geos operator-( Geos a , Geos b ) => new Geos{Lon=a.Lon-b.Lon,Lat=a.Lat-b.Lat} ;
+		public static Geos operator+( Geos a , Geos b ) => new(){Lon=a.Lon+b.Lon,Lat=a.Lat+b.Lat} ;
+		public static Geos operator-( Geos a , Geos b ) => new(){Lon=a.Lon-b.Lon,Lat=a.Lat-b.Lat} ;
 		public static Geos? operator+( Geos? a , Geos? b ) => a is Geos x && b is Geos y ? x+y : null as Geos? ;
 		public static Geos? operator-( Geos? a , Geos? b ) => a is Geos x && b is Geos y ? x-y : null as Geos? ;
 		public static Quant operator|( Geos a , Geos b ) => a.Lon*b.Lon+a.Lat*b.Lat ;
@@ -72,6 +72,7 @@ namespace Rob.Act
 		public static implicit operator Geos( (Quant lon,Quant lat) point ) => new Geos(point.lon,point.lat) ;
 		public static bool operator==( Geos x , Geos y ) => x.Lon==y.Lon && x.Lat==y.Lat ;
 		public static bool operator!=( Geos x , Geos y ) => !(x==y) ;
+		public override string ToString() => $"({Lon:0.00000},{Lat:0.00000})" ;
 	}
 	public struct Geom
 	{
@@ -84,14 +85,15 @@ namespace Rob.Act
 		public static Geom? operator~( Geom? a ) => a.use(x=>~x) ;
 		public static Quant? operator+( Geom? a ) => a.use(x=>+x) ;
 		public static Geom? operator-( Geom? a ) => a.use(x=>-x) ;
-		public static Geom operator+( Geom a , Geom b ) => new Geom{G=a.G+b.G,Alt=a.Alt+b.Alt,Dat=a.Dat} ;
-		public static Geom operator-( Geom a , Geom b ) => new Geom{G=a.G-b.G,Alt=a.Alt-b.Alt,Dat=a.Dat} ;
+		public static Geom operator+( Geom a , Geom b ) => new(){G=a.G+b.G,Alt=a.Alt+b.Alt,Dat=a.Dat} ;
+		public static Geom operator-( Geom a , Geom b ) => new(){G=a.G-b.G,Alt=a.Alt-b.Alt,Dat=a.Dat} ;
 		public static Geom? operator+( Geom? a , Geom? b ) => a is Geom x && b is Geom y ? x+y : (Geom?)null ;
 		public static Geom? operator-( Geom? a , Geom? b ) => a is Geom x && b is Geom y ? x-y : (Geom?)null ;
 		public static Quant operator|( Geom a , Geom b ) => (a.Alt*b.Alt??0)+(a.G|b.G) ;
 		public static Quant? operator|( Geom? a , Geom? b ) => a is Geom x && b is Geom y ? x|y : null as Quant? ;
 		public static implicit operator Geom?( Point point ) => point?.IsGeo==true ? new Geom{Lon=point[Axis.Lon].Value,Lat=point[Axis.Lat].Value,Alt=point[Axis.Lon],Dat=point.Date} : (Geom?)null ;
 		public static implicit operator Geom( (Quant lon,Quant lat,Quant? alt,DateTime? dat) point ) => new Geom(point.lon,point.lat,point.alt,point.dat) ;
+		public override string ToString() => $"({G},{Alt:0.0m},{Dat:yyyy-MM-dd.hh:mm:ss ddd})" ;
 	}
 	public interface Quantable : Aid.Gettable<uint,Quant?> , Aid.Gettable<Quant?> {}
 	/// <summary>

@@ -23,11 +23,11 @@ namespace Rob.Act
 		public readonly static Support No = new(resolver:i=>null as Quant?) , One = new(resolver:i=>1) , Zero = new(resolver:i=>1) ;
 		public event PropertyChangedEventHandler PropertyChanged { add => propertyChanged += value.DispatchResolve() ; remove => propertyChanged -= value.DispatchResolve() ; } PropertyChangedEventHandler propertyChanged ;
 		public Axe() : this(null,null) {} // Default constructor must be present to enable DataGrid implicit Add .
-		public Axe( Func<int,Quant?> resolver = null , Axe source = null ) { this.resolver = resolver ; aspect = source?.Aspect ; aspects = source?.Aspects??default ; rex = source?.rex??default ; selectlet = source?.selectlet ; selector = source?.selector ; multi = source?.multi??default ; }
+		public Axe( Func<int,Quant?> resolver = null , Axe source = null ) { this.resolver = resolver ; aspect = source?.Aspect ; aspects = source?.Aspects??default ; rex = source?.rex??default ; selectlet = source?.selectlet ; selector = source?.selector ; multi = source?.multi??default ; delta = source?.delta??default ; }
 		public Axe( Axe source , IEnumerable<Aspectable> primary = null , IEnumerable<Aspectable> secondary = null )
 		{
 			var dax = source?.Deref(primary)??source?.Deref(secondary)??source ;
-			spec = dax?.spec ; aspect = source?.aspect ; resolvelet = dax?.resolvelet ; resolver = dax?.resolver ; multi = dax?.multi??default ; bond = source?.bond.Null(v=>v.No())??dax?.bond ;
+			spec = dax?.spec ; aspect = source?.aspect ; resolvelet = dax?.resolvelet ; resolver = dax?.resolver ; multi = dax?.multi??default ; delta = dax?.delta??default ; bond = source?.bond.Null(v=>v.No())??dax?.bond ;
 			var ses = selectlet.No() ? dax : source ; rex = ses?.rex??default ; selectlet = ses?.selectlet ; selector = ses?.selector ;
 			if( source?.distribulet.No()!=false && source?.quantlet.No()!=false ) source = dax ; distribulet = source?.distribulet ; distributor = source?.distributor ; quantlet = source?.quantlet ; Quantizer = source?.quantile?.Quantizer ;
 		}
@@ -37,15 +37,16 @@ namespace Rob.Act
 		public Aspectable Source { set { if( Selector==null && DefaultAspect==null ) Aspect = value ; else Resource.Source = value ; } }
 		public Aspectable[] Sources { set { if( Selector==null && DefaultAspects==null ) Aspects = new Aspectables(value) ; else Resource.Sources = value ; } }
 		public bool Multi { get => multi ; set { if( value==multi ) return ; multi = value ; Aspect = null ; propertyChanged.On(this,"Multi,Aspects") ; } } bool multi ;
-		public bool Regular => !Multi || Selector!=null ;
+		public bool Delta { get => delta ; set { if( value==delta ) return ; delta = value ; Aspect = null ; propertyChanged.On(this,"Delta,Aspects") ; } } bool delta ;
+		public bool Regular => Multi==false || Selector!=null ;
 		public bool Asrex { get => rex ; set { if( value==rex ) return ; rex = value ; Selectlet = selectlet ; propertyChanged.On(this,"Asrex,Aspects") ; } } bool rex ;
 		Axe Deref( IEnumerable<Aspectable> aspects ) => IsRef ? Spec.RightFrom(Extern,all:true).Get(s=>(Spec.LeftFromLast(Extern)is string asp?aspects?.Where(a=>asp==a.Spec):aspects)?.SelectMany(a=>a).SingleOrNo(x=>x.Spec==s&&!x.IsRef)) : null ;
 		public Axe DeRef => Deref(Act.Aspect.Set)??this ; public bool IsRef => (resolver==null||resolver==No.resolver) && resolvelet.No() ;
-		protected virtual Aspectable DefaultAspect => Multi ? null : Selection?.SingleOrNo() ;
-		protected virtual Aspectable[] DefaultAspects => Multi ? Selection?.ToArray() : null ;
+		protected virtual Aspectable DefaultAspect => Multi!=false ? null : Selection?.SingleOrNo() ;
+		protected virtual Aspectable[] DefaultAspects => Multi!=false ? Selection?.ToArray() : null ;
 		/// <summary> Cant' be null . </summary>
 		protected internal Resourcable Resource => Aspect ?? Aspects as Resourcable ;
-		public IEnumerable<Aspectable> Resources => (Regular?Multi?aspects:aspect?.Times():null) ?? Enumerable.Empty<Aspectable>() ;
+		public IEnumerable<Aspectable> Resources => (Regular?Multi!=false?aspects:aspect?.Times():null) ?? Enumerable.Empty<Aspectable>() ;
 		protected virtual Aspectables Aspects { get => aspects.No ? aspects = new Aspectables(DefaultAspects) : aspects ; set { aspects = value ; Resolver = null ; propertyChanged.On(this,"Aspects,Aspect") ; } } Aspectables aspects ;
 		/// <summary> Aspect which this axe operates on . </summary>
 		public virtual Aspectable Aspect { get => aspect ??= DefaultAspect ; set { if( aspect==value ) return ; aspect = value ; Resolver = null ; propertyChanged.On(this,"Aspect") ; } } protected Aspectable aspect ;
@@ -72,9 +73,23 @@ namespace Rob.Act
 		/// <remarks> This function is not to be overriden as it would violate constructive chaining of <see cref="Axe"/> . </remarks>
 		internal Quant? Resolve( int at ) => Resolver?.Invoke(at) ;
 		public Axe Solver => Resolver.Get(_=>coaxe) ;
-		Axe Coaxe { get { try { return coaxe = Multi?Aspects.Get(a=>Resolvelet.Compile<Func<Contexts,Axe>>(use:"Rob.Act").Of(new Contexts{Base=a,This=Own,The=this})):Aspect.Get(a=>Resolvelet.Compile<Func<Context,Axe>>(use:"Rob.Act").Of(new Context{Base=a,This=Own,The=this})) ; } catch( LambdaContext.Exception ) { throw ; } catch( System.Exception e ) { throw new InvalidOperationException($"Problem resolving {Spec} !",e) ; } finally { coaxe.Set(c=>Counter=c.Counter) ; } } } Axe coaxe ;
+		Axe Coaxe { get {
+			try
+			{
+				coaxes = null ; coaxe = Multi!=false ?
+				Aspects.Get(a=>Resolvelet.Compile<Func<Contexts,Axe>>(use:"Rob.Act").Of(new Contexts{Base=a,This=Own,The=this})) :
+				Aspect.Get(a=>Resolvelet.Compile<Func<Context,Axe>>(use:"Rob.Act").Of(new Context{Base=a,This=Own,The=this})) ;
+				#if Delta4Multi
+				if( Multi && Delta ) coaxes = Resolvelet.Compile<Func<Context,Axe>>(use:"Rob.Act").Get(f=>Aspects.Select(a=>f.Of(new Context{Base=a,This=Own,The=this})).ToArray()) ;
+				#endif
+				return coaxe ;
+			}
+			catch( LambdaContext.Exception ) { throw ; } catch( System.Exception e ) { throw new InvalidOperationException($"Problem resolving {Spec} !",e) ; }
+			finally { coaxe.Set(c=>Counter=c.Counter) ; }
+		} }
+		Axe coaxe ; Axe[] coaxes ;
 		/// <summary> Never null . If nul than always throws . </summary>
-		protected Func<int,Quant?> Resolver { private get => resolver ??= (Coaxe??No).Resolver ; set { if( resolver==value ) return ; resolver = value ; propertyChanged.On(this,"Resolver") ; } } Func<int,Quant?> resolver ;
+		protected Func<int,Quant?> Resolver { private get { if( resolver is null ) { var r = (Coaxe??No).Resolver ; if( Delta && coaxes is not null && r is not null ) resolver = i=>r(i)-coaxes.Average(a=>a[i]) ; else resolver = r ; } return resolver ; } set { if( resolver==value ) return ; resolver = value ; propertyChanged.On(this,"Resolver") ; } } Func<int,Quant?> resolver ;
 		public string Resolvelet { get => resolvelet ; set { if( value==resolvelet ) return ; resolvelet = value ; Resolver = null ; propertyChanged.On(this,"Resolvelet") ; } } string resolvelet ;
 		public IEnumerator<Quant?> GetEnumerator() { for( int i=0 , count=Count ; i<count ; ++i ) yield return this[i] ; } IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
 		#region Quantile
@@ -303,8 +318,8 @@ namespace Rob.Act
 		public Lap Lap( Quant dif ) => new Lap(this,dif) ;
 		/// <summary> <see cref="Act.Lap"/> for given parameter <paramref name="dif"/> and this Axe . </summary>
 		public Axe By( Quant dif ) => By(Lap(dif)) ;
-		public Axe Nil( Predicate<Quant> nil ) => new Axe( i=>Resolve(i).Nil(nil) , this ) ;
-		public Axe Fun( Func<Quant,Quant> fun ) => new Axe( i=>Resolve(i).use(fun) , this ) ;
+		public Axe Nil( Predicate<Quant> nil ) => new( i=>Resolve(i).Nil(nil) , this ) ;
+		public Axe Fun( Func<Quant,Quant> fun ) => new( i=>Resolve(i).use(fun) , this ) ;
 		public Axe PacePower( Quant grade = 0 , Quant? resi = null , Quant flow = 0 , Quant grane = 0 ) => new Axe( i=>Resolve(i).PacePower(grade,(Aspect as Aspect)?.Resistance(resi)??0,flow,grane,Aspect?.Raw?.Profile?.Mass) , this ) ;
 		public Axe PowerPace( Quant grade = 0 , Quant? resi = null , Quant flow = 0 , Quant grane = 0 ) => new Axe( i=>Resolve(i).PowerPace(grade,resi??Aspect?.Raw?.Resister??0,flow,Aspect?.Raw?.Profile?.Mass) , this ) ;
 		public Axe Centre( Axe measure ) => this*measure/+measure ;
@@ -320,8 +335,8 @@ namespace Rob.Act
 		/// <summary>
 		/// Serializes aspect from string .
 		/// </summary>
-		public static explicit operator string( Axe aspect ) => aspect.Get(a=>string.Join( Serialization.Separator,a.spec,a.multi? Serialization.Multier:string.Empty,a.resolvelet,null,a.selectlet,a.distribulet,a.quantlet,a.Binder,a.rex? Serialization.Rex:string.Empty)) ;
-		static class Serialization { public const string Separator = " \x1 Axlet \x2 " ; public const string Multier = "*" , Rex = "rex"; }
+		public static explicit operator string( Axe aspect ) => aspect.Get(a=>string.Join( Serialization.Separator,a.spec,a.multi?Serialization.Multier:string.Empty,a.resolvelet,null,a.selectlet,a.distribulet,a.quantlet,a.Binder,a.rex? Serialization.Rex:string.Empty)) ;
+		static class Serialization { public const string Separator = " \x1 Axlet \x2 " , Multier = "*" , Meaner = "•" , Rex = "rex" ; }
 		#endregion
 		public struct Context : Contextable
 		{
@@ -349,6 +364,8 @@ namespace Rob.Act
 			public Path Raw( int at = 0 ) => Base[at].Raw ;
 			public Support this[ Region fragment ] => One[fragment] ;
 			public Support this[ Mark mark , Region fragment ] => fragment is Region f ? new Marker(mark,f,This) : No ;
+			public IEnumerator<Aspectable> GetEnumerator() => Base.GetEnumerator() ;
+			IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
 		}
 		public class Support : Support<Region> { public Region Fragment => Arg ; internal Support( Region fragment = default , Func<int,Quant?> resolver = null , Axe source = null ) : base(fragment,resolver,source) {} }
 		public class Support<Param> : Axe { public readonly Param Arg ; public readonly Axe Ctx ; internal Support( Param arg , Func<int,Quant?> resolver = null , Axe source = null ) : base(resolver,source) { Arg = arg ; Ctx = source ; } }
