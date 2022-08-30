@@ -327,20 +327,23 @@ namespace Rob.Act.Analyze
 		{
 			List<(string Aspect,List<(string Spec,double?[] Val,string Base,double Offset)> Axes)> val =
 				DrawingResources.Select(asp=>(asp.Spec,asp.Where(a=>a.Spec==xaxe.Spec||yaxes.Contains(a.Spec)).Select(a=>(a.Spec,a.ToArray(),a.Base,asp.Offset)).ToList())).ToList() ;
-			if( yaxes?.Any(y=>Aspect[y].Delta)==true && val.Count>1 )
+			if( yaxes?.Any(y=>Aspect[y].Meany)==true && val.Count>1 )
 			{
-				var yma = yaxes.Where(yax=>Aspect[yax].Delta).ToArray() ; var mean = yma.ToDictionary(y=>y,y=>(val:0D,wei:0)) ;
+				var yma = yaxes.Where(yax=>Aspect[yax].Meany).ToArray() ; var yda = yaxes.Where(yax=>Aspect[yax].Delta).ToArray() ; var mean = yma.ToDictionary(y=>y,y=>(val:0D,wei:0)) ;
 				var ext = val.SelectMany(v=>v.Axes).Where(a=>yma.Contains(a.Spec)).Max(a=>a.Val.Length) ; var ixt = val.SelectMany(v=>v.Axes).Where(a=>yma.Contains(a.Spec)).Min(a=>a.Val.Length) ;
 				foreach( var src in val ) for( var i=0 ; i<src.Axes.Count ; ++i ) if( yma.Contains(src.Axes[i].Spec) )
 				{
-					var off = (int)src.Axes[i].Offset ; if( off==0 ) continue ;
-					var axv = src.Axes[i].Val ; if( off<0 ) for( var j=0 ; j<axv.Length ; ++j ) axv[j] = j-off<axv.Length ? axv[j-off] : null ; else for( var j=axv.Length-1 ; j>=0 ; --j ) axv[j] = j-off>=0 ? axv[j-off] : null ;
+					var off = (int)src.Axes[i].Offset ; if( off==0 ) continue ; var axv = src.Axes[i].Val ;
+					if( off<0 ) for( var j=0 ; j<axv.Length ; ++j ) axv[j] = j-off<axv.Length ? axv[j-off] : null ; else for( var j=axv.Length-1 ; j>=0 ; --j ) axv[j] = j-off>=0 ? axv[j-off] : null ;
 					src.Axes[i] = (src.Axes[i].Spec,src.Axes[i].Val,src.Axes[i].Base,0) ;
 				}
 				for( var i=0 ; i<ext ; ++i,yma.Each(k=>mean[k]=(0D,0)) )
 				{
 					foreach( var src in val ) foreach( var axe in src.Axes ) if( yma.Contains(axe.Spec) ) if( axe.Val.At(i) is double v ) mean[axe.Spec] = (mean[axe.Spec].val+v,mean[axe.Spec].wei+1) ;
-					foreach( var src in val ) foreach( var axe in src.Axes ) if( yma.Contains(axe.Spec) ) if( i<axe.Val.Length ) axe.Val[i] -= i<ixt ? mean[axe.Spec].val/mean[axe.Spec].wei : null ;
+					foreach( var src in val ) foreach( var axe in src.Axes ) if( yma.Contains(axe.Spec) ) if( i<axe.Val.Length )
+					{
+						var mea = i<ixt&&mean[axe.Spec].wei!=0 ? mean[axe.Spec].val/mean[axe.Spec].wei : null as double? ; if( yda.Contains(axe.Spec) ) axe.Val[i] -= mea ; else axe.Val[i] = mea ;
+					}
 				}
 			}
 			return val ;
@@ -755,7 +758,8 @@ namespace Rob.Act.Analyze
 		#region Editing
 		void DataGrid_Paste_CommandBinding_Executed( object sender, ExecutedRoutedEventArgs _=null )
 		{
-			if( sender==AspectAxisGrid ) DataGrid_Paste_CommandBinding_Executed(sender,a=>new Axe{Spec=a.At(0+1),Resolvelet=a.At(1+1),Binder=a.At(2+1),Quantlet=a.At(3+1),Asrex=a.At(4+1).Parse(false),Aspectlet=a.At(5+1),Multi=a.At(6+1).Parse(false)}) ;
+			const int off = 2 ;
+			if( sender==AspectAxisGrid ) DataGrid_Paste_CommandBinding_Executed(sender,a=>new Axe{Spec=a.At(0+off),Resolvelet=a.At(1+off),Binder=a.At(2+off),Quantlet=a.At(3+off),Asrex=a.At(4+off).Parse(false),Aspectlet=a.At(5+off),Multi=a.At(6+off).Parse(false)}) ;
 			if( sender==AspectTraitsGrid ) DataGrid_Paste_CommandBinding_Executed(sender,a=>new Aspect.Traitlet{Spec=a.At(0),Lex=a.At(1),Bond=a.At(2),IsPotential=a.At(3).Parse(false)}) ;
 			if( sender==AspectsGrid ) DataGrid_Paste_CommandBinding_Executed(sender,a=>new Aspect{Spec=a.At(0),Taglet=a.At(1)}) ;
 			if( sender==ActionFilterGrid ) DataGrid_Paste_CommandBinding_Executed(sender,a=>new Filter.Entry{Filter=a.At(0),Traits=a.At(1),Matrix=a.At(2),Associer=a.At(3),Matter=a.At(4),Query=a.At(5)}) ;

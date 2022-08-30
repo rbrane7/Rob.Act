@@ -46,6 +46,7 @@
             <DataGrid Name="AspectAxisGrid" ItemsSource="{Binding Aspect}" AutoGenerateColumns="False" Margin="2" SelectionChanged="AspectAxisGrid_SelectionChanged" CanUserResizeRows="False">
                 <DataGrid.Columns>
                     <DataGridCheckBoxColumn Header="∆" Binding="{Binding Delta}"/>
+                    <DataGridCheckBoxColumn Header="⊚" Binding="{Binding Meany}"/>
                     <DataGridTextColumn Header="Axe" Binding="{Binding Spec}" Width="1*"/>
                     <DataGridTextColumn Header="Resolver" Binding="{Binding Resolvelet}" Width="4*">
                         <DataGridTextColumn.CellStyle>

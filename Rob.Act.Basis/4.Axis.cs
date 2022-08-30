@@ -37,7 +37,8 @@ namespace Rob.Act
 		public Aspectable Source { set { if( Selector==null && DefaultAspect==null ) Aspect = value ; else Resource.Source = value ; } }
 		public Aspectable[] Sources { set { if( Selector==null && DefaultAspects==null ) Aspects = new Aspectables(value) ; else Resource.Sources = value ; } }
 		public bool Multi { get => multi ; set { if( value==multi ) return ; multi = value ; Aspect = null ; propertyChanged.On(this,"Multi,Aspects") ; } } bool multi ;
-		public bool Delta { get => delta ; set { if( value==delta ) return ; delta = value ; Aspect = null ; propertyChanged.On(this,"Delta,Aspects") ; } } bool delta ;
+		public bool Delta { get => delta ; set { if( value==delta ) return ; delta = value ; /*Aspect = null ;*/ propertyChanged.On(this,"Delta") ; } } bool delta ;
+		public bool Meany { get => delta||meany ; set { if( value==meany ) return ; meany = value ; /*Aspect = null ;*/ propertyChanged.On(this,"Meany") ; } } bool meany ;
 		public bool Regular => Multi==false || Selector!=null ;
 		public bool Asrex { get => rex ; set { if( value==rex ) return ; rex = value ; Selectlet = selectlet ; propertyChanged.On(this,"Asrex,Aspects") ; } } bool rex ;
 		Axe Deref( IEnumerable<Aspectable> aspects ) => IsRef ? Spec.RightFrom(Extern,all:true).Get(s=>(Spec.LeftFromLast(Extern)is string asp?aspects?.Where(a=>asp==a.Spec):aspects)?.SelectMany(a=>a).SingleOrNo(x=>x.Spec==s&&!x.IsRef)) : null ;
@@ -107,23 +108,23 @@ namespace Rob.Act
 		public Support this[ Region fragment ] => On(fragment) ;
 		/// <summary> Restricts axe to given subset of points , null elsewhere . </summary>
 		/// <param name="fragment"> Points subset to restrict axe on . </param>
-		public Axe this[ Lap lap ] => By(lap) ;
+		public Axe this[ Bit lap ] => By(lap) ;
 		/// <summary> Restricts axe to given subset of points , null elsewhere . </summary>
 		/// <param name="fragment"> Points subset to restrict axe on . </param>
-		public Axe this[ Axe axe ] => (axe?.Solver as Lap.Axe??axe) is Lap.Axe lap ? By(lap.Arg) : this ;
+		public Axe this[ Axe axe ] => (axe?.Solver as Bit.Axe??axe) is Bit.Axe lap ? By(lap.Arg) : this ;
 		/// <summary> Function on axe . </summary>
-		public Axe this[ Func<Quant,Quant> y ] => this.Fun(y) ;
+		public Axe this[ Func<Quant,Quant> y ] => Fun(y) ;
 		public static Axe operator++( Axe x ) => x==null ? No : x.Positive ;
 		public static Axe operator--( Axe x ) => x==null ? No : x.Negative ;
 		public static Quant? operator+( Axe x ) => x?.Sum() ;
-		public static Axe operator-( Axe x ) => x==null ? No : new Axe( i=>-x.Resolve(i) , x ) ;
-		public static Axe operator^( Axe x , Axe y ) => x==null ? No : x.Drift(y) ;
-		public static Axe operator^( Axe x , Quant y ) => x==null ? No : new Axe( i => x[i] is Quant a ? Math.Pow(a,y) : null as Quant? , x ) ;
-		public static Axe operator^( Quant x , Axe y ) => y==null ? No : new Axe( i => y[i] is Quant a ? Math.Pow(x,a) : null as Quant? , y ) ;
-		public static Axe operator^( Axe x , int y ) => x==null ? No : new Axe( i => x[i] is Quant a ? Math.Pow(a,y) : null as Quant? , x ) ;
-		public static Axe operator^( int x , Axe y ) => y==null ? No : new Axe( i => y[i] is Quant a ? Math.Pow(x,a) : null as Quant? , y ) ;
-		public static Axe operator^( Axe x , bool _ ) => x==null ? No : new Axe( i => x[i] is Quant a ? a>0?Math.Log(a):null as Quant? : null as Quant? , x ) ;
-		public static Axe operator^( bool _ , Axe y ) => y==null ? No : new Axe( i => y[i] is Quant a ? Math.Exp(a) : null as Quant? , y ) ;
+		public static Axe operator-( Axe x ) => x==null ? No : new Axe( i => -x[i] , x ) ;
+		public static Axe operator^( Axe x , Axe y ) => x is null || y is null ? No : new Axe( i => x[i] is Quant a && y[i] is Quant b ? Math.Pow(a,b) : null , x ) ;
+		public static Axe operator^( Axe x , Quant y ) => x==null ? No : new Axe( i => x[i] is Quant a ? Math.Pow(a,y) : null , x ) ;
+		public static Axe operator^( Quant x , Axe y ) => y==null ? No : new Axe( i => y[i] is Quant a ? Math.Pow(x,a) : null , y ) ;
+		public static Axe operator^( Axe x , int y ) => x==null ? No : new Axe( i => x[i] is Quant a ? Math.Pow(a,y) : null , x ) ;
+		public static Axe operator^( int x , Axe y ) => y==null ? No : new Axe( i => y[i] is Quant a ? Math.Pow(x,a) : null , y ) ;
+		public static Axe operator^( Axe x , bool _ ) => x==null ? No : new Axe( i => x[i] is Quant a ? a>0?Math.Log(a):null : null , x ) ;
+		public static Axe operator^( bool _ , Axe y ) => y==null ? No : new Axe( i => y[i] is Quant a ? Math.Exp(a) : null , y ) ;
 		//public static Axe operator^( Axe x , Axe y ) => x==null||y==null ? No : new Axe( i => x.Resolve(i) is Quant a && y.Resolve(i) is Quant b ? Math.Pow(a,b) : null as Quant? , a=>Math.Max(x.Count,y.Count) ) ;
 		public static Axe operator>>( Axe x , int lev ) => x==null ? No : lev<0 ? x<<-lev : lev==0 ? x : new Axe( i=>x.Resolve(i)-x.Resolve(i-1) , x )>>lev-1 ;
 		public static Axe operator<<( Axe x , int lev ) => x==null ? No : lev<0 ? x>>-lev : lev==0 ? x : new Axe( i=>i.Steps().Sum(x.Resolve) , x )<<lev-1 ;
@@ -131,20 +132,20 @@ namespace Rob.Act
 		public static Axe operator%( Axe x , Mark lap ) => x==null ? No : new Axe( i=>x.Dif(i,lap) , x ) ;
 		public static Axe operator%( Axe x , int dif ) => x==null ? No : new Axe( i=>x.Dif(i,dif) , x ) ;
 		public static Axe operator%( Axe x , uint dif ) => x==null ? No : new Axe( i=>x.Dif(i,dif) , x ) ;
-		public static Axe operator%( Axe x , Quant dif ) => new Lap.Axe(x,dif) ;
-		public static Axe operator%( Axe x , decimal dif ) => new Lap.Axe(x,(Quant)dif/2,-(Quant)dif/2) ;
+		public static Axe operator%( Axe x , Quant dif ) => new Bit.Axe(x,dif) ;
+		public static Axe operator%( Axe x , decimal dif ) => new Bit.Axe(x,(Quant)dif/2,-(Quant)dif/2) ;
 		public static Axe operator%( Axe x , float mod ) => x==null ? No : new Axe( i=>x[i]%mod , x ) ;
 		public static Axe operator%( Axe x , Region mod ) => x==null ? No : x.Floe(mod) ;
 		public static Axe operator%( Axe x , Support y ) => x==null ? No : x.Floe(y.Fragment) ;
-		public static Axe operator%( Axe x , Axe y ) => x==null ? No : x.Rift(y) ;
+		public static Axe operator%( Axe x , Axe y ) => x==null ? No : y is Support s ? x.Floe(s.Fragment) : y is null ? x : new Axe( i=>x[i]%y[i] , x ) ;
 		public static Axe operator*( Axe x , Axe y ) => x==null||y==null ? No : new Axe( i=>x[i]*y[i] , x ) ;
 		public static Axe operator*( Axe x , Quant y ) => x==null ? No : new Axe( i=>x[i]*y , x ) ;
 		public static Axe operator*( Quant x , Axe y ) => y==null ? No : new Axe( i=>x*y[i] , y ) ;
-		public static Axe operator/( Axe x , Axe y ) => x==null||y==null ? No : (y as Lap.Axe??y.Solver as Lap.Axe).Get(l=>x/l.Arg) ?? new Axe( i=>x[i]/y[i].Nil() , x ) ;
+		public static Axe operator/( Axe x , Axe y ) => x==null||y==null ? No : (y as Bit.Axe??y.Solver as Bit.Axe).Get(l=>x/l.Arg) ?? new Axe( i=>x[i]/y[i].Nil() , x ) ;
 		public static Axe operator/( Axe x , Quant y ) => x==null ? No : new Axe( i=>x.Resolve(i)/y.nil() , x ) ;
 		public static Axe operator/( Quant x , Axe y ) => y==null ? No : new Axe( i=>x/y.Resolve(i).Nil() , y ) ;
 		public static Axe operator/( bool _ , Axe y ) => y==null ? No : new Axe( i=>1/y.Resolve(i).Nil() , y ) ;
-		public static Axe operator/( Axe x , Lap dif ) => x==null ? No : new Axe( i => dif[i] is double d ? dif.Dual ? dif[i,1] is double c ? x.Dif(i,d,c) : null : x.Dif(i,d) : null , x ) ;
+		public static Axe operator/( Axe x , Bit dif ) => x==null ? No : new Axe( i => dif[i] is double d ? dif.Dual ? dif[i,1] is double c ? x.Dif(i,d,c) : null : x.Dif(i,d) : null , x ) ;
 		public static Axe operator+( Axe x , Axe y ) => x==null||y==null ? No : new Axe( i=>x.Resolve(i)+y.Resolve(i) , x ) ;
 		public static Axe operator+( Axe x , Quant y ) => x==null ? No : new Axe( i=>x.Resolve(i)+y , x ) ;
 		public static Axe operator+( Quant x , Axe y ) => y==null ? No : new Axe( i=>x+y.Resolve(i) , y ) ;
@@ -173,7 +174,7 @@ namespace Rob.Act
 		public static Region operator<( Axe x , Axe y ) => Math.Min(x?.Count??0,y?.Count??0).Steps().Where(i=>x[i]<y[i]) ;
 		public static Region operator>=( Axe x , Axe y ) => Math.Min(x?.Count??0,y?.Count??0).Steps().Where(i=>x[i]>=y[i]) ;
 		public static Region operator<=( Axe x , Axe y ) => Math.Min(x?.Count??0,y?.Count??0).Steps().Where(i=>x[i]<=y[i]) ;
-		public static Axe operator&( Axe x , Axe y ) => (y?.Solver as Lap.Axe??y) is Lap.Axe m ? m.Arg.cntr(x,m.Ctx) : x.Centre(y) ;
+		public static Axe operator&( Axe x , Axe y ) => (y?.Solver as Bit.Axe??y) is Bit.Axe m ? m.Arg.cntr(x,m.Ctx) : x.Centre(y) ;
 		public static Axe operator&( Axe x , Quant y ) => x.Nil(v=>v>y) ;
 		public static Axe operator&( Quant x , Axe y ) => y.Nil(v=>v<x) ;
 		public static Axe operator&( Axe x , Func<Quant,bool> y ) => x.Nil(v=>!y(v)) ;
@@ -211,7 +212,7 @@ namespace Rob.Act
 		/// <summary> Refines this axe to <paramref name="lap"/> distance axe . </summary>
 		/// <param name="lap"> Lap representing index distance between point of this axe . </param>
 		/// <returns> Axe of exact <paramref name="lap"/> distanced points of this axe values . </returns>
-		public Axe By( Lap lap ) => new Lap.Axe(this,lap) ;
+		public Axe By( Bit lap ) => new Bit.Axe(this,lap) ;
 		/// <summary> Creates axe of drift of this axe on given <paramref name="upon"/> . </summary>
 		/// <param name="upon"> Axe to calculate drift on . </param>
 		/// <param name="at"> Position where to get drift at . </param>
@@ -277,7 +278,7 @@ namespace Rob.Act
 		/// <returns> Difference value of axe . </returns>
 		Quant? Diff( int at , double dif , double cif ) => dif<cif ? Diff(at+(int)dif,(uint)(cif-dif),dif.Frac(),cif.Frac()) : Diff(at+(int)cif,(uint)(dif-cif),cif.Frac(),dif.Frac()) ;
 		public Axe Extent( int dif ) => new( i=>Diff(i,dif) , this ) ;
-		public Axe Extent( Lap dif ) => new( i => dif[i] is double d ? dif.Dual ? dif[i,1] is double c ? Diff(i,d,c) : null : Diff(i,d) : null , this ) ;
+		public Axe Extent( Bit dif ) => new( i => dif[i] is double d ? dif.Dual ? dif[i,1] is double c ? Diff(i,d,c) : null : Diff(i,d) : null , this ) ;
 		/// <summary> Calculates value difference of this axe between value <paramref name="at"/> positin and position differing by <paramref name="dif"/> . </summary>
 		/// <param name="at"> Position where to calculate differce . </param>
 		/// <param name="dif"> Index difference from position <paramref name="at"/> . </param>
@@ -314,17 +315,17 @@ namespace Rob.Act
 		/// <returns> Value of drift <paramref name="at"/> poositon for <paramref name="dis"/>tance <paramref name="upon"/> axis . </returns>
 		Quant? Drift( Axe upon , int at , int dis ) => Quo(upon,at,dis)/Quo(upon,at+dis,dis).Nil() ;
 		public Axe Rift( Axe upon , uint quo = 9 ) => upon==null ? No : new Axe( i=>Drift(upon,i,((Count-i)>>1)-1) , this ) ;
-		/// <summary> <see cref="Act.Lap"/> for given parameter <paramref name="dif"/> and this Axe . </summary>
-		public Lap Lap( Quant dif ) => new Lap(this,dif) ;
-		/// <summary> <see cref="Act.Lap"/> for given parameter <paramref name="dif"/> and this Axe . </summary>
-		public Axe By( Quant dif ) => By(Lap(dif)) ;
+		/// <summary> <see cref="Act.Bit"/> for given parameter <paramref name="dif"/> and this Axe . </summary>
+		public Bit Bit( Quant dif ) => new(this,dif) ;
+		/// <summary> <see cref="Act.Bit"/> for given parameter <paramref name="dif"/> and this Axe . </summary>
+		public Axe By( Quant dif ) => By(Bit(dif)) ;
 		public Axe Nil( Predicate<Quant> nil ) => new( i=>Resolve(i).Nil(nil) , this ) ;
 		public Axe Fun( Func<Quant,Quant> fun ) => new( i=>Resolve(i).use(fun) , this ) ;
 		public Axe PacePower( Quant grade = 0 , Quant? resi = null , Quant flow = 0 , Quant grane = 0 ) => new Axe( i=>Resolve(i).PacePower(grade,(Aspect as Aspect)?.Resistance(resi)??0,flow,grane,Aspect?.Raw?.Profile?.Mass) , this ) ;
 		public Axe PowerPace( Quant grade = 0 , Quant? resi = null , Quant flow = 0 , Quant grane = 0 ) => new Axe( i=>Resolve(i).PowerPace(grade,resi??Aspect?.Raw?.Resister??0,flow,Aspect?.Raw?.Profile?.Mass) , this ) ;
 		public Axe Centre( Axe measure ) => this*measure/+measure ;
 		public Axe Centre( Axe measure , int dif ) => dif.cntr(this,measure) ;
-		public Axe Centre( Axe measure , Lap dif ) => dif.cntr(this,measure) ;
+		public Axe Centre( Axe measure , Bit dif ) => dif.cntr(this,measure) ;
 		public Axe Centre( Axe measure , Axe dif ) => dif.cntr(this,measure) ;
 		#endregion
 		#region De/Serialization
@@ -349,8 +350,8 @@ namespace Rob.Act
 			public Support this[ Mark mark , Region fragment ] => fragment is Region f ? new Marker(mark,f,This) : No ;
 			public Path Raw => Base?.Raw ;
 			public Aspect.Traits Trait => This?.Trait ;
-			public Axe Perf( Axe lap ) => lap is Lap.Axe a ? Perf(a.Arg) : No ;
-			public Axe Perf( Lap lap ) => (Base as Path.Aspect)?.perf(lap) ?? No ;
+			public Axe Perf( Axe lap ) => lap is Bit.Axe a ? Perf(a.Arg) : No ;
+			public Axe Perf( Bit lap ) => (Base as Path.Aspect)?.perf(lap) ?? No ;
 			public Axe Perf( int dif = 0 ) => (Base as Path.Aspect)?.perf(dif) ?? No ;
 		}
 		public struct Contexts : Contextables
@@ -436,17 +437,17 @@ namespace Rob.Act
 		}
 	}
 	/// <summary> Container of real relative difference indexes for given axe and given difference paramener . </summary>
-	public struct Lap
+	public struct Bit
 	{
 		readonly double[] Content ;
-		public Lap? Sub => sub as Lap? ; readonly object sub ;
+		public Bit? Sub => sub as Bit? ; readonly object sub ;
 		public bool Dual => sub!=null ;
 		/// <summary> Constructs container od differences of poisitions proportional to <paramref name="dif"/> by axe value . </summary>
 		/// <param name="context"> Axe to construct differences by . </param>
 		/// <param name="dif"> Difference parameter which by <paramref name="context"/> value exactly corresponds to index difference from position in axe <paramref name="context"/> . </param>
-		public Lap( Act.Axe context , Quant dif , Quant? codif = null )
+		public Bit( Act.Axe context , Quant dif , Quant? codif = null )
 		{
-			sub = null ; if( codif is Quant s ) sub = new Lap(context,s,null) ;
+			sub = null ; if( codif is Quant s ) sub = new Bit(context,s,null) ;
 			// Calculation of absolute equidifferenced distribution .
 			var retent = new List<double>() ; Quant? oy = null ; for( int c=context?.Count??0 , i=0 ; i<c ; ++i ) if( context[i] is Quant ay )
 			if( oy==null ) { oy = ay ; retent.Add(i) ; } else if( context[i-1] is Quant ly && (ay-ly).nil() is double dy ) for( int j=1 , n=(int)((ay-oy)/dif) ; j<=n ; ++j ) (i-1+((oy+=dif)-ly)/dy).Use(retent.Add) ;
@@ -461,23 +462,23 @@ namespace Rob.Act
 		/// Relative index real (noninteger) difference which must be add to <paramref name="at"/> to obtain exact position , 
 		/// where the axe difference from <paramref name="at"/> position is exactly those given by constructor dif argument . 
 		/// </summary>
-		/// <param name="at"> Index to get pear distanced exactly by <see cref="Lap"/> construct parameter . </param>
+		/// <param name="at"> Index to get pear distanced exactly by <see cref="Bit"/> construct parameter . </param>
 		public double? this[ int at , uint lev = 0 ] => lev==0 ? Content.at(at) : Sub?[at,lev-1] ;
 		/// <summary>
 		/// Relative index real (noninteger) difference which must be add to <paramref name="at"/> to obtain exact position , 
 		/// where the axe difference from <paramref name="at"/> position is exactly those given by constructor dif argument . 
 		/// </summary>
-		/// <param name="at"> Index to get pear distanced exactly by <see cref="Lap"/> construct parameter . </param>
+		/// <param name="at"> Index to get pear distanced exactly by <see cref="Bit"/> construct parameter . </param>
 		public double? this[ double at ] => Absolution.Inter(at) ; //{ get { var f = Math.Floor(at) ; var c = Math.Ceiling(at) ; return c==f ? Absolution.at((int)at) : Absolution.at((int)f)*(c-at)+Absolution.at((int)c)*(at-f) ; } }
 		/// <summary> Real exact Positions equidistantly distributed respecting creation parameter difference . </summary>
 		public double[] Absolution {get;}
 		/// <summary> Specific axe to support Lap via Axe . </summary>
-		public class Axe : Act.Axe.Support<Lap>
+		public class Axe : Act.Axe.Support<Bit>
 		{
 			public override string Base => basis??base.Base ; readonly string basis ;
-			internal Axe( Act.Axe context , Lap lap ) : base(lap,i=>lap.Absolution.at(i)is double a?context[a]:null,context) { Counter = ()=>lap.Absolution.Length ; basis = context?.Spec ; }
-			internal Axe( Act.Axe context , Quant dif , Quant? codif = null ) : this(context,new Lap(context,dif,codif)) {}
-			public static implicit operator Lap( Axe a ) => a.Arg ;
+			internal Axe( Act.Axe context , Bit lap ) : base(lap,i=>lap.Absolution.at(i)is double a?context[a]:null,context) { Counter = ()=>lap.Absolution.Length ; basis = context?.Spec ; }
+			internal Axe( Act.Axe context , Quant dif , Quant? codif = null ) : this(context,new Bit(context,dif,codif)) {}
+			public static implicit operator Bit( Axe a ) => a.Arg ;
 		}
 	}
 	public partial class Path
@@ -527,23 +528,23 @@ namespace Rob.Act
 		public static Axe Drift( this int dis , Axe x , Axe y , int? dif = null ) => (dif??dis).Get(d=>d.quo(x,y)).Get(a=>a/a.Skip(dis)) ;
 		public static Axe quo( this int dif , Axe x , Axe y ) => dif==0 ? x/y : (x%dif)/(y%dif) ;
 		public static Axe quo( this uint dif , Axe x , Axe y ) => dif==0 ? x/y : (x%dif)/(y%dif) ;
-		public static Axe quo( this Lap dif , Axe x , Axe y ) => (x/dif)/(y/dif) ;
-		public static Axe quo( this Axe dif , Axe x , Axe y ) => dif is Lap.Axe a ? a.Arg.quo(x,y) : Axe.No ;
+		public static Axe quo( this Bit dif , Axe x , Axe y ) => (x/dif)/(y/dif) ;
+		public static Axe quo( this Axe dif , Axe x , Axe y ) => dif is Bit.Axe a ? a.Arg.quo(x,y) : Axe.No ;
 		public static Axe Quo( this int dif , Axe x , Axe y ) => x is null || y is null ? Axe.No : dif==0 ? x/y : x.Extent(dif)/y.Extent(dif) ;
-		public static Axe Quo( this Lap dif , Axe x , Axe y ) => x is null || y is null ? Axe.No : x.Extent(dif)/y.Extent(dif) ;
-		public static Axe Quo( this Axe dif , Axe x , Axe y ) => dif is Lap.Axe a ? a.Arg.Quo(x,y) : Axe.No ;
+		public static Axe Quo( this Bit dif , Axe x , Axe y ) => x is null || y is null ? Axe.No : x.Extent(dif)/y.Extent(dif) ;
+		public static Axe Quo( this Axe dif , Axe x , Axe y ) => dif is Bit.Axe a ? a.Arg.Quo(x,y) : Axe.No ;
 		public static Axe d( this int dif , Axe x , Axe y ) => dif.quo(x,y) ;
 		public static Axe d( this uint dif , Axe x , Axe y ) => dif.quo(x,y) ;
-		public static Axe d( this Lap dif , Axe x , Axe y ) => dif.quo(x,y) ;
+		public static Axe d( this Bit dif , Axe x , Axe y ) => dif.quo(x,y) ;
 		public static Axe d( this Axe dif , Axe x , Axe y ) => dif.quo(x,y) ;
-		public static Axe d( this Axe x , Axe y ) => y is Lap.Axe d ? d.Arg.d(x,d.Ctx) : x is Lap.Axe e ? e.Arg.d(y,e.Ctx) : 1.d(x,y) ;
+		public static Axe d( this Axe x , Axe y ) => y is Bit.Axe d ? d.Arg.d(x,d.Ctx) : x is Bit.Axe e ? e.Arg.d(y,e.Ctx) : 1.d(x,y) ;
 		public static Axe D( this int dif , Axe x , Axe y ) => dif.Quo(x,y) ;
-		public static Axe D( this Lap dif , Axe x , Axe y ) => dif.Quo(x,y) ;
+		public static Axe D( this Bit dif , Axe x , Axe y ) => dif.Quo(x,y) ;
 		public static Axe D( this Axe dif , Axe x , Axe y ) => dif.Quo(x,y) ;
-		public static Axe D( this Axe x , Axe y ) => y is Lap.Axe d ? d.Arg.D(x,d.Ctx) : x is Lap.Axe e ? e.Arg.D(y,e.Ctx) : 1.D(x,y) ;
+		public static Axe D( this Axe x , Axe y ) => y is Bit.Axe d ? d.Arg.D(x,d.Ctx) : x is Bit.Axe e ? e.Arg.D(y,e.Ctx) : 1.D(x,y) ;
 		public static Axe cntr( this int dif , Axe y , Axe m ) => y==null ? Axe.No : m==null||dif==0 ? y : new Axe( i=>{ var me = m[i+dif]-m[i] ; return me==0 ? null : dif.Steps(i).Sum(j=>y[j]*(m[j+Math.Sign(dif)]-m[j]))/me ; } , y ) ;
-		public static Axe cntr( this Lap dif , Axe y , Axe m ) => y==null ? Axe.No : new Axe( i=>{ var d = (int)(dif[i]??0) ; var c = (int)(dif[i,1]??0) ; var me = m[i+d]-m[i+c]??0 ; return me==0 ? null : (d-c).Steps(i).Sum(j=>y[j]*(m[j+Math.Sign(d-c)]-m[j]))/me ; } , y ) ;
-		public static Axe cntr( this Axe dif , Axe y , Axe m ) => dif is Lap.Axe a ? a.Arg.cntr(y,m) : y??Axe.No ;
+		public static Axe cntr( this Bit dif , Axe y , Axe m ) => y==null ? Axe.No : new Axe( i=>{ var d = (int)(dif[i]??0) ; var c = (int)(dif[i,1]??0) ; var me = m[i+d]-m[i+c]??0 ; return me==0 ? null : (d-c).Steps(i).Sum(j=>y[j]*(m[j+Math.Sign(d-c)]-m[j]))/me ; } , y ) ;
+		public static Axe cntr( this Axe dif , Axe y , Axe m ) => dif is Bit.Axe a ? a.Arg.cntr(y,m) : y??Axe.No ;
 		public static IEnumerable<Quant> Refine( this IEnumerable<Quant?> source ) => source?.OfType<Quant>().Distinct().OrderBy(q=>q) ;
 		/// <summary>
 		/// Seeks last continualpredecessor (subsequent) in <paramref name="file"/> of <paramref name="at"/> position . 
