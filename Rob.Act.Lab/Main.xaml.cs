@@ -326,7 +326,7 @@ namespace Rob.Act.Analyze
 		List<(string Aspect,List<(string Spec,double?[] Val,string Base,double Offset)> Axes)> CalculateDrawingValue( Axe xaxe , string[] yaxes )
 		{
 			List<(string Aspect,List<(string Spec,double?[] Val,string Base,double Offset)> Axes)> val =
-				DrawingResources.Select(asp=>(asp.Spec,asp.Where(a=>a.Spec==xaxe.Spec||yaxes.Contains(a.Spec)).Select(a=>(a.Spec,a.ToArray(),a.Base,asp.Offset)).ToList())).ToList() ;
+				DrawingResources.Select(asp=>(asp.Spec,asp.Where(a=>a.Spec==xaxe.Spec||yaxes.Contains(a.Spec)).Select(a=>(a.Spec,(a.Spec==xaxe.Spec?a:a.On(asp[xaxe.Spec])).ToArray(),a.Base,asp.Offset)).ToList())).ToList() ;
 			if( yaxes?.Any(y=>Aspect[y].Meany)==true && val.Count>1 )
 			{
 				var yma = yaxes.Where(yax=>Aspect[yax].Meany).ToArray() ; var yda = yaxes.Where(yax=>Aspect[yax].Delta).ToArray() ; var mean = yma.ToDictionary(y=>y,y=>(val:0D,wei:0)) ;
@@ -342,7 +342,7 @@ namespace Rob.Act.Analyze
 					foreach( var src in val ) foreach( var axe in src.Axes ) if( yma.Contains(axe.Spec) ) if( axe.Val.At(i) is double v ) mean[axe.Spec] = (mean[axe.Spec].val+v,mean[axe.Spec].wei+1) ;
 					foreach( var src in val ) foreach( var axe in src.Axes ) if( yma.Contains(axe.Spec) ) if( i<axe.Val.Length )
 					{
-						var mea = i<ixt&&mean[axe.Spec].wei!=0 ? mean[axe.Spec].val/mean[axe.Spec].wei : null as double? ; if( yda.Contains(axe.Spec) ) axe.Val[i] -= mea ; else axe.Val[i] = mea ;
+						var mea = /*i<ixt&&*/mean[axe.Spec].wei!=0 ? mean[axe.Spec].val/mean[axe.Spec].wei : null as double? ; if( yda.Contains(axe.Spec) ) axe.Val[i] -= mea ; else axe.Val[i] = mea ;
 					}
 				}
 			}
@@ -361,7 +361,7 @@ namespace Rob.Act.Analyze
 				for( var m=0 ; m<=hor ; m+=10 ) GraphPanel.Children.Add( new Line{ X1 = m , Y1 = 0 , X2 = m , Y2 = ver , Stroke = brush , StrokeDashArray = dash } ) ;
 				for( var m=ver ; m>=0 ; m-=10 ) GraphPanel.Children.Add( new Line{ X1 = 0 , Y1 = m , X2 = hor , Y2 = m , Stroke = brush , StrokeDashArray = dash } ) ;
 			}
-			var val = DrawingValue ; if( val==null || yaxes.Any(y=>Aspect[y]?.Delta??false) ) await Task.Factory.StartNew(()=> val = DrawingValue = CalculateDrawingValue(xaxe,yaxes) ) ;
+			var val = DrawingValue ; if( val==null || yaxes.Any(y=>Aspect[y]?.Meany??false) ) await Task.Factory.StartNew(()=> val = DrawingValue = CalculateDrawingValue(xaxe,yaxes) ) ;
 			var rng = DrawingRange ; if( rng==null )
 			{
 				DrawingRange = rng = new Dictionary<string,(double Min,double Max)>() ;
@@ -446,7 +446,7 @@ namespace Rob.Act.Analyze
 				for( var m=0 ; m<=hor ; m+=10 ) MapPanel.Children.Add( new Line{ X1 = m , Y1 = 0 , X2 = m , Y2 = ver , Stroke = brush , StrokeDashArray = dash } ) ;
 				for( var m=ver ; m>=0 ; m-=10 ) MapPanel.Children.Add( new Line{ X1 = 0 , Y1 = m , X2 = hor , Y2 = m , Stroke = brush , StrokeDashArray = dash } ) ;
 			}
-			var val = DrawingValue ; if( val==null || yaxes.Any(y=>Aspect[y]?.Delta??false) ) await Task.Factory.StartNew(()=> val = DrawingValue = CalculateDrawingValue(xaxe,yaxes) ) ;
+			var val = DrawingValue ; if( val==null || yaxes.Any(y=>Aspect[y]?.Meany??false) ) await Task.Factory.StartNew(()=> val = DrawingValue = CalculateDrawingValue(xaxe,yaxes) ) ;
 			var rng = DrawingRange ; if( rng==null )
 			{
 				DrawingRange = rng = new Dictionary<string,(double Min,double Max)>() ;

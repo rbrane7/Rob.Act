@@ -23,13 +23,17 @@ namespace Rob.Act
 		public readonly static Support No = new(resolver:i=>null as Quant?) , One = new(resolver:i=>1) , Zero = new(resolver:i=>1) ;
 		public event PropertyChangedEventHandler PropertyChanged { add => propertyChanged += value.DispatchResolve() ; remove => propertyChanged -= value.DispatchResolve() ; } PropertyChangedEventHandler propertyChanged ;
 		public Axe() : this(null,null) {} // Default constructor must be present to enable DataGrid implicit Add .
-		public Axe( Func<int,Quant?> resolver = null , Axe source = null ) { this.resolver = resolver ; aspect = source?.Aspect ; aspects = source?.Aspects??default ; rex = source?.rex??default ; selectlet = source?.selectlet ; selector = source?.selector ; multi = source?.multi??default ; delta = source?.delta??default ; }
+		public Axe( Func<int,Quant?> resolver = null , Axe source = null , Func<int> counter = null )
+		{
+			this.resolver = resolver ; this.counter = counter ; aspect = source?.Aspect ; aspects = source?.Aspects??default ; rex = source?.rex??default ; selectlet = source?.selectlet ; selector = source?.selector ;
+			multi = source?.multi??default ; delta = source?.delta??default ; meany = source?.meany??default ;
+		}
 		public Axe( Axe source , IEnumerable<Aspectable> primary = null , IEnumerable<Aspectable> secondary = null )
 		{
-			var dax = source?.Deref(primary)??source?.Deref(secondary)??source ;
-			spec = dax?.spec ; aspect = source?.aspect ; resolvelet = dax?.resolvelet ; resolver = dax?.resolver ; multi = dax?.multi??default ; delta = dax?.delta??default ; bond = source?.bond.Null(v=>v.No())??dax?.bond ;
-			var ses = selectlet.No() ? dax : source ; rex = ses?.rex??default ; selectlet = ses?.selectlet ; selector = ses?.selector ;
-			if( source?.distribulet.No()!=false && source?.quantlet.No()!=false ) source = dax ; distribulet = source?.distribulet ; distributor = source?.distributor ; quantlet = source?.quantlet ; Quantizer = source?.quantile?.Quantizer ;
+			var dax = source?.Deref(primary)??source?.Deref(secondary)??source ; spec = dax?.spec ; aspect = source?.aspect ;
+			resolvelet = dax?.resolvelet ; resolver = dax?.resolver ; multi = dax?.multi??default ; delta = dax?.delta??default ; meany = dax?.meany??default ; bond = source?.bond.Null(v=>v.No())??dax?.bond ;
+			var ses = selectlet.No() ? dax : source ; rex = ses?.rex??default ; selectlet = ses?.selectlet ; selector = ses?.selector ; if( source?.distribulet.No()!=false && source?.quantlet.No()!=false ) source = dax ;
+			distribulet = source?.distribulet ; distributor = source?.distributor ; quantlet = source?.quantlet ; Quantizer = source?.quantile?.Quantizer ;
 		}
 		public virtual string Spec { get => spec ; set { if( value==spec ) return ; spec = value ; propertyChanged.On(this,"Spec") ; } } string spec ;
 		public virtual string Base => Solver?.Base ;
@@ -92,7 +96,9 @@ namespace Rob.Act
 		/// <summary> Never null . If nul than always throws . </summary>
 		protected Func<int,Quant?> Resolver { private get { if( resolver is null ) { var r = (Coaxe??No).Resolver ; if( Delta && coaxes is not null && r is not null ) resolver = i=>r(i)-coaxes.Average(a=>a[i]) ; else resolver = r ; } return resolver ; } set { if( resolver==value ) return ; resolver = value ; propertyChanged.On(this,"Resolver") ; } } Func<int,Quant?> resolver ;
 		public string Resolvelet { get => resolvelet ; set { if( value==resolvelet ) return ; resolvelet = value ; Resolver = null ; propertyChanged.On(this,"Resolvelet") ; } } string resolvelet ;
-		public IEnumerator<Quant?> GetEnumerator() { for( int i=0 , count=Count ; i<count ; ++i ) yield return this[i] ; } IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
+		public IEnumerator<Quant?> GetEnumerator() => Evaluate(Count).GetEnumerator() ; IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
+		public IEnumerable<Quant?> Evaluate( int count ) { for( int i=0 ; i<count ; ++i ) yield return this[i] ; }
+		public IEnumerable<Quant?> On( Axe ax ) => Evaluate(ax?.Count??Count) ;
 		#region Quantile
 		Func<Axe,IEnumerable<Quant>> Distributor { get => distributor ??( distributor = distribulet.Compile<Func<Axe,IEnumerable<Quant>>>() ?? (a=>null) ) ; set { if( distributor==value ) return ; distributor = value ; quantile.Set(q=> Quantile = new Quantile(this,q.Quantizer) ) ; propertyChanged.On(this,"Distributor") ; } } Func<Axe,IEnumerable<Quant>> distributor ;
 		public IEnumerable<Quant> Distribution => Distributor?.Invoke(this) ?? DefaultDistribution ;

@@ -2,7 +2,7 @@
 {
 	Doctee = 'doctee://localhost:43203/Action/Analyze?Name=Rana' ,
 	/*WorkoutsPaths = @'C:\Users\teplyr\Downloads\concept2*.tcx | C:\Users\teplyr\Downloads\*.gpx | C:\Users\teplyr\Downloads\*.Bio.csv | C:\Users\teplyr\Downloads\*.par | C:\Users\teplyr\Downloads\*.path' ,*/
-	WorkoutsPaths = @'C:\Users\teplyr\Downloads\2022-08-27-141255-XCR-Rob.6-watch.* | C:\Users\teplyr\Downloads\2022-08-28-095953-XCR-Rob.6-watch.* | C:\Users\teplyr\Downloads\2022-08-25-150912-XCR-Rob.6-watch.* | C:\Users\teplyr\Downloads\2022-08-24-173053-XCR-Rob.6-watch.*' ,
+	WorkoutsPaths = @'C:\Users\teplyr\Downloads\2021-08-28-141527-Mikulov.℟.XCR.KV+2R.167-Rob.6-watch.* | C:\Users\teplyr\Downloads\2022-08-27-141255-XCR-Rob.6-watch.*' ,
 	WorkoutsPath = @'C:\Users\teplyr\Downloads\*.path' , /*WorkoutsSeed = =>Name||'©℗®' ,*//* WorkoutsFilter = =>Refine||'©℗®' ,*/
 	AspectsPaths = @'C:\Users\robin\OneDrive\Documents\Action\Lab\Context\*.asp' , AspectsPath = @'C:\Users\robin\OneDrive\Documents\Action\Lab\Context\*.asp' , /*AspectsFilter = =>Spec!='Test' ,*/
 	StatePath = @'C:\Users\robin\OneDrive\Documents\Action\Lab\Context' ,
