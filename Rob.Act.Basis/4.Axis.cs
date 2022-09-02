@@ -338,12 +338,12 @@ namespace Rob.Act
 		/// <summary>
 		/// Deserializes aspect from string .
 		/// </summary>
-		public static explicit operator Axe( string text ) => text.Separate( Serialization.Separator,braces:null).Get(t=>new Axe{Spec=t.At(0),Multi=t.At(1)==Serialization.Multier,Resolvelet=t.At(2),Selectlet=t.At(4),Distribulet=t.At(5),Quantlet=t.At(6),Binder=t.At(7),Asrex=t.At(8)==Serialization.Rex}) ;
+		public static explicit operator Axe( string text ) => text.Separate( Serialization.Separator,braces:null).Get(t=>new Axe{Spec=t.At(0),Multi=t.At(1)==Serialization.Multier,Resolvelet=t.At(2),Delta=t.At(3).Consists(Serialization.Delter),Meany=t.At(3).Consists(Serialization.Meaner),Selectlet=t.At(4),Distribulet=t.At(5),Quantlet=t.At(6),Binder=t.At(7),Asrex=t.At(8)==Serialization.Rex}) ;
 		/// <summary>
 		/// Serializes aspect from string .
 		/// </summary>
-		public static explicit operator string( Axe aspect ) => aspect.Get(a=>string.Join( Serialization.Separator,a.spec,a.multi?Serialization.Multier:string.Empty,a.resolvelet,null,a.selectlet,a.distribulet,a.quantlet,a.Binder,a.rex? Serialization.Rex:string.Empty)) ;
-		static class Serialization { public const string Separator = " \x1 Axlet \x2 " , Multier = "*" , Meaner = "•" , Rex = "rex" ; }
+		public static explicit operator string( Axe aspect ) => aspect.Get(a=>string.Join(Serialization.Separator,a.spec,a.multi?Serialization.Multier:null,a.resolvelet,$"{(a.Delta?Serialization.Delter:null)}{(a.Meany?Serialization.Meaner:null)}",a.selectlet,a.distribulet,a.quantlet,a.Binder,a.rex?Serialization.Rex:string.Empty)) ;
+		static class Serialization { public const string Separator = " \x1 Axlet \x2 " , Multier = "*" , Delter = "∆" , Meaner = "⊚" , Rex = "rex" ; }
 		#endregion
 		public struct Context : Contextable
 		{
