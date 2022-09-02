@@ -68,8 +68,8 @@ namespace Rob.Act
 		public static Quant? operator&( Geos a , Geos b ) => (a|b)/(+a*+b).nil() ;
 		public static Quant? operator|( Geos? a , Geos? b ) => a is Geos x && b is Geos y ? x|y : null as Quant? ;
 		public static Quant? operator&( Geos? a , Geos? b ) => (a|b)/(+a*+b) ;
-		public static implicit operator Geos?( Point point ) => point?.IsGeos==true ? new Geos{Lon=point[Axis.Lon].Value,Lat=point[Axis.Lat].Value} : null as Geos? ;
-		public static implicit operator Geos( (Quant lon,Quant lat) point ) => new Geos(point.lon,point.lat) ;
+		public static implicit operator Geos?( Point point ) => point?.IsGeos==true ? new Geos{Lon=point[Axis.Lon].Value,Lat=point[Axis.Lat].Value} : null ;
+		public static implicit operator Geos( (Quant lon,Quant lat) point ) => new(point.lon,point.lat) ;
 		public static bool operator==( Geos x , Geos y ) => x.Lon==y.Lon && x.Lat==y.Lat ;
 		public static bool operator!=( Geos x , Geos y ) => !(x==y) ;
 		public override string ToString() => $"({Lon:0.00000},{Lat:0.00000})" ;
@@ -107,11 +107,13 @@ namespace Rob.Act
 		static readonly List<string> axis = Enum.GetNames(typeof(Axis)).ToList() , marks = Enum.GetNames(typeof(Mark)).ToList() ;
 		static readonly List<uint> vaxi = Enum.GetValues(typeof(Axis)).Cast<uint>().ToList() ; static readonly List<Mark> vama = Enum.GetValues(typeof(Mark)).Cast<Mark>().ToList() ;
 		internal static uint? Axis( this string name , bool insure = false ) => axis.IndexOf(name) is int at && at>=0 ? vaxi[at] : insure ? (uint)axis.Set(a=>{a.Add(name);vaxi.Add((uint)vaxi.Count);}).Count-1 : default(uint?) ;
+		internal static Axis? AsAxis( this string name ) => (Axis?)name.Axis() ;
 		internal static Mark? Mark( this string name ) => marks.IndexOf(name) is int at && at>=0 ? vama[at] : default(Mark?) ;
 		static readonly (Axis At,Axis To) Potentialim = (Act.Axis.Dist,Act.Axis.Top-1) ;
 		public static readonly Axis[] Derivates = {Act.Axis.Dist,Act.Axis.Time} ;
 		public static readonly uint[] Potenties = Potentials.Except(Derivates).Select(v=>(uint)v).ToArray() ;
 		public static bool IsPotential( this Axis ax ) => Potentialim.At<=ax && ax<=Potentialim.To ;
+		public static bool IsCentral( this Axis ax ) => Potentialim.At>ax ;
 		public static IEnumerable<Axis> Potentials { get { for( var ax=Potentialim.At ; ax<=Potentialim.To ; ++ax ) yield return ax ; yield return Act.Axis.Time ; } }
 		public static IEnumerable<Axis> Absoltutes { get { for( var ax=(Axis)0 ; ax<Act.Axis.Top ; ++ax ) if( ax<Potentialim.At || Potentialim.To<ax ) yield return ax ; yield return Act.Axis.Date ; } }
 		public static IEnumerable<Mark> Marks => vama.Where(m=>m<=Act.Mark.Hyp) ;

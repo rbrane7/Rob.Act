@@ -147,7 +147,17 @@ namespace Rob.Act.Analyze
 		#region Core
 		public Aid.Collections.ObservableList<Axe> Axes { get ; private set ; } = new Aid.Collections.ObservableList<Axe>() ;
 		/// <summary> Aspect is never null , either Spectrum , or aspect ready for projection . If without selection then set to <see cref="Laboratory"/> . </summary>
-		public Aspect Aspect { get => Respect ; protected set { if( (value??Laboratory)==Aspect ) return ; Aspect.Set(a=>{a.CollectionChanged-=OnAspectChanged;a.PropertyChanged-=OnAspectChanged;}) ; (Respect=value??Laboratory).Set(a=>{a.CollectionChanged+=OnAspectChanged;a.PropertyChanged+=OnAspectChanged;}) ; AspectAxisGrid.CanUserAddRows = AspectAxisGrid.CanUserDeleteRows = AspectTraitsGrid.CanUserAddRows = AspectTraitsGrid.CanUserDeleteRows = AspectsGrid.SelectedItems.Count<=1 ; Resources = null ; PropertyChangedOn("Aspect",value) ; } } Aspect Respect = Laboratory ;
+		public Aspect Aspect
+		{
+			get => Respect ;
+			protected set
+			{
+				if( (value??Laboratory)==Aspect ) return ;
+				Aspect.Set(a=>{a.CollectionChanged-=OnAspectChanged;a.PropertyChanged-=OnAspectChanged;}) ; (Respect=value??Laboratory).Set(a=>{a.CollectionChanged+=OnAspectChanged;a.PropertyChanged+=OnAspectChanged;}) ;
+				AspectAxisGrid.CanUserAddRows = AspectAxisGrid.CanUserDeleteRows = AspectTraitsGrid.CanUserAddRows = AspectTraitsGrid.CanUserDeleteRows = AspectsGrid.SelectedItems.Count<=1 ; Resources = null ;
+				PropertyChangedOn("Aspect",value) ;
+			}
+		} Aspect Respect = Laboratory ;
 		public IEnumerable<Axe> Quantiles { get => quantiles??Enumerable.Empty<Axe>() ; private set { if( !quantiles.SequenceEquate(value) ) PropertyChangedOn("Quantiles",quantiles=value?.ToArray()) ; } } Axe[] quantiles ;
 		public IEnumerable<Aspect> Sources { get => Resources.Issue(Sourcer) ; set => PropertyChangedOn("Sources",value) ; } (Func<Aspect,bool> Filter,Func<IEnumerable<Aspect>,IEnumerable<Aspect>> Query)[] Sourcer ;
 		public new IEnumerable<Aspect> Resources { get => sources ??= new Aid.Collections.ObservableList<Aspect>(ActionsProjection) ; set { PropertyChangedOn("Resources", DrawingResources = sources = value ) ; Sources = value ; } } IEnumerable<Aspect> sources ;
@@ -272,7 +282,14 @@ namespace Rob.Act.Analyze
 		void SaveAspectsButton_Click( object sender , RoutedEventArgs e ) => Setup.AspectsPath.Set(p=>Aspects.Each(a=>p.Pathin(a.Spec).WriteAll((string)a))) ;
 		#endregion
 
-		Aspect AspectSelection { get { if( Asel is not null ) return Asel ; if( AspectsGrid.SelectedItems.Count<2 && !CumulativeUpdate ) return Asel = AspectsGrid.SelectedItem as Aspect ; var nex = AspectsGrid.SelectedItems.OfType<Aspect>() ; return Asel = new Aspect(CumulativeUpdate?nex.prepend(Aspect):nex) ; } set => Asel = value ; } Aspect Asel ;
+		Aspect AspectSelection {
+			get
+			{
+				if( Asel is not null ) return Asel ; if( AspectsGrid.SelectedItems.Count<2 && !CumulativeUpdate ) return Asel = AspectsGrid.SelectedItem as Aspect ;
+				var nex = AspectsGrid.SelectedItems.OfType<Aspect>() ; return Asel = new Aspect(CumulativeUpdate?nex.prepend(Aspect):nex) ;
+			}
+			set => Asel = value ;
+		} Aspect Asel ;
 		void DisplayTable_SelectionChanged( object sender , SelectionChangedEventArgs e )
 		{
 			switch( (e.AddedItems.Count>0?e.AddedItems[0]as TabItem:null)?.Header as string )
@@ -284,10 +301,11 @@ namespace Rob.Act.Analyze
 				case "Map" : ViewPanel = MapPanel ; break ;
 			}
 		}
-		void Aspect_MouseRightButtonDown( object sender , MouseButtonEventArgs e ) { if( Aspect is Path.Aspect ) { ViewType = "Aspect" ; Aspect = AspectSelection ; } }
+		void Aspect_MouseRightButtonDown( object sender , MouseButtonEventArgs e ) { ViewType = "Aspect" ; Aspect = AspectSelection ; }
 		void Spectrum_MouseRightButtonDown( object sender , MouseButtonEventArgs e )
 		{
-			if( Aspect is Path.Aspect ) return ; ViewType = "Spectrum" ; Aspect = (((SpectrumTabs.SelectedItem as TabItem)?.Content as DataGrid)?.ItemsSource as Pathable??SpectrumTabs.ItemsSource.OfType<Pathable>().One())?.Spectrum ; Redraw(true) ;
+			if( Aspect is Path.Aspect ) return ;
+			ViewType = "Spectrum" ; Aspect = (((SpectrumTabs.SelectedItem as TabItem)?.Content as DataGrid)?.ItemsSource as Pathable??SpectrumTabs.ItemsSource.OfType<Pathable>().One())?.Spectrum ; Redraw(true) ;
 		}
 		void DataGridDeleteCommandBinding_Executed( object sender , ExecutedRoutedEventArgs _=null ) => (sender as DataGrid).Set(g=>(g.ItemsSource as IList).Set(l=>g.SelectedItems.OfType<object>().ToArray().Each(l.Remove))) ;
 		void SourcesGridDeleteCommandBinding_Executed( object sender , ExecutedRoutedEventArgs _=null ) => (sources as IList).Set(l=>(sender as DataGrid)?.SelectedItems.OfType<Aspect>().ToArray().Each(a=>{l.Remove(a);Presources.Remove(a.Raw);})) ;
@@ -329,21 +347,18 @@ namespace Rob.Act.Analyze
 				DrawingResources.Select(asp=>(asp.Spec,asp.Where(a=>a.Spec==xaxe.Spec||yaxes.Contains(a.Spec)).Select(a=>(a.Spec,(a.Spec==xaxe.Spec?a:a.On(asp[xaxe.Spec])).ToArray(),a.Base,asp.Offset)).ToList())).ToList() ;
 			if( yaxes?.Any(y=>Aspect[y].Meany)==true && val.Count>1 )
 			{
-				var yma = yaxes.Where(yax=>Aspect[yax].Meany).ToArray() ; var yda = yaxes.Where(yax=>Aspect[yax].Delta).ToArray() ; var mean = yma.ToDictionary(y=>y,y=>(val:0D,wei:0)) ;
-				var ext = val.SelectMany(v=>v.Axes).Where(a=>yma.Contains(a.Spec)).Max(a=>a.Val.Length) ; var ixt = val.SelectMany(v=>v.Axes).Where(a=>yma.Contains(a.Spec)).Min(a=>a.Val.Length) ;
+				var yma = yaxes.Where(yax=>Aspect[yax].Meany).ToArray() ;
 				foreach( var src in val ) for( var i=0 ; i<src.Axes.Count ; ++i ) if( yma.Contains(src.Axes[i].Spec) )
 				{
 					var off = (int)src.Axes[i].Offset ; if( off==0 ) continue ; var axv = src.Axes[i].Val ;
 					if( off<0 ) for( var j=0 ; j<axv.Length ; ++j ) axv[j] = j-off<axv.Length ? axv[j-off] : null ; else for( var j=axv.Length-1 ; j>=0 ; --j ) axv[j] = j-off>=0 ? axv[j-off] : null ;
 					src.Axes[i] = (src.Axes[i].Spec,src.Axes[i].Val,src.Axes[i].Base,0) ;
 				}
-				for( var i=0 ; i<ext ; ++i,yma.Each(k=>mean[k]=(0D,0)) )
+				var yda = yaxes.Where(yax=>Aspect[yax].Delta).ToArray() ; var mean = yma.ToDictionary(y=>y,y=>0D as double?) ; var ext = val.SelectMany(v=>v.Axes).Where(a=>yma.Contains(a.Spec)).Max(a=>a.Val.Length) ;
+				for( var i=0 ; i<ext ; ++i,yma.Each(k=>mean[k]=0D) )
 				{
-					foreach( var src in val ) foreach( var axe in src.Axes ) if( yma.Contains(axe.Spec) ) if( axe.Val.At(i) is double v ) mean[axe.Spec] = (mean[axe.Spec].val+v,mean[axe.Spec].wei+1) ;
-					foreach( var src in val ) foreach( var axe in src.Axes ) if( yma.Contains(axe.Spec) ) if( i<axe.Val.Length )
-					{
-						var mea = /*i<ixt&&*/mean[axe.Spec].wei!=0 ? mean[axe.Spec].val/mean[axe.Spec].wei : null as double? ; if( yda.Contains(axe.Spec) ) axe.Val[i] -= mea ; else axe.Val[i] = mea ;
-					}
+					foreach( var src in val ) foreach( var axe in src.Axes ) if( yma.Contains(axe.Spec) ) mean[axe.Spec] += axe.Val.At(i) ;
+					foreach( var src in val ) foreach( var axe in src.Axes ) if( yma.Contains(axe.Spec) ) if( i<axe.Val.Length ) { var mea = mean[axe.Spec]/val.Count ; if( yda.Contains(axe.Spec) ) axe.Val[i] -= mea ; else axe.Val[i] = mea ; }
 				}
 			}
 			return val ;
@@ -776,7 +791,7 @@ namespace Rob.Act.Analyze
 
 		#region Corrections
 		void DataGrid_Stop_CommandBinding_Executed( object sender , ExecutedRoutedEventArgs e ) { foreach( Path path in BookGrid.SelectedItems ) path.Corrections?.Clear() ; Redraw() ; }
-		void DataGrid_Enter_CommandBinding_Executed( object sender , ExecutedRoutedEventArgs e ) { foreach( Path path in BookGrid.SelectedItems ) path.Corrections?.Commit(e.Parameter.Parse((byte)2)) ; Redraw(true) ; }
+		void DataGrid_Enter_CommandBinding_Executed( object sender , ExecutedRoutedEventArgs e ) { foreach( Path path in BookGrid.SelectedItems ) if( path.Corrections?.Commit(e.Parameter.Parse((byte)2))!=true ) path.Reset() ; Redraw(true) ; }
 		void TabControl_Stop_CommandBinding_Executed( object sender , ExecutedRoutedEventArgs e ) { if( ((sender as DataGrid)?.TemplatedParent as ContentPresenter)?.Content is Path path ) path.Corrections?.Clear() ; }
 		void TabControl_Enter_CommandBinding_Executed( object sender , ExecutedRoutedEventArgs e ) { if( ((sender as DataGrid)?.TemplatedParent as ContentPresenter)?.Content is Path path ) path.Corrections?.Commit(e.Parameter.Parse((byte)2)) ; }
 		#endregion

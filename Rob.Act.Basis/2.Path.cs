@@ -88,12 +88,12 @@ namespace Rob.Act
 		}
 		void Preclude()
 		{
-			if( Alti==null ) Alti = this.Average(p=>p.Alti) ; if( this[Axis.Lon]==null ) this[Axis.Lon] = this.Average(p=>p[Axis.Lon]) ; if( this[Axis.Lat]==null ) this[Axis.Lat] = this.Average(p=>p[Axis.Lat]) ;
-			foreach( var mark in Basis.Segmentables ) if( this[mark]==null ) this[mark] = this.Count(p=>p.Mark.HasFlag(mark)).nil() ;
+			Alti ??= this.Average(p=>p.Alti) ; this[Axis.Lon] ??= this.Average(p=>p[Axis.Lon]) ; this[Axis.Lat] ??= this.Average(p=>p[Axis.Lat]) ;
+			foreach( var mark in Basis.Segmentables ) this[mark] ??= this.Count(p=>p.Mark.HasFlag(mark)).nil() ;
 		}
 		void Conclude( Point point = null , Mark? dif = null )
 		{
-			point.Set(p=>{var z=this[0];if(No==null)No=p.No-z.No;if(Bit==null)Bit=p.Bit-z.Bit;if(Time==default)Time=p.Time-z.Time;if(Dist==null)Dist=p.Dist-z.Dist;if(Ascent==null)Ascent=p.Ascent-z.Ascent;if(Deviation==null)Deviation=p.Deviation-z.Deviation;}) ;
+			point.Set(p=>{var z=this[0];No??=p.No-z.No;Bit??=p.Bit-z.Bit;if(Time==default)Time=p.Time-z.Time;Dist??=p.Dist-z.Dist;Ascent??=p.Ascent-z.Ascent;Deviation??=p.Deviation-z.Deviation;}) ;
 			foreach( var mark in Basis.Segmentables ) if( this[mark]!=null && (dif==null||(dif.Value&mark)!=Mark.No) ) Segmentize(mark) ;
 		}
 		protected internal override void Depose() { using var _=Incognit ; base.Depose() ; for( var i=0 ; i<Count ; ++i ) this[i].Depose() ; }
@@ -194,7 +194,7 @@ namespace Rob.Act
 			}
 			else this[k][axe] = cor[i].Value ;
 			if( (uint)cor[^1].Key<Count-1 ) { var f = cor[^1] ; Quant Dif( double x ) => (1-x)*(bas-f.Value) ; for( int j=f.Key+1 , k=Count-1 ; j<=k ; ++j ) this[j][axe] -= Dif((double)(j-f.Key)/(k-f.Key)) ; }
-			this[axe] = this[^1][axe]-this[0][axe] ;
+			if( axe.IsPotential() ) this[axe] = this[^1][axe]-this[0][axe] ;
 		}
 		/// <summary>
 		/// Corrects to values of given correction by setting new values to correctited ones at their paces and those between them are moved by the difference between original and new values of adjacent corrections . 
@@ -215,7 +215,7 @@ namespace Rob.Act
 			}
 			else this[k][axe] = cor[i].Value ;
 			if( (uint)cor[^1].Key<Count-1 ) { var f = cor[^1] ; Quant Dif( double x ) => (1-x)*(bas-f.Value) ; for( int j=f.Key+1 , k=Count-1 ; j<=k ; ++j ) this[j][axe] -= Dif((double)(j-f.Key)/(k-f.Key)) ; }
-			this[axe] = this[^1][axe]-this[0][axe] ;
+			if( axe.AsAxis()?.IsPotential()==true ) this[axe] = this[^1][axe]-this[0][axe] ;
 		}
 		/// <summary>
 		/// Corrects to values of given correction by setting new values to correctited one and those between them are interpolated to new ones . 
@@ -235,7 +235,7 @@ namespace Rob.Act
 				bas = to ;
 			}
 			else this[k][axe] = cor[i].Value ;
-			this[axe] = this[^1][axe]-this[0][axe] ;
+			if( axe.IsPotential() ) this[axe] = this[^1][axe]-this[0][axe] ;
 		}
 		/// <summary>
 		/// Corrects to values of given correction by setting new values to correctited one and those between them are interpolated to new ones . 
@@ -255,7 +255,7 @@ namespace Rob.Act
 				bas = to ;
 			}
 			else this[k][axe] = cor[i].Value ;
-			this[axe] = this[^1][axe]-this[0][axe] ;
+			if( axe.AsAxis()?.IsPotential()==true ) this[axe] = this[^1][axe]-this[0][axe] ;
 		}
 		/// <summary>
 		/// Correction of values after the corrected one if <paramref name="axe"/> is potential .
@@ -268,16 +268,17 @@ namespace Rob.Act
 			set
 			{
 				var dif = null as Quant? ; if( (uint)at<Count && (dif=this[at][axe]-value)!=0 ) this[at][axe] = value ;
-				if( Potenties.Contains((uint)axe) && dif.Nil() is Quant d ) { for( var i=at+1 ; i<Count ; ++i ) this[i][axe] -= dif ; this[axe] = this[^1][axe]-this[0][axe] ; }
+				if( Potenties.Contains((uint)axe) && dif.Nil() is Quant ) { for( var i=at+1 ; i<Count ; ++i ) this[i][axe] -= dif ; this[axe] = this[^1][axe]-this[0][axe] ; }
 			}
 		}
+		public void Dirrect( Axis axe , IEnumerable<(int at,Quant value)> cor ) { using( Incognit ) foreach( var (at,value) in cor ) this[at,axe] = value ; }
 		public void Correct( Axis axe , IEnumerable<(double at,Quant value)> cor ) => Correct(axe,cor?.Select(c=>new KeyValuePair<int,Quant>((int)Math.Round(c.at*(Count-1)),c.value)).ToArray()) ;
 		public void Flatten( Axis axe , IEnumerable<(double at,Quant value)> cor ) => Flatten(axe,cor?.Select(c=>new KeyValuePair<int,Quant>((int)Math.Round(c.at*(Count-1)),c.value)).ToArray()) ;
 		public void Correct( string axe , IEnumerable<(double at,Quant value)> cor ) => Correct(axe,cor?.Select(c=>new KeyValuePair<int,Quant>((int)Math.Round(c.at*(Count-1)),c.value)).ToArray()) ;
 		public void Correct( Axis axe , params (int at,Quant value)[] cor ) => Correct(axe,cor.Select(c=>((double)c.at/(Count-1).nil()??1,c.value))) ;
 		public void Flatten( Axis axe , params (int at,Quant value)[] cor ) => Flatten(axe,cor.Select(c=>((double)c.at/(Count-1).nil()??1,c.value))) ;
-		public void Correct( byte level , Axis axe , params (int at,Quant value)[] cor ) { if( cor?.Length>0 ) if( level==2 ) Correct(axe,cor) ; else if( level==1 ) Flatten(axe,cor) ; else if( level==0 ) using( Incognit ) foreach( var (at,value) in cor ) this[at,axe] = value ; }
 		public void Correct( string axe , params (int at,Quant value)[] cor ) => Correct(axe,cor.Select(c=>((double)c.at/(Count-1).nil()??1,c.value))) ;
+		public void Correct( byte level , Axis axe , params (int at,Quant value)[] cor ) { if( cor?.Length>0 ) if( level==2 ) Correct(axe,cor) ; else if( level==1 ) Flatten(axe,cor) ; else if( level==0 ) Dirrect(axe,cor) ; }
 		public void Correct( Axis axe , params Quant[] cor ) => Correct(axe,cor?.Length.Steps().Select(i=>((double)i/(cor.Length-1).nil()??1,cor[i]))) ;
 		public void Correct( string axe , params Quant[] cor ) => Correct(axe,cor?.Length.Steps().Select(i=>((double)i/(cor.Length-1).nil()??1,cor[i]))) ;
 		#endregion
@@ -313,7 +314,7 @@ namespace Rob.Act
 			ISet<(int at,Quant value)> Ones( Axis ax ) => TryGetValue(ax,out var v) ? v : new SortedSet<(int at,Quant value)>(new Aid.Comparer<(int at,Quant value)>((x,y)=>x.at-y.at)).Set(c=>Add(ax,c)) ;
 			public new (int at,Quant value) this[ Axis ax ] { set { var o = Ones(ax) ; if( o.Add(value) ) return ; o.Remove(value) ; o.Add(value) ; } }
 			public Quant? this[ Axis ax , int at ] { get { if( Ones(ax) is ISet<(int at,Quant value)> set ) foreach( var pair in set ) if( pair.at==at ) return pair.value ; return null ; } }
-			public void Commit( byte level ) { if( Count<=0 ) return ; this.Each(c=>Context.Correct(level,c.Key,c.Value?.ToArray())) ; Clear() ; Context.Edited() ; }
+			public bool Commit( byte level ) { if( Count<=0 ) return false ; this.Each(c=>Context.Correct(level,c.Key,c.Value?.ToArray())) ; Clear() ; Context.Edited() ; return true ; }
 			public new void Clear() { if( Count<=0 ) return ; base.Clear() ; Context.Spectrify() ; } void IDictionary.Clear() => Clear() ;
 		}
 		internal Correctioner Correction => Corrections ??= new Correctioner(this) ; internal Correctioner Corrections ;

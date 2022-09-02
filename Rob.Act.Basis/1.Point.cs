@@ -170,8 +170,8 @@ namespace Rob.Act
 		#endregion
 
 		#region Query
-		public bool IsGeo => this[Axis.Lon]!=null || this[Axis.Lat]!=null ;
-		public bool IsGeos => this[Axis.Lon]!=null && this[Axis.Lat]!=null ;
+		public bool IsGeo => this[Axis.Lon] is not null || this[Axis.Lat] is not null ;
+		public bool IsGeos => this[Axis.Lon] is not null && this[Axis.Lat] is not null ;
 		public Quant Transfer => Basis.Device.Skierg.Code==Object ? Math.Pow(Draglet??1,1D/3D) : 1 ;
 		public Quant Resister => Object==Basis.Device.Skierg.Code ? Basis.Device.Skierg.Draw : Drag??Path.SubjectProfile.By(Subject)?.Resi??0 ;
 		public override string Exposion => "{0}={1}bW".Comb("{0}/{1}".Comb(Power.Get(p=>$"{Math.Round(p)}W"),Beatrate.Get(b=>$"{Math.Round(b)}`b")),Beatage.use(Math.Round))+$" {Speed*3.6:0.00}km/h" ;
@@ -190,7 +190,7 @@ namespace Rob.Act
 		public static Point operator-( Point point , Point offset ) => new Point(new DateTime(point.Date.Ticks+offset.Date.Ticks>>1)){ Time = point.Date-offset.Date }.Set(p=>{ for( uint i=0 ; i<p.Dimension ; ++i ) p[i] = point[i]-offset[i] ; if( p.IsGeo ) p.Dist = p.Euclid(offset) ; }) ;
 		public static Point operator+( Point accu , Point diff ) => accu.Set( p => diff.Set( d => { p.Time += d.Time ; for( uint i=0 ; i<p.Dimension ; ++i ) p[i] += d[i] ; } ) ) ;
 		public Geos? Geo => this ;
-		public Geos? Aim => No is int at ? (Owner?[at+1] as Point)?.Geo is Geos aif ? aif-Geo : (Owner?[at-1] as Point)?.Geo is Geos aib ? Geo-aib : (Geos?)null : null ;
+		public Geos? Aim => No is int at ? (Owner?[at+1] as Point)?.Geo is Geos aif ? aif-Geo : (Owner?[at-1] as Point)?.Geo is Geos aib ? Geo-aib : null : null ;
 		#endregion
 
 		#region Handling
