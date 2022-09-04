@@ -73,7 +73,7 @@ namespace Rob.Act.Analyze
 				if( entry.Key == BookGrid ) try { CumulativeUpdate = true ; BookGrid_SelectionChanged(entry.Key,entry.Value) ; } finally { CumulativeUpdate = false ; }
 				else if( entry.Key == SourcesGrid ) try { CumulativeUpdate = true ; SourcesGrid_SelectionChanged(entry.Key,null) ; } finally { CumulativeUpdate = false ; }
 				else if( entry.Key == AspectAxisGrid ) Dispatcher.Invoke(()=>{CumulativeUpdate=true;try{AspectAxisGrid_SelectionChanged(entry.Key,entry.Value.SelectionsItems());}finally{CumulativeUpdate=false;}}) ;
-				else if( entry.Key == AspectsGrid ) Dispatcher.Invoke(()=>{CumulativeUpdate=true;try{AspectTabs_Selected(entry.Key,entry.Value.One());}finally{CumulativeUpdate=false;}}) ;
+				else if( entry.Key == AspectsGrid ) Dispatcher.Invoke(()=>{CumulativeUpdate=true;try{AspectTabs_Selected(entry.Value.SelectionsItems().adds?[0]);}finally{CumulativeUpdate=false;}}) ;
 		}
 		bool CumulativeUpdate ;
 		void Load()
@@ -266,7 +266,11 @@ namespace Rob.Act.Analyze
 		void AspectTabs_Selected( object sender , SelectionChangedEventArgs e )
 		{
 			if( sender is DataGrid ) { AspectSelection = null ; if( KeyLevel!=default ) { (Reselection[sender]??=new()).Add(e) ; return ; } }
-			var asp = e.AddedItems.Count>0 ? e.AddedItems[0] : null ; switch( (DisplayTable.SelectedItem as TabItem)?.Header )
+			AspectTabs_Selected( e.AddedItems.Count>0 ? e.AddedItems[0] : null ) ;
+		}
+		void AspectTabs_Selected( object asp )
+		{
+			switch( (DisplayTable.SelectedItem as TabItem)?.Header )
 			{
 				case "Aspect" : if( !BlockUpdate.Aspect ) Aspect = AspectSelection ; break ; case "Spectrum" : (asp as Pathable)?.Spectrum.Set(a=>Aspect=a) ; break ;
 				case "Graph" : case "Map" : case "Quantile" : if( Aspect is Path.Aspect ) break ; else goto case "Aspect" ;
@@ -285,8 +289,10 @@ namespace Rob.Act.Analyze
 		Aspect AspectSelection {
 			get
 			{
-				if( Asel is not null ) return Asel ; if( AspectsGrid.SelectedItems.Count<2 && !CumulativeUpdate ) return Asel = AspectsGrid.SelectedItem as Aspect ;
-				var nex = AspectsGrid.SelectedItems.OfType<Aspect>() ; return Asel = new Aspect(CumulativeUpdate?nex.prepend(Aspect):nex) ;
+				if( Asel is null )
+					if( AspectsGrid.SelectedItems.Count<2 /*&& !CumulativeUpdate*/ ) Asel = AspectsGrid.SelectedItem as Aspect ; else
+					if( AspectsGrid.SelectedItems.OfType<Aspect>() is var nex && nex.Count()>0 ) Asel = new Aspect(/*CumulativeUpdate?nex.prepend(Aspect):*/nex) ; // creates proble with unselectins , looks contraproductive at all
+				return Asel ;
 			}
 			set => Asel = value ;
 		} Aspect Asel ;
@@ -840,7 +846,7 @@ namespace Rob.Act.Analyze
 			if( e?.Count<=0 ) return default ;
 			List<object> add = new(e[0].AddedItems.OfType<object>()) , rem = new(e[0].RemovedItems.OfType<object>()) ;
 			for( var i=0 ; i<e.Count ; ++i ) { add.AddRange(e[i].AddedItems.OfType<object>()) ; rem.AddRange(e[i].RemovedItems.OfType<object>()) ; e[i].AddedItems.Each(r=>rem.Remove(r)) ; e[i].RemovedItems.Each(r=>add.Remove(r)) ; }
-			return (add,rem) ;
+			return (add.Null(a=>a.Count<=0),rem.Null(r=>r.Count<=0)) ;
 		}
 	}
 }
