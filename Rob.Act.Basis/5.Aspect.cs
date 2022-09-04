@@ -50,8 +50,8 @@ namespace Rob.Act
 		public Aspect() : this(axes:null) {} // Default constructor must be present to enable DataGrid implicit Add .
 		/// <remarks> Returns null if unsolved , which is significat for possibility of explicit resolution . </remarks>
 		[LambdaContext.Dominant] public Axe this[ string key ] => this.One(a=>a.Spec==key) ?? Base.Null(b=>b==this)?[key] ;
-		public virtual string Spec { get => spec ; set { if( value==spec ) return ; spec = value ; propertyChanged.On(this,"Spec") ; Dirty = true ; } } string spec ;
-		public string Origin { get => origin ; set { origin = value.Set(v=>Spec=System.IO.Path.GetFileNameWithoutExtension(v).LeftFrom('?',all:true)) ; Dirty = true ; } } string origin ;
+		public virtual string Spec { get => spec ; set { if( value==spec ) return ; spec = value.Set(v=>{try{if(Origin.Includes(Spec)&&System.IO.File.Exists(Origin)&&Origin.Replace(Spec,v) is var nori){System.IO.File.Move(Origin,nori);origin=nori;}}catch{}}) ; propertyChanged.On(this,"Spec") ; Dirty = true ; } } string spec ;
+		public string Origin { get => origin ; set { origin = value.Set(v=>Spec=System.IO.Path.GetFileNameWithoutExtension(v).LeftFrom('?',all:true)) ; propertyChanged.On(this,"Origin") ; Dirty = true ; } } string origin ;
 		public string Score { get => $"{Spec} {Trait} {Tags}" ; set => propertyChanged.On(this,"Score") ; }
 		public Traits Trait { get; }
 		public string Taglet { get => taglet ; set { if( value==taglet ) return ; taglet = value.Null(v=>v.No()) ; Tager = null ; tag = null ; propertyChanged.On(this,"Taglet") ; Dirty = true ; } } string taglet ;
