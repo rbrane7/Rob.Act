@@ -332,10 +332,10 @@ namespace Rob.Act.Analyze
 		Dictionary<string,(double Min,double Max)> DrawingRange ; (IList Added,IList Removed) DrawingAxesUpdate ; bool DrawingSourcesUpdate ;
 		void UpdateDrawingAxes()
 		{
-			var (added,removed) = DrawingAxesUpdate ; 
+			var (added,removed) = DrawingAxesUpdate ;
 			//if( removed?.Count>0 ) foreach( var asp in draval ) foreach( var axe in removed ) asp.Axes.IndexWhere(a=>a.Spec==axe.Spec).nil(i=>i<0).Use(asp.Axes.RemoveAt) ; // removing is not applied to optimize reuse of axe
-			if( added?.Count>0 ) foreach( var asp in draval ) { var asv = DrawingResources.One(a=>a.Spec==asp.Aspect) ; foreach( Axe axe in added ) if( asp.Axes.Any(a=>a.Spec==axe.Spec) ); else asp.Axes.Add((axe.Spec,asv[axe.Spec].ToArray(),axe.Base,asv.Offset)) ; }
-			DrawingAxesUpdate = (null,null) ; if( added?.Count+removed?.Count>0 ) DrawingRange = null ;
+			if( added?.Count>0 ) foreach( var asp in draval ) { var asv = DrawingResources.One(a=>a.Spec==asp.Aspect) ; foreach( Axe axe in added.Except(removed) ) if( asp.Axes.Any(a=>a.Spec==axe.Spec) ); else asp.Axes.Add((axe.Spec,asv[axe.Spec].ToArray(),axe.Base,asv.Offset)) ; }
+			DrawingAxesUpdate = (null,null) ; if( (added?.Count??0)+(removed?.Count??0)>0 ) DrawingRange = null ;
 		}
 		void UpdateDrawingSources()
 		{
@@ -351,7 +351,7 @@ namespace Rob.Act.Analyze
 		{
 			List<(string Aspect,List<(string Spec,double?[] Val,string Base,double Offset)> Axes)> val =
 				DrawingResources.Select(asp=>(asp.Spec,asp.Where(a=>a.Spec==xaxe.Spec||yaxes.Contains(a.Spec)).Select(a=>(a.Spec,(a.Spec==xaxe.Spec?a:a.On(asp[xaxe.Spec])).ToArray(),a.Base,asp.Offset)).ToList())).ToList() ;
-			if( yaxes?.Any(y=>Aspect[y].Meany)==true && val.Count>1 )
+			if( yaxes?.Any(y=>Aspect[y]?.Meany??false)==true && val.Count>1 )
 			{
 				var yma = yaxes.Where(yax=>Aspect[yax].Meany).ToArray() ;
 				foreach( var src in val ) for( var i=0 ; i<src.Axes.Count ; ++i ) if( yma.Contains(src.Axes[i].Spec) )
@@ -845,7 +845,7 @@ namespace Rob.Act.Analyze
 		{
 			if( e?.Count<=0 ) return default ;
 			List<object> add = new(e[0].AddedItems.OfType<object>()) , rem = new(e[0].RemovedItems.OfType<object>()) ;
-			for( var i=0 ; i<e.Count ; ++i ) { add.AddRange(e[i].AddedItems.OfType<object>()) ; rem.AddRange(e[i].RemovedItems.OfType<object>()) ; e[i].AddedItems.Each(r=>rem.Remove(r)) ; e[i].RemovedItems.Each(r=>add.Remove(r)) ; }
+			for( var i=1 ; i<e.Count ; ++i ) { add.AddRange(e[i].AddedItems.OfType<object>()) ; rem.AddRange(e[i].RemovedItems.OfType<object>()) ; e[i].AddedItems.Each(r=>rem.Remove(r)) ; e[i].RemovedItems.Each(r=>add.Remove(r)) ; }
 			return (add.Null(a=>a.Count<=0),rem.Null(r=>r.Count<=0)) ;
 		}
 	}
