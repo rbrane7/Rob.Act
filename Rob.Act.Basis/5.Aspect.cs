@@ -82,12 +82,12 @@ namespace Rob.Act
 			public Point( Aspect context , int at ) { Context = context ; At = at ; }
 			public Quant? this[ uint key ]
 			{
-				get => ((Context as Path.Aspect)?[(int)key] is Path.Axe a?Matrix.Corrections?[a.Axis,At]:null) ?? Context[(int)key][At] ;
+				get => ((Context as Path.Aspect)?[(int)key] is Path.Axe a?Matrix.Corrections?[a.Axis,At]:null) ?? Context[(int)key]?[At] ;
 				set { if( (Context as Path.Aspect)?[(int)key] is Path.Axe a ) { if( (value??a[At]) is Quant v ) Matrix.Correction[a.Axis] = (At,v) ; } else throw new InvalidOperationException($"Can't set {key} axe of {Context} aspect !") ; }
 			}
 			public Quant? this[ string key ]
 			{
-				get => ((Context as Path.Aspect)?[key] is Path.Axe a?Matrix.Corrections?[a.Axis,At]:null) ?? Context[key][At] ;
+				get => ((Context as Path.Aspect)?[key] is Path.Axe a?Matrix.Corrections?[a.Axis,At]:null) ?? Context[key]?[At] ;
 				set { if( (Context as Path.Aspect)?[key] is Path.Axe a ) { if( (value??a[At]) is Quant v ) Matrix.Correction[a.Axis] = (At,v) ; } else throw new InvalidOperationException($"Can't set {key} axe of {Context} aspect !") ; }
 			}
 			public IEnumerator<Quant?> GetEnumerator() { var at = At ; return Context.Select(a=>a[at]).GetEnumerator() ; } IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
