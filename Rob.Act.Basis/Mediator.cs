@@ -19,7 +19,7 @@ namespace Rob.Act
 		/// Applies traits of point .
 		/// </summary>
 		public void Interact( Point point ) => this.Each(m=>m.Interact(point)) ;
-		public Aid.Closure Incognit => new Aid.Closure(()=>Inco=true,()=>Inco=false) ;
+		public Aid.Closure Incognit => new(()=>Inco=true,()=>Inco=false) ;
 		public bool Inco { set => this.Each(m=>m.Inco=value) ; }
 	}
 	public abstract class Medium
@@ -31,7 +31,7 @@ namespace Rob.Act
 		public abstract void Interact( Path path ) ;
 		protected abstract bool Applied( Point point ) ;
 		protected abstract bool Applicable( Point point ) ;
-		public Aid.Closure Incognit => new Aid.Closure(()=>++inco,()=>--inco) ;
+		public Aid.Closure Incognit => new(()=>++inco,()=>--inco) ;
 		protected abstract void Clean() ;
 	}
 	public partial class Path
@@ -39,12 +39,12 @@ namespace Rob.Act
 		public class Mediator : Act.Mediator
 		{
 			/// <summary>
-			/// Takes traits of frommedium to path and points .
+			/// Takes traits of medium to path and points .
 			/// </summary>
 			public void Interact( Path path , bool direct = false ) => this.Where(m=>direct||m.Dirty).Each(m=>m.Interact(path)) ;
-			public override bool Dirty => Incognite ? false : base.Dirty ;
+			public override bool Dirty => !Incognite && base.Dirty ;
 			public bool Incognite { get => inco>0 ; set { if( value ) ++inco ; else --inco ; } } int inco ;
-			public Aid.Closure Interrupt => new Aid.Closure(()=>Incognite=true,()=>Incognite=false) ;
+			public Aid.Closure Interrupt => new(()=>Incognite=true,()=>Incognite=false) ;
 		}
 	}
 	static class MediExtension
