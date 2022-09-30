@@ -331,12 +331,12 @@ namespace Rob.Act
 			/// <summary>
 			/// Signature of the point .
 			/// </summary>
-			public virtual string Sign => sign ??= $"{Date}{Time.nil().Get(t=>$"+{t:hh\\:mm\\:ss}")}" ; string sign ;
+			public virtual string Sign => sign ??= Signature ; string sign ; protected virtual string Signature => $"{Date.nil()}{Time.nil().Get(t=>$"+{t:hh\\:mm\\:ss}")}" ;
 			/// <summary>
 			/// Assotiative text .
 			/// </summary>
 			public virtual string Spec { get => spec ??= Despect ; set { if( value!=spec ) spec = value ; } } string spec ;
-			protected string Despect => Despec(Action) ; protected virtual string Despec( string act ) => $"{act??Action} {Sign}" ;
+			protected string Despect => Despec(Action) ; protected virtual string Despec( string act ) => $"{act??Action} {Signature}" ;
 			/// <summary>
 			/// Action specification .
 			/// </summary>

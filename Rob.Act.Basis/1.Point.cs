@@ -23,8 +23,8 @@ namespace Rob.Act
 		public new string this[ int key ] { get => (uint)key<Count ? base[key] : null ; set { if( this[key]==value ) return ; if( value!=null ) InsureCapacity(key) ; if( (uint)key<Count );else return ; base[key] = value ; Notifier?.Invoke(null) ; } }
 		public string this[ Taglet key ] { get => this[(int)key] ; set { if( this[key]==value ) return ; this[(int)key] = value ; Notifier?.Invoke(key.ToString()) ; } }
 		public string this[ string key ] { get => key.Parse<Taglet>() is Taglet t ? this[t] : MatchIndex(key) is int i ? this[i] : null ; set { if( key.Parse<Taglet>() is Taglet t ) { this[t] = value ; return ; } if( MatchIndex(key) is int i ) this[i] = value ; else Add(value) ; Notifier?.Invoke(key) ; } }
-		public bool this[ params string[] tag ] { get => this[ tag as IEnumerable<string> ] ; set => this[ tag as IEnumerable<string> ] = value ; }
-		public bool this[ IEnumerable<string> tag ] { get => this[tag] = false ; set { if( value ) Clear() ; AddRange(tag) ; var drag = this[1] ; if( Serialization.IsDraglike(drag) || drag.No()&&Serialization.IsJectlike(this[0])&&Serialization.IsJectlike(this[2]) ) { RemoveAt(1) ; this[Taglet.Drag] = drag.Null() ; } Notifier?.Invoke(null) ; } }
+		internal bool this[ params string[] tag ] { set => this[ tag as IEnumerable<string> ] = value ; }
+		internal bool this[ IEnumerable<string> tag ] { set { if( value ) Clear() ; AddRange(tag) ; var drag = this[1] ; if( Serialization.IsDraglike(drag) || drag.No()&&Serialization.IsJectlike(this[0])&&Serialization.IsJectlike(this[2]) ) { RemoveAt(1) ; this[Taglet.Drag] = drag.Null() ; } Notifier?.Invoke(null) ; } }
 		public new void Add( string tag ) { if( tag==null ) return ; base.Add(tag) ; Notifier?.Invoke(null) ; }
 		public void Adopt( Tagable tags ) { Clear() ; tags.Set(AddRange) ; }
 		int? MatchIndex( string key ) => MatchIndexes(key).singleOrNil() ;
@@ -42,7 +42,7 @@ namespace Rob.Act
 		class Serialization
 		{
 			public const string Separator = " \x1 Tag \x2 " ;
-			internal static bool IsDraglike( string tag ) => tag?.All(l=>char.IsDigit(l)||l=='.'||l=='+'||l=='-'||l=='^')==true ;
+			internal static bool IsDraglike( string tag ) => tag?.Length>0 && tag.All(l=>char.IsDigit(l)||l=='.'||l=='+'||l=='-'||l=='^') ;
 			internal static bool IsJectlike( string tag ) => tag?.Any(l=>char.IsLetter(l))==true ;
 		}
 		#endregion
@@ -174,7 +174,7 @@ namespace Rob.Act
 		public bool IsGeos => this[Axis.Lon] is not null && this[Axis.Lat] is not null ;
 		public Quant Transfer => Basis.Device.Skierg.Code==Object ? Math.Pow(Draglet??1,1D/3D) : 1 ;
 		public Quant Resister => Object==Basis.Device.Skierg.Code ? Basis.Device.Skierg.Draw : Drag??Path.SubjectProfile.By(Subject)?.Resi??0 ;
-		public override string Exposion => "{0}={1}bW".Comb("{0}/{1}".Comb(Power.Get(p=>$"{Math.Round(p)}W"),Beatrate.Get(b=>$"{Math.Round(b)}`b")),Beatage.use(Math.Round))+$" {Speed*3.6:0.00}km/h" ;
+		public override string Exposion => "{0}={1}❦W".Comb("{0}/{1}".Comb(Power.Get(p=>$"{Math.Round(p)}W"),Beatrate.Get(b=>$"{Math.Round(b)}♥")),Beatage.use(Math.Round))+Speed.Get(s=>$" {s*3.6:0.00}km/h") ;
 		public override string Trace => $"{Resister.Get(v=>$"Resist={v:0.00}")} {Ascent.Get(v=>$"Ascent={v:0}m")} {Gradlet.Get(v=>$"Grade={v:.000}")} {Deviation.Get(v=>$"Devia={v:0}m")} {Bendlet.Get(v=>$"Bend={v:.000}")} {Quantities} {Mark.nil(m=>m==Mark.No)}" ;
 		#endregion
 

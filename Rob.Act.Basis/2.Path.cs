@@ -285,7 +285,7 @@ namespace Rob.Act
 
 		#region State
 		int Depth = 1 ; // Defines the size of vicinity of points .
-		readonly List<Point> Content = new List<Point>() ;
+		readonly List<Point> Content = new() ;
 		/// <summary>
 		/// Derivancy causes this path to be drived from it's point sub-pathes and is used as base of <see cref="Metax"/> of points in case of top-down construction . 
 		/// In this case points inherit path's <see cref="Metax"/> if they doesn't have own . 
@@ -391,7 +391,7 @@ namespace Rob.Act
 		public IEnumerable<Point> Inte { get { Point point = null ; for( var i=0 ; i<Count ; ++i ) yield return point = new Point(this[i]) + point ; } }
 		#endregion
 
-		public override string ToString() => $"{Action} {Sign} {Distance/1000:0.00}km {Exposion} {"\\ {0:0} /".Comb(MaxExposion)} {MinEffort.Get(e=>$"{e:0}W\\")}{MinMaxEffort.Get(e=>$"{e:0}W")}:{AeroEffort.Get(a=>$"{a:#W}")} {Trace} {Tags}" ;
+		public override string ToString() => $"{Action} {Sign.Null(s=>s.Void())??Tags} {Distance.Get(d=>$"{d/1000:0.00}km")} {Exposion} {"\\ {0:0} /".Comb(MaxExposion)} {MinEffort.Get(e=>$"{e:0}W\\")}{MinMaxEffort.Get(e=>$"{e:0}W")}:{AeroEffort.Get(a=>$"{a:#W}")} {Trace} {(Sign.Void()?null:Tags)}" ;
 		public override string Sign => Derived ? Date.ToString() : base.Sign ;
 
 		#region Implementation
