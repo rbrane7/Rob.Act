@@ -23,5 +23,5 @@ Aid.Extension.LambdaContext.MultipletGenAssembly = 'System.ValueTuple, Version=4
 Rob.Act.Path.{ Persistent = Primary = Corrects = /*Altismooths =*/ true ; Medium = Mediator{Rob.Act.Path.Marklane()} } ; Rob.Act.Path.Marklane.Persisting = false ;
 Rob.Act.Altiplane.{ VicinityRad = 1 ; HitWeight = 100 } ;
 (Rob.Act.AxeOperations) ; (Rob.Act.Translation) ; Rob.Act.Translation.Kind = type.Act ;
-(Rob.Act.Csv) ; Rob.Act.Csv.Skierg.Powerage = =>true ;
+(Rob.Act.Erg) ; Rob.Act.Erg.Csv.Powerage = =>true ;
 Rob.Act.Analyze.Main.Aggregator.Basis.CentreTimely.0 = @'Speed|♂|☼|♥|◄'@ ;

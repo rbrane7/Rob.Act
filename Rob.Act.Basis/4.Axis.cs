@@ -141,6 +141,7 @@ namespace Rob.Act
 		public static Axe operator%( Axe x , Quant dif ) => new Bit.Axe(x,dif) ;
 		public static Axe operator%( Axe x , decimal dif ) => new Bit.Axe(x,(Quant)dif/2,-(Quant)dif/2) ;
 		public static Axe operator%( Axe x , float mod ) => x==null ? No : new Axe( i=>x[i]%mod , x ) ;
+		public static Axe operator%( Axe x , byte mod ) => x==null ? One : new Axe( i=>x[i]%(mod+1) is Quant v ? v>mod-1&&v<=mod ? 1 : null : null , x ) ;
 		public static Axe operator%( Axe x , Region mod ) => x==null ? No : x.Floe(mod) ;
 		public static Axe operator%( Axe x , Support y ) => x==null ? No : x.Floe(y.Fragment) ;
 		public static Axe operator%( Axe x , Axe y ) => x==null ? No : y is Support s ? x.Floe(s.Fragment) : y is null ? x : new Axe( i=>x[i]%y[i] , x ) ;
@@ -221,8 +222,7 @@ namespace Rob.Act
 		public Axe By( Bit lap ) => new Bit.Axe(this,lap) ;
 		/// <summary> Creates axe of drift of this axe on given <paramref name="upon"/> . </summary>
 		/// <param name="upon"> Axe to calculate drift on . </param>
-		/// <param name="at"> Position where to get drift at . </param>
-		/// <param name="dis"> Distance to calculate drift for . </param>
+		/// <param name="quo"> Distance to calculate drift for . </param>
 		/// <returns> Axe of drift of this axe <paramref name="at"/> poositon for <paramref name="dis"/>tance <paramref name="upon"/> axis . </returns>
 		public Axe Drift( Axe upon , Quant quo = 0 ) => upon==null ? No : new Axe( i=>(quo*i).Get(at=>Drift(upon,(int)at,(int)((i-at)/2))) , this ) ;
 		/// <summary> Calculates value difference of this axe between value <paramref name="at"/> positin and position differing by <paramref name="dif"/> . </summary>

@@ -139,7 +139,7 @@ namespace Rob.Act
 							for( var i=0 ; i<optimals.Count ; ++i ) if( optimals[i].geo || optimals.Any(c=>c.geo&&(c.point.Time-optimals[i].point.Time).Abs()<=Independency) ); else optimals.RemoveAt(i--) ;
 							item.Key.Affect(optimals) ; // multiple optimal undertakes
 						}
-						//item.Value.Optimal(p=>p.Tags==item.Key.Tags?Quant.MinValue:+(p.Geo.Value-item.Key.Geo))?.one // single optimal undertakes
+						//item.Value.Optimal(p=>p.Tags==item.Key.Tags?Quant.MinValue:+(p.Geo.Value-item.Key.Geo))?.one // single optimal undertakes , not intended to use , legacy
 						if( Persisting ) path.Edited() ;
 					}
 				}

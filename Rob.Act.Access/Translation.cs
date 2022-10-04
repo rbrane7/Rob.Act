@@ -16,12 +16,12 @@ namespace Rob.Act
 		{
 			if( data.Consists(Gpx.Extension.Sign) ) return data.Deserialize<Gpx.gpxType>() ;
 			if( data.Consists(Tcx.Extension.Sign) ) return data.Deserialize<Tcx.TrainingCenterDatabase_t>() ;
-			if( Csv.Skierg.Sign(data) ) return new Csv.Skierg(data) ;
+			if( Erg.Csv.Sign(data) ) return new Erg.Csv(data) ;
 			if( data.StartsBy(Partitioner.Sign) ) return new Partitioner(data) ;
 			if( data.StartsBy(Csv.Bio.Sign) ) return new Csv.Bio(data) ;
 			return (Path)data ;
 		}
-		public static string Externalize( this Path path , string ext ) => ext switch { "gpx" => ((Gpx.gpxType)path).Serialize("utf-8","1.0") , "tcx" => ((Tcx.TrainingCenterDatabase_t)path).Serialize("utf-8","1.0") , "skierg.csv" => (Csv.Skierg)path , _ => (string)path , } ;
+		public static string Externalize( this Path path , string ext ) => ext switch { "gpx" => ((Gpx.gpxType)path).Serialize("utf-8","1.0") , "tcx" => ((Tcx.TrainingCenterDatabase_t)path).Serialize("utf-8","1.0") , "skierg.csv" => (Erg.Csv)path , _ => (string)path , } ;
 		public static string Reconcile( this string file , bool primary = false )
 		{
 			string cofile = null ; if( file.EndsWith(".tcx") && file.Contains("concept2-logbook-workout-") ) { cofile = file ; file = file.Replace("logbook-workout","result").Replace(".tcx",Csv.Ext) ; }

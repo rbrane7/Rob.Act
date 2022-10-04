@@ -120,12 +120,11 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Compile Include="..\Rob.Act.Lab\App.xaml.cs">
+    <Compile Include="App.xaml.cs">
       <SubType>Code</SubType>
-      <Link>App.xaml.cs</Link>
+      <DependentUpon>App.xaml</DependentUpon>
     </Compile>
-    <Compile Include="..\Rob.Act.Lab\Main.xaml.cs">
-      <Link>Main.xaml.cs</Link>
+    <Compile Include="Main.xaml.cs">
       <DependentUpon>Main.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>

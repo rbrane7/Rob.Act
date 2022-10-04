@@ -352,16 +352,16 @@ namespace Rob.Act
 		public IEnumerable<Point> Vicinity( DateTime time ) => Vicinity(IndexOf(time)) ;
 		public IEnumerable<Point> Vicinity( int index ) => this.Skip(index-Depth).Take(Depth<<1) ; //todo: solve stops
 		/// <summary>
-		/// Position of start of segment of <paramref name="mark"/> kind , the <paramref name="of"/> position belongs to . 
+		/// Closest <paramref name="mark"/>ed pre or equal position to <paramref name="of"/> position 
 		/// </summary>
-		/// <param name="mark"> Kind of segmentation . </param>
-		/// <param name="of"> Point index to get segment start of . </param>
-		/// <returns> Starting position of segment , the <paramref name="of"/> position belongs to . </returns>
+		/// <param name="mark"> Kind of segmentation </param>
+		/// <param name="of"> Point index to get related starting mark of </param>
+		/// <returns> Closest <paramref name="mark"/>ed pre or equal position to <paramref name="of"/> position </returns>
 		public int this[ Mark mark , int of ] { get { while( of>0 && ((this[of]?.Mark??0)&mark)==0 ) --of ; return of ; } }
 		Path Segmentize( Mark mark )
 		{
 			using var _=Incognit ;
-			for( int bo = 0 , to = 0 , at = 0 ; to<Count ; ++to,bo=to,++at ) { while( to<Count-1 && ((this[to]?.Mark??0)&mark)==0 ) ++to ; for( var i=bo ; i<=to ; ++i ) this[i][mark] = (i-bo+1D)/(to-bo+1)+at ; }
+			for( int bo = 0 , to = 0 , at = 0 ; to<Count ; bo=to,++at ) { while( ++to<Count && ((this[to]?.Mark??0)&mark)==0 ) ; for( var i=bo ; i<to ; ++i ) this[i][mark] = (double)(i-bo)/(to-bo)+at ; }
 			return this ;
 		}
 		#endregion

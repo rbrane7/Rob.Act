@@ -151,7 +151,7 @@ namespace Rob.Act
 			public bool Dirty { set => Context.Set(c=>c.Dirty=value) ; }
 			public string Spec { get => name ; set => Changed("Spec",name=value) ; } string name ; public string Name => name.RightFrom(Extern,all:true) ;
 			public string Bond { get => bond ; set => Changed("Bond",bond=value) ; } string bond ;
-			public string Lex { get => lex ; set => Changed("Lex,Value",Resolver=(lex=value).Compile<Func<Contextable,Quant?>>()) ; } Func<Contextable,Quant?> Resolver ; string lex ;
+			public string Lex { get => lex ; set => Changed("Lex,Value",Resolver=(lex=value).Compile<Func<Contextable,Quant?>>(use:"Rob.Act")) ; } Func<Contextable,Quant?> Resolver ; string lex ;
 			void Changed<Value>( string properties , Value value ) { propertyChanged.On(this,properties,value) ; Dirty = true ; }
 			public Quant? Raw => Orphan ? null : Resolver?.Invoke(Context) ;
 			public Quant? Value { get { try { return Raw ; } catch( System.Exception e ) { System.Diagnostics.Trace.TraceError($"Failed evaluating Trait {Spec} = {Lex} !",e) ; return null ; } } }

@@ -202,6 +202,7 @@ namespace Rob.Act
 		static Quant Recuperation( this Quant grade ) => grade<0 ? 1-Math.Tanh(grade*GravityRecuperation).Sqr() : 1 ;
 		public static Quant GravityRecuperation = 200 , AirResistance = .4 ;
 		static Quant GradeGrane( this (Quant grade,Quant grane) g ) => g.grade.nil(v=>Math.Abs(v)>1) is Quant a ? a+g.grane*Math.Sqrt(1-a.Sqr()) : g.grane ;
+		public static Quant Cube( this Quant value ) => value*value*value ;
 		#endregion
 
 		#region Tags

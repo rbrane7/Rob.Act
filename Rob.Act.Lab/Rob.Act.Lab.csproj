@@ -8,6 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\Rob.Act.Graph\App.xaml.cs" Link="App.xaml.cs" />
+    <Compile Include="..\Rob.Act.Graph\Main.xaml.cs" Link="Main.xaml.cs" />
     <Compile Include="..\Rob.Act.Graph\Setup.cs" Link="Setup.cs" />
     <Compile Include="..\Rob.Act.Graph\Support.cs" Link="Support.cs" />
   </ItemGroup>
