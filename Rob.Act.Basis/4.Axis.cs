@@ -69,7 +69,7 @@ namespace Rob.Act
 		/// <returns> Interpolated value of axe . </returns>
 		public Quant? this[ double at ] => Resolver.Inter(at) ; //{ get { var f = Math.Floor(at) ; var c = Math.Ceiling(at) ; return c==f ? Resolve((int)at) : (Resolve((int)f)*(c-at)+Resolve((int)c)*(at-f)) ; } }
 		public int? AtOf( Quant? value ) => value.Get(v=>this.Best(q=>q is Quant u?Math.Abs(u-v):Quant.MaxValue)?.at) ;
-		public Quantile.Measure Measure( Axe on ) => new Quantile.Measure(this,on) ;
+		public Quantile.Measure Measure( Axe on ) => new(this,on) ;
 		public Quant this[ Quant at , Axe ax ] { get { if( ax==null ) return this.Count(q=>q>=at) ; Quant rez = 0 ; for( int i=0 , count=Count ; i<count ; ++i ) if( Resolve(i)>=at ) rez += ax[i+1]-ax[i]??0 ; return rez ; } }
 		//Aid.Collections.BinSetNative<Quant> Cash => cash ??( cash = new Aid.Collections.BinArray<(Quant,int)>.Map<Quant>(Count.Steps().Select(i=>(this[i],i))) ) ; Aid.Collections.BinSetNative<Quant> cash ;
 		/// <summary> Value of <see cref="Axe"/> at position <paramref name="at"/> . </summary>
@@ -104,7 +104,7 @@ namespace Rob.Act
 		public IEnumerable<Quant> Distribution => Distributor?.Invoke(this) ?? DefaultDistribution ;
 		protected virtual IEnumerable<Quant> DefaultDistribution => this.Refine().ToArray().Null(d=>d.Length<=0) ;
 		public string Distribulet { get => distribulet ; set { if( value==distribulet ) return ; distribulet = value ; Distributor = null ; propertyChanged.On(this,"Distribulet") ; } } string distribulet ;
-		public Quantile Quantile { get => quantile ??( quantile = new Quantile(this) ) ; private set => propertyChanged.On(this,"Quantile", quantile = value ) ; } Quantile quantile ;
+		public Quantile Quantile { get => quantile ??= new Quantile(this) ; private set => propertyChanged.On(this,"Quantile", quantile = value ) ; } Quantile quantile ;
 		public Func<Quantile,IEnumerable<Quant>> Quantizer { get => Quantile.Quantizer ; set { if( value!=quantile?.Quantizer ) propertyChanged.On(this,"Quantizer", Quantile = new Quantile(this,value) ) ; } }
 		public string Quantlet { get => quantlet ; set => propertyChanged.On(this,"Quantlet",Quantizer=(quantlet=value).Compile<Func<Quantile,IEnumerable<Quant>>>()) ; } string quantlet ;
 		#endregion
@@ -391,9 +391,9 @@ namespace Rob.Act
 			public static Func<Mark,int,bool> Could ;
 		} 
 	}
-	public class Quantile : Aid.Gettable<int,Quant> , Aid.Countable<Quant>
+	public class Quantile : Gettable<int,Quant> , Countable<Quant>
 	{
-		static readonly Quant[] Empty = new Quant[0] ; static Quant Zero = 0.0017 ;
+		static readonly Quant[] Empty = new Quant[0] ; static readonly Quant Zero = 0.0017 ;
 		public Axe Ax => Axe ?? Context?.Ax ; readonly Quantile Context ; readonly Axe Axe ; internal Func<Quantile,IEnumerable<Quant>> Quantizer ;
 		Quant[] Distribution { get { if( distribution==null ) try { distribution = Source ?? Empty ; distribution = Quantizer?.Invoke(this)?.ToArray() ?? distribution ; } catch( System.Exception e ) { System.Diagnostics.Trace.TraceWarning(e.Stringy()) ; } return distribution ; } } Quant[] distribution ;
 		Quant[] Source => _Source as Quant[] ??( _Source = _Source?.ToArray() ) as Quant[] ; Quant[] Basis => _Basis as Quant[] ??( _Basis = _Basis?.ToArray() ) as Quant[] ; IEnumerable<Quant> _Source , _Basis ;
@@ -406,10 +406,28 @@ namespace Rob.Act
 		public int Count => Distribution?.Length ?? 0 ;
 		int AtExtreme { get { Quant ex = 0 , cd ; var j = 0 ; var s = Source ; var b = Basis ; for( var i = 0 ; i<Count-1 ; ++i ) if( (cd=Math.Abs((s[i]-s[i+1])/(b[i]-b[i+1])))>ex ) { ex = cd ; j = i ; } return j ; } }
 		public Duo Extreme => AtExtreme.Do(j=>new Duo{X=this[j].nil(),Y=Basis.at(j)}) ;
-		public Duo Central { get { Quant? cd = 0 ; var s = Source ; var b = Basis ; for( var i=0 ; i<Count-1 ; ++i ) cd += Math.Abs((s[i]-s[i+1])*(b[i]+b[i+1]))/2 ; cd /= (s.at(0)-s.at(Count-1)).Nil().use(Math.Abs) ; var j = 0 ; for(; j<Count-1 ; ++j ) if( b[j]<=cd&&b[j+1]>=cd || b[j]>=cd&&b[j]<=cd ) break ; return new Duo{X=this[j].nil(),Y=cd} ; } }
-		public Duo Centre { get { var s = Source ; var b = Basis ; var atex = AtExtreme ; var zero = Zero*(s.at(0)-s.at(Count-1)).use(Math.Abs) ; var i = atex ; for(; i>=0 && i<Count-1 ; --i ) if( Math.Abs(s[i]-s[i+1])<=zero ) break ; Quant? cd = 0 ; for( atex = i = i<0?0:i ; i<Count-1 ; ++i ) cd += Math.Abs((s[i]-s[i+1])*(b[i]+b[i+1]))/2 ; cd /= (s.at(atex)-s.at(Count-1)).Nil().use(Math.Abs) ; return new Duo{X=this[atex].nil(),Y=cd} ; } }
-		public Duo Centrum { get { var s = Source ; var b = Basis ; var atex = AtExtreme ; var zero = Zero*(s.at(0)-s.at(Count-1)).use(Math.Abs) ; var i = atex ; for(; i>=0 && i<Count-1 ; --i ) if( Math.Abs(s[i]-s[i+1])<=zero ) break ; var at0 = i<0?0:i ; for( i = atex ; i<Count-1 ; ++i ) if( Math.Abs(s[i]-s[i+1])<=zero ) break ; var at1 = i ; Quant? cd = 0 ; for( i = at0 ; i<Count-1&&i<=at1 ; ++i ) cd += Math.Abs((s[i]-s[i+1])*(b[i]+b[i+1]))/2 ; cd /= (s.at(at0)-s.at(at1)).Nil().use(Math.Abs) ; return new Duo{X=this[at0].nil(),Y=cd} ; } }
-		public Duo Center => Centre|Centrum ;
+		public Duo Central
+		{ get {
+			Quant? cd = 0 ; var s = Source ; var b = Basis ; for( var i=0 ; i<Count-1 ; ++i ) cd += Math.Abs((s[i]-s[i+1])*(b[i]+b[i+1]))/2 ;
+			cd /= (s.at(0)-s.at(Count-1)).Nil().use(Math.Abs) ; var j = 0 ; for(; j<Count-1 ; ++j ) if( b[j]<=cd&&b[j+1]>=cd || b[j]>=cd&&b[j]<=cd ) break ;
+			return new Duo{X=this[j].nil(),Y=cd} ;
+		} }
+		public Duo Centre
+		{ get {
+			var s = Source ; var b = Basis ; var atex = AtExtreme ; var zero = Zero*(s.at(0)-s.at(Count-1)).use(Math.Abs) ;
+			var i = atex ; for(; i>=0 && i<Count-1 ; --i ) if( Math.Abs(s[i]-s[i+1])<=zero ) break ;
+			Quant? cd = 0 ; for( atex = i = i<0?0:i ; i<Count-1 ; ++i ) cd += Math.Abs((s[i]-s[i+1])*(b[i]+b[i+1]))/2 ;
+			return new Duo{ X = this[atex].nil() , Y = cd / (s.at(atex)-s.at(Count-1)).Nil().use(Math.Abs) } ;
+		} }
+		public Duo Center
+		{ get {
+			var s = Source ; var b = Basis ; var atex = AtExtreme ; var zero = Zero*(s.at(0)-s.at(Count-1)).use(Math.Abs) ;
+			var i = atex ; for(; i>=0 && i<Count-1 ; --i ) if( Math.Abs(s[i]-s[i+1])<=zero ) break ;
+			var at0 = i<0?0:i ; for( i = atex ; i<Count-1 ; ++i ) if( Math.Abs(s[i]-s[i+1])<=zero ) break ;
+			var at1 = i ; Quant? cd = 0 ; for( i = at0 ; i<Count-1&&i<=at1 ; ++i ) cd += Math.Abs((s[i]-s[i+1])*(b[i]+b[i+1]))/2 ;
+			return new Duo{ X = this[at0].nil() , Y = cd / (s.at(at0)-s.at(at1)).Nil().use(Math.Abs) } ;
+		} }
+		public Duo Centrum => Centre|Center ;
 		public Quantile this[ Func<Quantile,IEnumerable<Quant>> quantizer , IEnumerable<Quant> distribution , Axe on = null , bool free = false ] => Axe.Get(a=>new Quantile(a,quantizer,distribution??(free?a.Refine():a.Distribution),on)) ?? new Quantile(Context[distribution,on,free],quantizer) ;
 		public Quantile this[ IEnumerable<Quant> distribution , Axe on = null , bool free = false ] => this[free?null:Quantizer,distribution,on,free] ;
 		public Quantile this[ Axe on , bool free = false ] => this[null,on,free] ;
@@ -426,7 +444,12 @@ namespace Rob.Act
 		public static Quantile operator+( Quant value , Quantile source ) => new Quantile(source,q=>q.Select(v=>value+v)) ;
 		public static Quantile operator-( Quant value , Quantile source ) => new Quantile(source,q=>q.Select(v=>value-v)) ;
 		#endregion
-		public struct Duo { public Quant? X , Y ; public static Duo operator+( Duo a , Duo b ) => new Duo{ X = a.X+b.X , Y = a.Y+b.Y } ; public static Duo operator/( Duo a , Quant b ) => new Duo{ X = a.X/b.nil() , Y = a.Y/b.nil() } ; public static Duo operator|( Duo a , Duo b ) => (a+b)/2 ; }
+		public struct Duo
+		{
+			public Quant? X , Y ;
+			public static Duo operator|( Duo a , Duo b ) => new(){ X = Decide(a.X,b.X) , Y = Decide(a.Y,b.Y) } ;
+			static Quant? Decide( Quant? a , Quant? b ) => a is null && b is null ? null : a is not null && b is not null ? (a+b)/2 : a??b ;
+		}
 		public struct Measure
 		{
 			readonly Axable Of , On ; Proxable<Quant,Quant> Cash ;

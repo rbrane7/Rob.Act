@@ -27,23 +27,23 @@ namespace Rob.Act
 		public Quant A {get;}
 		public Quant B {get;}
 		public static Quant operator+( Bipole x ) => x.A-x.B ;
-		public static Bipole operator-( Bipole x ) => new Bipole(x.B,x.A) ;
-		public static Bipole operator+( Bipole x , Bipole y ) => new Bipole(x.A+y.A,x.B+y.B) ;
+		public static Bipole operator-( Bipole x ) => new(x.B,x.A) ;
+		public static Bipole operator+( Bipole x , Bipole y ) => new(x.A+y.A,x.B+y.B) ;
 		public static Bipole operator-( Bipole x , Bipole y ) => x+-y ;
 		public static Bipole operator+( Bipole x , Quant y ) => x+(Bipole)y ;
 		public static Bipole operator-( Bipole x , Quant y ) => x-(Bipole)y ;
 		public static Bipole operator*( Bipole x , Quant y ) => y>=0 ? new Bipole(x.A*y,x.B*y) : -x*-y ;
-		public static Bipole? operator/( Bipole x , Quant y ) => y>0 ? new Bipole(x.A/y,x.B/y) : y<0 ? -x/-y : null as Bipole? ;
+		public static Bipole? operator/( Bipole x , Quant y ) => y>0 ? new Bipole(x.A/y,x.B/y) : y<0 ? -x/-y : null ;
 		public static Bipole operator*( Bipole x , Bipole y ) => x*(Quant)y ;
 		public static Bipole? operator/( Bipole x , Bipole y ) => x/(Quant)y ;
-		public static Bipole? operator+( Bipole? x , Bipole? y ) => x!=null&&y!=null ? x.Value+y.Value : null as Bipole? ;
-		public static Bipole? operator-( Bipole? x , Bipole? y ) => x!=null&&y!=null ? x.Value-y.Value : null as Bipole? ;
-		public static Bipole? operator+( Bipole? x , Quant? y ) => x!=null&&y!=null ? x.Value+y.Value : null as Bipole? ;
-		public static Bipole? operator-( Bipole? x , Quant? y ) => x!=null&&y!=null ? x.Value-y.Value : null as Bipole? ;
-		public static Bipole? operator*( Bipole? x , Quant? y ) => x!=null&&y!=null ? x.Value*y.Value : null as Bipole? ;
-		public static Bipole? operator/( Bipole? x , Quant? y ) => x!=null&&y!=null ? x.Value/y.Value : null as Bipole? ;
-		public static Bipole? operator*( Bipole? x , Bipole? y ) => x!=null&&y!=null ? x.Value*y.Value : null as Bipole? ;
-		public static Bipole? operator/( Bipole? x , Bipole? y ) => x!=null&&y!=null ? x.Value/y.Value : null as Bipole? ;
+		public static Bipole? operator+( Bipole? x , Bipole? y ) => x!=null&&y!=null ? x.Value+y.Value : null ;
+		public static Bipole? operator-( Bipole? x , Bipole? y ) => x!=null&&y!=null ? x.Value-y.Value : null ;
+		public static Bipole? operator+( Bipole? x , Quant? y ) => x!=null&&y!=null ? x.Value+y.Value : null ;
+		public static Bipole? operator-( Bipole? x , Quant? y ) => x!=null&&y!=null ? x.Value-y.Value : null ;
+		public static Bipole? operator*( Bipole? x , Quant? y ) => x!=null&&y!=null ? x.Value*y.Value : null ;
+		public static Bipole? operator/( Bipole? x , Quant? y ) => x!=null&&y!=null ? x.Value/y.Value : null ;
+		public static Bipole? operator*( Bipole? x , Bipole? y ) => x!=null&&y!=null ? x.Value*y.Value : null ;
+		public static Bipole? operator/( Bipole? x , Bipole? y ) => x!=null&&y!=null ? x.Value/y.Value : null ;
 		public static implicit operator Bipole( Quant v ) => new Bipole(v) ;
 		public static explicit operator Quant( Bipole v ) => v.A+v.B ;
 		public static explicit operator Quant?( Bipole? v ) => v.use(q=>(Quant)q) ;
@@ -56,12 +56,12 @@ namespace Rob.Act
 	{
 		public Quant Lon , Lat ;
 		public Geos( Quant lon , Quant lat ) { Lon = lon ; Lat = lat ; }
-		public static Geos operator~( Geos a ) => new Geos{Lon=a.Lat,Lat=-a.Lon} ;
+		public static Geos operator~( Geos a ) => new(a.Lat,a.Lon) ;
 		public static Quant operator+( Geos a ) => Math.Sqrt(a|a) ;
 		public static Geos? operator~( Geos? a ) => a.use(x=>~x) ;
 		public static Quant? operator+( Geos? a ) => a.use(x=>+x) ;
-		public static Geos operator+( Geos a , Geos b ) => new(){Lon=a.Lon+b.Lon,Lat=a.Lat+b.Lat} ;
-		public static Geos operator-( Geos a , Geos b ) => new(){Lon=a.Lon-b.Lon,Lat=a.Lat-b.Lat} ;
+		public static Geos operator+( Geos a , Geos b ) => new(a.Lon+b.Lon,a.Lat+b.Lat) ;
+		public static Geos operator-( Geos a , Geos b ) => new(a.Lon-b.Lon,a.Lat-b.Lat) ;
 		public static Geos? operator+( Geos? a , Geos? b ) => a is Geos x && b is Geos y ? x+y : null as Geos? ;
 		public static Geos? operator-( Geos? a , Geos? b ) => a is Geos x && b is Geos y ? x-y : null as Geos? ;
 		public static Quant operator|( Geos a , Geos b ) => a.Lon*b.Lon+a.Lat*b.Lat ;
@@ -76,7 +76,8 @@ namespace Rob.Act
 	}
 	public struct Geom
 	{
-		public Geos G ; public Quant? Alt ; public DateTime? Dat ; public Quant Lon { get => G.Lon ; set => G.Lon = value ; } public Quant Lat { get => G.Lat ; set => G.Lat = value ; }
+		public Geos G ; public Quant? Alt ; public DateTime? Dat ;
+		public Quant Lon { get => G.Lon ; set => G.Lon = value ; } public Quant Lat { get => G.Lat ; set => G.Lat = value ; }
 		public Geom( Quant lon , Quant lat , Quant? alt = null , DateTime? dat = null ) : this((lon,lat),alt,dat) {}
 		public Geom( Geos g , Quant? alt = null , DateTime? dat = null ) { G = g ; Alt = alt ; Dat = dat ; }
 		public static Geom operator~( Geom a ) => new Geom{G=~a.G,Alt=a.Alt,Dat=a.Dat} ;
@@ -85,8 +86,8 @@ namespace Rob.Act
 		public static Geom? operator~( Geom? a ) => a.use(x=>~x) ;
 		public static Quant? operator+( Geom? a ) => a.use(x=>+x) ;
 		public static Geom? operator-( Geom? a ) => a.use(x=>-x) ;
-		public static Geom operator+( Geom a , Geom b ) => new(){G=a.G+b.G,Alt=a.Alt+b.Alt,Dat=a.Dat} ;
-		public static Geom operator-( Geom a , Geom b ) => new(){G=a.G-b.G,Alt=a.Alt-b.Alt,Dat=a.Dat} ;
+		public static Geom operator+( Geom a , Geom b ) => new(a.G+b.G,a.Alt+b.Alt,a.Dat) ;
+		public static Geom operator-( Geom a , Geom b ) => new(a.G-b.G,a.Alt-b.Alt,a.Dat) ;
 		public static Geom? operator+( Geom? a , Geom? b ) => a is Geom x && b is Geom y ? x+y : (Geom?)null ;
 		public static Geom? operator-( Geom? a , Geom? b ) => a is Geom x && b is Geom y ? x-y : (Geom?)null ;
 		public static Quant operator|( Geom a , Geom b ) => (a.Alt*b.Alt??0)+(a.G|b.G) ;
