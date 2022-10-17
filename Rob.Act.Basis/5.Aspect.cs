@@ -232,13 +232,13 @@ namespace Rob.Act
 			public void Reform( params string[] binds ) => this.OfType<Axe>().Each(a=>a.Binder=Context.Metaxe(a.Ax).Form??binds.At(a.Axis<Axis.Top?(int)a.Axis:binds.Length-1-(int)(uint.MaxValue-a.Axis))) ;
 			public void Remark( bool direct = false ) { foreach( var mark in Basis.Marks ) if( Context[mark]!=null && (direct||this[mark]==null) ) Add(new Axe(Context){Mark=mark}) ; }
 			#region Operation
-			public Act.Axe perf( Bit lap ) => perf(pace(lap),grad(lap),resi(lap),flow(lap),gran(lap)) ;
-			public Act.Axe velo( Bit lap ) => lap.quo(this[Axis.Dist,false]as Axe,this[Axis.Time,false]as Axe) ;
-			public Act.Axe pace( Bit lap ) => lap.quo(this[Axis.Time,false]as Axe,this[Axis.Dist,false]as Axe) ;
-			public Act.Axe grad( Bit lap ) => lap.quo(this[Axis.Alt,false]as Axe,this[Axis.Dist,false]as Axe) ;
-			public Act.Axe gran( Bit lap ) => lap.quo(this[Axis.Grade,false]as Axe,this[Axis.Dist,false]as Axe) ;
-			public Act.Axe flow( Bit lap ) => Raw.Object==Basis.Device.Skierg.Code ? Axe.No : lap.quo(this[Axis.Flow,false]as Axe,this[Axis.Dist,false]as Axe) ;
-			public Act.Axe resi( Bit lap ) => lap.quo(this[Axis.Drag,false]as Axe,this[Axis.Dist,false]as Axe) ;
+			public Act.Axe perf( Jot lap ) => perf(pace(lap),grad(lap),resi(lap),flow(lap),gran(lap)) ;
+			public Act.Axe velo( Jot lap ) => lap.quo(this[Axis.Dist,false]as Axe,this[Axis.Time,false]as Axe) ;
+			public Act.Axe pace( Jot lap ) => lap.quo(this[Axis.Time,false]as Axe,this[Axis.Dist,false]as Axe) ;
+			public Act.Axe grad( Jot lap ) => lap.quo(this[Axis.Alt,false]as Axe,this[Axis.Dist,false]as Axe) ;
+			public Act.Axe gran( Jot lap ) => lap.quo(this[Axis.Grade,false]as Axe,this[Axis.Dist,false]as Axe) ;
+			public Act.Axe flow( Jot lap ) => Raw.Object==Basis.Device.Skierg.Code ? Axe.No : lap.quo(this[Axis.Flow,false]as Axe,this[Axis.Dist,false]as Axe) ;
+			public Act.Axe resi( Jot lap ) => lap.quo(this[Axis.Drag,false]as Axe,this[Axis.Dist,false]as Axe) ;
 			public Act.Axe perf( int lap = 0 ) => perf(pace(lap),grad(lap),resi(lap),flow(lap),gran(lap)) ;
 			public Act.Axe velo( int lap = 0 ) => lap.quo(this[Axis.Dist,false]as Axe,this[Axis.Time,false]as Axe) ;
 			public Act.Axe pace( int lap = 0 ) => lap.quo(this[Axis.Time,false]as Axe,this[Axis.Dist,false]as Axe) ;
