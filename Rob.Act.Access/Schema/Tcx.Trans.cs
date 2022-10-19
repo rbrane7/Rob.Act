@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Xml.Serialization;
 using System.Xml;
 using Aid.Extension;
+using Aid.Serialization.XML;
 
 namespace Rob.Act.Tcx
 {
@@ -38,6 +39,7 @@ namespace Rob.Act.Tcx
 	{
 		[XmlIgnore] public Activity_t First => Activities.Activity.At(0) ; [XmlIgnore] public Activity_t Last => Activities.Activity.At(Activities.Activity.Length-1) ;
 		internal IEnumerable<Point> Iterator { get { if( Activities.Activity==null ) yield break ; foreach( var act in Activities.Activity ) foreach( var point in act.Iterator ) yield return point ; } }
+		public static implicit operator TrainingCenterDatabase_t( string text ) => text.Deserialize<TrainingCenterDatabase_t>() ;
 		public static implicit operator Path( TrainingCenterDatabase_t way ) => way.Get( w => new Path(w.First.Id,w.Iterator,Translation.Kind,(Axis.Beat,60),(Axis.Bit,60)) { Action = w.Activities.Activity.Select(a=>a.Sport).Distinct().Stringy(',') } ) ;
 		public static implicit operator TrainingCenterDatabase_t( Path path ) => path.Get( p => new TrainingCenterDatabase_t { Activities = new ActivityList_t { Activity = (p/Mark.Lap).Select(a=>(Activity_t)a).ToArray() } } ) ;
 	}

@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <RootNamespace>Rob.Act.Access._3</RootNamespace>
   </PropertyGroup>
 
@@ -33,6 +33,9 @@
   <ItemGroup>
     <Reference Include="Aid.Core.3">
       <HintPath>..\..\..\..\Aid\Bin\Release\Aid.Core.3.dll</HintPath>
+    </Reference>
+    <Reference Include="Fit.Decode.Net6">
+      <HintPath>..\..\..\..\Ext\Fit.Protocol\FitSDKRelease_20.96.00\cs\Fit.Decode.Net6\bin\Release\net6.0\Fit.Decode.Net6.dll</HintPath>
     </Reference>
   </ItemGroup>
 

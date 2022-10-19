@@ -12,10 +12,11 @@ namespace Rob.Act
 	{
 		public static Mark Kind ;
 		static readonly char[] CrLf = new[]{'\r','\n'} ;
+		const string GpxFitAnchor = "creator=\"" ;
 		public static Path Internalize( this string data )
 		{
-			if( data.Consists(Gpx.Extension.Sign) ) return data.Deserialize<Gpx.gpxType>() ;
-			if( data.Consists(Tcx.Extension.Sign) ) return data.Deserialize<Tcx.TrainingCenterDatabase_t>() ;
+			if( data.Consists(Gpx.Extension.Sign) ) return (Gpx.gpxType)data ;
+			if( data.Consists(Tcx.Extension.Sign) ) return (Tcx.TrainingCenterDatabase_t)data ;
 			if( Erg.Csv.Sign(data) ) return new Erg.Csv(data) ;
 			if( data.StartsBy(Partitioner.Sign) ) return new Partitioner(data) ;
 			if( data.StartsBy(Csv.Bio.Sign) ) return new Csv.Bio(data) ;
@@ -34,6 +35,7 @@ namespace Rob.Act
 				}
 				if( Path.Primary )if( System.IO.Path.ChangeExtension(file,Path.Filext) is string p && file!=p && System.IO.File.Exists(p) ) return null ; // we prefer .path files over all serialization forms
 				if( System.IO.File.Exists($"{file}.{Partitioner.Ext}") ) return null ; // we prefer ..par corrections over original serialization forms if they are not named
+				if( Gpx.Extension.Primary )if( System.IO.Path.ChangeExtension(file,Gpx.Extension.File) is string p && file!=p && System.IO.File.Exists(p) ) return null ; // we prefer .path files over all serialization forms
 			}
 			var data = file.ReadAllText(false) ; if( data==null ) return null ;
 			string sign = data.LeftFrom('\n')?.Trim() , rest , dart , dres ; /* first signing line of data */
@@ -66,6 +68,7 @@ namespace Rob.Act
 			}
 			else if( file.EndsWith(Partitioner.Ext) ) data = $"{Partitioner.Sign}{file.LeftFromLast(Partitioner.Ext)}{Environment.NewLine}{data}" ;
 			else if( file.EndsWith(Csv.Bio.Ext) && file.LeftFrom(Csv.Bio.Ext).RightFrom('.') is string sbj ) data = data.LeftFrom(true,CrLf)+$",Subject={sbj}"+data.RightFromFirst(CrLf,with:true) ;
+			else if( file.EndsBy(Gpx.Extension.File) && data.Contains(GpxFitAnchor) && System.IO.Path.ChangeExtension(file,".fit") is string fit && System.IO.File.Exists(fit) ) data = data.Replace(GpxFitAnchor,$"{GpxFitAnchor}{fit}.") ;
 			return data ;
 		}
 		public static void Partitionate( this Path path ) { if( path==null ) return ; var parter = path.Origin+Partitioner.Ext ; if( System.IO.File.Exists(parter) ) return ; path.Where(p=>p.Mark.HasFlag(Mark.Stop)&&p.No+1<path.Count).Select(p=>p.No).Stringy(' ').Null(p=>p.No()).Set(p=>parter.WriteAll(p)) ; }

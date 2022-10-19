@@ -41,6 +41,10 @@
     <Reference Include="Aid.Core">
       <HintPath>..\..\..\..\Aid\Bin\Release\Aid.Core.dll</HintPath>
     </Reference>
+    <Reference Include="Fit.Deco.Net4, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\Ext\Fit.Protocol\FitSDKRelease_20.96.00\cs\Fit.Decode.Net4\bin\Release\Fit.Deco.Net4.dll</HintPath>
+    </Reference>
     <Reference Include="IndexRange">
       <HintPath>..\Ext\IndexRange.dll</HintPath>
     </Reference>

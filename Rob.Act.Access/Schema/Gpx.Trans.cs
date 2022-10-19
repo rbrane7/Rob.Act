@@ -7,18 +7,22 @@ using System.Threading.Tasks;
 using System.Xml.Serialization;
 using System.Xml;
 using Aid.Extension;
+using Aid.Serialization.XML;
 
 namespace Rob.Act.Gpx
 {
+	using static Aid.Log;
 	using Quant = Double ;
 	public partial class gpxType
 	{
 		[XmlIgnore] public trkType First => trk.At(0) ; [XmlIgnore] public trkType Last => trk.At(trk.Length-1) ;
 		internal IEnumerable<Point> Iterator { get { if( trk==null ) yield break ; foreach( var track in trk ) foreach( var point in track.Iterator ) yield return point/*.Set(p=>p.Mark|=Last==track&&p.Mark.HasFlag(Mark.Stop)?Mark.Act:Mark.No)*/ ; } }
+		internal IEnumerable<wptType> Flat { get { if( trk==null ) yield break ; foreach( var track in trk ) foreach( var seg in track.trkseg ) foreach( var way in seg.trkpt ) yield return way ; } }
+		public static implicit operator gpxType( string text ) => text.Deserialize<gpxType>().Enhance() ;
 		public static implicit operator Path( gpxType way ) => way.Get(w=>
 		{
 			var obj = w.trk?.Select(t=>t.type).Distinct().Stringy(',') ; var dflt = Basis.Energing.On(obj) ; bool lev = false ;
-			return new Path(w.Date(),w.Iterator,Translation.Kind,(Axis.Beat,60),(Axis.Bit,60))
+			return new Path(w.Date(),w.Iterator,Translation.Kind,(Axis.Beat,60),(Axis.Bit,60),(Axis.Energy,1))
 			{
 				Initing = true , Object = obj , Action = w.trk?.Select(t=>t.name.Action()).Stringy(',') , Subject = w.trk?.Select(t=>t.link.At(0)?.href.Subject()).Distinct().Stringy(',') ,
 				Locus = w.trk?.Select(t=>t.name.Locus()).Distinct().Stringy(',') , Refine = w.trk?.Select(t=>t.name.Refine()).Distinct().Stringy(',') , Detail = w.trk?.Select(t=>t.name.Detail()).Distinct().Stringy(',') ,
@@ -47,9 +51,9 @@ namespace Rob.Act.Gpx
 	}
 	public partial class wptType : Aid.Accessible<Quant?> , Aid.Accessible<Axis,Quant?>
 	{
-		public static implicit operator Point( wptType point ) => point.Get( p => new Point(p.time) { Spec = p.name , [Axis.Lon] = p[Axis.Lon] , [Axis.Lat] = p[Axis.Lat] , [Axis.Alt] = p[Axis.Alt] , [Axis.Beat] = p[Axis.Beat] , [Axis.Bit] = p[Axis.Bit] } ) ;
-		public static implicit operator wptType( Point point ) => point.Get( p => new wptType { time = p.Date , timeSpecified = p.Date!=null , [Axis.Lat] = p[Axis.Lat] , [Axis.Lon] = p[Axis.Lon] , [Axis.Alt] = p[Axis.Alt] , [Axis.Beat] = p[Axis.Beat] , [Axis.Bit] = p[Axis.Bit] } ) ;
-		XmlElement Extension => ( extensions ?? ( extensions = new extensionsType{ Any = new XmlElement[]{ "<gpxtpx:TrackPointExtension xmlns:gpxtpx=\"http://www.garmin.com/xmlschemas/TrackPointExtension/v1\"/>".ToXmlElement() } }) ).Any.At(0) ;
+		public static implicit operator Point( wptType point ) => point.Get( p => new Point(p.time){ Spec = p.name , [Axis.Lon] = p[Axis.Lon] , [Axis.Lat] = p[Axis.Lat] , [Axis.Alt] = p[Axis.Alt] , [Axis.Beat] = p[Axis.Beat] , [Axis.Bit] = p[Axis.Bit] , [Axis.Energy] = p[Axis.Energy] } ) ;
+		public static implicit operator wptType( Point point ) => point.Get( p => new wptType{ time = p.Date , timeSpecified = p.Date!=null , [Axis.Lat] = p[Axis.Lat] , [Axis.Lon] = p[Axis.Lon] , [Axis.Alt] = p[Axis.Alt] , [Axis.Beat] = p[Axis.Beat] , [Axis.Bit] = p[Axis.Bit], [Axis.Energy] = p[Axis.Energy] } ) ;
+		XmlElement Extension => ( extensions ??= new extensionsType{ Any = new[]{ "<gpxtpx:TrackPointExtension xmlns:gpxtpx=\"http://www.garmin.com/xmlschemas/TrackPointExtension/v1\"/>".ToXmlElement() } }).Any.At(0) ;
 		XmlElement Element( string name ) => extensions?.Any?.SelectMany(a=>a.ChildNodes.OfType<XmlElement>()).FirstOrDefault(e=>e.LocalName==name) ;
 		public Quant? this[ string quant ]
 		{
@@ -63,15 +67,16 @@ namespace Rob.Act.Gpx
 		}
 		public Quant? this[ Axis axis ]
 		{
-			get { switch( axis ) { case Axis.Lon : return (Quant)lonField ; case Axis.Lat : return (Quant)latField ; case Axis.Alt : return eleFieldSpecified ? (Quant)eleField : null as Quant? ; default : return this[axis.Axis()] ; } }
+			get { switch( axis ) { case Axis.Lon : return (Quant)lonField ; case Axis.Lat : return (Quant)latField ; case Axis.Alt : return eleFieldSpecified ? (Quant)eleField : null ; default : return this[axis.Axis()] ; } }
 			set { switch( axis ) { case Axis.Lon : value.Use(v=>lonField=(decimal)v) ; break ; case Axis.Lat : value.Use(v=>latField=(decimal)v) ; break ; case Axis.Alt : eleFieldSpecified = null!=value.Use(v=>eleField=(decimal)v) ; break ; default : this[axis.Axis()] = value ; break ; } }
 		}
 	}
 	public static class Extension
 	{
 		public static readonly IDictionary<string,string> Subjecter = new Dictionary<string,string>{ ["https://www.endomondo.com/users/913640"]="Rob" } ;
-		public const string Sign = "<gpx" ;
-		static readonly string[] Axes = new[] { "lon" , "lat" , "alt" , "dist" , "drag" , "flow" , "hr" , "cad" , "top" } ;
+		public const string Sign = "<gpx" , File = ".gpx" ;
+		public static bool Primary ;
+		static readonly string[] Axes = new[] { "lon" , "lat" , "alt" , "dist" , "drag" , "flow" , "hr" , "cad" , "pow" , "top" } ;
 		internal static string Axis( this Axis axe ) => Axes.At((int)axe) ;
 		internal static string Subject( this string uri ) => uri.LeftFrom("/workouts",all:true).Get(i=>Subjecter.By(i)??i) ;
 		internal static string Action( this string value ) => value.LeftFrom('?',all:true)?.Trim() ;
@@ -83,6 +88,17 @@ namespace Rob.Act.Gpx
 		internal static string Flowstr( this string value ) => value.RightFromFirst('?').Separate('&',';').Arg(Tagger.Names[(int)Taglet.Flow]) ;
 		internal static string Name( this Path path ) => path.Get(p=>$"{p.Action}{p.Tags.Get(t=>p.Tag.Uri)}") ;
 		internal static DateTime Date( this gpxType way ) => way?.metadata?.time ?? way?.First?.First?.First?.time ?? DateTime.Now ;
+		internal static gpxType Enhance( this gpxType gpx ) => gpx.creator.Contains(".fit.") ? gpx.Join(gpx.creator.LeftFromLast(".fit",with:true)) : gpx ;
+		internal static gpxType Join( this gpxType gpx , string fit )
+		{
+			if( fit is null || gpx is null ) return gpx ;
+			for( (var fiter,var gpxer) = (new Aid.Fit.File(fit).Points.GetEnumerator(),gpx.Flat.GetEnumerator()) ; fiter.MoveNext() && gpxer.MoveNext() ; )
+			{
+				while( fiter.Current.Date!=gpxer.Current.time ) if( fiter.Current.Date<gpxer.Current.time ? fiter.MoveNext() : gpxer.MoveNext() ); else break ;
+				if( fiter.Current.Date==gpxer.Current?.time ) gpxer.Current[Act.Axis.Energy] = fiter.Current.Pow ;
+			}
+			return gpx ;
+		}
 	}
 }
   
