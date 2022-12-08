@@ -29,7 +29,7 @@ namespace Rob.Act
 				bool First() => Data.Count<=1 ;
 				(TimeSpan Time,Quant Distance,Quant Beat,uint Bit,Quant Energy,Quant Drag,Quant Effort,Mark Mark) accu = default ;
 				(uint bit,double time,double dist,uint beat,uint power,uint drag,double pace,uint effort,Mark mark) last = default ;
-				uint idrag = 0 ; Quant atime = 0 , adist = 0 ; IEnumerable<(Quant time,Quant dist)> laps = null ;
+				uint idrag = 0 ; Quant atime = 0 , adist = 0 ; IEnumerable<(Quant time,Quant dist)> laps = null ; string[] lvals = null ;
 				foreach( var line in data.SeparateTrim('\n').Select(l=>l.Trim()) )
 				{
 					if( Sign(line) )
@@ -44,15 +44,15 @@ namespace Rob.Act
 						if( line.RightFrom(Axes[^1]+'=').LeftFrom('"') is string spec && !Spec.Includes(spec) ) if( Spec.No() ) Spec = spec ; else Spec += $" {spec}" ;
 						continue ;
 					}
-					var vals = line.Separate(',').Select(v=>v.Trim('"')).ToArray() ; if( vals.At(7)==null ) continue ;
+					var vals = line.Separate(',').Select(v=>v.Trim('"')).ToArray() ; if( vals.At(7)==null || lvals?.Skip(1).SequenceEquate(vals.Skip(1))==true ) continue ; else lvals = vals ;
 					(uint bit,double time,double dist,uint beat,uint power,uint drag,double pace,uint effort,Mark mark) =
 						(vals[0].Parse(0U),vals[1].Parse(0D),vals[2].Parse(0D),vals[7].Parse(0U),vals[4].Parse(0U).nil()??last.power,vals.At(8).Parse(0U).nil()??last.drag,vals[3].Parse(0D).nil()??last.pace,vals[5].Parse(0U).nil()??last.effort,default) ;
 					(Quant time,Quant dist)? lap = null ; var velo = 500/(pace.nil()??Quant.PositiveInfinity) ;
-					if( time<(accu.Time-TimeSpan.FromTicks(1)).TotalSeconds-atime ) { lap = laps?.FirstOrDefault(l=>l.time>=last.time) ; atime = lap?.time ?? last.time ; adist = lap?.dist ?? last.dist+(lap?.time-last.time??0)*velo ; }
+					if( atime+time<(accu.Time-TimeSpan.FromTicks(1)).TotalSeconds && adist+dist<accu.Distance ) { lap = laps?.FirstOrDefault(l=>l.time>=last.time) ; atime = lap?.time ?? last.time ; adist = lap?.dist ?? last.dist+(lap?.time-last.time??0)*velo ; }
 					time += atime ; dist += adist ; var lim = laps?.FirstOrDefault(l=>last.time<l.time&&l.time<=time)??default ;
-					if( lim.time!=default ) { /*dist -= (time-lim.time)*velo ;*/ dist = lim.dist ; time = lim.time ; mark = Mark.Lap ; } // Limits adjustion
+					if( lim.time!=default ) { /*dist -= (time-lim.time)*velo ;*/ dist = lim.dist ; time = lim.time ; mark = Mark.Act ; } // Limits adjustion
 					bit = Math.Max(bit,last.bit+1) ; var db = bit-last.bit ; var ib = Interpolate ? 1 : db ; var dt = TimeSpan.FromSeconds((time-last.time)*ib/db) ; accu.Bit = bit ;
-					if( dist<last.dist ) dist = last.dist+dt.TotalSeconds*velo ;
+					//if( dist<last.dist ) dist = last.dist+dt.TotalSeconds*velo ; // correction not necessary and parasitein some cases
 					var ds = (dist-last.dist)*ib/db ;
 					for( var i=ib ; i<=db ; i+=ib )/*interpolation*/
 					{

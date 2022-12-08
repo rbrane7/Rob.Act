@@ -83,7 +83,8 @@ namespace Rob.Act.Analyze
 				foreach( var a in System.IO.Directory.GetFiles(Setup.StatePath,$"{Altiplane.FileSign}*{Path.Altiplane.ExtSign}") ) { Trace.TraceInformation($"Loading {a}") ; Path.Altiplanes.Add(new Path.Altiplane(a){Radius=g.Radius}) ; }
 				if( Path.Altiplanes.Count==0 ) Path.Altiplanes.Add(new Path.Altiplane(g.Grade,g.Grane){Radius=g.Radius}) ;
 			}) ;
-			Setup.WorkoutsPaths.SeparateTrim('|').SelectMany(l=>l.MatchingFiles(Setup?.WorkoutsSeed)).EachGuard(f=>NewAction(f,Setup?.WorkoutsFilter).Set(a=>Trace.TraceInformation($"{(Setup?.WorkoutsFilter?.Invoke(a)!=false?"Loaded":"Ignored")} {f}")),(f,e)=>Trace.TraceError($"{f} faulted by {e}")) ;
+			var fs = 
+			Setup.WorkoutsPaths.SeparateTrim('|').SelectMany(l=>l.MatchingFiles(Setup?.WorkoutsSeed)) ; fs.EachGuard(f=>NewAction(f,Setup?.WorkoutsFilter).Set(a=>Trace.TraceInformation($"{(Setup?.WorkoutsFilter?.Invoke(a)!=false?"Loaded":"Ignored")} {f}")),(f,e)=>Trace.TraceError($"{f} faulted by {e}")) ;
 			Setup.AspectsPaths.SeparateTrim('|').SelectMany(l=>l.MatchingFiles()).EachGuard(f=>{Trace.TraceInformation($"Loading {f}");NewAspect(f,Setup?.AspectsFilter);},(f,e)=>Trace.TraceError($"{f} faulted by {e}")) ;
 			/*WorkoutsWatchers =*/ Setup.WorkoutsPaths.SeparateTrim('|').Select(l=>new FileSystemWatcher(l){EnableRaisingEvents=true}.Set(w=>{ w.Edited += NewAction ; w.Deleted += (s,a)=>Book-=p=>p.Origin==a.FullPath ; })).Each() ;
 			State = new State{ Context = this } ;

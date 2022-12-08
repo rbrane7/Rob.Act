@@ -35,7 +35,7 @@ namespace Rob.Act
 				}
 				if( Path.Primary )if( System.IO.Path.ChangeExtension(file,Path.Filext) is string p && file!=p && System.IO.File.Exists(p) ) return null ; // we prefer .path files over all serialization forms
 				if( System.IO.File.Exists($"{file}.{Partitioner.Ext}") ) return null ; // we prefer ..par corrections over original serialization forms if they are not named
-				if( Gpx.Extension.Primary )if( System.IO.Path.ChangeExtension(file,Gpx.Extension.File) is string p && file!=p && System.IO.File.Exists(p) ) return null ; // we prefer .path files over all serialization forms
+				if( Gpx.Extension.Primary && Path.Primary^System.IO.Path.GetExtension(file).Consists(Path.Filext) )if( System.IO.Path.ChangeExtension(file,Gpx.Extension.File) is string p && file!=p && System.IO.File.Exists(p) ) return null ; // we prefer .gpx files over all serialization forms
 			}
 			var data = file.ReadAllText(false) ; if( data==null ) return null ;
 			string sign = data.LeftFrom('\n')?.Trim() , rest , dart , dres ; /* first signing line of data */

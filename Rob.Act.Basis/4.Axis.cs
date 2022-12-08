@@ -149,9 +149,9 @@ namespace Rob.Act
 		public static Axe operator*( Axe x , Quant y ) => x==null ? No : new Axe( i=>x[i]*y , x ) ;
 		public static Axe operator*( Quant x , Axe y ) => y==null ? No : new Axe( i=>x*y[i] , y ) ;
 		public static Axe operator/( Axe x , Axe y ) => x==null||y==null ? No : (y as Jot.Axe??y.Solver as Jot.Axe).Get(l=>x/l.Arg) ?? new Axe( i=>x[i]/y[i].Nil() , x ) ;
-		public static Axe operator/( Axe x , Quant y ) => x==null ? No : new Axe( i=>x.Resolve(i)/y.nil() , x ) ;
-		public static Axe operator/( Quant x , Axe y ) => y==null ? No : new Axe( i=>x/y.Resolve(i).Nil() , y ) ;
-		public static Axe operator/( bool _ , Axe y ) => y==null ? No : new Axe( i=>1/y.Resolve(i).Nil() , y ) ;
+		public static Axe operator/( Axe x , Quant y ) => x==null ? No : new Axe( i=>x[i]/y.nil() , x ) ;
+		public static Axe operator/( Quant x , Axe y ) => y==null ? No : new Axe( i=>x/y[i].Nil() , y ) ;
+		public static Axe operator/( bool _ , Axe y ) => y==null ? No : new Axe( i=>1/y[i].Nil() , y ) ;
 		public static Axe operator/( Axe x , Jot dif ) => x==null ? No : new Axe( i => dif[i] is double d ? dif.Dual ? dif[i,1] is double c ? x.Dif(i,d,c) : null : x.Dif(i,d) : null , x ) ;
 		public static Axe operator+( Axe x , Axe y ) => x==null||y==null ? No : new Axe( i=>x.Resolve(i)+y.Resolve(i) , x ) ;
 		public static Axe operator+( Axe x , Quant y ) => x==null ? No : new Axe( i=>x.Resolve(i)+y , x ) ;
@@ -182,23 +182,25 @@ namespace Rob.Act
 		public static Region operator>=( Axe x , Axe y ) => Math.Min(x?.Count??0,y?.Count??0).Steps().Where(i=>x[i]>=y[i]) ;
 		public static Region operator<=( Axe x , Axe y ) => Math.Min(x?.Count??0,y?.Count??0).Steps().Where(i=>x[i]<=y[i]) ;
 		public static Axe operator&( Axe x , Axe y ) => (y?.Solver as Jot.Axe??y) is Jot.Axe m ? m.Arg.cntr(x,m.Ctx) : x.Centre(y) ;
+		public static Axe operator&( float y , Axe x ) => x is not null ? new Axe( i=>(x[i]-x[i-1]).use(Math.Abs)<=y?x[i]:null , x ) : No ;
+		public static Axe operator&( Axe x , float y ) => x is not null ? new Axe( i=>(x[i]-(x[i-1]+x[i+1])/2).use(Math.Abs)<=y?x[i]:null , x ) : No ;
 		public static Axe operator&( Axe x , Quant y ) => x.Nil(v=>v>y) ;
 		public static Axe operator&( Quant x , Axe y ) => y.Nil(v=>v<x) ;
 		public static Axe operator&( Axe x , Func<Quant,bool> y ) => x.Nil(v=>!y(v)) ;
 		public static Axe operator&( Axe x , Func<Quant,Quant> y ) => x.Fun(y) ;
 		public static Axe operator|( Axe x , Axe y ) => x==null ? y : y==null ? x : new Axe( i => x[i]*y[i]??x[i]??y[i] , x ) ;
 		public static implicit operator Axe( Func<int,Quant?> resolver ) => resolver.Get(r=>new Axe(r)) ;
-		public static implicit operator Axe( Quant q ) => new Axe( i=>q ) ;
-		public static implicit operator Axe( int q ) => new Axe( i=>q ) ;
+		public static implicit operator Axe( Quant q ) => new( i=>q ) ;
+		public static implicit operator Axe( int q ) => new( i=>q ) ;
 		public static implicit operator Quant?( Axe a ) => +a ;
-		public Axe Round => new Axe( i=>Resolve(i).use(Math.Round) , this ) ;
-		public Axe Floor => new Axe( i=>Resolve(i).use(Math.Floor) , this ) ;
-		public Axe Ceil => new Axe( i=>Resolve(i).use(Math.Ceiling) , this ) ;
-		public Axe Positive => new Axe( i=>Resolve(i).use(v=>Math.Max(0,v)) , this ) ;
-		public Axe Negative => new Axe( i=>Resolve(i).use(v=>Math.Min(0,v)) , this ) ;
-		public Axe Skip( int count ) => new Axe( i=>Resolve(count+i) , this ) ;
-		public Axe Wait( int count ) => new Axe( i=>Resolve(i<count?0:i-count) , this ) ;
-		public Axe Take( int count ) => new Axe( i=>i<count?Resolve(i):null , this ) ;
+		public Axe Round => new( i=>Resolve(i).use(Math.Round) , this ) ;
+		public Axe Floor => new( i=>Resolve(i).use(Math.Floor) , this ) ;
+		public Axe Ceil => new( i=>Resolve(i).use(Math.Ceiling) , this ) ;
+		public Axe Positive => new( i=>Resolve(i).use(v=>Math.Max(0,v)) , this ) ;
+		public Axe Negative => new( i=>Resolve(i).use(v=>Math.Min(0,v)) , this ) ;
+		public Axe Skip( int count ) => new( i=>Resolve(count+i) , this ) ;
+		public Axe Wait( int count ) => new( i=>Resolve(i<count?0:i-count) , this ) ;
+		public Axe Take( int count ) => new( i=>i<count?Resolve(i):null , this ) ;
 		public Region Exts( bool max , int? prox = default ) => Count.Steps().Where(i=>Exts(i,max,prox)) ;
 		public Region Sups( int? prox = default ) => Exts(true,prox) ;
 		public Region Infs( int? prox = default ) => Exts(false,prox) ;
@@ -229,7 +231,7 @@ namespace Rob.Act
 		/// <param name="at"> Position where to calculate differce . </param>
 		/// <param name="dif"> Index difference from position <paramref name="at"/> . </param>
 		/// <returns> Difference value of axe . </returns>
-		Quant? Dif( int at , Mark lap = Mark.Lap , bool dif = false ) => Resolve(at+(dif?1:0))-(Resolve(Own?.Raw?[lap,at-1+(dif?1:0)]??0)??0) ;
+		Quant? Dif( int at , Mark? lap = null , bool dif = false ) => Resolve(at+(dif?1:0))-Resolve(Own?.Raw?[lap,at-1+(dif?1:0)]??0) ;
 		/// <summary> Calculates value difference of this axe between value <paramref name="at"/> positin and position differing by <paramref name="dif"/> . </summary>
 		/// <param name="at"> Position where to calculate differce . </param>
 		/// <param name="dif"> Index difference from position <paramref name="at"/> . </param>
@@ -294,7 +296,7 @@ namespace Rob.Act
 		/// <param name="at"> Position where to calculate differce . </param>
 		/// <param name="dif"> Index difference from position <paramref name="at"/> . </param>
 		/// <returns> Difference value of axe . </returns>
-		Quant? Ave( int at , int dif ) => dif.Steps(at).Aggregate((Quant?)0D,(a,i)=>Resolve(i)) ;
+		Quant? Ave( int at , int dif ) => dif.Steps(at).Aggregate(0D as Quant?,(a,i)=>Resolve(i)) ;
 		/// <summary>
 		/// Calculates value difference of this axe between value <paramref name="at"/> positin and position differing exactly by real <paramref name="dif"/> . 
 		/// Calculation uses linear interpolation for intermediary positions . 

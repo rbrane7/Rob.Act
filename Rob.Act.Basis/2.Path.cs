@@ -27,7 +27,7 @@ namespace Rob.Act
 		public static bool Dominancy , Corrects , Altismooths , Persistent , Primary ;
 		public static double Margin ; public static string Filext = "path" ;
 		public static readonly Dictionary<string,Quant?[]> Meta = new Dictionary<string,Quant?[]>{ ["Tabata"]=new Quant?[]{1,2} } ;
-		public static readonly Dictionary<string,(Quant Grade,Quant Devia,Quant Velo,byte Rad)> Tolerancy = new Dictionary<string,(Quant Grade,Quant Devia,Quant Velo,byte Rad)>{ ["Polling"]=(.20,.25,20,5) , ["ROLLER_SKIING"]=(.20,3,25,5) , ["SKIING_CROSS_COUNTRY"]=(.20,3,20,5) } ;
+		public static readonly Dictionary<string,(Quant Grade,Quant Devia,Quant Velo,byte Rad)> Tolerancy = new(){ ["Polling"]=(.20,.25,20,5) , ["ROLLER_SKIING"]=(.20,3,25,5) , ["SKIING_CROSS_COUNTRY"]=(.20,3,20,5) } ;
 		public static readonly IDictionary<string,Profile> SubjectProfile = new Dictionary<string,Profile>{ ["Rob"]=new Profile{Mass=76,Span=1.92,Tranq=4,Birth=new DateTime(1967,7,19),Fetus=.75} } ;
 		public static IList<Altiplane> Altiplanes ;
 		public static Mediator Medium ;
@@ -358,6 +358,13 @@ namespace Rob.Act
 		/// <param name="of"> Point index to get related starting mark of </param>
 		/// <returns> Closest <paramref name="mark"/>ed pre or equal position to <paramref name="of"/> position </returns>
 		public int this[ Mark mark , int of ] { get { while( of>0 && ((this[of]?.Mark??0)&mark)==0 ) --of ; return of ; } }
+		/// <summary>
+		/// Closest <paramref name="mark"/>ed pre or equal position to <paramref name="of"/> position 
+		/// </summary>
+		/// <param name="mark"> Kind of segmentation , if not defined <see cref="Pre.Point.Marker"/> is used . </param>
+		/// <param name="of"> Point index to get related starting mark of </param>
+		/// <returns> Closest <paramref name="mark"/>ed pre or equal position to <paramref name="of"/> position </returns>
+		public int this[ Mark? mark , int of ] => this[mark??Marker,of] ;
 		Path Segmentize( Mark mark )
 		{
 			using var _=Incognit ;

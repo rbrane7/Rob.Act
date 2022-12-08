@@ -22,6 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="..\Rob.Act.Access\Schema\Erg.tcx.xslt" Link="Schema\Erg.tcx.xslt" />
     <None Include="..\Rob.Act.Access\Schema\Gpx.xsd" Link="Schema\Gpx.xsd" />
     <None Include="..\Rob.Act.Access\Schema\Tcx.xsd" Link="Schema\Tcx.xsd" />
   </ItemGroup>
