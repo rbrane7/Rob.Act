@@ -33,6 +33,7 @@
     <ProductName>Rob.Act.Intel</ProductName>
     <PublisherName>R.Teply</PublisherName>
     <SuiteName>Rob.Act</SuiteName>
+    <OpenBrowserOnPublish>false</OpenBrowserOnPublish>
     <AutorunEnabled>true</AutorunEnabled>
     <ApplicationRevision>0</ApplicationRevision>
     <ApplicationVersion>2.0.0.0</ApplicationVersion>

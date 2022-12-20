@@ -49,12 +49,14 @@ namespace Rob.Act.Analyze
 		public object Convert( object value , Type targetType , object parameter , CultureInfo culture ) => value is Aspect.Traits t ? t[(int)parameter].Get(Evaluate) : null ;
 		public object ConvertBack( object value , Type targetType , object parameter , CultureInfo culture ) => null ;
 	}
-	interface Quantilable : Aid.Countable<double[]> { Axe Ax {get;} Axe Axon {get;} new Task<int> Count() ; }
+	interface Quantilable : Aid.Countable<double[]> { Axe Ax {get;} Axe Axon {get;} new Task<int> Count() ; string Spec {get;} double[] this[ double x , int by = 0 ] {get;} }
 	struct AxeQuantiles : Quantilable
 	{
 		public Axe Ax {get;internal set;} public Axe Axon {get;internal set;} internal IEnumerable<double[]> Content ; public int Count => Content?.Count()??0 ;
 		public IEnumerator<double[]> GetEnumerator() => Content?.GetEnumerator()??Enumerable.Empty<double[]>().GetEnumerator() ; IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
 		Task<int> Quantilable.Count() => Task.FromResult(Count) ;
+		public string Spec => $"Q({Ax.Spec}){Axon?.Spec}" ;
+		public double[] this[ double x , int by = 0 ] { get { double[] pre = null ; foreach( var q in Content ) if( (pre??=q)[by]<=x && q[by]>=x || pre[by]>=x && q[by]<=x ) return pre ; else pre = q ; return null ; } }
 		public class Para : Aid.Collections.ObservableList<double[]> , Quantilable
 		{
 			public bool Ready ; int ready ;
@@ -70,7 +72,14 @@ namespace Rob.Act.Analyze
 			}
 			public override IEnumerator<double[]> GetEnumerator() { Insure() ; return base.GetEnumerator() ; }
 			async Task<int> Quantilable.Count() { if( !Ready ) await Task.Factory.StartNew(()=>System.Threading.SpinWait.SpinUntil(()=>Ready)) ; return base.Count ; }
+			public string Spec => $"Q({Ax.Spec}){Axon?.Spec}" ;
+			public double[] this[ double x , int by = 0 ] { get { double[] pre = null ; foreach( var q in this ) if( (pre??=q)[by]<=x && q[by]>=x || pre[by]>=x && q[by]<=x ) return pre ; else pre = q ; return null ; } }
 		}
+	}
+	static class QuantilableExtension
+	{
+		public static bool IsQuantile( this string axe ) => axe.StartsBy("Q(") ;
+		public static string QuantileAx( this string quantile ) => quantile.RightFromFirst("Q(").LeftFrom(')') ;
 	}
 	public class Filter : Aid.Collections.ObservableList<Filter.Entry>.Filtered
 	{
