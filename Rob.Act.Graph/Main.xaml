@@ -255,7 +255,7 @@
                     </TabControl.ContentTemplate>
                 </TabControl>
             </TabItem>
-            <TabItem Header="Quantile" Name="QuantileTab">
+            <TabItem Header="Quantile" Name="QuantileTab" MouseRightButtonDown="Quantile_MouseRightButtonDown">
                 <TabControl Name="QuantileTabs" ItemsSource="{Binding Quantiles}" DisplayMemberPath="Spec" TabStripPlacement="Bottom">
                     <!---->
                     <TabControl.ContentTemplate>

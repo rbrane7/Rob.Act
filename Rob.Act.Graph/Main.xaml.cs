@@ -313,6 +313,7 @@ namespace Rob.Act.Analyze
 			}
 		}
 		void Aspect_MouseRightButtonDown( object sender , MouseButtonEventArgs e ) { ViewType = "Aspect" ; Aspect = AspectSelection ; }
+		void Quantile_MouseRightButtonDown( object sender , MouseButtonEventArgs e ) { ViewType = "Quantile" ; Quantiles = Aspect ; }
 		void Spectrum_MouseRightButtonDown( object sender , MouseButtonEventArgs e )
 		{
 			if( Aspect is Path.Aspect ) return ;
