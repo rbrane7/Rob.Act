@@ -30,12 +30,12 @@ namespace Rob.Act
 				(TimeSpan Time,Quant Distance,Quant Beat,uint Bit,Quant Energy,Quant Drag,Quant Effort,Mark Mark) accu = default ;
 				(uint bit,double time,double dist,uint beat,uint power,uint drag,double pace,uint effort,Mark mark) last = default ;
 				uint idrag = 0 ; Quant atime = 0 , adist = 0 ; IEnumerable<(Quant time,Quant dist)> laps = null ; string[] lvals = null ;
-				foreach( var line in data.SeparateTrim('\n').Select(l=>l.Trim()) )
+				foreach( var line in data.SeparateTrim('\n',braces:null).Select(l=>l.Trim()) )
 				{
 					if( Sign(line) )
 					{
-						Data.Add(accu) ; var lapo = laps?.LastOrDefault() ?? default ;
-						laps = line.RightFrom(Axes[^7]+'=').LeftFrom('"').SeparateTrim(';',false)?.Select(e=>(e.LeftFrom(',').Parse<Quant>(0)+lapo.time,e.RightFrom(',').Parse<Quant>(0)+lapo.dist)).ToArray() ;
+						Data.Add(accu) ; var lapo = laps?.LastOrDefault() ;
+						laps = line.RightFrom(Axes[^7]+'=').LeftFrom('"').SeparateTrim(';',false)?.Select(e=>(e.LeftFrom(',').Parse<Quant>(0)+(lapo??default).time,e.RightFrom(',').Parse<Quant>(0)+(lapo??default).dist)).Get(s=>lapo.Get(s.Prepend)??s).ToArray() ;
 						if( line.RightFrom(Axes[^6]+'=').LeftFrom('"') is string refine && !Refine.Includes(refine) ) if( Refine.No() ) Refine = refine ; else Refine += $"+{refine}" ;
 						if( line.RightFrom(Axes[^5]+'=').LeftFrom('"') is string locus && !Locus.Includes(locus) ) if( Locus.No() ) Locus = locus ; else Locus += $" {locus}" ;
 						if( line.RightFrom(Axes[^4]+'=').LeftFrom('"') is string subject && !Subject.Includes(subject) ) if( Subject.No() ) Subject = subject ; else Subject += $" {subject}" ;
@@ -52,7 +52,7 @@ namespace Rob.Act
 					time += atime ; dist += adist ; var lim = laps?.FirstOrDefault(l=>last.time<l.time&&l.time<=time)??default ;
 					if( lim.time!=default ) { /*dist -= (time-lim.time)*velo ;*/ dist = lim.dist ; time = lim.time ; mark = Mark.Act ; } // Limits adjustion
 					bit = Math.Max(bit,last.bit+1) ; var db = bit-last.bit ; var ib = Interpolate ? 1 : db ; var dt = TimeSpan.FromSeconds((time-last.time)*ib/db) ; accu.Bit = bit ;
-					//if( dist<last.dist ) dist = last.dist+dt.TotalSeconds*velo ; // correction not necessary and parasitein some cases
+					//if( dist<last.dist ) dist = last.dist+dt.TotalSeconds*velo ; // correction not necessary and parasite in some cases
 					var ds = (dist-last.dist)*ib/db ;
 					for( var i=ib ; i<=db ; i+=ib )/*interpolation*/
 					{

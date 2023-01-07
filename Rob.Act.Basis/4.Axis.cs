@@ -20,7 +20,7 @@ namespace Rob.Act
 	public class Axe : Axable , INotifyPropertyChanged
 	{
 		public const string Extern = LambdaContext.Act.Extern ;
-		public readonly static Support No = new(resolver:i=>null as Quant?) , One = new(resolver:i=>1) , Zero = new(resolver:i=>1) ;
+		public readonly static Support No = new(resolver:i=>null) , One = new(resolver:i=>1) , Zero = new(resolver:i=>0) ;
 		public event PropertyChangedEventHandler PropertyChanged { add => propertyChanged += value.DispatchResolve() ; remove => propertyChanged -= value.DispatchResolve() ; } PropertyChangedEventHandler propertyChanged ;
 		public Axe() : this(null,null) {} // Default constructor must be present to enable DataGrid implicit Add .
 		public Axe( Func<int,Quant?> resolver = null , Axe source = null , Func<int> counter = null )
@@ -141,7 +141,7 @@ namespace Rob.Act
 		public static Axe operator%( Axe x , Quant dif ) => new Jot.Axe(x,dif) ;
 		public static Axe operator%( Axe x , decimal dif ) => new Jot.Axe(x,(Quant)dif/2,-(Quant)dif/2) ;
 		public static Axe operator%( Axe x , float mod ) => x==null ? No : new Axe( i=>x[i]%mod , x ) ;
-		public static Axe operator%( Axe x , byte mod ) => x==null ? One : new Axe( i=>x[i]%(mod+1) is Quant v ? v>mod-1&&v<=mod ? 1 : null : null , x ) ;
+		public static Axe operator%( Axe x , byte mod ) => x==null ? One : new Axe( i=>x[i]%mod is Quant v ? Math.Ceiling(v)%mod : null , x ) ;
 		public static Axe operator%( Axe x , Region mod ) => x==null ? No : x.Floe(mod) ;
 		public static Axe operator%( Axe x , Support y ) => x==null ? No : x.Floe(y.Fragment) ;
 		public static Axe operator%( Axe x , Axe y ) => x==null ? No : y is Support s ? x.Floe(s.Fragment) : y is null ? x : new Axe( i=>x[i]%y[i] , x ) ;
@@ -188,7 +188,7 @@ namespace Rob.Act
 		public static Axe operator&( Quant x , Axe y ) => y.Nil(v=>v<x) ;
 		public static Axe operator&( Axe x , Func<Quant,bool> y ) => x.Nil(v=>!y(v)) ;
 		public static Axe operator&( Axe x , Func<Quant,Quant> y ) => x.Fun(y) ;
-		public static Axe operator|( Axe x , Axe y ) => x==null ? y : y==null ? x : new Axe( i => x[i]*y[i]??x[i]??y[i] , x ) ;
+		public static Axe operator|( Axe x , Axe y ) => x==null ? y : y==null ? x : new( i => x[i]*y[i]??x[i]??y[i] , x ) ;
 		public static implicit operator Axe( Func<int,Quant?> resolver ) => resolver.Get(r=>new Axe(r)) ;
 		public static implicit operator Axe( Quant q ) => new( i=>q ) ;
 		public static implicit operator Axe( int q ) => new( i=>q ) ;

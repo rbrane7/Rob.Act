@@ -332,12 +332,14 @@
                 <CommandBinding Command="Delete" Executed="DataGridDeleteCommandBinding_Executed"/>
                 <CommandBinding Command="Stop" Executed="DataGrid_Stop_CommandBinding_Executed"/>
                 <CommandBinding Command="Save" Executed="DataGrid_Enter_CommandBinding_Executed"/>
+                <CommandBinding Command="Open" Executed="DataGrid_Open_CommandBinding_Executed"/>
             </DataGrid.CommandBindings>
             <DataGrid.InputBindings>
                 <KeyBinding Command="Stop" Key="Esc" Modifiers="Shift"/>
                 <KeyBinding Command="Save" Key="Return" Modifiers="Shift" CommandParameter="2"/>
-                <KeyBinding Command="Save" Key="Return" Modifiers="Alt" CommandParameter="1"/>
+                <KeyBinding Command="Save" Key="Return" Modifiers="Shift+Ctrl" CommandParameter="1"/>
                 <KeyBinding Command="Save" Key="Return" Modifiers="Ctrl" CommandParameter="0"/>
+                <KeyBinding Command="Open" Key="Return" Modifiers="Alt"/>
             </DataGrid.InputBindings>
         </DataGrid>
         <DataGrid Name="ActionFilterGrid" Grid.Row="0" Grid.Column="2" ItemsSource="{Binding ActionFilter}" AutoGenerateColumns="False" SelectionChanged="ActionFilterGrid_SelectionChanged" Margin="2" CanUserResizeRows="False" MouseRightButtonUp="ActionsFilterGrid_MouseRightButtonUp">
@@ -391,7 +393,11 @@
                 <CommandBinding Command="Paste" Executed="DataGrid_Paste_CommandBinding_Executed"/>
                 <CommandBinding Command="Cut" Executed="DataGrid_Cut_CommandBinding_Executed"/>
                 <CommandBinding Command="Backspace" Executed="DataGrid_Cut_CommandBinding_Executed"/>
+                <CommandBinding Command="Open" Executed="DataGrit_Open_CommandBinding_Executed"/>
             </DataGrid.CommandBindings>
+            <DataGrid.InputBindings>
+                <KeyBinding Command="Open" Key="Return" Modifiers="Alt"/>
+            </DataGrid.InputBindings>
         </DataGrid>
         <Grid Grid.Row="2" Grid.Column="2">
             <Grid.RowDefinitions>

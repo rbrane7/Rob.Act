@@ -26,6 +26,7 @@ namespace Rob.Act.Analyze
 {
 	using Book = Gen.Book ;
 	using System.Text.RegularExpressions ;
+	using Aid;
 
 	/// <summary>
 	/// Interaction logic for MainWindow.xaml
@@ -58,12 +59,11 @@ namespace Rob.Act.Analyze
 			}
 		}
 		public State State { get => state ; private set => state = (value??new()).Set(s=>s.Context=this) ; } State state ;
-		//FileSystemWatcher[] WorkoutsWatchers ;
 		public event PropertyChangedEventHandler PropertyChanged ;
 		void PropertyChangedOn<Value>( string properties , Value value ) => Dispatcher.Invoke(()=>{ PropertyChanged.On(this,properties,value) ; if( properties.Consists("Sources") ) Redraw() ; }) ;
 		public Main()
 		{
-			InitializeComponent() ; Presources = new Presources(BookGrid,this) ; AppDomain.CurrentDomain.Load(typeof(AxeOperations).Assembly.FullName) ; ViewPanel = GraphPanel ; DataContext = this ;
+			InitializeComponent() ; Presources = new(BookGrid,this) ; AppDomain.CurrentDomain.Load(typeof(AxeOperations).Assembly.FullName) ; ViewPanel = GraphPanel ; DataContext = this ;
 			Doct += (this,"Main") ; Aspectables.The = (()=>Book.Entries.Select(p=>p.Spectrum).Union(Aspects.Entries),()=>Aspects.Entries) ; SourcesGrid.ItemContainerGenerator.ItemsChanged += SourcesGrid_ItemsChanged ; Task.Factory.StartNew(Load) ;
 			Title = $"{Aid.The.Run.Appi} {System.Reflection.Assembly.GetEntryAssembly().GetName().Version} {Setup.Doctee} {setup.Config}" ;
 			LevelKeyUp += async ()=>{ var resel = Reselection.ToArray() ; Reselection.Clear() ; await Task.Run(()=>Main_LevelKeyUp(resel)) ; } ;
@@ -71,12 +71,11 @@ namespace Rob.Act.Analyze
 		void Main_LevelKeyUp( IEnumerable<KeyValuePair<object,List<SelectionChangedEventArgs>>> reselection )
 		{
 			foreach( var entry in reselection )
-				if( entry.Key == BookGrid ) try { CumulativeUpdate = true ; BookGrid_SelectionChanged(entry.Key,entry.Value) ; } finally { CumulativeUpdate = false ; }
-				else if( entry.Key == SourcesGrid ) try { CumulativeUpdate = true ; SourcesGrid_SelectionChanged(entry.Key,null) ; } finally { CumulativeUpdate = false ; }
-				else if( entry.Key == AspectAxisGrid ) Dispatcher.Invoke(()=>{CumulativeUpdate=true;try{AspectAxisGrid_SelectionChanged(entry.Key,entry.Value.SelectionsItems());}finally{CumulativeUpdate=false;}}) ;
-				else if( entry.Key == AspectsGrid ) Dispatcher.Invoke(()=>{CumulativeUpdate=true;try{AspectTabs_Selected(entry.Value.SelectionsItems().adds?[0]);}finally{CumulativeUpdate=false;}}) ;
+				if( entry.Key == BookGrid ) BookGrid_SelectionChanged(entry.Key,entry.Value) ;
+				else if( entry.Key == SourcesGrid ) SourcesGrid_SelectionChanged(entry.Key,null) ;
+				else if( entry.Key == AspectAxisGrid ) Dispatcher.Invoke(()=>AspectAxisGrid_SelectionChanged(entry.Key,entry.Value.SelectionsItems())) ;
+				else if( entry.Key == AspectsGrid ) Dispatcher.Invoke(()=>AspectTabs_Selected(entry.Value.SelectionsItems().adds?[0])) ;
 		}
-		bool CumulativeUpdate ;
 		void Load()
 		{
 			Setup.Altiplane.nil(a=>a.Grade==0).Use(g=>{
@@ -84,16 +83,15 @@ namespace Rob.Act.Analyze
 				foreach( var a in System.IO.Directory.GetFiles(Setup.StatePath,$"{Altiplane.FileSign}*{Path.Altiplane.ExtSign}") ) { Trace.TraceInformation($"Loading {a}") ; Path.Altiplanes.Add(new Path.Altiplane(a){Radius=g.Radius}) ; }
 				if( Path.Altiplanes.Count==0 ) Path.Altiplanes.Add(new Path.Altiplane(g.Grade,g.Grane){Radius=g.Radius}) ;
 			}) ;
-			var fs = 
-			Setup.WorkoutsPaths.SeparateTrim('|').SelectMany(l=>l.MatchingFiles(Setup?.WorkoutsSeed)) ; fs.EachGuard(f=>NewAction(f,Setup?.WorkoutsFilter).Set(a=>Trace.TraceInformation($"{(Setup?.WorkoutsFilter?.Invoke(a)!=false?"Loaded":"Ignored")} {f}")),(f,e)=>Trace.TraceError($"{f} faulted by {e}")) ;
+			var fs = Setup.WorkoutsPaths.SeparateTrim('|').SelectMany(l=>l.MatchingFiles(Setup?.WorkoutsSeed)) ; fs.EachGuard(f=>NewAction(f,Setup?.WorkoutsFilter).Set(a=>Trace.TraceInformation($"{(Setup?.WorkoutsFilter?.Invoke(a)!=false?"Loaded":"Ignored")} {f}")),(f,e)=>Trace.TraceError($"{f} faulted by {e}")) ;
 			Setup.AspectsPaths.SeparateTrim('|').SelectMany(l=>l.MatchingFiles()).EachGuard(f=>{Trace.TraceInformation($"Loading {f}");NewAspect(f,Setup?.AspectsFilter);},(f,e)=>Trace.TraceError($"{f} faulted by {e}")) ;
-			/*WorkoutsWatchers =*/ Setup.WorkoutsPaths.SeparateTrim('|').Select(l=>new FileSystemWatcher(l){EnableRaisingEvents=true}.Set(w=>{ w.Edited += NewAction ; w.Deleted += (s,a)=>Book-=p=>p.Origin==a.FullPath ; })).Each() ;
-			State = new State{ Context = this } ;
+			Setup.WorkoutsPaths.SeparateTrim('|').Select(l=>new FileSystemWatcher(l){EnableRaisingEvents=true}.Set(w=>{ w.Edited += NewAction ; w.Deleted += (s,a)=>Book-=p=>p.Origin==a.FullPath ; })).Each() ;
+			State = new(){ Context = this } ;
 		}
 		protected override void OnClosing( CancelEventArgs e ) { Doct?.Dispose() ; base.OnClosing(e) ; }
 		protected override void OnClosed( EventArgs e ) { base.OnClosed(e) ; Process.GetCurrentProcess().Kill() ; }
 		Path NewAction( string file , Predicate<Pathable> filter = null ) => file?.Reconcile().Internalize().Set(p=>p.Origin=file).Set(Translation.Partitionate).Set(p=>p.Spectrum.Reform(Setup.SpectrumBinds)).Set(p=>{Book|=filter?.Invoke(p)!=false?p:null;if(Book.Contains(p)){ActionEnhancing(p,ActiveRefiner);Dispatcher.Invoke(SaveBook);}}) ;
-		void NewAction( object subject , System.IO.FileSystemEventArgs arg ) => NewAction(arg.FullPath.Null(f=>Setup?.WorkoutsSeed?.Invoke(new System.IO.FileInfo(f))==false),Setup?.WorkoutsFilter).Set(p=>Path.Medium?.Interact(p,true)) ;
+		void NewAction( object subject , System.IO.FileSystemEventArgs arg ) => NewAction(arg.FullPath.Null(f=>Setup?.WorkoutsSeed?.Invoke(new System.IO.FileInfo(f))==false),Setup?.WorkoutsFilter) .Set(p=>Path.Medium?.Interact(p,true)) .Null(p=>!Book.Contains(p,new Aid.Equalizer<Pathable,string>(p=>p.Origin))).Set(_=>Dispatcher.Invoke(()=>ActionFilterGrid_SelectionChanged(ActionFilterGrid))) ;
 		void NewAspect( string file , Predicate<Aspect> filter = null ) => ((Aspect)file.ReadAllText()).Set(a=>a.Origin=file).Set(a=>Aspects+=filter?.Invoke(a)!=false?a:null) ;
 		public Book Book { get ; private set ; } = new("Main") ;
 		public Filter ActionFilterFilter { get => actionFilterFilter ; internal set { if( value==actionFilterFilter ) return ; actionFilterFilter = value ; PropertyChanged.On(this,"ActionFilterFilter") ; } } Filter actionFilterFilter ;
@@ -108,7 +106,7 @@ namespace Rob.Act.Analyze
 		void ActionFilterFilterGrid_SelectionChanged( object sender , SelectionChangedEventArgs e ) { BlockUpdate.Book = true ; try { FilterGrid_SelectionChanged<Filter.Entry>(sender,f=>{ActionFilter.Refinement=f;}) ; } finally { BlockUpdate.Book = false ; } }
 		async void BookGrid_SelectionChanged( object sender , SelectionChangedEventArgs e ) { if( BlockUpdate.Sources ) return ; if( KeyLevel==default ) { await Task.Factory.StartNew(()=>Resources_Update(e.AddedItems,e.RemovedItems)) ; Grid_Coloring(sender) ; } else (Reselection[sender]??=new()).Add(e) ; }
 		void BookGrid_SelectionChanged( object sender , IList<SelectionChangedEventArgs> e ) { var(add,rem) = e.SelectionsItems() ; Resources_Update(add,rem) ; Dispatcher.Invoke(()=>Grid_Coloring(sender)) ; }
-		void ActionFilterGrid_SelectionChanged( object sender , SelectionChangedEventArgs e )
+		void ActionFilterGrid_SelectionChanged( object sender , SelectionChangedEventArgs e = null )
 		{
 			if( BlockUpdate.Book ) return ; Presources.Snapshot() ; using( new Aid.Closure(()=>BlockUpdate.Sources=true,()=>BlockUpdate.Sources=false) )
 			FilterGrid_SelectionChanged<Pathable,Associable>(sender,async a=>{Book.Refinement=a.Select(f=>(f.Filter,f.Query));BookGrid_AutoGeneratedColumns();Presources.Reselect();await Task.Factory.StartNew(()=>ActionsEnhancing(a));BookGrid_AutoGeneratedColumns();Presources.Reselect();}) ;
@@ -296,7 +294,7 @@ namespace Rob.Act.Analyze
 			{
 				if( Asel is null )
 					if( AspectsGrid.SelectedItems.Count<2 /*&& !CumulativeUpdate*/ ) Asel = AspectsGrid.SelectedItem as Aspect ; else
-					if( AspectsGrid.SelectedItems.OfType<Aspect>() is var nex && nex.Count()>0 ) Asel = new Aspect(/*CumulativeUpdate?nex.prepend(Aspect):*/nex) ; // creates proble with unselectins , looks contraproductive at all
+					if( AspectsGrid.SelectedItems.OfType<Aspect>() is var nex && nex.Count()>0 ) Asel = new Aspect(/*CumulativeUpdate?nex.prepend(Aspect):*/nex) ; // creates proble with unselections , looks contraproductive at all
 				return Asel ;
 			}
 			set => Asel = value ;
@@ -448,7 +446,7 @@ namespace Rob.Act.Analyze
 				}
 			}
 			Hypercube = rng.Where(a=>xaxe.Spec==a.Key||yaxes.Contains(a.Key)).OrderBy(e=>e.Key==xaxe.Spec?0:Array.IndexOf(yaxes,e.Key)+1).ToArray() ; var co = Coordinates.ToLookup(c=>c.Axe) ; Coordinates.Clear() ;
-			Hypercube.Each(e=>Coordinates+=co[e.Key].One().Set(c=>{c.Range=e.Value;c.Bond=axes.FirstOrDefault(a=>a.Spec==e.Key)?.Binder;})??new Coordinate(this,e.Key){Range=e.Value,Bond=axes.FirstOrDefault(a=>a.Spec==e.Key)?.Binder}) ;
+			Hypercube.Each(e=>Coordinates+=co[e.Key].One().Set(c=>{c.Range=e.Value;c.Bond=axes.FirstOrDefault(a=>a.Spec==e.Key)?.Binder;})??new(this,e.Key){Range=e.Value,Bond=axes.FirstOrDefault(a=>a.Spec==e.Key)?.Binder}) ;
 			if( Focusation.Source is not null )
 			foreach( var foc in Focusation.Source ) if( foc.At is int fo && (val.at(a=>a.Aspect==foc.Spec)??val[0]) is var src && -1 is int ay && 0D is double fx && coloring.By(src.Aspect) is SolidColorBrush cof )
 			foreach( var cor in Coordinates ) if( ++ay>=0 && ( cor.Value = src.Axes.at(a=>a.Spec==cor.Axe)?.Val.At(fo) ) is double fa ) if( ay==0 ) fx = fa ; else
@@ -561,7 +559,7 @@ namespace Rob.Act.Analyze
 				++shift ;
 			}
 			Hypercube = rng.Where(a=>xaxe.Spec==a.Key||yaxes.Contains(a.Key)).OrderBy(e=>e.Key==xaxe.Spec?0:Array.IndexOf(yaxes,e.Key)+1).ToArray() ; var co = Coordinates.ToLookup(c=>c.Axe) ; Coordinates.Clear() ;
-			Hypercube.Each(e=>Coordinates+=co[e.Key].One().Set(c=>{c.Range=e.Value;c.Bond=axes.FirstOrDefault(a=>a.Spec==e.Key)?.Binder;})??new Coordinate(this,e.Key){Range=e.Value,Bond=axes.FirstOrDefault(a=>a.Spec==e.Key)?.Binder}) ;
+			Hypercube.Each(e=>Coordinates+=co[e.Key].One().Set(c=>{c.Range=e.Value;c.Bond=axes.FirstOrDefault(a=>a.Spec==e.Key)?.Binder;})??new(this,e.Key){Range=e.Value,Bond=axes.FirstOrDefault(a=>a.Spec==e.Key)?.Binder}) ;
 			if( Focusation.Source.At(0).At is int fo && val[0].Axes.FirstOrDefault(a=>a.Spec==xaxe.Spec).Val.At(fo) is double fx && val[0].Axes.FirstOrDefault(a=>a.Spec==yaxes[0]).Val.At(fo) is double fy )
 			{
 				foreach( var cor in Coordinates ) cor.Value = val[0].Axes.FirstOrDefault(a=>a.Spec==cor.Axe).Val.At(fo) ;
@@ -582,7 +580,7 @@ namespace Rob.Act.Analyze
 				var brush = new SolidColorBrush(new Color{A=127,R=127,G=127,B=127}) ; var dash = new DoubleCollection{4} ;
 				for( var m=0 ; m<=hor ; m+=50 ) GraphPanel.Children.Add( new Line{ X1 = m , Y1 = 0 , X2 = m , Y2 = ver , Stroke = brush , StrokeDashArray = dash } ) ;
 				for( var m=ver ; m>=0 ; m-=50 ) GraphPanel.Children.Add( new Line{ X1 = 0 , Y1 = m , X2 = hor , Y2 = m , Stroke = brush , StrokeDashArray = dash } ) ;
-				brush = new SolidColorBrush(new Color{A=63,R=191,G=191,B=191}) ; dash = new DoubleCollection{8} ;
+				brush = new(new(){A=63,R=191,G=191,B=191}) ; dash = new(){8} ;
 				for( var m=0 ; m<=hor ; m+=10 ) GraphPanel.Children.Add( new Line{ X1 = m , Y1 = 0 , X2 = m , Y2 = ver , Stroke = brush , StrokeDashArray = dash } ) ;
 				for( var m=ver ; m>=0 ; m-=10 ) GraphPanel.Children.Add( new Line{ X1 = 0 , Y1 = m , X2 = hor , Y2 = m , Stroke = brush , StrokeDashArray = dash } ) ;
 			}
@@ -608,7 +606,7 @@ namespace Rob.Act.Analyze
 				++k ;
 			}
 			Hypercube = rng ; var co = Coordinates.ToLookup(c=>c.Axe) ; Coordinates.Clear() ; // drawing of coordinates box
-			rng.Each(e=>Coordinates+=co[e.Key].One().Set(c=>{c.Range=e.Value;c.Bond=axes.FirstOrDefault(a=>a.Spec==e.Key||a.Spec==e.Key.RightFrom(')'))?.Binder;})??new Coordinate(this,e.Key){Range=e.Value,Bond=axes.FirstOrDefault(a=>a.Spec==e.Key||a.Spec==e.Key.RightFrom(')'))?.Binder}) ;
+			rng.Each(e=>Coordinates+=co[e.Key].One().Set(c=>{c.Range=e.Value;c.Bond=axes.FirstOrDefault(a=>a.Spec==e.Key||a.Spec==e.Key.RightFrom(')'))?.Binder;})??new(this,e.Key){Range=e.Value,Bond=axes.FirstOrDefault(a=>a.Spec==e.Key||a.Spec==e.Key.RightFrom(')'))?.Binder}) ;
 			if( Focusation.Source is not null && "" is var xaxe )
 			foreach( var foc in Focusation.Source ) if( Focusation.Source.IndexWhere(s=>s.Spec==foc.Spec) is int fo && -1 is int ay && 0D is double fx && coloring.By(foc.Spec) is SolidColorBrush cof )
 			foreach( var cor in Coordinates ) if( ++ay>=0 && cor.Value is double fa ) if( (ay&1)==0 ) { fx = fa ; xaxe = cor.Axe ; } else if( ( cor.Value = QuantileData.At(cor.Axe.QuantileAx())?[fx]?[fo+1] ) is double fy )
@@ -631,7 +629,7 @@ namespace Rob.Act.Analyze
 		static string Format( double value , int prec = 3 ) => value.ToString("#."+new string('#',DecDigits(value,prec))) ;
 		IEnumerable<KeyValuePair<string,(double Min,double Max)>> Hypercube ; (double Width,double Height) ViewSize , ViewOrigin ; (Line X,Line Y) MouseCross ; (IList<Line> Axe,IList<Label> Val) ScreenCross = (new List<Line>(),new List<Label>()) ;
 		(double Width,double Height) ViewScreenBorder => (DisplayTable.Margin.Left+DisplayTable.Margin.Right+4,30) ;
-		static readonly Color[] Colos = new[]{ new Color{A=255,R=255,G=0,B=0} , new Color{A=255,R=0,G=200,B=0} , new Color{A=255,R=0,G=0,B=255} , new Color{A=255,R=191,G=191,B=0} , new Color{A=255,R=0,G=191,B=191} , new Color{A=255,R=191,G=0,B=191} , new Color{A=255,R=223,G=159,B=0} , new Color{A=255,R=159,G=223,B=0} , new Color{A=255,R=0,G=223,B=159} , new Color{A=255,R=0,G=159,B=223} , new Color{A=255,R=159,G=0,B=223} , new Color{A=255,R=223,G=0,B=159} } ;
+		static readonly Color[] Colos = new Color[]{ new(){A=255,R=255,G=0,B=0} , new(){A=255,R=0,G=200,B=0} , new(){A=255,R=0,G=0,B=255} , new(){A=255,R=191,G=191,B=0} , new(){A=255,R=0,G=191,B=191} , new(){A=255,R=191,G=0,B=191} , new(){A=255,R=223,G=159,B=0} , new(){A=255,R=159,G=223,B=0} , new(){A=255,R=0,G=223,B=159} , new(){A=255,R=0,G=159,B=223} , new(){A=255,R=159,G=0,B=223} , new(){A=255,R=223,G=0,B=159} } ;
 		static readonly FontStretch[] Fostres = new[]{ FontStretches.UltraExpanded , FontStretches.ExtraExpanded , FontStretches.Expanded , FontStretches.SemiExpanded , FontStretches.Normal , FontStretches.SemiCondensed , FontStretches.Condensed , FontStretches.ExtraCondensed , FontStretches.UltraCondensed } ;
 		static readonly FontWeight[] Foweis = new[]{ /*FontWeights.ExtraBlack , FontWeights.Black ,*/ FontWeights.ExtraBold , FontWeights.Bold , FontWeights.SemiBold , FontWeights.Medium , FontWeights.Normal , FontWeights.Light , FontWeights.ExtraLight , FontWeights.Thin } ;
         static Color Coloring( int index ) => index<0 ? Colors.Black : Colos[index%Colos.Length] ;
@@ -678,7 +676,7 @@ namespace Rob.Act.Analyze
 			grid.Columns[2].Visibility = state ? Visibility.Collapsed : Visibility.Visible ; grid.Columns[3].Visibility = state ? Visibility.Collapsed : Visibility.Visible ;
 			grid.Columns[1].Width = state ? new DataGridLength(1,DataGridLengthUnitType.Star) : DataGridLength.Auto ;
 		}
-		public Aid.Collections.ObservableList<Coordinate> Coordinates {get;private set;} = new Aid.Collections.ObservableList<Coordinate>() ;
+		public Aid.Collections.ObservableList<Coordinate> Coordinates {get;private set;} = new() ;
 		public System.Windows.Point? MousePoint
 		{
 			get => mousePoint ; set
@@ -686,8 +684,8 @@ namespace Rob.Act.Analyze
 				MouseCross.X.Set(ViewPanel.Children.Remove) ; MouseCross.Y.Set(ViewPanel.Children.Remove) ; if( value is not System.Windows.Point point ) return ;
 				if( point.X<0 ) point.X = 0 ; if( point.Y<0 ) point.Y = 0 ; var maf = MainFrameSize ; if( point.X>maf.Width ) point.X = maf.Width ; if( point.Y>maf.Height ) point.Y = maf.Height ;
 				var asp = Hypercube is Array ; PropertyChanged.On( this, "MousePoint", (mousePoint=point).Use(m=>Hypercube.Each(a=>CoordinateSet(m,a,asp))) ) ;
-				ViewPanel.Children.Add( MouseCross.X = new Line{ Stroke=Brushes.Gray , X1=0 , X2=maf.Width , Y1=point.Y , Y2=point.Y } ) ;
-				ViewPanel.Children.Add( MouseCross.Y = new Line{ Stroke=Brushes.Gray , Y1=0 , Y2=maf.Height , X1=point.X , X2=point.X } ) ;
+				ViewPanel.Children.Add( MouseCross.X = new(){ Stroke=Brushes.Gray , X1=0 , X2=maf.Width , Y1=point.Y , Y2=point.Y } ) ;
+				ViewPanel.Children.Add( MouseCross.Y = new(){ Stroke=Brushes.Gray , Y1=0 , Y2=maf.Height , X1=point.X , X2=point.X } ) ;
 			}
 		}
 		void CoordinateSet( System.Windows.Point m , KeyValuePair<string,(double Min,double Max)> a , bool asp )
@@ -705,7 +703,7 @@ namespace Rob.Act.Analyze
 		void TransitionSet()
 		{
 			if( MousePoint is System.Windows.Point point && Hypercube is IList<KeyValuePair<string,(double Min,double Max)>> hyp && hyp.Count>0 ); else return ;
-			IList<(string Axe,double Value)> value = new List<(string Axe,double Value)>() ; var map = MapTab.IsSelected ; for( var i=0 ; i<hyp.Count ; ++i )
+			List<(string Axe,double Value)> value = new() ; var map = MapTab.IsSelected ; for( var i=0 ; i<hyp.Count ; ++i )
 				if( i==0 ) value.Add((hyp[i].Key,AxeInnerByOuterX(AxeXByMouse(point,hyp[i]),hyp[i].Value))) ;
 				else if( i==1 ) value.Add((hyp[i].Key,AxeInnerByOuterY(AxeYByMouse(point,hyp[i]),hyp[i].Value))) ;
 				//else if( map && AxeZByMouse(hyp[i].Key) is double v ) value.Add((hyp[i].Key,v)) ;
@@ -753,7 +751,7 @@ namespace Rob.Act.Analyze
 				else { ScreenCross.Axe.Each(ViewPanel.Children.Remove) ; ScreenCross.Val.Each(ViewPanel.Children.Remove) ; ScreenCross.Axe.Clear() ; ScreenCross.Val.Clear() ; }
 			}
 		}
-		System.Windows.Point? ScreenMouse { get { if( ScreenRect==null || MousePoint==null ) return MousePoint ; (var width,var height) = MainFrameSize ; var p = MousePoint.Value ; var r = ScreenRect.Value ; return new System.Windows.Point(p.X*r.Size.Width/width+r.Location.X,p.Y*r.Size.Height/height+r.Location.Y) ; } }
+		System.Windows.Point? ScreenMouse { get { if( ScreenRect is null || MousePoint is null ) return MousePoint ; (var width,var height) = MainFrameSize ; var p = MousePoint.Value ; var r = ScreenRect.Value ; return new(p.X*r.Size.Width/width+r.Location.X,p.Y*r.Size.Height/height+r.Location.Y) ; } }
 		void ViewPanel_MouseDown( object sender , MouseButtonEventArgs e ) { ScreenOrigin = MousePoint ; if( MousePoint is System.Windows.Point && Keyboard.Modifiers==ModifierKeys.Control ) CorrectionSet() ; }
 		void DisplayTable_MouseUp( object sender , MouseButtonEventArgs e ) { if( ScreenMouse==ScreenOrigin || Keyboard.Modifiers!=ModifierKeys.None ) return ; var scr = ScreenOrigin.Get(s=>ScreenMouse.use(p=>new Rect(s,p))) ; if( scr==ScreenRect ) return ; ScreenRect = scr ; Focusation.Source = null ;  Redraw() ; }
 		void DisplayTable_MouseDoubleClick( object sender = null , MouseButtonEventArgs e = null ) { ScreenOrigin = null ; ScreenRect = null ; Focusation.Source = null ; Redraw() ; }
@@ -828,14 +826,16 @@ namespace Rob.Act.Analyze
 			if( sender as DataGrid is not DataGrid grid || grid.ItemsSource is not IList items ) return ; var seli = grid.SelectedIndex.nil(i=>i<0)??items.Count ;
 			foreach( var line in Clipboard.GetText().SeparateTrim(Environment.NewLine,voids:false,braces:"{}") ) if( line.Separate('\t',braces:"{}") is string[] traits ) item?.Invoke(traits).Set(i=>items.Insert(seli,i)) ;
 		}
-		void DataGrid_Cut_CommandBinding_Executed( object sender, ExecutedRoutedEventArgs _=null ) { if( sender is not DataGrid grid ) return ; ApplicationCommands.Copy.Execute(null,grid) ; ApplicationCommands.Delete.Execute(null,grid) ; }
+		void DataGrid_Cut_CommandBinding_Executed( object sender , ExecutedRoutedEventArgs _=null ) { if( sender is not DataGrid grid ) return ; ApplicationCommands.Copy.Execute(null,grid) ; ApplicationCommands.Delete.Execute(null,grid) ; }
+		void DataGrit_Open_CommandBinding_Executed( object subject , ExecutedRoutedEventArgs _=null ) => ActionFilterGrid_SelectionChanged(subject) ;
 		#endregion
 
 		#region Corrections
-		void DataGrid_Stop_CommandBinding_Executed( object sender , ExecutedRoutedEventArgs e ) { foreach( Path path in BookGrid.SelectedItems ) path.Corrections?.Clear() ; Redraw() ; }
-		void DataGrid_Enter_CommandBinding_Executed( object sender , ExecutedRoutedEventArgs e ) { foreach( Path path in BookGrid.SelectedItems ) if( path.Corrections?.Commit(e.Parameter.Parse((byte)2))!=true ) path.Reset() ; Redraw(true) ; }
-		void TabControl_Stop_CommandBinding_Executed( object sender , ExecutedRoutedEventArgs e ) { if( ((sender as DataGrid)?.TemplatedParent as ContentPresenter)?.Content is Path path ) path.Corrections?.Clear() ; }
-		void TabControl_Enter_CommandBinding_Executed( object sender , ExecutedRoutedEventArgs e ) { if( ((sender as DataGrid)?.TemplatedParent as ContentPresenter)?.Content is Path path ) path.Corrections?.Commit(e.Parameter.Parse((byte)2)) ; }
+		void DataGrid_Stop_CommandBinding_Executed( object sender=null , ExecutedRoutedEventArgs e=null ) { foreach( Path path in BookGrid.SelectedItems ) path.Corrections?.Clear() ; Redraw() ; }
+		void DataGrid_Enter_CommandBinding_Executed( object sender=null , ExecutedRoutedEventArgs e=null ) { foreach( Path path in BookGrid.SelectedItems ) if( path.Corrections?.Count>0 && path.Corrections?.Commit(e.Parameter.Parse((byte)2))!=true ) path.Reset() ; Redraw(true) ; }
+		void DataGrid_Open_CommandBinding_Executed( object subject=null , ExecutedRoutedEventArgs _=null ) { foreach( Path path in BookGrid.SelectedItems ) NewAction(path.Origin) ; Redraw(true) ; }
+		void TabControl_Stop_CommandBinding_Executed( object sender , ExecutedRoutedEventArgs e=null ) { if( ((sender as DataGrid)?.TemplatedParent as ContentPresenter)?.Content is Path path ) path.Corrections?.Clear() ; }
+		void TabControl_Enter_CommandBinding_Executed( object sender , ExecutedRoutedEventArgs e=null ) { if( ((sender as DataGrid)?.TemplatedParent as ContentPresenter)?.Content is Path path ) path.Corrections?.Commit(e.Parameter.Parse((byte)2)) ; }
 		#endregion
 
 		#region Keyboard

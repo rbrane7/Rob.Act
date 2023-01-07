@@ -57,7 +57,7 @@ namespace Rob.Act.Analyze
 			if( Main.Setup.Altiplane.Grade!=default ) Path.Altiplanes?.Where(a=>a.Dirty).Each(a=>a.Save(Main.Setup.StatePath.Set(p=>System.IO.Directory.CreateDirectory(p)).Path($"{Altiplane.FileSign}{a.Grade:.000}{Altiplane.ArgSep}{a.Grane:000}{Path.Altiplane.ExtSign}"))) ;
 			if( Path.Medium?.Dirty==true ) using( Path.Medium.Interrupt ) { Context.Book.Entries.OfType<Path>().ToArray().Each(p=>Path.Medium.Interact(p)) ; Path.Medium.Dirty = false ; }
 		}
-		internal Main Context { get => context ; set { context = value ; Saver?.Dispose() ; Saver = new System.Threading.Timer(Save,null,Main.Setup.SavePeriod,Main.Setup.SavePeriod) ; Load() ; } } Main context ;
+		internal Main Context { get => context ; set { context = value ; Saver?.Dispose() ; Saver = new(Save,null,Main.Setup.SavePeriod,Main.Setup.SavePeriod) ; Load() ; } } Main context ;
 	}
 	internal static class Extension
 	{

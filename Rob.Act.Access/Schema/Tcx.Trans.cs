@@ -12,7 +12,7 @@ using Aid.Serialization.XML;
 namespace Rob.Act.Tcx
 {
 	using Quant = Double ;
-#if false
+	#if false
 	public partial class TrainingCenterDatabase_t
 	{
 		[XmlIgnore] public Activity_t First => Activities.Activity.At(0) ; [XmlIgnore] public Activity_t Last => Activities.Activity.At(Activities.Activity.Length-1) ;
@@ -34,7 +34,7 @@ namespace Rob.Act.Tcx
 		public static implicit operator Path( ActivityLap_t lap ) => lap.Get( t => new Path(t.StartTime,t.Iterator) { Action = t.Notes } ) ;
 		public static implicit operator ActivityLap_t( Path path ) => path.Get( w => new ActivityLap_t { Track = (w/Mark.Stop).Select(s=>s.Select(p=>(Trackpoint_t)p).ToArray()).ToArray() } ) ;
 	}
-#else
+	#else
 	public partial class TrainingCenterDatabase_t
 	{
 		[XmlIgnore] public Activity_t First => Activities.Activity.At(0) ; [XmlIgnore] public Activity_t Last => Activities.Activity.At(Activities.Activity.Length-1) ;
@@ -62,11 +62,11 @@ namespace Rob.Act.Tcx
 	{
 		public static implicit operator Point( Trackpoint_t point ) => point.Get( p => new Point(p.Time) { [Axis.Lon] = p[Axis.Lon] , [Axis.Lat] = p[Axis.Lat] , [Axis.Alt] = p[Axis.Alt] , [Axis.Beat] = p[Axis.Beat] , [Axis.Bit] = p[Axis.Bit] } ) ;
 		public static implicit operator Trackpoint_t( Point point ) => point.Get( p => new Trackpoint_t { Time = p.Date , [Axis.Lat] = p[Axis.Lat] , [Axis.Lon] = p[Axis.Lon] , [Axis.Alt] = p[Axis.Alt] , [Axis.Beat] = p[Axis.Beat] , [Axis.Bit] = p[Axis.Bit] } ) ;
-		Position_t Sphere => Position ?? ( Position = new Position_t() ) ;
-		HeartRateInBeatsPerMinute_t Heart => HeartRateBpm ?? ( HeartRateBpm = new HeartRateInBeatsPerMinute_t() ) ;
+		Position_t Sphere => Position ??= new() ;
+		HeartRateInBeatsPerMinute_t Heart => HeartRateBpm ??= new() ;
 		public Quant? this[ Axis axis ]
 		{
-			get { switch( axis ) { case Axis.Lon : return (Quant?)Position?.LongitudeDegrees ; case Axis.Lat : return (Quant?)Position?.LatitudeDegrees ; case Axis.Alt : return AltitudeMetersSpecified ? (Quant)AltitudeMeters : null as Quant? ; case Axis.Beat : return HeartRateBpm?.Value ; case Axis.Bit : return Cadence ; default : return null ; } }
+			get => axis switch { Axis.Lon => Position?.LongitudeDegrees , Axis.Lat => Position?.LatitudeDegrees , Axis.Alt => AltitudeMetersSpecified ? (Quant)AltitudeMeters : null , Axis.Beat => HeartRateBpm?.Value , Axis.Bit => Cadence , _ => null } ;
 			set { switch( axis ) { case Axis.Lon : value.Use(v=>Sphere.LongitudeDegrees=(double)v) ; break ; case Axis.Lat : value.Use(v=>Sphere.LatitudeDegrees=(double)v) ; break ; case Axis.Alt : AltitudeMetersSpecified = null!=value.Use(v=>altitudeMetersField=(double)v) ; break ; case Axis.Beat : value.Use(v=>Heart.Value=(byte)v) ; break ; case Axis.Bit : value.Use(v=>Cadence=(byte)v) ; break ; } }
 		}
 	}

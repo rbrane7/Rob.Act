@@ -213,7 +213,7 @@ namespace Rob.Act
 		/// <returns> Extracted tags as non-null enumerable . </returns>
 		public static IEnumerable<string> ExtractTags( this string value , bool leaf = false ) => value?.TrimStart().StartsBy("?")==true ?
 			value.RightFromFirst('?').Separate(';','&').Get(elem=>Tagger.Names.Get(n=>n.Select(e=>elem.Arg(e)).Concat(elem.Except(e=>e.LeftFrom('=')??string.Empty,n)))) :
-			value.Separate(' ').Get(t=>leaf?Enumerable.Repeat<string>(null,2).Concat(t.TagsLimed(2)):t.TagsLimed())  ?? Enumerable.Empty<string>() ;
+			value.Separate(' ',braces:null).Get(t=>leaf?Enumerable.Repeat<string>(null,2).Concat(t.TagsLimed(2)):t.TagsLimed())  ?? Enumerable.Empty<string>() ;
 		/// <summary> Limits tags count to predefined count defined by <see cref="Taglet"/> if the space separated tags are positioned as lasts and they contain <see cref="Tagger.Aclutinator"/> string . </summary>
 		static IEnumerable<string> TagsLimed( this string[] tags , int skip = 0 )
 		{
