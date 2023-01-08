@@ -447,7 +447,7 @@ namespace Rob.Act.Analyze
 			}
 			Hypercube = rng.Where(a=>xaxe.Spec==a.Key||yaxes.Contains(a.Key)).OrderBy(e=>e.Key==xaxe.Spec?0:Array.IndexOf(yaxes,e.Key)+1).ToArray() ; var co = Coordinates.ToLookup(c=>c.Axe) ; Coordinates.Clear() ;
 			Hypercube.Each(e=>Coordinates+=co[e.Key].One().Set(c=>{c.Range=e.Value;c.Bond=axes.FirstOrDefault(a=>a.Spec==e.Key)?.Binder;})??new(this,e.Key){Range=e.Value,Bond=axes.FirstOrDefault(a=>a.Spec==e.Key)?.Binder}) ;
-			if( Focusation.Source is null ) return ; else TransitionSet() ;
+			if( Focusation.Source is null ) return ;
 			foreach( var foc in Focusation.Source ) if( foc.At is int fo && (val.at(a=>a.Aspect==foc.Spec)??val[0]) is var src && -1 is int ay && 0D is double fx && coloring.By(src.Aspect) is SolidColorBrush cof )
 			foreach( var cor in Coordinates ) if( ++ay>=0 && ( cor.Value = src.Axes.at(a=>a.Spec==cor.Axe)?.Val.At(fo) ) is double fa ) if( ay==0 ) fx = fa ; else
 			if( ay==1 )
