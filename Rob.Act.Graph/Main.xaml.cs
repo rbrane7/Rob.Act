@@ -447,7 +447,7 @@ namespace Rob.Act.Analyze
 			}
 			Hypercube = rng.Where(a=>xaxe.Spec==a.Key||yaxes.Contains(a.Key)).OrderBy(e=>e.Key==xaxe.Spec?0:Array.IndexOf(yaxes,e.Key)+1).ToArray() ; var co = Coordinates.ToLookup(c=>c.Axe) ; Coordinates.Clear() ;
 			Hypercube.Each(e=>Coordinates+=co[e.Key].One().Set(c=>{c.Range=e.Value;c.Bond=axes.FirstOrDefault(a=>a.Spec==e.Key)?.Binder;})??new(this,e.Key){Range=e.Value,Bond=axes.FirstOrDefault(a=>a.Spec==e.Key)?.Binder}) ;
-			if( Focusation.Source is not null )
+			if( Focusation.Source is null ) return ; else TransitionSet() ;
 			foreach( var foc in Focusation.Source ) if( foc.At is int fo && (val.at(a=>a.Aspect==foc.Spec)??val[0]) is var src && -1 is int ay && 0D is double fx && coloring.By(src.Aspect) is SolidColorBrush cof )
 			foreach( var cor in Coordinates ) if( ++ay>=0 && ( cor.Value = src.Axes.at(a=>a.Spec==cor.Axe)?.Val.At(fo) ) is double fa ) if( ay==0 ) fx = fa ; else
 			if( ay==1 )
@@ -705,7 +705,7 @@ namespace Rob.Act.Analyze
 			if( MousePoint is System.Windows.Point point && Hypercube is IList<KeyValuePair<string,(double Min,double Max)>> hyp && hyp.Count>0 ); else return ;
 			List<(string Axe,double Value)> value = new() ; var map = MapTab.IsSelected ; for( var i=0 ; i<hyp.Count ; ++i )
 				if( i==0 ) value.Add((hyp[i].Key,AxeInnerByOuterX(AxeXByMouse(point,hyp[i]),hyp[i].Value))) ;
-				else if( i==1 ) value.Add((hyp[i].Key,AxeInnerByOuterY(AxeYByMouse(point,hyp[i]),hyp[i].Value))) ;
+				else if( i==1 && map ) value.Add((hyp[i].Key,AxeInnerByOuterY(AxeYByMouse(point,hyp[i]),hyp[i].Value))) ;
 				//else if( map && AxeZByMouse(hyp[i].Key) is double v ) value.Add((hyp[i].Key,v)) ;
 			//foreach( var asp in Resources ) if( asp.AtOf(value)?.at is int at ) { Focusation.Source = (at,asp.Spec) ; return ; }
 			Focusation.Source = Resources.Select(r=>(r.AtOf(value)?.at,r.Spec)).ToArray() ;
