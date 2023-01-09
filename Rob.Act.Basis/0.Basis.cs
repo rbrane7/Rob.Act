@@ -178,9 +178,9 @@ namespace Rob.Act
 
 		#region Propagation
 		public static Quant? Propagation( this Quant time , (Quant time,Quant potential) a , (Quant time,Quant potential) b , Quant? tranq = null ) => a.time!=b.time && a.potential!=0 && b.potential!=0 && a.time*b.time>0 && time*a.time>0 ?
-			(a.time/a.potential/Math.Tanh(time/(tranq??Tranq))+(b.time/b.potential-a.time/a.potential)*Math.Log(time/a.time)/Math.Log(b.time/a.time)) : null as Quant? ;
+			(a.time/a.potential/Math.Tanh(time/(tranq??Tranq))+(b.time/b.potential-a.time/a.potential)*Math.Log(time/a.time)/Math.Log(b.time/a.time)) : null ;
 		public static Quant? Copropagation( this Quant potential , (Quant time,Quant potential) a , (Quant time,Quant potential) b , Quant? tranq = null ) => a.time!=b.time && a.potential!=0 && b.potential!=0 && a.time>0 && b.time>0 && potential>0 ?
-			a.time/a.potential*Math.Pow(potential/a.potential,(b.time/b.potential-a.time/a.potential)/Math.Log(b.potential/a.potential)/(a.time/a.potential))*Math.Tanh(potential/(tranq??Tranq)) : null as Quant? ;
+			a.time/a.potential*Math.Pow(potential/a.potential,(b.time/b.potential-a.time/a.potential)/Math.Log(b.potential/a.potential)/(a.time/a.potential))*Math.Tanh(potential/(tranq??Tranq)) : null ;
 		#endregion
 		#region Propagators
 		public static Quant? Propagation( this (Quant? potential,bool inner) rad , (Quant time,Quant potential) a , (Quant time,Quant potential) b , Quant? tranq = null ) => rad.inner ? rad.potential?.Propagation(a,b,tranq) : rad.potential?.Copropagation(a,b,tranq) ;
@@ -290,14 +290,10 @@ namespace Rob.Act
 	{
 		public abstract class Point : DynamicObject , Pointable
 		{
-			#region Construction
+			#region Construct
 			Point() => Quantity = new Quant?[Dimension] ;
 			public Point( DateTime date ) : this() { using var _=Incognit ; Date = date ; }
 			public Point( Point point ) : this() { using var _=Incognit ; Date = point.Date ; Quantity = point.Quantity.ToArray() ; Mark = point.Mark ; Spec = point.Spec ; Action = point.Action ; }
-			/// <summary>
-			/// During init faze property chnges are not persisted .
-			/// </summary>
-			protected abstract Aid.Closure Incognit {get;}
 			#endregion
 
 			#region Setup
@@ -310,6 +306,10 @@ namespace Rob.Act
 			#endregion
 
 			#region State
+			/// <summary>
+			/// During init faze property chnges are not persisted .
+			/// </summary>
+			protected abstract Aid.Closure Incognit {get;}
 			/// <summary>
 			/// Quanitity data vector .
 			/// </summary>

@@ -291,7 +291,14 @@ namespace Rob.Act
 		/// In this case points inherit path's <see cref="Metax"/> if they doesn't have own . 
 		/// Derivancy also doesn't force points to inherit <see cref="Point.Subject"/> ans <see cref="Point.Object"/> traits . 
 		/// </summary>
-		public bool Dominant = Dominancy , Editable = Persistent ; internal bool Derived ;
+		public bool Dominant = Dominancy , Editable = Persistent ;
+		/// <summary>
+		/// Derived path is that based on sub pathes like primary (workout) pathes and is derived from them as result of Filter's materialization code 
+		/// </summary>
+		internal bool Derived ;
+		/// <summary>
+		/// <see cref="Metax"/> defined axes from contained <see cref="Point"/>s . Those derived from <see cref="Point"/>s 
+		/// </summary>
 		public Metax Metaxes => metaxex ??= this.Select(p=>p.Metax).Distinct().SingleOrNo() ; Metax metaxex ;
 		public (string Name,string Form,bool Potent) Metaxe( uint ax , bool insure = false ) => (insure||metaxex!=null||dimensions==null&&ax<Dimensions?Metaxes?[ax]:null) ?? Metax?[ax] ?? default ;
 		public uint Dimensions => dimensions ??= Metaxes?.Dimension??(Count>0?this.Max(p=>p.Dimension):0) ; uint? dimensions ;
