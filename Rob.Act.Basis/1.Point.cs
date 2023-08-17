@@ -62,11 +62,11 @@ namespace Rob.Act
 		/// <summary>
 		/// During init faze property chnges are not persisted .
 		/// </summary>
-		protected override Closure Incognit => new Closure(()=>++initing,()=>--initing) ; byte initing ;
+		protected override Closure Incognit => new(()=>++initing,()=>--initing) ; byte initing ;
 		/// <summary>
 		/// During init faze property chnges are not persisted .
 		/// </summary>
-		protected Closure Incognite => new Closure(()=>{(Owner as Path).Set(p=>p.Initing=true);Initing=true;},()=>{(Owner as Path).Set(p=>p.Initing=false);Initing=false;}) ;
+		protected Closure Incognite => new(()=>{(Owner as Path).Set(p=>p.Initing=true);Initing=true;},()=>{(Owner as Path).Set(p=>p.Initing=false);Initing=false;}) ;
 		/// <summary>
 		/// Set to initialization/initialized mode .
 		/// </summary>

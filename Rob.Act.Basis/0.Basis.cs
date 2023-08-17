@@ -198,8 +198,8 @@ namespace Rob.Act
 			if( power is not Quant p ) return null ; var g = grade*Gravity.Force*(mass??Mass) ; var d = drag ; var f = flow ; if( p==0 && d*g>=0 ) return null ;
 			return p==0 ? 1/Math.Sqrt(Math.Abs(g/3*d)) : 1/(d*g<0?p+Math.Sign(p)*Math.Sqrt(Math.Abs(g/3*d)):p).Radix(u=>(g+(f+d*u)*u)*u-p,u=>g+(2*f+3*d*u)*u).Nil() ;
 		}
-		public static Quant? PacePower( this Quant? pace , Quant grade = 0 , Quant drag = 0 , Quant flow = 0 , Quant grane = 0 , Quant? mass = null ) =>
-			pace==0 ? null : (mass??Mass).Get(m=>grade*m*Gravity.Power+(grade,grane).GradeGrane().Get(g=>g*m*Gravity.Force+g.Recuperation()*(flow+drag/pace)/pace)/pace) ;
+		public static Quant? PacePower( this Quant? pace , Quant grade = 0 , Quant drag = 0 , Quant flow = 0 , Quant grane = 0 , Quant? mass = null )
+		=> pace==0 ? null : (mass??Mass).Get(m=>grade*m*Gravity.Power+(grade,grane).GradeGrane().Get(g=>g*m*Gravity.Force+g.Recuperation()*(flow+drag/pace)/pace)/pace) ;
 		static Quant Recuperation( this Quant grade ) => grade<0 ? 1-Math.Tanh(grade*GravityRecuperation).Sqr() : 1 ;
 		public static Quant GravityRecuperation = 200 , AirResistance = .4 ;
 		static Quant GradeGrane( this (Quant grade,Quant grane) g ) => g.grade.nil(v=>Math.Abs(v)>1) is Quant a ? a+g.grane*Math.Sqrt(1-a.Sqr()) : g.grane ;

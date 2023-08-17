@@ -67,7 +67,7 @@ namespace Rob.Act.Gpx
 		}
 		public Quant? this[ Axis axis ]
 		{
-			get { switch( axis ) { case Axis.Lon : return (Quant)lonField ; case Axis.Lat : return (Quant)latField ; case Axis.Alt : return eleFieldSpecified ? (Quant)eleField : null ; default : return this[axis.Axis()] ; } }
+			get => axis switch { Axis.Lon => (Quant)lonField , Axis.Lat => (Quant)latField , Axis.Alt => eleFieldSpecified ? (Quant)eleField : null , _ => this[axis.Axis()] } ;
 			set { switch( axis ) { case Axis.Lon : value.Use(v=>lonField=(decimal)v) ; break ; case Axis.Lat : value.Use(v=>latField=(decimal)v) ; break ; case Axis.Alt : eleFieldSpecified = null!=value.Use(v=>eleField=(decimal)v) ; break ; default : this[axis.Axis()] = value ; break ; } }
 		}
 	}

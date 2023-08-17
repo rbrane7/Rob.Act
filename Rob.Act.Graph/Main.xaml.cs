@@ -53,7 +53,7 @@ namespace Rob.Act.Analyze
 			if( Setup?.Aggregates.Equates(past?.Aggregates)==false )
 			{
 				foreach( var ag in past.Aggregates.Except(Setup.Aggregates,a=>a.Code) ) main.Aggregation.RemoveWhere(a=>a.Code==ag.Code) ;
-				foreach( var ag in Setup.Aggregates.Except(past.Aggregates,a=>a.Code) ) main.Aggregation.Add((ag.Tags.Select(t=>new Regex(t)).ToList(),ag.Code.Compile<Func<IEnumerable<(object,Pathable)>,object>>(),ag.Code)) ;
+				foreach( var ag in Setup.Aggregates.Except(past.Aggregates,a=>a.Code) ) main.Aggregation.Add((new Regexes(ag.Tags.Select(t=>new Regex(t))),ag.Code.Compile<Func<IEnumerable<(object,Pathable)>,object>>(),ag.Code)) ;
 				foreach( var ag in Setup.Aggregates.Join(past.Aggregates,o=>o.Code,i=>i.Code,(o,i)=>(In:o.Tags,Out:i.Tags,o.Code)) )
 					if( main.Aggregation.at(a=>a.Code==ag.Code).Value is var agr && agr.Tags is IList<Regex> tags ) { tags.Clear() ; ag.In.Each(c=>tags.Add(c.Get(e=>new Regex(e)))) ; }
 			}
@@ -227,40 +227,67 @@ namespace Rob.Act.Analyze
 		}
 		#endregion
 
+		#region Mousing
 		void ActionsFilterGrid_MouseRightButtonUp( object sender , MouseButtonEventArgs e )
 		{
 			if( Keyboard.IsKeyDown(Key.LeftShift) ) foreach( var item in Setup.Internal ) if( Keyboard.IsKeyDown(item.key) ) foreach( var path in Book.Cast<Path>() ) item.act(path) ;
 		}
-		void BookGrid_MouseRightButtonUp( object sender , MouseButtonEventArgs e )
+		void BookGrid_MouseRightButtonUp( object sender , MouseButtonEventArgs e ) { if( InteranlFuncion() || ExternalFuntion() ) return ; AggregationFunction(sender) ; }
+		bool InteranlFuncion()
 		{
-			if( Keyboard.IsKeyDown(Key.LeftShift) ) foreach( var item in Setup.Internal ) if( Keyboard.IsKeyDown(item.key) ) foreach( var path in BookGrid.SelectedItems.Cast<Path>() ) item.act(path) ;
-			if( Keyboard.IsKeyDown(Key.F2) ) (BookGrid.SelectedItem as Path)?.IncludeSpecToOrigin() ; else
-			if( Keyboard.IsKeyDown(Key.Escape) ) (BookGrid.SelectedItem as Pathable)?.Origin.Start(External) ; else
-			if( Keyboard.IsKeyDown(Key.LeftCtrl) ) (BookGrid.SelectedItem as Pathable)?.Detail.Link(0).Start(External) ; else
-			if( Keyboard.IsKeyDown(Key.LeftShift) ) (BookGrid.SelectedItem as Pathable)?.Detail.Link(1).Start(External) ; else
-			if( Keyboard.IsKeyDown(Key.LeftAlt) ) (BookGrid.SelectedItem as Pathable)?.Detail.Link(2).Start(External) ; else
+			if( Keyboard.IsKeyDown(Key.LeftShift) ) foreach( var item in Setup.Internal ) if( Keyboard.IsKeyDown(item.key) ) { foreach( var path in BookGrid.SelectedItems.Cast<Path>() ) item.act(path) ; return true ; }
+			return false ;
+		}
+		bool ExternalFuntion()
+		{
+			if( Keyboard.IsKeyDown(Key.Escape) ) (BookGrid.SelectedItem as Pathable)?.Origin.Start(External) ;
+			else if( Keyboard.IsKeyDown(Key.LeftCtrl) ) (BookGrid.SelectedItem as Pathable)?.Detail.Link(0).Start(External) ;
+			else if( Keyboard.IsKeyDown(Key.LeftShift) ) (BookGrid.SelectedItem as Pathable)?.Detail.Link(1).Start(External) ;
+			else if( Keyboard.IsKeyDown(Key.LeftAlt) ) (BookGrid.SelectedItem as Pathable)?.Detail.Link(2).Start(External) ;
+			else return false ;
+			return true ;
+		}
+		void AggregationFunction( object sender )
+		{
 			if( sender is DataGrid grid && Actras.Count>0 ) foreach( var col in grid.Columns ) if( Actras.at(col.DisplayIndex) is Filter.Entry.Binding tr )
-			col.Header = col.Header is string name && tr.Name==name && Aggregation.Apt(tr.Name) is Func<IEnumerable<(object,Pathable)>,object> ag ? tr.View(ag(Book.Select(p=>(tr.On(p),p)))).Null() ?? tr.Name : tr.Name ;
+			col.Header = col.Header is string name && tr.Name==name && Aggregation.Opt(tr.Name) is Func<IEnumerable<(object,Pathable)>,object> ag ? tr.View(ag(Book.Select(p=>(tr.On(p),p)))).Null() ?? tr.Name : tr.Name ;
 		}
 		readonly List<Filter.Entry.Binding> Actras = new() ;
 		public readonly Aggregator Aggregation = new() ;
-		public class Aggregator : List<(List<Regex> Tags,Func<IEnumerable<(object value,Pathable path)>,object> Join,string Code)>
+		public class Regexes : List<Regex>
+		{
+			public Regexes( IEnumerable<Regex> regexes = null ) => regexes.Set(AddRange) ;
+			/// <summary>
+			/// Resilient getter setter accepting index of even exceding size 
+			/// </summary>
+			/// <param name="at"> Index to get|set element at </param>
+			/// <returns> Element at <paramref name="at"/> position </returns>
+			new public Regex this[ int at ] { get => (uint)at<Count ? base[at] : null ; set { if( at>=Count ) AddRange(Enumerable.Repeat(null as Regex,at-Count+1)) ; base[at] = value ; } }
+		}
+		public class Aggregator : List<(Regexes Tags,Func<IEnumerable<(object value,Pathable path)>,object> Join,string Code)>
 		{
 			public static Aggregator Basis = new()
 			{
 				( new(){new("Dist|∫[^♀]")} , v=>v.Sum(e=>e.value as double?) , "Sum" ) ,
-				( new(){new( "Time|∫♀")} , v=>v.Aggregate(TimeSpan.Zero,(a,t)=>a+((t.value as TimeSpan?)??TimeSpan.Zero)) , "SumTime" ) ,
+				( new(){new("Time|∫♀")} , v=>v.Aggregate(TimeSpan.Zero,(a,t)=>a+((t.value as TimeSpan?)??TimeSpan.Zero)) , "SumTime" ) ,
 				( new(){new("Date")} , v=>(v.Max(e=>e.value as DateTime?)-v.Min(e=>e.value as DateTime?)).use(t=>DateTime.MinValue+t) , "CenterDate" ) ,
-				( new(){null,new("Speed|♂|☼|♥")} , v=>v.Average(e=>e.value as double?) , "Average" ) ,
-				( new(){new("Speed|♂|☼|♥")} , v=>v.Centre(e=>e.value as double?,e=>e.path.Time.TotalSeconds) , "CentreTimely" ) ,
+				( new(){new("Speed|♂|☼|♥")} , v=>v.Average(e=>e.value as double?) , "Average" ) ,
+				( new() , v=>v.Average(e=>(e.value as TimeSpan?)?.TotalSeconds).use(TimeSpan.FromSeconds) , "AverageTime" ) ,
+				( new(){null,new("Speed|♂|☼|♥")} , v=>v.Centre(e=>e.value as double?,e=>e.path.Time.TotalSeconds) , "CentreTimely" ) ,
 				( new(){new("Action|Act")} , v=>v.Distinct(e=>e.value as string).Stringy('|').Null(s=>s.Length>10) , "ConcatPipely" ) ,
 				( new(){new("Pace|♀")} , v=>v.Centre(e=>(e.value as TimeSpan?)?.TotalSeconds,e=>(e.path as Path).Dist??0).use(TimeSpan.FromSeconds) , "CentrePace" ) ,
 			} ;
-			IEnumerable<(List<Regex> Tags,Func<IEnumerable<(object,Pathable)>,object> Join,string Code)> Content => this==Basis ? this : this.Union(Basis) ;
-			public Func<IEnumerable<(object value,Pathable path)>,object> Apt( string axe ) => Content.optimal(e=>e.Tags.IndexIf(t=>t?.IsMatch(axe)==true))?.one.Join ;
-			public IList<Regex> this[ string code ] => Content.at(one=>one.Code==code)?.Tags ;
-			public (List<Regex> Tags,Func<IEnumerable<(object,Pathable)>,object> Join,string Code)[] this[ Regex rex ] => Content.Where(one=>rex.IsMatch(one.Code)).ToArray() ;
+			IEnumerable<(Regexes Tags,Func<IEnumerable<(object,Pathable)>,object> Join,string Code)> Content => this==Basis ? this : this.Union(Basis) ;
+			public Func<IEnumerable<(object value,Pathable path)>,object> Opt( string axe )
+			{
+				var cont = Content ; int shift = (int)Math.Log(cont.Max(m=>m.Tags?.Count)??1,2) ;
+				return cont.optimal(e=>-e.Tags.Select(t=>t?.Match(axe).Length is int w&&w>0?w<<shift+e.Tags.IndexOf(t) as int?:null).Max())?.one.Join ;
+			}
+			public Regexes this[ string code ] => Content.at(one=>one.Code==code)?.Tags ;
+			public (Regexes Tags,Func<IEnumerable<(object,Pathable)>,object> Join,string Code)[] this[ Regex rex ] => Content.Where(one=>rex.IsMatch(one.Code)).ToArray() ;
 		}
+		#endregion
+
 		async void SourcesGrid_ItemsChanged( object sender , System.Windows.Controls.Primitives.ItemsChangedEventArgs e )
 		{
 			var gen = sender as ItemContainerGenerator ; for( int i=0 , c=gen.Items.Count ; i<c ; ++i )

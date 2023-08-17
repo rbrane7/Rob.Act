@@ -280,9 +280,9 @@ namespace Rob.Act
 				propertyChanged.On(this,"Origin") ;
 			}
 		}
-		public void IncludeSpecToOrigin( bool locus = false )
+		public void IncludeSpecToOrigin( Func<Path,string> enhanced = null )
 		{
-			var ori = Origin ; var spec = $"{Locus.Null(_=>!locus).Get(l=>$".{l}")}.{Action}.{Refine}" ; if( ori.Contains(spec) ) return ;
+			var ori = Origin ; var spec = $"{enhanced?.Invoke(this).Get(l=>$".{l}")}.{Action}.{Refine}" ; if( ori.Contains(spec) ) return ;
 			Origin = $"{System.IO.Path.GetDirectoryName(ori).Pathex(System.IO.Path.GetFileNameWithoutExtension(ori)+spec,System.IO.Path.GetExtension(ori))}" ;
 		}
 	}

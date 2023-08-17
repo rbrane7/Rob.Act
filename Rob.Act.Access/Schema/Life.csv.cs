@@ -46,7 +46,7 @@ namespace Rob.Act
 				Multi = (Data.LastOrDefault().Date-Date).Days>0 ;
 			}
 			public static implicit operator Path( Bio work ) =>
-				new Path(work.Date,work.Data.Select(p=>new Point(p.Date){ Beat = p.Beat , Flow = p.Sat , Grade = p.Var , Energy = p.Max , Bit = work.Multi?(p.Date-work.Date).Days:null as Quant? }))
+				new Path(work.Date,work.Data.Select(p=>new Point(p.Date){ Beat = p.Beat , Flow = p.Sat , Grade = p.Var , Energy = p.Max , Bit = work.Multi?(p.Date-work.Date).Days:null }))
 				{ Initing = true , Action = work.Spec , Metax = new Metax{ [Axis.Energy]=("∫O₂↑",":0.0",true) , [Axis.Flow]=("∫µO₂",":0%",true) , [Axis.Grade]=("∫♥↕",":0ms",true) } }
 				.Set(p=>{
 					p.Tags = $"{Basis.Device.Bio.Code} {p.O2Rate:0.0} {work.Subject}" ; var l = work.Data[^1] ;

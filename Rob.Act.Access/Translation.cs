@@ -52,11 +52,12 @@ namespace Rob.Act
 				var drag = text.RightFromFirst("<DragFactor>").LeftFrom("</DragFactor>") ?? text.RightFromFirst("<Drag>").LeftFrom("</Drag>") ?? "100" ;
 				var action = text.RightFromFirst("<Action>").LeftFrom("</Action>") ; var subject = text.RightFromFirst("<Subject>").LeftFrom("</Subject>") ;
 				var locus = text.RightFromFirst("<Locus>").LeftFrom("</Locus>") ; var refine = text.RightFromFirst("<Refine>").LeftFrom("</Refine>") ;
-				string laps = null ; if( (rest=rest[(text.Length+6)..]).Consists("<Lap") )
+				var detail = text.RightFromFirst("<Detail>").LeftFrom("</Detail>") ; string laps = null ; if( (rest=rest[(text.Length+6)..]).Consists("<Lap") )
 				for( var (tacu,dacu) = (time.Parse(0D),dist.Parse(0D)) ; Intra(text=rest.Get(t=>t.LeftFrom("<Track")??t.LeftFrom("</Lap>"))) is not null ; rest = rest[(text.Length+6)..] )
 				{
-					if( laps==null ) laps = $"{tacu},{dacu};" ; // first element if we add active ones
-					tacu += text.RightFromFirst("<TotalTimeSeconds>").LeftFrom("</TotalTimeSeconds>").Parse(0D) ; dacu += text.RightFromFirst("<DistanceMeters>").LeftFrom("</DistanceMeters>").Parse(0D) ;
+					laps ??= $"{tacu},{dacu};" ; // first element if we add active ones
+					tacu += text.RightFromFirst("<TotalTimeSeconds>").LeftFrom("</TotalTimeSeconds>").Parse(0D) ;
+					dacu += text.RightFromFirst("<DistanceMeters>").LeftFrom("</DistanceMeters>").Parse(0D) ;
 					/*if( text.Contains("<Intensity>Resting</Intensity>") )*/ laps += $"{tacu},{dacu};" ;
 				}
 				else
@@ -64,7 +65,7 @@ namespace Rob.Act
 					var lavs = dart.Trim().RightFrom('\n').Separate(',') ; lavs[0] = (lavs[0].Trim('"').Parse<uint>()+1).Stringy() ?? lavs[0] ; lavs[1] = time ; lavs[2] = dist ;
 					dart += lavs.Stringy(',') ; dart += $",\"{drag}\"{Environment.NewLine}" ; /* append of final misssing line */
 				}
-				data += dart.Replace(sign,sign+$",\"Refine={refine}\",\"Locus={locus}\",\"Subject={subject}\",\"Drag Factor={drag}\",\"Date={date}\",\"Spec={action??spec}\"{laps.Get(l=>$",\"Laps={laps}\"")}") ;
+				data += dart.Replace(sign,sign+$",\"Detail={detail}\",\"Refine={refine}\",\"Locus={locus}\",\"Subject={subject}\",\"Drag Factor={drag}\",\"Date={date}\",\"Spec={action??spec}\"{laps.Get(l=>$",\"Laps={laps}\"")}") ;
 			}
 			else if( file.EndsWith(Partitioner.Ext) ) data = $"{Partitioner.Sign}{file.LeftFromLast(Partitioner.Ext)}{Environment.NewLine}{data}" ;
 			else if( file.EndsWith(Csv.Bio.Ext) && file.LeftFrom(Csv.Bio.Ext).RightFrom('.') is string sbj ) data = data.LeftFrom(true,CrLf)+$",Subject={sbj}"+data.RightFromFirst(CrLf,with:true) ;

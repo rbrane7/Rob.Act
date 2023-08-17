@@ -21,8 +21,9 @@
 	<Drag>135</Drag>
 	<Action>O↑</Action>
 	<Subject>Rob</Subject>
-	<Locus>Home☯</Locus>
-	<Refine>[4-2]′×4</Refine>
+	<Locus>Home</Locus>
+	<Refine>4÷2]′⁴</Refine>
+	<Detail>☯</Detail>
   </x:template>
 
 </x:stylesheet>

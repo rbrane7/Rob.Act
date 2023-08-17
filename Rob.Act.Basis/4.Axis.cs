@@ -117,7 +117,7 @@ namespace Rob.Act
 		public Axe this[ Jot lap ] => By(lap) ;
 		/// <summary> Restricts axe to given subset of points , null elsewhere . </summary>
 		/// <param name="fragment"> Points subset to restrict axe on . </param>
-		public Axe this[ Axe axe ] => (axe?.Solver as Jot.Axe??axe) is Jot.Axe lap ? By(lap.Arg) : this ;
+		public Axe this[ Axe axe ] => (axe?.Solver as Jot.Axe??axe) is Jot.Axe lap ? By(lap.Arg) : this*axe ;
 		/// <summary> Function on axe . </summary>
 		public Axe this[ Func<Quant,Quant> y ] => Fun(y) ;
 		public static Axe operator++( Axe x ) => x==null ? No : x.Positive ;

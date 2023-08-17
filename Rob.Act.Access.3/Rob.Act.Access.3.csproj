@@ -6,11 +6,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\Rob.Act.Access\Schema\Erg.csv.cs" Link="Schema\Erg.csv.cs" />
     <Compile Include="..\Rob.Act.Access\Schema\Gpx.cs" Link="Schema\Gpx.cs" />
     <Compile Include="..\Rob.Act.Access\Schema\Gpx.Trans.cs" Link="Schema\Gpx.Trans.cs" />
-    <Compile Include="..\Rob.Act.Access\Schema\Life,csv.cs" Link="Schema\Life,csv.cs" />
+    <Compile Include="..\Rob.Act.Access\Schema\Life.csv.cs" Link="Schema\Life.csv.cs" />
     <Compile Include="..\Rob.Act.Access\Schema\Partitioner.cs" Link="Schema\Partitioner.cs" />
-    <Compile Include="..\Rob.Act.Access\Schema\Skierg,csv.cs" Link="Schema\Skierg,csv.cs" />
     <Compile Include="..\Rob.Act.Access\Schema\Tcx.cs" Link="Schema\Tcx.cs" />
     <Compile Include="..\Rob.Act.Access\Schema\Tcx.Trans.cs" Link="Schema\Tcx.Trans.cs" />
     <Compile Include="..\Rob.Act.Access\Serialization.cs" Link="Serialization.cs" />

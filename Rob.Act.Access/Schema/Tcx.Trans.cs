@@ -76,3 +76,4 @@ namespace Rob.Act.Tcx
 		internal static Trackpoint_t Last( this Trackpoint_t[] segment ) => segment.At(segment.Length-1) ;
 	}
 }
+          
