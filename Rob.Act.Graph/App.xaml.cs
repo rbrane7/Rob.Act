@@ -15,7 +15,7 @@ namespace Rob.Act.Analyze
 	public partial class App : Application
 	{
 		DateTime LastException ;
-		public TimeSpan ExceptionTimeout = new TimeSpan(0,0,1) ;
+		public TimeSpan ExceptionTimeout = new(0,0,1) ;
 		public App() => DispatcherUnhandledException += (s,e)=>{ if( DateTime.Now-LastException>ExceptionTimeout ) Trace.TraceError($"Unhandled {e.Exception}") ; e.Handled = true ; if( e.Exception is ArgumentOutOfRangeException ) LastException = DateTime.Now ; } ;
 	}
 }

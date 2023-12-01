@@ -30,10 +30,11 @@ namespace Rob.Act
 			{
 				bool First() => Data.Count<=1 ;
 				(TimeSpan Time,Quant Distance,Quant Beat,uint Bit,Quant Energy,Quant Drag,Quant Effort,Mark Mark) accu = default ;
-				(uint bit,double time,double dist,uint beat,uint power,uint drag,double pace,uint effort,Mark mark) last = default ;
+				(uint bit,double time,double dist,uint beat,double power,uint drag,double pace,double effort,Mark mark) last = default ;
 				uint idrag = 0 ; int ilap = 0 ; Quant atime = 0 , adist = 0 ; IEnumerable<(Quant time,Quant dist)> laps = null ; string[] lvals = null ;
 				foreach( var line in data.SeparateTrim('\n',braces:null).Select(l=>l.Trim()) )
 				{
+					Quant Quantity( uint val ) => val>9999?val/1000D:val ;
 					if( Sign(line) )
 					{
 						Data.Add(accu) ; var lapo = laps?.LastOrDefault() ;
@@ -48,8 +49,8 @@ namespace Rob.Act
 						continue ;
 					}
 					var vals = line.Separate(',').Select(v=>v.Trim('"')).ToArray() ; if( vals.At(7)==null || lvals?.Skip(1).SequenceEquate(vals.Skip(1))==true ) continue ; else lvals = vals ;
-					(uint bit,double time,double dist,uint beat,uint power,uint drag,double pace,uint effort,Mark mark) =
-						(vals[0].Parse(0U),vals[1].Parse(0D),vals[2].Parse(0D),vals[7].Parse(0U),vals[4].Parse(0U).nil()??last.power,vals.At(8).Parse(0U).nil()??last.drag,vals[3].Parse(0D).nil()??last.pace,vals[5].Parse(0U).nil()??last.effort,default) ;
+					(uint bit,double time,double dist,uint beat,double power,uint drag,double pace,double effort,Mark mark) =
+						(vals[0].Parse(0U),vals[1].Parse(0D),vals[2].Parse(0D),vals[7].Parse(0U),Quantity(vals[4].Parse(0U)).nil()??last.power,vals.At(8).Parse(0U).nil()??last.drag,vals[3].Parse(0D).nil()??last.pace,Quantity(vals[5].Parse(0U)).nil()??last.effort,default) ;
 					(Quant time,Quant dist)? lap = null ; var velo = 500/(pace.nil()??Quant.PositiveInfinity) ;
 					if( atime+time<(accu.Time-TimeSpan.FromTicks(1)).TotalSeconds && adist+dist<accu.Distance ) // Occurs when time and dist restarts from 0 , which is after rest part of interval
 					{

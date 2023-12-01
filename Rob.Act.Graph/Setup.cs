@@ -27,6 +27,7 @@ namespace Rob.Act.Analyze
 		public IEnumerable<(string[] Tags,string Code)> Aggregates ;
 		public IEnumerable<(Func<Uri,bool> crit,string app)> External ;
 		public IEnumerable<(System.Windows.Input.Key key,Action<Path> act)> Internal ;
+		public System.Windows.Input.Key Interer = System.Windows.Input.Key.LeftShift ;
 		public string VicinerNaming ;
 	}
 	public class State

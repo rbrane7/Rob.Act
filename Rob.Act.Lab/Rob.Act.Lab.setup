@@ -15,7 +15,7 @@
 	Altiplane = (0.0D,10D,4B) ,
 	ViewScreenMargin = 10 ,
 	External = []{ (=>'http'<Scheme,@"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe") , (=>'file'<Scheme,@"C:\Windows\explorer.exe") } ,
-	Internal = []{ (type.F2,=>IncludeSpecToOrigin()) , (type.F3,=>IncludeSpecToOrigin(true)) } ,
+	Internal = []{ (type.F2,=>IncludeSpecToOrigin()) , (type.F3,=>IncludeSpecToOrigin(true)) } , Interer = type.LeftShift ,
 }
 ;
 System.Diagnostics.{ Trace.Listeners.Add(Aid.Diagnostics.StoreListener(@"Destiny=Run\Local.log"){TraceOutputOptions=type.DateTime}) ; Trace.AutoFlush = true ; Trace.TraceInformation('Started') } ;
