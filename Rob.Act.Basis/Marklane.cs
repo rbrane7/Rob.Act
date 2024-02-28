@@ -39,6 +39,11 @@ namespace Rob.Act
 			/// Only points with Tags whic
 			/// </summary>
 			protected override bool Applicable( Point point ) => !point.Tags.No() && point is not Path && point.IsGeos ;
+			/// <summary>
+			/// Point has insensible <see cref="Point.Tags"/> for <see cref="Markage"/> 
+			/// if the <see cref="Point.Tags"/> have no <see cref="Point.Object"/> but have anything else or 
+			/// have no <see cref="Nib.Globals"/> in <see cref="Point.Mark"/> and have only <see cref="Point.Subject"/> . 
+			/// </summary>
 			bool Insensible( Sharable point ) => (point.Mark&Nib.Globals)==Mark.No && !point.Tags.Contains(' ') || point.Tags[0]==' ' ;
 			/// <summary>
 			/// Applies traits of point .

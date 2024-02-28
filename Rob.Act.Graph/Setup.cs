@@ -29,6 +29,7 @@ namespace Rob.Act.Analyze
 		public IEnumerable<(System.Windows.Input.Key key,Action<Path> act)> Internal ;
 		public System.Windows.Input.Key Interer = System.Windows.Input.Key.LeftShift ;
 		public string VicinerNaming ;
+		public int RetryEditAction = 4 ;
 	}
 	public class State
 	{

@@ -26,7 +26,8 @@ namespace Rob.Act.Analyze
 {
 	using Book = Gen.Book ;
 	using System.Text.RegularExpressions ;
-	using Aid;
+	using Aid ;
+	using System.Threading;
 
 	/// <summary>
 	/// Interaction logic for MainWindow.xaml
@@ -91,7 +92,13 @@ namespace Rob.Act.Analyze
 		protected override void OnClosing( CancelEventArgs e ) { Doct?.Dispose() ; base.OnClosing(e) ; }
 		protected override void OnClosed( EventArgs e ) { base.OnClosed(e) ; Process.GetCurrentProcess().Kill() ; }
 		Path NewAction( string file , Predicate<Pathable> filter = null ) => file?.Reconcile().Internalize().Set(p=>p.Origin=file).Set(Translation.Partitionate).Set(p=>p.Spectrum.Reform(Setup.SpectrumBinds)).Set(p=>{Book|=filter?.Invoke(p)!=false?p:null;if(Book.Contains(p)){ActionEnhancing(p,ActiveRefiner);Dispatcher.Invoke(SaveBook);}}) ;
-		void NewAction( object subject , System.IO.FileSystemEventArgs arg ) => NewAction(arg.FullPath.Null(f=>Setup?.WorkoutsSeed?.Invoke(new System.IO.FileInfo(f))==false),Setup?.WorkoutsFilter) .Set(p=>Path.Medium?.Interact(p,true)) .Null(p=>!Book.Contains(p,new Aid.Equalizer<Pathable,string>(p=>p.Origin))).Set(_=>Dispatcher.Invoke(()=>ActionFilterGrid_SelectionChanged(ActionFilterGrid))) ;
+		void NewAction( object subject , System.IO.FileSystemEventArgs arg )
+		{
+			for( var i=0 ; i<(Setup?.RetryEditAction??1) ; ++i )
+			try { NewAction(arg.FullPath.Null(f=>Setup?.WorkoutsSeed?.Invoke(new System.IO.FileInfo(f))==false),Setup?.WorkoutsFilter) .Set(p=>Path.Medium?.Interact(p,true)) .Null(p=>!Book.Contains(p,new Aid.Equalizer<Pathable,string>(p=>p.Origin))).Set(_=>Dispatcher.Invoke(()=>ActionFilterGrid_SelectionChanged(ActionFilterGrid))) ; return ; }
+			catch { Trace.TraceWarning($"Attempt to reload {arg.FullPath} failed !") ; Thread.Sleep(1^9) ; }
+			MessageBox.Show($"Failed to reload {arg.FullPath} !") ;
+		}
 		void NewAspect( string file , Predicate<Aspect> filter = null ) => ((Aspect)file.ReadAllText()).Set(a=>a.Origin=file).Set(a=>Aspects+=filter?.Invoke(a)!=false?a:null) ;
 		public Book Book { get ; private set ; } = new("Main") ;
 		public Filter ActionFilterFilter { get => actionFilterFilter ; internal set { if( value==actionFilterFilter ) return ; actionFilterFilter = value ; PropertyChanged.On(this,"ActionFilterFilter") ; } } Filter actionFilterFilter ;
@@ -160,9 +167,7 @@ namespace Rob.Act.Analyze
 		}
 		Aspect Respect = Laboratory ;
 		public IEnumerable<Axe> Quantiles { get => quantiles??Enumerable.Empty<Axe>() ; private set { if( !quantiles.SequenceEquate(value) ) PropertyChangedOn("Quantiles",quantiles=value?.ToArray()) ; } } Axe[] quantiles ;
-		/// <summary>
-		/// <see cref="Resources"/> refined by subselection defined in adjacent <see cref="SourceFilterGrid"/> 
-		/// </summary>
+		/// <summary> <see cref="Resources"/> refined by subselection defined in adjacent <see cref="SourceFilterGrid"/>  </summary>
 		public IEnumerable<Aspect> Sources { get => /*sources ??= new(*/Resources.Issue(Sourcer)/*)*/ ; set { /*sources = null ;*/ PropertyChangedOn("Sources",value) ; } } (Func<Aspect,bool> Filter,Func<IEnumerable<Aspect>,IEnumerable<Aspect>> Query)[] Sourcer ; /*Aid.Collections.ObservableList<Aspect> sources ;*/
 		public new IEnumerable<Aspect> Resources { get => resources ??= new Aid.Collections.ObservableList<Aspect>(ActionsProjection) ; set { PropertyChangedOn("Resources",DrawingResources=resources=value) ; Sources = value ; } } IEnumerable<Aspect> resources ;
 		Aspect Projection( Pathable path ) => new(Aspect){Source=path.Spectrum} ;
@@ -422,7 +427,7 @@ namespace Rob.Act.Analyze
 				for( var m=0 ; m<=hor ; m+=10 ) GraphPanel.Children.Add( new Line{ X1 = m , Y1 = 0 , X2 = m , Y2 = ver , Stroke = brush , StrokeDashArray = dash } ) ;
 				for( var m=ver ; m>=0 ; m-=10 ) GraphPanel.Children.Add( new Line{ X1 = 0 , Y1 = m , X2 = hor , Y2 = m , Stroke = brush , StrokeDashArray = dash } ) ;
 			}
-			var val = DrawingValue ; if( val==null || yaxes.Any(y=>Aspect[y]?.Meany??false) ) await Task.Factory.StartNew(()=> val = DrawingValue = CalculateDrawingValue(xaxe,yaxes) ) ;
+			var val = DrawingValue ; if( val==null || yaxes.Any(y=>Aspect[y]?.Meany??false) || !val.Any(v=>v.Axes.Any(a=>a.Spec==xaxe.Spec)) ) await Task.Factory.StartNew(()=> val = DrawingValue = CalculateDrawingValue(xaxe,yaxes) ) ;
 			var rng = DrawingRange ; if( rng==null )
 			{
 				DrawingRange = rng = new Dictionary<string,(double Min,double Max)>() ;
@@ -506,7 +511,7 @@ namespace Rob.Act.Analyze
 				for( var m=0 ; m<=hor ; m+=10 ) MapPanel.Children.Add( new Line{ X1 = m , Y1 = 0 , X2 = m , Y2 = ver , Stroke = brush , StrokeDashArray = dash } ) ;
 				for( var m=ver ; m>=0 ; m-=10 ) MapPanel.Children.Add( new Line{ X1 = 0 , Y1 = m , X2 = hor , Y2 = m , Stroke = brush , StrokeDashArray = dash } ) ;
 			}
-			var val = DrawingValue ; if( val==null || yaxes.Any(y=>Aspect[y]?.Meany??false) ) await Task.Factory.StartNew(()=> val = DrawingValue = CalculateDrawingValue(xaxe,yaxes) ) ;
+			var val = DrawingValue ; if( val==null || yaxes.Any(y=>Aspect[y]?.Meany??false) || !val.Any(v=>v.Axes.Any(a=>a.Spec==xaxe.Spec)) ) await Task.Factory.StartNew(()=> val = DrawingValue = CalculateDrawingValue(xaxe,yaxes) ) ;
 			var rng = DrawingRange ; if( rng==null )
 			{
 				DrawingRange = rng = new Dictionary<string,(double Min,double Max)>() ;
@@ -536,7 +541,7 @@ namespace Rob.Act.Analyze
 				{
 					var spt0 = ScreenInnerByOuter(xax.Val[i].Value.By(rng[xax.Spec])*width??0,height-yax.Val[i].Value.By(rng[yax.Spec])*height??0) ;
 					var spt1 = ScreenInnerByOuter(xax.Val[i+1].Value.By(rng[xax.Spec])*width??0,height-yax.Val[i+1].Value.By(rng[yax.Spec])*height??0) ;
-					if( spt0.X>=0 && spt0.Y>=0 && spt1.X<=hor && spt1.Y<=ver ) pts.Add((spt0,spt1,asp.Raw[i+1].Mark,xax.Val[i],yax.Val[i],zaxes.Select(z=>(z.Spec,z.Val[i])).ToArray(),asp.Raw[i+1].Tags)) ;
+					if( spt0.X>=0 && spt0.Y>=0 && spt1.X<=hor && spt1.Y<=ver ) pts.Add((spt0,spt1,asp.Raw[i+1].Mark,xax.Val[i],yax.Val[i],zaxes.Select(z=>(z.Spec,z.Val[i])).ToArray(),asp.Raw[i+1].Tags.Null()??(asp.Raw.At(i-1)?.Mark.HasFlag(Mark.Stop)!=false?asp.Raw[i].Tags:null))) ;
 				}
 				catch( System.Exception ex ) { Trace.TraceWarning(ex.Stringy()) ; }
 				for( var i=1 ; i<yaxes.Length ; ++i ) rng[yaxes[i]]=(pts.Min(p=>p.Z[i-1].Val).Value,pts.Max(p=>p.Z[i-1].Val).Value) ;
