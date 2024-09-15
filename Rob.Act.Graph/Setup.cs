@@ -33,17 +33,19 @@ namespace Rob.Act.Analyze
 	}
 	public class State
 	{
+		public static (string Action,string Source,string Aspect,string Filter) FilterName = ("ActionFilter","SourceFilter","AspectFilter","ActionFilterFilter") ;
+		public static string StateExt = "stt" , CoordinaterName = "Coordinater" ;
 		System.Threading.Timer Saver ;
 		IDictionary<string,string> Coordinater ; bool Recoordinate ;
 		public string this[ string key ] { get => Coordinater.By(key) ; set { if( Coordinater.By(key)==value ) return ; Coordinater[key] = value ; Recoordinate = true ; } }
 		public (double? Byte,uint? Count,bool Reverse)? Coordination( string axe ) => this[axe].ParseCoinfo() ;
 		void Load()
 		{
-			Context.ActionFilterFilter = Main.Setup.StatePath.Path("ActionFilterFilter.stt").ReadAllText() ?? string.Empty ;
-			Context.ActionFilter = Main.Setup.StatePath.Path("ActionFilter.stt").ReadAllText() ?? string.Empty ;
-			Context.SourceFilter = Main.Setup.StatePath.Path("SourceFilter.stt").ReadAllText() ?? string.Empty ;
-			Context.AspectFilter = Main.Setup.StatePath.Path("AspectFilter.stt").ReadAllText() ?? string.Empty ;
-			Coordinater = Main.Setup.StatePath.Path("Coordinater.stt").ReadAllLines()?.Where(l=>l.Contains(':')).ToDictionary(c=>c.LeftFrom(':'),c=>c.RightFrom(':')) ?? new Dictionary<string,string>() ;
+			Context.ActionFilterFilter = Main.Setup.StatePath.Path($"{FilterName.Filter}.{StateExt}").ReadAllText() ?? string.Empty ;
+			Context.ActionFilter = Main.Setup.StatePath.Path($"{FilterName.Action}.{StateExt}").ReadAllText() ?? string.Empty ;
+			Context.SourceFilter = Main.Setup.StatePath.Path($"{FilterName.Source}.{StateExt}").ReadAllText() ?? string.Empty ;
+			Context.AspectFilter = Main.Setup.StatePath.Path($"{FilterName.Aspect}.{StateExt}").ReadAllText() ?? string.Empty ;
+			Coordinater = Main.Setup.StatePath.Path($"{CoordinaterName}.{StateExt}").ReadAllLines()?.Where(l=>l.Contains(':')).ToDictionary(c=>c.LeftFrom(':'),c=>c.RightFrom(':')) ?? new Dictionary<string,string>() ;
 			Basis.Mass = Main.Setup.SubjectMass ;
 			System.IO.Path.GetExtension(Main.Setup.WorkoutsPath).Set(e=>Path.Filext=e) ;
 		}
@@ -51,11 +53,11 @@ namespace Rob.Act.Analyze
 		{
 			Context.Aspects.Where(a=>a.Dirty).Each(a=>{(a.Origin??Main.Setup.AspectsPath.Get(p=>p.Pathin(a.Spec))).WriteAll((string)a);a.Dirty=false;}) ;
 			Context.Book.Where(a=>a.Spectrum.Dirty).Each(a=>{System.IO.Path.ChangeExtension(a.Origin,Path.Aspect.Filex).Set(p=>{if(((string)a.Spectrum).Null(s=>s.No()).Set(s=>p.WriteAll(s))==null)System.IO.File.Delete(p);});a.Spectrum.Dirty=false;}) ;
-			if( Context.ActionFilterFilter.Any(f=>f.Dirty) ) { Context.ActionFilterFilter.Each(f=>f.Dirty=false) ; Main.Setup.StatePath.Set(p=>System.IO.Directory.CreateDirectory(p)).Path("ActionFilterFilter.stt").WriteAll((string)Context.ActionFilterFilter) ; }
-			if( Context.ActionFilter.Any(f=>f.Dirty) ) { Context.ActionFilter.Each(f=>f.Dirty=false) ; Main.Setup.StatePath.Set(p=>System.IO.Directory.CreateDirectory(p)).Path("ActionFilter.stt").WriteAll((string)Context.ActionFilter) ; }
-			if( Context.SourceFilter.Any(f=>f.Dirty) ) { Context.SourceFilter.Each(f=>f.Dirty=false) ; Main.Setup.StatePath.Set(p=>System.IO.Directory.CreateDirectory(p)).Path("SourceFilter.stt").WriteAll((string)Context.SourceFilter) ; }
-			if( Context.AspectFilter.Any(f=>f.Dirty) ) { Context.AspectFilter.Each(f=>f.Dirty=false) ; Main.Setup.StatePath.Set(p=>System.IO.Directory.CreateDirectory(p)).Path("AspectFilter.stt").WriteAll((string)Context.AspectFilter) ; }
-			if( Recoordinate ) { Recoordinate = false ; Main.Setup.StatePath.Set(p=>System.IO.Directory.CreateDirectory(p)).Path("Coordinater.stt").WriteAll(Coordinater?.Select(e=>$"{e.Key}:{e.Value}").Stringy(Environment.NewLine)) ; }
+			if( Context.ActionFilterFilter.Dirty ) { Context.ActionFilterFilter.Dirty = false ; Main.Setup.StatePath.Set(p=>System.IO.Directory.CreateDirectory(p)).Path($"{FilterName.Filter}.{StateExt}").WriteAll((string)Context.ActionFilterFilter) ; }
+			if( Context.ActionFilter.Dirty ) { Context.ActionFilter.Dirty = false ; Main.Setup.StatePath.Set(p=>System.IO.Directory.CreateDirectory(p)).Path($"{FilterName.Action}.{StateExt}").WriteAll((string)Context.ActionFilter) ; }
+			if( Context.SourceFilter.Dirty ) { Context.SourceFilter.Dirty = false ; Main.Setup.StatePath.Set(p=>System.IO.Directory.CreateDirectory(p)).Path($"{FilterName.Source}.{StateExt}").WriteAll((string)Context.SourceFilter) ; }
+			if( Context.AspectFilter.Dirty ) { Context.AspectFilter.Dirty = false ; Main.Setup.StatePath.Set(p=>System.IO.Directory.CreateDirectory(p)).Path($"{FilterName.Aspect}.{StateExt}").WriteAll((string)Context.AspectFilter) ; }
+			if( Recoordinate ) { Recoordinate = false ; Main.Setup.StatePath.Set(p=>System.IO.Directory.CreateDirectory(p)).Path($"{CoordinaterName}.{StateExt}").WriteAll(Coordinater?.Select(e=>$"{e.Key}:{e.Value}").Stringy(Environment.NewLine)) ; }
 			if( Main.Setup.Altiplane.Grade!=default ) Path.Altiplanes?.Where(a=>a.Dirty).Each(a=>a.Save(Main.Setup.StatePath.Set(p=>System.IO.Directory.CreateDirectory(p)).Path($"{Altiplane.FileSign}{a.Grade:.000}{Altiplane.ArgSep}{a.Grane:000}{Path.Altiplane.ExtSign}"))) ;
 			if( Path.Medium?.Dirty==true ) using( Path.Medium.Interrupt ) { Context.Book.Entries.OfType<Path>().ToArray().Each(p=>Path.Medium.Interact(p)) ; Path.Medium.Dirty = false ; }
 		}

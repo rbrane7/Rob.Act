@@ -83,6 +83,8 @@ namespace Rob.Act.Analyze
 	}
 	public class Filter : Aid.Collections.ObservableList<Filter.Entry>.Filtered
 	{
+		public bool Dirty { get => dirty || this.Any(e=>e.Dirty) ; set { dirty = value ; this.Each(e=>e.Dirty=value) ; } } bool dirty ;
+		Filter() => CollectionChanged += (s,a)=>dirty=true ;
 		public class Entry
 		{
 			const string Separator = " \x1 Filet \x2 " ;

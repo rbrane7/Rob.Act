@@ -108,7 +108,7 @@ namespace Rob.Act
 		}
 		void Spectrify() { Spectrum.Pointes = null ; Pointes = null ; Changed("Spec,Spectrum") ; collectionChanged?.Invoke(this,new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset)) ; }
 		void Pointable.Adapt( Pointable path ) => (path as Path).Set(Adapt) ;
-		public void Populate() { using var init = Incognit ; Metax.Reset(Spectrum.Trait) ; Spectrum.Trait.EachGuard(t=>this[t.Spec]=t.Value) ; Spectrum.Tags.Set(Tag.Add) ; }
+		public void Populate() { using var _=Incognit ; Metax.Reset(Spectrum.Trait) ; Spectrum.Trait.EachGuard(t=>this[t.Spec]=t.Value) ; Spectrum.Tags.Set(Tag.Add) ; }
 		void Take( IEnumerable<Point> points , Mark kind = Mark.No )
 		{
 			using var _=Incognit ; points.Set(p=>Content.AddRange(p.OrderBy(t=>t.Date))) ; if( Metax==null ) Metax = points?.FirstOrDefault(p=>p.Metax!=null)?.Metax ;

@@ -396,7 +396,7 @@
                 <CommandBinding Command="Open" Executed="DataGrit_Open_CommandBinding_Executed"/>
             </DataGrid.CommandBindings>
             <DataGrid.InputBindings>
-                <KeyBinding Command="Open" Key="Return" Modifiers="Alt"/>
+                <KeyBinding Command="Open" Gesture="Alt+Return"/><!--Key="Return" Modifiers="Alt" -->
             </DataGrid.InputBindings>
         </DataGrid>
         <Grid Grid.Row="2" Grid.Column="2">

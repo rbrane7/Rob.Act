@@ -18,12 +18,12 @@
 	<x:copy>
 	  <x:apply-templates select="@*|node()"/>
 	</x:copy>
-	<Drag>135</Drag>
-	<Action>O↑</Action>
+	<Drag>100</Drag>
+	<Action>⍥</Action>
 	<Subject>Rob</Subject>
 	<Locus>Home</Locus>
-	<Refine>4÷2]′⁴</Refine>
-	<Detail>☯</Detail>
+	<Refine>Concept2</Refine>
+	<Detail>☯₀</Detail>
   </x:template>
 
 </x:stylesheet>
