@@ -16,7 +16,7 @@ namespace Rob.Act
 		{
 			public static bool Interpolate = false ; public static Func<Quant,bool> Powerage ;
 			public static readonly string[] Axes = {"Number","Time (seconds)","Distance (meters)","Pace (seconds)","Watts","Cal/Hr","Stroke Rate","Heart Rate","Laps","Detail","Refine","Locus","Subject","Drag Factor","Date","Spec"} ;
-			readonly IList<(TimeSpan Time,double Distance,double Beat,uint Bit,double Energy,double Drag,double Effort,Mark Mark)> Data = new List<(TimeSpan Time,double Distance,double Beat,uint Bit,double Energy,double Drag,double Effort,Mark Mark)>() ;
+			readonly IList<(TimeSpan Time,double Distance,double Beat,uint Bit,double Energy,double Drag,double Effort,Mark Mark)> Data = [] ;
 			readonly DateTime Date = DateTime.Now ; readonly string Spec , Subject , Locus , Refine , Detail ;
 			public static bool Sign( string data ) => Axes.Take(8).All(a=>data.Consists(a)) ;
 			/// <summary>

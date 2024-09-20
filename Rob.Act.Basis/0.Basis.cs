@@ -49,8 +49,8 @@ namespace Rob.Act
 		public static explicit operator Quant?( Bipole? v ) => v.use(q=>(Quant)q) ;
 		public static bool operator==( Bipole x , Bipole y ) => x.A==y.A && x.B==y.B ;
 		public static bool operator!=( Bipole x , Bipole y ) => !(x==y) ;
-		public override string ToString() => $"{A}-{-B}" ;
-		public string ToString( string format , IFormatProvider formatProvider ) => $"{A.ToString(format,formatProvider)}-{(-B).ToString(format,formatProvider)}" ;
+		public override readonly string ToString() => $"{A}-{-B}" ;
+		public readonly string ToString( string format , IFormatProvider formatProvider ) => $"{A.ToString(format,formatProvider)}-{(-B).ToString(format,formatProvider)}" ;
 	}
 	public struct Geos
 	{
@@ -72,7 +72,7 @@ namespace Rob.Act
 		public static implicit operator Geos( (Quant lon,Quant lat) point ) => new(point.lon,point.lat) ;
 		public static bool operator==( Geos x , Geos y ) => x.Lon==y.Lon && x.Lat==y.Lat ;
 		public static bool operator!=( Geos x , Geos y ) => !(x==y) ;
-		public override string ToString() => $"({Lon:0.00000},{Lat:0.00000})" ;
+		public override readonly string ToString() => $"({Lon:0.00000},{Lat:0.00000})" ;
 	}
 	public struct Geom
 	{
@@ -94,7 +94,7 @@ namespace Rob.Act
 		public static Quant? operator|( Geom? a , Geom? b ) => a is Geom x && b is Geom y ? x|y : null as Quant? ;
 		public static implicit operator Geom?( Point point ) => point?.IsGeo==true ? new Geom{Lon=point[Axis.Lon].Value,Lat=point[Axis.Lat].Value,Alt=point[Axis.Lon],Dat=point.Date} : (Geom?)null ;
 		public static implicit operator Geom( (Quant lon,Quant lat,Quant? alt,DateTime? dat) point ) => new Geom(point.lon,point.lat,point.alt,point.dat) ;
-		public override string ToString() => $"({G},{Alt:0.0m},{Dat:yyyy-MM-dd.hh:mm:ss ddd})" ;
+		public override readonly string ToString() => $"({G},{Alt:0.0m},{Dat:yyyy-MM-dd.hh:mm:ss ddd})" ;
 	}
 	public interface Quantable : Aid.Gettable<uint,Quant?> , Aid.Gettable<Quant?> {}
 	/// <summary>
