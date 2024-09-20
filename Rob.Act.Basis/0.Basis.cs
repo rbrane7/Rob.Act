@@ -52,10 +52,9 @@ namespace Rob.Act
 		public override readonly string ToString() => $"{A}-{-B}" ;
 		public readonly string ToString( string format , IFormatProvider formatProvider ) => $"{A.ToString(format,formatProvider)}-{(-B).ToString(format,formatProvider)}" ;
 	}
-	public struct Geos
+	public struct Geos( Quant lon , Quant lat )
 	{
-		public Quant Lon , Lat ;
-		public Geos( Quant lon , Quant lat ) { Lon = lon ; Lat = lat ; }
+		public Quant Lon = lon , Lat = lat ;
 		public static Geos operator~( Geos a ) => new(a.Lat,a.Lon) ;
 		public static Quant operator+( Geos a ) => Math.Sqrt(a|a) ;
 		public static Geos? operator~( Geos? a ) => a.use(x=>~x) ;
