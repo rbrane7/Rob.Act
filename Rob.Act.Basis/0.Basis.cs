@@ -18,7 +18,7 @@ namespace Rob.Act
 	public enum Axis : uint { Lon , Lat , Alt , Dist , Drag , Flow , Beat , Bit , Energy , Grade , Top , Lim=Hyp-1 , Time=uint.MaxValue , Date=Time-1 , Lap=Date-1 , Stop=Lap-1 , Act=Stop-1 , No=Act-1 , Ato=No-1 , Sub=Ato-1 , Sup=Sub-1 , Hyp=Sup-1 }
 	#pragma warning disable CS0660 // Type defines operator == or operator != but does not override Object.Equals(object o)
 	#pragma warning disable CS0661 // Type defines operator == or operator != but does not override Object.GetHashCode()
-	public struct Bipole : IFormattable
+	public readonly struct Bipole : IFormattable
 	#pragma warning restore CS0661 // Type defines operator == or operator != but does not override Object.GetHashCode()
 	#pragma warning restore CS0660 // Type defines operator == or operator != but does not override Object.Equals(object o)
 	{
@@ -80,7 +80,7 @@ namespace Rob.Act
 		public Quant Lon { get => G.Lon ; set => G.Lon = value ; } public Quant Lat { get => G.Lat ; set => G.Lat = value ; }
 		public Geom( Quant lon , Quant lat , Quant? alt = null , DateTime? dat = null ) : this((lon,lat),alt,dat) {}
 		public Geom( Geos g , Quant? alt = null , DateTime? dat = null ) { G = g ; Alt = alt ; Dat = dat ; }
-		public static Geom operator~( Geom a ) => new Geom{G=~a.G,Alt=a.Alt,Dat=a.Dat} ;
+		public static Geom operator~( Geom a ) => new() { G=~a.G,Alt=a.Alt,Dat=a.Dat} ;
 		public static Quant operator+( Geom a ) => Math.Sqrt(a|a) ;
 		public static Geom operator-( Geom a ) => (0,0,0,a.Dat)-a ;
 		public static Geom? operator~( Geom? a ) => a.use(x=>~x) ;
