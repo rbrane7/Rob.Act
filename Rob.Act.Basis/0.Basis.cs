@@ -162,7 +162,7 @@ namespace Rob.Act
 		static Quant? Polar( this Point vect , Point at ) => vect.Sqrm(Act.Axis.Lon,at)+vect.Sqrm(Act.Axis.Lat,at) ; // Polar 2D square of size of vector at point of sphere .
 		internal static Quant? Euclid( this Point vect , Point at ) => (vect.Polar(at)+vect.Sqrm(Act.Axis.Alt,at)).use(Math.Sqrt) ; // Complete 3D size of vector at point of sphere .
 		internal static Quant? Sphere( this Point vect , Point at ) => vect.Polar(at).use(Math.Sqrt) ; // Polar 2D size of vector at point of sphere .
-		internal static Quant? Grade( this Point vect , Point at ) => vect.Get(p=>p[Act.Axis.Alt]/p.Sphere(at).Nil(d=>d==0)) ; // Grade as tangent of ascent angle .
+		internal static Quant? Grade( this Point vect , Point at ) => vect.Get(p=>p[Act.Axis.Alt]/p.Sphere(at).Nil()) ; // Grade as tangent of ascent angle .
 #if true // grade average by count
 		internal static Quant? Grade( this Path path , int at , Point offset ) { var count = 0 ; Quant? grade = 0 ; for( var i=Math.Max(at-GradeAccu,0) ; i<Math.Min(path.Count,at+GradeAccu+1) ; ++i ) if( path[i].Grade(offset).Set(g=>grade+=g)!=null ) ++count ; return count>0 ? grade/count : null ; }
 #else	// grade average by distance
