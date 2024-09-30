@@ -236,12 +236,12 @@ namespace Rob.Act.Analyze
 		#region Mousing
 		void ActionsFilterGrid_MouseRightButtonUp( object sender , MouseButtonEventArgs e )
 		{
-			if( Keyboard.IsKeyDown(Setup.Interer) ) foreach( var item in Setup.Internal ) if( Keyboard.IsKeyDown(item.key) ) foreach( var path in Book.Cast<Path>() ) item.act(path) ;
+			if( Keyboard.IsKeyDown(Setup.Interer) ) foreach( var (key,act) in Setup.Internal ) if( Keyboard.IsKeyDown(key) ) foreach( var path in Book.Cast<Path>() ) act(path) ;
 		}
 		void BookGrid_MouseRightButtonUp( object sender , MouseButtonEventArgs e ) { if( InternalFunction() || ExternalFuntion() ) return ; AggregationFunction(sender) ; }
 		bool InternalFunction()
 		{
-			if( Keyboard.IsKeyDown(Setup.Interer) ) foreach( var item in Setup.Internal ) if( Keyboard.IsKeyDown(item.key) ) { foreach( var path in BookGrid.SelectedItems.Cast<Path>() ) item.act(path) ; return true ; }
+			if( Keyboard.IsKeyDown(Setup.Interer) ) foreach( var (key,act) in Setup.Internal ) if( Keyboard.IsKeyDown(key) ) { foreach( var path in BookGrid.SelectedItems.Cast<Path>() ) act(path) ; return true ; }
 			return false ;
 		}
 		bool ExternalFuntion()
