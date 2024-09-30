@@ -195,7 +195,7 @@ namespace Rob.Act.Analyze
 			var gen = bg.ItemContainerGenerator ; foreach( var item in bg.Items )
 			{
 				/*bg.ScrollIntoView(item) ;*//*Performance problem, not usable*/ if( gen.ContainerFromItem(item) is not DataGridRow row ) continue ;
-				if( row.Cell(0) is DataGridCell cell && cell.Foreground is SolidColorBrush b && Coloring(item) is Color c && b.Color!=c ) cell.Foreground = new SolidColorBrush(c) ; else success = false ;
+				if( /*row.Cell(0) is DataGridCell cell &&*/ row.Foreground is SolidColorBrush b && Coloring(item) is Color c && b.Color!=c ) row.Foreground = new SolidColorBrush(c) ; else success = false ;
 			}
 			return success ;
 		}
