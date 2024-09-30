@@ -5,6 +5,7 @@
     <TargetFramework>net6.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
     <ApplicationIcon>C:\Base\Studio\Project\Rob\App\Rob.Act\Rob.Act.Graph\Anico.ico</ApplicationIcon>
+	<LangVersion>preview</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>

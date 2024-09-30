@@ -258,7 +258,7 @@ namespace Rob.Act.Analyze
 			if( sender is DataGrid grid && Actras.Count>0 ) foreach( var col in grid.Columns ) if( Actras.at(col.DisplayIndex) is Filter.Entry.Binding tr )
 			col.Header = col.Header is string name && tr.Name==name && Aggregation.Opt(tr.Name) is Func<IEnumerable<(object,Pathable)>,object> ag ? tr.View(ag(Book.Select(p=>(tr.On(p),p)))).Null() ?? tr.Name : tr.Name ;
 		}
-		readonly List<Filter.Entry.Binding> Actras = [] ;
+		readonly List<Filter.Entry.Binding> Actras = new() ;
 		public readonly Aggregator Aggregation = [] ;
 		public class Regexes : List<Regex>
 		{
@@ -275,13 +275,13 @@ namespace Rob.Act.Analyze
 			public static Aggregator Basis =
 			[
 				( [new("Dist|∫[^♀]")] , v=>v.Sum(e=>e.value as double?) , "Sum" ) ,
-				( [new("Time|∫♀")] , v=>v.Aggregate(TimeSpan.Zero,(a,t)=>a+((t.value as TimeSpan?)??TimeSpan.Zero)) , "SumTime" ) ,
-				( [new("Date")] , v=>(v.Max(e=>e.value as DateTime?)-v.Min(e=>e.value as DateTime?)).use(t=>DateTime.MinValue+t) , "CenterDate" ) ,
-				( [new("Speed|♂|☼|♥")] , v=>v.Average(e=>e.value as double?) , "Average" ) ,
-				( [] , v=>v.Average(e=>(e.value as TimeSpan?)?.TotalSeconds).use(TimeSpan.FromSeconds) , "AverageTime" ) ,
-				( [null,new("Speed|♂|☼|♥")] , v=>v.Centre(e=>e.value as double?,e=>e.path.Time.TotalSeconds) , "CentreTimely" ) ,
-				( [new("Action|Act")] , v=>v.Distinct(e=>e.value as string).Stringy('|').Null(s=>s.Length>10) , "ConcatPipely" ) ,
-				( [new("Pace|♀")] , v=>v.Centre(e=>(e.value as TimeSpan?)?.TotalSeconds,e=>(e.path as Path).Dist??0).use(TimeSpan.FromSeconds) , "CentrePace" ) ,
+				( new(){new("Time|∫♀")} , v=>v.Aggregate(TimeSpan.Zero,(a,t)=>a+((t.value as TimeSpan?)??TimeSpan.Zero)) , "SumTime" ) ,
+				( new(){new("Date")} , v=>(v.Max(e=>e.value as DateTime?)-v.Min(e=>e.value as DateTime?)).use(t=>DateTime.MinValue+t) , "CenterDate" ) ,
+				( new(){new("Speed|♂|☼|♥")} , v=>v.Average(e=>e.value as double?) , "Average" ) ,
+				( new() , v=>v.Average(e=>(e.value as TimeSpan?)?.TotalSeconds).use(TimeSpan.FromSeconds) , "AverageTime" ) ,
+				( new(){null,new("Speed|♂|☼|♥")} , v=>v.Centre(e=>e.value as double?,e=>e.path.Time.TotalSeconds) , "CentreTimely" ) ,
+				( new(){new("Action|Act")} , v=>v.Distinct(e=>e.value as string).Stringy('|').Null(s=>s.Length>10) , "ConcatPipely" ) ,
+				( new(){new("Pace|♀")} , v=>v.Centre(e=>(e.value as TimeSpan?)?.TotalSeconds,e=>(e.path as Path).Dist??0).use(TimeSpan.FromSeconds) , "CentrePace" ) ,
 			] ;
 			IEnumerable<(Regexes Tags,Func<IEnumerable<(object,Pathable)>,object> Join,string Code)> Content => this==Basis ? this : this.Union(Basis) ;
 			public Func<IEnumerable<(object value,Pathable path)>,object> Opt( string axe )
