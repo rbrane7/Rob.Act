@@ -39,7 +39,7 @@ namespace Rob.Act.Analyze
 		static Main()
 		{
 			AppDomain.CurrentDomain.Load(typeof(Translation).Assembly.FullName) ;
-			new Aid.Prog.Setup.App("Init.log") ; setup = (Resetup,e=>Trace.TraceError($"Setup Settings {e}")) ;
+			_= new Aid.Prog.Setup.App("Init.log") ; setup = (Resetup,e=>Trace.TraceError($"Setup Settings {e}")) ;
 			Doct = (Setup.Doctee.Uri(),e=>Trace.TraceError($"Doctor {e}")) ; Trace.TraceInformation($"{Aid.Prog.Setup.Basis} with {The.Run.Basis}") ;
 		}
 		static Aid.Prog.Doct Doct ;
@@ -53,10 +53,10 @@ namespace Rob.Act.Analyze
 			if( Setup?.SubjectMass.Equates(past?.SubjectMass)==false ) Basis.Mass = Setup.SubjectMass ;
 			if( Setup?.Aggregates.Equates(past?.Aggregates)==false )
 			{
-				foreach( var ag in past.Aggregates.Except(Setup.Aggregates,a=>a.Code) ) main.Aggregation.RemoveWhere(a=>a.Code==ag.Code) ;
-				foreach( var ag in Setup.Aggregates.Except(past.Aggregates,a=>a.Code) ) main.Aggregation.Add((new Regexes(ag.Tags.Select(t=>new Regex(t))),ag.Code.Compile<Func<IEnumerable<(object,Pathable)>,object>>(),ag.Code)) ;
-				foreach( var ag in Setup.Aggregates.Join(past.Aggregates,o=>o.Code,i=>i.Code,(o,i)=>(In:o.Tags,Out:i.Tags,o.Code)) )
-					if( main.Aggregation.at(a=>a.Code==ag.Code).Value is var agr && agr.Tags is IList<Regex> tags ) { tags.Clear() ; ag.In.Each(c=>tags.Add(c.Get(e=>new Regex(e)))) ; }
+				foreach( var (Tags,Code) in past.Aggregates.Except(Setup.Aggregates,a=>a.Code) ) main.Aggregation.RemoveWhere(a=>a.Code==Code) ;
+				foreach( var (Tags,Code) in Setup.Aggregates.Except(past.Aggregates,a=>a.Code) ) main.Aggregation.Add((new Regexes(Tags.Select(t=>new Regex(t))),Code.Compile<Func<IEnumerable<(object,Pathable)>,object>>(),Code)) ;
+				foreach( var (In,Out,Code) in Setup.Aggregates.Join(past.Aggregates,o=>o.Code,i=>i.Code,(o,i)=>(In:o.Tags,Out:i.Tags,o.Code)) )
+					if( main.Aggregation.at(a=>a.Code==Code).Value is var agr && agr.Tags is IList<Regex> tags ) { tags.Clear() ; In.Each(c=>tags.Add(c.Get(e=>new Regex(e)))) ; }
 			}
 		}
 		public State State { get => state ; private set => state = (value??new()).Set(s=>s.Context=this) ; } State state ;
@@ -80,7 +80,7 @@ namespace Rob.Act.Analyze
 		void Load()
 		{
 			Setup.Altiplane.nil(a=>a.Grade==0).Use(g=>{
-				Path.Altiplanes = new List<Path.Altiplane>() ;
+				Path.Altiplanes = [] ;
 				foreach( var a in System.IO.Directory.GetFiles(Setup.StatePath,$"{Altiplane.FileSign}*{Path.Altiplane.ExtSign}") ) { Trace.TraceInformation($"Loading {a}") ; Path.Altiplanes.Add(new Path.Altiplane(a){Radius=g.Radius}) ; }
 				if( Path.Altiplanes.Count==0 ) Path.Altiplanes.Add(new Path.Altiplane(g.Grade,g.Grane){Radius=g.Radius}) ;
 			}) ;
@@ -195,7 +195,7 @@ namespace Rob.Act.Analyze
 			var gen = bg.ItemContainerGenerator ; foreach( var item in bg.Items )
 			{
 				/*bg.ScrollIntoView(item) ;*//*Performance problem, not usable*/ if( gen.ContainerFromItem(item) is not DataGridRow row ) continue ;
-				if( /*row.Cell(0) is DataGridCell cell &&*/ row.Foreground is SolidColorBrush b && Coloring(item) is Color c && b.Color!=c ) row.Foreground = new SolidColorBrush(c) ; else success = false ;
+				if( row.Foreground is SolidColorBrush b && Coloring(item) is Color c && b.Color!=c ) row.Foreground = new SolidColorBrush(c) ; else success = false ;
 			}
 			return success ;
 		}
@@ -664,9 +664,9 @@ namespace Rob.Act.Analyze
 		static string Format( double value , int prec = 3 ) => value.ToString("#."+new string('#',DecDigits(value,prec))) ;
 		IEnumerable<KeyValuePair<string,(double Min,double Max)>> Hypercube ; (double Width,double Height) ViewSize , ViewOrigin ; (Line X,Line Y) MouseCross ; (IList<Line> Axe,IList<Label> Val) ScreenCross = (new List<Line>(),new List<Label>()) ;
 		(double Width,double Height) ViewScreenBorder => (DisplayTable.Margin.Left+DisplayTable.Margin.Right+4,30) ;
-		static readonly Color[] Colos = new Color[]{ new(){A=255,R=255,G=0,B=0} , new(){A=255,R=0,G=200,B=0} , new(){A=255,R=0,G=0,B=255} , new(){A=255,R=191,G=191,B=0} , new(){A=255,R=0,G=191,B=191} , new(){A=255,R=191,G=0,B=191} , new(){A=255,R=223,G=159,B=0} , new(){A=255,R=159,G=223,B=0} , new(){A=255,R=0,G=223,B=159} , new(){A=255,R=0,G=159,B=223} , new(){A=255,R=159,G=0,B=223} , new(){A=255,R=223,G=0,B=159} } ;
-		static readonly FontStretch[] Fostres = new[]{ FontStretches.UltraExpanded , FontStretches.ExtraExpanded , FontStretches.Expanded , FontStretches.SemiExpanded , FontStretches.Normal , FontStretches.SemiCondensed , FontStretches.Condensed , FontStretches.ExtraCondensed , FontStretches.UltraCondensed } ;
-		static readonly FontWeight[] Foweis = new[]{ /*FontWeights.ExtraBlack , FontWeights.Black ,*/ FontWeights.ExtraBold , FontWeights.Bold , FontWeights.SemiBold , FontWeights.Medium , FontWeights.Normal , FontWeights.Light , FontWeights.ExtraLight , FontWeights.Thin } ;
+		static readonly Color[] Colos = [ new(){A=255,R=255,G=0,B=0} , new(){A=255,R=0,G=200,B=0} , new(){A=255,R=0,G=0,B=255} , new(){A=255,R=191,G=191,B=0} , new(){A=255,R=0,G=191,B=191} , new(){A=255,R=191,G=0,B=191} , new(){A=255,R=223,G=159,B=0} , new(){A=255,R=159,G=223,B=0} , new(){A=255,R=0,G=223,B=159} , new(){A=255,R=0,G=159,B=223} , new(){A=255,R=159,G=0,B=223} , new(){A=255,R=223,G=0,B=159} ] ;
+		static readonly FontStretch[] Fostres = [ FontStretches.UltraExpanded , FontStretches.ExtraExpanded , FontStretches.Expanded , FontStretches.SemiExpanded , FontStretches.Normal , FontStretches.SemiCondensed , FontStretches.Condensed , FontStretches.ExtraCondensed , FontStretches.UltraCondensed ] ;
+		static readonly FontWeight[] Foweis = [ /*FontWeights.ExtraBlack , FontWeights.Black ,*/ FontWeights.ExtraBold , FontWeights.Bold , FontWeights.SemiBold , FontWeights.Medium , FontWeights.Normal , FontWeights.Light , FontWeights.ExtraLight , FontWeights.Thin ] ;
         static Color Coloring( int index ) => index<0 ? Colors.Black : Colos[index%Colos.Length] ;
         static bool RefontAxes( object sender )
 		{
