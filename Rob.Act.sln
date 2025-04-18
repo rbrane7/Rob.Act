@@ -34,6 +34,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{8B7AB214-6788-454F-93C6-9077C56151CD}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
+		Rob.Act.WinMerge = Rob.Act.WinMerge
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rob.Act.Intel", "Rob.Act.Graph\Rob.Act.Intel.csproj", "{1E3D5688-B89A-4FA6-AA7A-FA38544173EA}"

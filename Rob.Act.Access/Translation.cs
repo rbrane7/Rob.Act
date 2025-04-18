@@ -49,7 +49,7 @@ namespace Rob.Act
 				var text = rest.LeftFrom("<Track") ?? rest.LeftFrom("</Lap>") ;
 				var date = text.RightFromFirst("<Lap StartTime=\"").LeftFrom("\"")?.Trim() ; var spec = text.RightFromFirst("<Id>").LeftFrom("</Id>") ;
 				var time = text.RightFromFirst("<TotalTimeSeconds>").LeftFrom("</TotalTimeSeconds>") ; var dist = text.RightFromFirst("<DistanceMeters>").LeftFrom("</DistanceMeters>") ;
-				var drag = text.RightFromFirst("<DragFactor>").LeftFrom("</DragFactor>") ?? text.RightFromFirst("<Drag>").LeftFrom("</Drag>") ?? "100" ;
+				var drag = text.RightFromFirst("<DragFactor>").LeftFrom("</DragFactor>")?.TrimEnd('%') ?? text.RightFromFirst("<Drag>").LeftFrom("</Drag>")?.TrimEnd('%') ?? "100" ;
 				var action = text.RightFromFirst("<Action>").LeftFrom("</Action>") ; var subject = text.RightFromFirst("<Subject>").LeftFrom("</Subject>") ;
 				var locus = text.RightFromFirst("<Locus>").LeftFrom("</Locus>") ; var refine = text.RightFromFirst("<Refine>").LeftFrom("</Refine>") ;
 				var detail = text.RightFromFirst("<Detail>").LeftFrom("</Detail>") ; string laps = null ; if( (rest=rest[(text.Length+6)..]).Consists("<Lap") )
