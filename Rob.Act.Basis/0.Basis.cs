@@ -158,7 +158,7 @@ namespace Rob.Act
 		static readonly Quant Degmet = 111321.5 ;
 		public static readonly (Quant Force,Quant Power) Gravity = (9.823,6) ;
 		public static (Quant Pressure,Quant Temperature) Condition => (Zero.Pressure,Zero.Celsius) ;
-		public static readonly (Quant Pressure,Quant Celsius,Quant Farenheit,Quant Reamur) Zero = (103,273.15,255.37222222,273.15) ;
+		public static readonly (Quant Pressure,Quant Celsius,Quant Farenheit,Quant Reamur) Zero = (101.325,273.15,255.37222222,273.15) ;
 		public static Quant Condi => Condition.Pressure / Condition.Temperature ;
 		static Quant? Londeg( Quant? latdeg ) => latdeg.Rad().use(Math.Cos) * Degmet ;
 		static Quant? Rad( this Quant? deg ) => deg/180*Math.PI ;

@@ -108,7 +108,7 @@ namespace Rob.Act
 		#region Tags
 		void TagChanged( string p ) { tag = null ; if( Spec==Despect ) Spec = null ; Changed(p??"Tags") ; }
 		public override Tagable Tag => tags ?? System.Threading.Interlocked.CompareExchange(ref tags,new Tagger(TagChanged),null) ?? tags ; Tagger tags ;
-		public string Tags { get => tag ??= tags?.ToString(IsLeaf) ; set { if( value==tag ) return ; tag = null ; (Tag as Tagger)[value.ExtractTags(IsLeaf)] = true ; Changed("Subject,Object,Locus,Refine,Condition,Condi,Condinorm,Pressure,Temperature") ; } } string tag ;
+		public string Tags { get => tag ??= tags?.ToString(IsLeaf) ; set { if( value==tag ) return ; tag = null ; (Tag as Tagger)[value.ExtractTags(IsLeaf)] = true ; Changed("Subject,Object,Locus,Refine,Condition,Condi,Pressure,Temperature") ; } } string tag ;
 		public string Subject { get => tags?[Taglet.Subject].Null()??Owner?.Subject ; set { if( value?.Length>0 ) Tag[Taglet.Subject] = value ; else tags.Set(t=>t[Taglet.Subject]=value) ; } }
 		public string Object { get => tags?[Taglet.Object].Null()??Owner?.Object ; set { if( value?.Length>0 ) Tag[Taglet.Object] = value ; else tags.Set(t=>t[Taglet.Object]=value) ; } }
 		public string Locus { get => tags?[Taglet.Locus].Null()??Owner?.Locus ; set { if( value?.Length>0 ) Tag[Taglet.Locus] = value ; else tags.Set(t=>t[Taglet.Locus]=value) ; } }
@@ -139,8 +139,7 @@ namespace Rob.Act
 		public virtual Quant? Age => (Owner as Path)?.Age ;
 		public virtual Quant? Fage => (Owner as Path)?.Fage ;
 		/// <summary> Condition in kPa/K </summary>
-		public virtual Quant? Condi => Pressure.Quotient(Temperature) ;
-		public virtual Quant? Condinorm => Condi.Quotient(Basis.Condi) ;
+		public virtual Quant? Condi => (Pressure??Basis.Zero.Pressure).Quotient(Temperature)/Basis.Condi ;
 		/// <summary> Pressure in kPa </summary>
 		public virtual Quant? Pressure => Prestr?.TrimEnd('㍱').Parse<Quant>()/10 ;
 		public virtual Quant? Temperature => Tempstr is {} temp ?
