@@ -12,12 +12,16 @@ using System.Text.RegularExpressions;
 namespace Rob.Act
 {
 	using Quant = Double ;
-	public enum Taglet { Object , Subject , Locus , Refine , Grade , Flow , Drag , Detail }
+	public enum Taglet { Object , Subject , Locus , Refine , Grade , Flow , Drag , Detail , Temperature , Pressure }
 	public interface Tagable : IEquatable<Tagable> , IEnumerable<string> { void Add( string item ) ; string this[ int key ] {get;set;} string this[ Taglet tag ] {get;set;} string this[ string key ] {get;set;} int Count {get;} void Clear() ; void Adopt( Tagable tags ) ; string Uri {get;} }
 	public class Tagger : List<string> , Tagable
 	{
+		/// <summary> Count of <see cref="Taglet"/> members as limit </summary>
+		public static int Limes => Names.Length ;
+		/// <summary> Array of <see cref="Taglet"/> members names </summary>
 		public static readonly string[] Names = Enum.GetNames(typeof(Taglet)) ;
-		public static readonly string Aclutinator = System.Uri.SchemeDelimiter ;
+		/// <summary> Aglutinator string which indicates containing tags to be agglutinated into one tag which particles are space separated </summary>
+		internal static bool Aggluting( string tag ) => tag.Contains(System.Uri.SchemeDelimiter) ;
 		internal Action<string> Notifier {private get;set;}
 		internal Tagger( Action<string> notifier = null ) => Notifier = notifier ;
 		public new string this[ int key ] { get => (uint)key<Count ? base[key] : null ; set { if( this[key]==value ) return ; if( value!=null ) InsureCapacity(key) ; if( (uint)key<Count );else return ; base[key] = value ; Notifier?.Invoke(null) ; } }
@@ -37,13 +41,13 @@ namespace Rob.Act
 		static bool Equals( string x , string y ) => x.Null(v=>v.No())==y.Null(v=>v.No()) ;
 		#region De/Serialization
 		public static explicit operator string( Tagger the ) => the.Stringy(Serialization.Separator) ;
-		public static explicit operator Tagger( string text ) => text.Null(v=>v.Void()).Get(t=>new Tagger(t)) ;
+		public static explicit operator Tagger( string text ) => text.True.Get(t=>new Tagger(t)) ;
 		Tagger( string text ) => this[text.Separate(Serialization.Separator,braces:null)] = false ;
 		class Serialization
 		{
 			public const string Separator = " \x1 Tag \x2 " ;
 			internal static bool IsDraglike( string tag ) => tag?.Length>0 && tag.All(l=>char.IsDigit(l)||l=='.'||l=='+'||l=='-'||l=='^') ;
-			internal static bool IsJectlike( string tag ) => tag?.Any(l=>char.IsLetter(l))==true ;
+			internal static bool IsJectlike( string tag ) => tag?.Any(char.IsLetter)==true ;
 		}
 		#endregion
 	}
@@ -104,7 +108,7 @@ namespace Rob.Act
 		#region Tags
 		void TagChanged( string p ) { tag = null ; if( Spec==Despect ) Spec = null ; Changed(p??"Tags") ; }
 		public override Tagable Tag => tags ?? System.Threading.Interlocked.CompareExchange(ref tags,new Tagger(TagChanged),null) ?? tags ; Tagger tags ;
-		public string Tags { get => tag ??= tags?.ToString(IsLeaf) ; set { if( value==tag ) return ; tag = null ; (Tag as Tagger)[value.ExtractTags(IsLeaf)] = true ; Changed("Subject,Object,Locus,Refine") ; } } string tag ;
+		public string Tags { get => tag ??= tags?.ToString(IsLeaf) ; set { if( value==tag ) return ; tag = null ; (Tag as Tagger)[value.ExtractTags(IsLeaf)] = true ; Changed("Subject,Object,Locus,Refine,Condition,Condi,Condinorm,Pressure,Temperature") ; } } string tag ;
 		public string Subject { get => tags?[Taglet.Subject].Null()??Owner?.Subject ; set { if( value?.Length>0 ) Tag[Taglet.Subject] = value ; else tags.Set(t=>t[Taglet.Subject]=value) ; } }
 		public string Object { get => tags?[Taglet.Object].Null()??Owner?.Object ; set { if( value?.Length>0 ) Tag[Taglet.Object] = value ; else tags.Set(t=>t[Taglet.Object]=value) ; } }
 		public string Locus { get => tags?[Taglet.Locus].Null()??Owner?.Locus ; set { if( value?.Length>0 ) Tag[Taglet.Locus] = value ; else tags.Set(t=>t[Taglet.Locus]=value) ; } }
@@ -113,6 +117,9 @@ namespace Rob.Act
 		public string Dragstr { get => tags?[Taglet.Drag].Null()??(Owner as Path)?.Dragstr ; set { if( value?.Length>0 ) Tag[Taglet.Drag] = value ; else tags.Set(t=>t[Taglet.Drag]=value) ; } }
 		public string Gradstr { get => tags?[Taglet.Grade].Null()??(Owner as Path)?.Gradstr ; set { if( value?.Length>0 ) Tag[Taglet.Grade] = value ; else tags.Set(t=>t[Taglet.Grade]=value) ; } }
 		public string Flowstr { get => tags?[Taglet.Flow].Null()??(Owner as Path)?.Flowstr ; set { if( value?.Length>0 ) Tag[Taglet.Flow] = value ; else tags.Set(t=>t[Taglet.Flow]=value) ; } }
+		public string Tempstr { get => tags?[Taglet.Temperature].Null()??(Owner as Path)?.Tempstr ; set { if( value?.Length>0 ) Tag[Taglet.Temperature] = value ; else tags.Set(t=>t[Taglet.Temperature]=value) ; } }
+		public string Prestr { get => tags?[Taglet.Pressure].Null()??(Owner as Path)?.Prestr ; set { if( value?.Length>0 ) Tag[Taglet.Pressure] = value ; else tags.Set(t=>t[Taglet.Pressure]=value) ; } }
+		public string Condition => Prestr is var pres && Tempstr is var temp ? pres is not null && temp is not null ? $"{Prestr}/{Tempstr}" : pres??temp : null ;
 		public string Restr { get => $"{Gradstr} {Flowstr} {Dragstr}" ; set { value.Separate(' ').Set(v=>{ using(Incognite){ Gradstr = v.At(0) ; Flowstr = v.At(1) ; Dragstr = v.At(2) ; } Energize() ; }) ; } }
 		void Energize() { var dflt = Basis.Energing.On(Object) ; Reslet = (Gradstr.Gradlet(dflt?.Grade),Flowstr.Flowlet(dflt?.Flow),Dragstr.Draglet(dflt?.Drag)) ; }
 		#endregion
@@ -131,6 +138,16 @@ namespace Rob.Act
 		public override TimeSpan Time { get => base.Time ; set { if( Time==value ) return ; base.Time = value ; Changed("Time") ; } }
 		public virtual Quant? Age => (Owner as Path)?.Age ;
 		public virtual Quant? Fage => (Owner as Path)?.Fage ;
+		/// <summary> Condition in kPa/K </summary>
+		public virtual Quant? Condi => Pressure.Quotient(Temperature) ;
+		public virtual Quant? Condinorm => Condi.Quotient(Basis.Condi) ;
+		/// <summary> Pressure in kPa </summary>
+		public virtual Quant? Pressure => Prestr?.TrimEnd('㍱').Parse<Quant>()/10 ;
+		public virtual Quant? Temperature => Tempstr is {} temp ?
+			temp.EndsBy('℃') ? temp.TrimEnd('℃').Parse<Quant>()+Basis.Zero.Celsius :
+			temp.EndsBy('R') ? temp.TrimEnd('R').Parse<Quant>()*5/4+Basis.Zero.Celsius :
+			temp.EndsBy('℉') ? temp.TrimEnd('℉').Parse<Quant>()*5/9+Basis.Zero.Farenheit :
+			temp.TrimEnd('K').Parse<Quant>() : null ;
 		/// <summary>
 		/// Position within owner .
 		/// </summary>

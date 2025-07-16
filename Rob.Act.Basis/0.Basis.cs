@@ -97,7 +97,7 @@ namespace Rob.Act
 	}
 	public interface Quantable : Aid.Gettable<uint,Quant?> , Aid.Gettable<Quant?> {}
 	/// <summary>
-	/// Equatable is used by GUI frameworks therefore they can't be used and overriden !
+	/// Equatable is used by GUI frameworks therefore they can't be used and overridden !
 	/// </summary>
 	public interface Pointable : Quantable , Aid.Accessible<uint,Quant?> , Aid.Accessible<Quant?> , Aid.Accessible<Mark,Quant?> { DateTime Date {get;} TimeSpan Time {get;} uint Dimension {get;} string Action {get;} Mark Mark {get;} Tagable Tag {get;} void Adapt( Pointable path ) ; }
 	public interface Pathable : Pointable , Aid.Countable , Aid.Gettable<DateTime,Pointable> , Aid.Gettable<int,Pointable> { string Origin {get;} Path.Aspect Spectrum {get;} string Object {get;} string Subject {get;} string Locus {get;} string Refine {get;} string Detail {get;} }
@@ -157,6 +157,9 @@ namespace Rob.Act
 		static Quant? Sqrm( this Point vect , Axis axis , Point at ) { Quant? value = vect[axis]??0 ; if( axis==Act.Axis.Lat ) value *= Degmet ; if( axis==Act.Axis.Lon ) value *= Londeg(at[Act.Axis.Lat]) ; return value*value ; }
 		static readonly Quant Degmet = 111321.5 ;
 		public static readonly (Quant Force,Quant Power) Gravity = (9.823,6) ;
+		public static (Quant Pressure,Quant Temperature) Condition => (Zero.Pressure,Zero.Celsius) ;
+		public static readonly (Quant Pressure,Quant Celsius,Quant Farenheit,Quant Reamur) Zero = (103,273.15,255.37222222,273.15) ;
+		public static Quant Condi => Condition.Pressure / Condition.Temperature ;
 		static Quant? Londeg( Quant? latdeg ) => latdeg.Rad().use(Math.Cos) * Degmet ;
 		static Quant? Rad( this Quant? deg ) => deg/180*Math.PI ;
 		static Quant? Polar( this Point vect , Point at ) => vect.Sqrm(Act.Axis.Lon,at)+vect.Sqrm(Act.Axis.Lat,at) ; // Polar 2D square of size of vector at point of sphere .
@@ -206,23 +209,20 @@ namespace Rob.Act
 		#endregion
 
 		#region Tags
-		/// <summary> Extracts tags from one string . </summary>
-		/// <param name="value"> String to extract from . </param>
-		/// <param name="leaf"> If true , first two tags are extracted as nulls , which are <see cref="Point.Object"/> and <see cref="Point.Subjct"/> , which are forced to be drived from owner if point <see cref="Point.IsLeaf"/> . </param>
-		/// <returns> Extracted tags as non-null enumerable . </returns>
+		/// <summary> Extracts tags from one string </summary>
+		/// <param name="value"> String to extract from </param>
+		/// <param name="leaf"> If true , first two tags are extracted as nulls and are not expected to be in <paramref name="value"/> . They are <see cref="Point.Object"/> and <see cref="Point.Subjct"/> , which are forced to be derived from owner if point <see cref="Point.IsLeaf"/> </param>
+		/// <returns> Extracted tags as non-null enumerable </returns>
 		public static IEnumerable<string> ExtractTags( this string value , bool leaf = false ) => value?.TrimStart().StartsBy("?")==true ?
 			value.RightFromFirst('?').Separate(';','&').Get(elem=>Tagger.Names.Get(n=>n.Select(e=>elem.Arg(e)).Concat(elem.Except(e=>e.LeftFrom('=')??string.Empty,n)))) :
-			value.Separate(' ',braces:null).Get(t=>leaf?Enumerable.Repeat<string>(null,2).Concat(t.TagsLimed(2)):t.TagsLimed())  ?? Enumerable.Empty<string>() ;
-		/// <summary> Limits tags count to predefined count defined by <see cref="Taglet"/> if the space separated tags are positioned as lasts and they contain <see cref="Tagger.Aclutinator"/> string . </summary>
-		static IEnumerable<string> TagsLimed( this string[] tags , int skip = 0 )
-		{
-			int lim = (int)Taglet.Detail+1-skip ;
-			return tags.Length>lim && tags.Length-tags.Count(t=>t.Contains(Tagger.Aclutinator))+1==lim ? tags.Take((int)Taglet.Detail-skip).Append(tags.Skip((int)Taglet.Detail-skip).Stringy(' ')) : tags ;
-		}
+			value.Separate(' ',braces:null).Get(t=>leaf?Enumerable.Repeat<string>(null,2).Concat(t.TagsLimed(2)):t.TagsLimed()) ?? Enumerable.Empty<string>() ;
+		/// <summary> Limits tags count to predefined count defined by <see cref="Tagger.Limes"/> if the space separated tags contain <see cref="Tagger.Aglutinator"/> </summary>
+		static IEnumerable<string> TagsLimed( this string[] tags , int skip = 0 ) =>
+			Tagger.Limes-skip is var lim && tags.Length>lim && tags.Length-tags.Count(Tagger.Aggluting)==lim ? tags.Where(Tagger.Aggluting).Append(tags.Except(Tagger.Aggluting).Stringy(' ')) : tags ;
 		#endregion
 
 		internal static IEnumerable<KeyValuePair<string,(uint At,string Form,bool Potent)>> Iterer( this Metax metax , uint @base = 0 ) => metax.Get(m=>m.Iterator(@base)) ?? Enumerable.Empty<KeyValuePair<string,(uint At,string Form,bool Potent)>>() ;
-		internal static uint Suprem( this IDictionary<string,(uint At,string Form,bool Potent)> map ) => map.Count<=0?0:map.Max(a=>a.Value.At)+1 ;
+		internal static uint Supreme( this IDictionary<string,(uint At,string Form,bool Potent)> map ) => map.Count<=0?0:map.Max(a=>a.Value.At)+1 ;
 		public static Quant TotalSeconds( this DateTime date ) => (date-DateTime.MinValue).TotalSeconds ;
 		public static bool Equals( this Quant x , Quant y ) => x==y || Math.Abs(x-y)/(Math.Abs(x)+Math.Abs(y))<=QuantEpsilon ;
 		public static bool Equals( this Quant? x , Quant? y ) => x==y || x is Quant a && y is Quant b && Equals(a,b) ;
@@ -233,7 +233,7 @@ namespace Rob.Act
 			public string Path , Name , Format , Align ; public Func<object,object> Converter ;
 			public readonly string Form => Align.No() ? Format : Format.No() ? $"{{0,{Align}}}" : $"{{0,{Align}:{Format}}}" ;
 			public readonly string Reform => Align.No()&&!Format.No() ? $"{{0:{Format}}}" : Form ;
-			public static implicit operator Binding( string value ) => new Binding(value) ;
+			public static implicit operator Binding( string value ) => new(value) ;
 			public Binding( string value )
 			{
 				if( value?.TrimStart().StartsBy("(")==true ) { var cvt = value.LeftFromScoped(true,'/',',',':') ; Converter = cvt.Compile<Func<object,object>>(use:"Aid.Forming") ; Path = null ; value = value.RightFromFirst(cvt) ; } else { Path = value.LeftFrom(true,':',',','/') ; Converter = null ; }
@@ -253,20 +253,20 @@ namespace Rob.Act
 			else if( orik.Contains("result") && System.IO.Path.ChangeExtension(origin.Replace("result","logbook-workout"),".tcx") is string alt && System.IO.File.Exists(alt) ) System.IO.File.Move(alt,tap.Pathex(tagik.Replace("result","logbook-workout"),".tcx")) ;
 		}
 	}
-	public class Metax : IEquatable<Metax> , IEnumerable<KeyValuePair<string,(uint At,string Form,bool Potent)>>
+	public class Metax( uint zero = 0 ) : IEquatable<Metax> , IEnumerable<KeyValuePair<string,(uint At,string Form,bool Potent)>>
 	{
-		internal uint Base ; internal Metax Heir ;
-		readonly IDictionary<string,(uint At,string Form,bool Potent)> Map = new Dictionary<string,(uint At,string Form,bool Ponent)>() ;
+		internal uint Base = zero ; internal Metax Heir ;
+		readonly IDictionary<string,(uint At,string Form,bool Potent)> Map = new Dictionary<string,(uint At,string Form,bool Potent)>() ;
 		public IEnumerable<uint> Potenties => this.Where(a=>a.Value.Potent).Select(a=>a.Value.At).Concat(Base>0?Basis.Potenties:Basis.Potenties.Except(this.Select(a=>a.Value.At))) ;
 		public uint this[ string ax ] => Heir?.Map.On(ax)?.At+Dim ?? Map.On(ax)?.At+Base ?? (uint)Axis.Lim ;
 		public (string Name,string Form,bool Potent) this[ uint ax ] { get => this.SingleOrNil(m=>m.Value.At==ax).get(v=>(v.Key,v.Value.Form,v.Value.Potent))??default ; set => Map[value.Name] = (ax,value.Form,value.Potent) ; }
 		public (string Name,string Form,bool Potent) this[ Axis ax ] { get => this[(uint)ax] ; set => this[(uint)ax] = value ; }
 		public void Reset( Aspect.Traits traits ) => traits.Each(Reset) ;
-		void Reset( Aspect.Traitlet t ) { var map = Heir?.Map??Map ; var i = map.On(t.Spec)?.At??map.Suprem() ; map[t.Spec]=(i,t.Bond,t.IsPotential) ; }
+		void Reset( Aspect.Traitlet t ) { var map = Heir?.Map??Map ; var i = map.On(t.Spec)?.At??map.Supreme() ; map[t.Spec]=(i,t.Bond,t.IsPotential) ; }
 		public bool Equals( Metax other ) => other is Metax m && Base==m.Base && this.SequenceEquate(m) ;
 		internal IEnumerable<KeyValuePair<string,(uint At,string Form,bool Potent)>> Iterator( uint @base ) => Map.Select(a=>new KeyValuePair<string,(uint At,string Form,bool Potent)>(a.Key,(a.Value.At+@base,a.Value.Form,a.Value.Potent))) ;
 		public IEnumerator<KeyValuePair<string,(uint At,string Form,bool Potent)>> GetEnumerator() => (Iterator(Base).Concat(Heir.Iterer(Dim))).GetEnumerator() ; IEnumerator IEnumerable.GetEnumerator() => GetEnumerator() ;
-		public uint Dimension => Dim+(Heir?.Sup??0) ; uint Dim => Base+Sup ; uint Sup => Map.Suprem() ;
+		public uint Dimension => Dim+(Heir?.Sup??0) ; uint Dim => Base+Sup ; uint Sup => Map.Supreme() ;
 		#region De/Serialization
 		public static explicit operator Metax( string text ) => text.Null(t=>t.Void()).Get(t=>new Metax(t)) ;
 		public static explicit operator string( Metax the ) => the.Get(t=>$"{t.Base}{Serialization.Separator}{t.Map.Union(t.Heir.Iterer(t.Sup),a=>a.Key).Select(e=>$"{e.Key}{Serialization.Infix}{e.Value.At}{Serialization.Infix}{e.Value.Form}{Serialization.Postfix}{(e.Value.Potent?"+":null)}").Stringy(Serialization.Separator)}") ;
@@ -282,7 +282,6 @@ namespace Rob.Act
 			catch { System.Diagnostics.Trace.TraceError(e) ; error = true ; }
 			if( error ) System.Diagnostics.Trace.TraceError(text) ;
 		}
-		public Metax( uint zero = 0 ) => Base = zero ;
 		public IEnumerable<string> Bonds => this.Select(e=>$"[{e.Value.At}]/{e.Key}{e.Value.Form}") ;
 	}
 	namespace Pre
@@ -299,18 +298,18 @@ namespace Rob.Act
 			protected virtual void From( Pointable point ) { Time = point.Time ; for( uint i=0 ; i<point.Dimension ; ++i ) this[i] = point[i] ; }
 			public virtual void Adapt( Pointable point ) { if( point==null ) return ; From(point) ; Date = point.Date ; Action = point.Action ; Mark = point.Mark ; (point as Point).Set(p=>Metax=p.Metax) ; }
 			/// <summary>
-			/// Resets relative fields which are dependant on context . Those will be set newly . 
+			/// Resets relative fields which are dependent on context . Those will be set newly . 
 			/// </summary>
 			protected internal virtual void Depose() { Time = default ; Post = default ; }
 			#endregion
 
 			#region State
 			/// <summary>
-			/// During init faze property chnges are not persisted .
+			/// During init faze property changes are not persisted .
 			/// </summary>
 			protected abstract Aid.Closure Incognit {get;}
 			/// <summary>
-			/// Quanitity data vector .
+			/// Quantity data vector .
 			/// </summary>
 			Quant?[] Quantity ;
 			/// <summary>
@@ -334,7 +333,7 @@ namespace Rob.Act
 			/// </summary>
 			public virtual string Sign => sign ??= Signature ; string sign ; protected virtual string Signature => $"{Date.nil()}{Time.nil().Get(t=>$"+{t:hh\\:mm\\:ss}")}" ;
 			/// <summary>
-			/// Assotiative text .
+			/// Associative text .
 			/// </summary>
 			public virtual string Spec { get => spec ??= Despect ; set { if( value!=spec ) spec = value ; } } string spec ;
 			protected string Despect => Despec(Action) ; protected virtual string Despec( string act ) => $"{act??Action} {Signature}" ;
@@ -347,7 +346,7 @@ namespace Rob.Act
 			/// </summary>
 			public virtual Mark Mark {get;set;} public Mark? Marklet { get => Mark.nil() ; set { if( value is Mark mark ) Mark = mark ; } }
 			/// <summary>
-			/// Shows which marking couters are set .
+			/// Shows which marking counters are set .
 			/// </summary>
 			public Mark Marker { get { var rez = Mark.No ; foreach( var mark in Basis.Segmentables ) if( this[mark]!=null ) rez |= mark ; return rez ; } }
 			/// <summary>
@@ -370,7 +369,7 @@ namespace Rob.Act
 			}
 			public Quant? this[ string axis ]
 			{
-				get => axis==null ? null : Metax?[axis] is uint ax ? ax<(uint)Axis.Lim ? this[ax] : axis.Mark() is Mark mr ? this[mr] : default(Quant?) : axis.Mark() is Mark ma ? this[ma] : axis.Axis() is uint a ? this[a] : default(Quant?) ;
+				get => axis==null ? null : Metax?[axis] is uint ax ? ax<(uint)Axis.Lim ? this[ax] : axis.Mark() is Mark mr ? this[mr] : default : axis.Mark() is Mark ma ? this[ma] : axis.Axis() is uint a ? this[a] : default ;
 				set { if( axis==null ) return ; if( Metax?[axis] is uint ax ) if( ax<(uint)Axis.Lim ) this[ax] = value ; else this[axis.Mark().Value] = value ; else if( axis.Mark() is Mark mark ) this[mark] = value ; else this[axis.Axis(true).Value] = value ; }
 			}
 			public override bool TrySetMember( SetMemberBinder binder , object value ) { this[binder.Name] = (Quant?)value ; return base.TrySetMember( binder, value ) ; }

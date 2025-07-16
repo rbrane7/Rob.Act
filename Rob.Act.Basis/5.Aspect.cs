@@ -46,16 +46,16 @@ namespace Rob.Act
 		public Aspect( IEnumerable<Aspect> sources ) : this(sources?.SelectMany(s=>s).Distinct(a=>a.Spec).Select(a=>new Axe(a,Set))) { spec = sources?.Select(s=>s.Spec).Stringy(' ') ; sources?.SelectMany(s=>s.Trait).Distinct(t=>t.Spec).Each(t=>Trait.Add(new Traitlet(t,Set),Set)) ; }
 		public Aspect( Aspect source ) : this(source?.Select(a=>new Axe(a,Set))) { spec = source?.Spec ; source.Trait.Each(t=>Trait.Add(new Traitlet(t,Set),Set)) ; taglet = source?.taglet ; }
 		void Join( IEnumerable<Axe> source , IEnumerable<Aspectable> set = null ) => source?.Except(this,a=>a.Spec)?.Select(a=>new Axe(a,set)).Set(AddRange) ;
-		public Aspect( IEnumerable<Axe> axes = null , Traits trait = null ) : base(axes??[]) { foreach( var ax in this ) { ax.Own = this ; ax.PropertyChanged += OnChanged ; } Trait = (trait??new Traits()).Set(t=>t.Context=this) ; }
+		public Aspect( IEnumerable<Axe> axes = null , Traits trait = null ) : base(axes??[]) { foreach( var ax in this ) { ax.Own = this ; ax.PropertyChanged += OnChanged ; } Trait = (trait??new()).Set(t=>t.Context=this) ; }
 		public Aspect() : this(axes:null) {} // Default constructor must be present to enable DataGrid implicit Add .
-		/// <remarks> Returns null if unsolved , which is significat for possibility of explicit resolution . </remarks>
+		/// <remarks> Returns null if unsolved , which is significant for possibility of explicit resolution . </remarks>
 		[LambdaContext.Dominant] public Axe this[ string key ] => this.One(a=>a.Spec==key) ?? Base.Null(b=>b==this)?[key] ;
 		public virtual string Spec { get => spec ; set { if( value==spec ) return ; spec = value.Set(v=>{try{if(Origin.Includes(Spec)&&System.IO.File.Exists(Origin)&&Origin.Replace(Spec,v) is var nori){System.IO.File.Move(Origin,nori);origin=nori;}}catch{}}) ; propertyChanged.On(this,"Spec") ; Dirty = true ; } } string spec ;
 		public string Origin { get => origin ; set { origin = value.Set(v=>Spec=System.IO.Path.GetFileNameWithoutExtension(v).LeftFrom('?',all:true)) ; propertyChanged.On(this,"Origin") ; Dirty = true ; } } string origin ;
 		public string Score { get => $"{Spec} {Trait} {Tags}" ; set => propertyChanged.On(this,"Score") ; }
 		public Traits Trait { get; }
 		public string Taglet { get => taglet ; set { if( value==taglet ) return ; taglet = value.Null(v=>v.No()) ; Tager = null ; tag = null ; propertyChanged.On(this,"Taglet") ; Dirty = true ; } } string taglet ;
-		public Action<Aspect> Tager { get => tager ??= taglet.Compile<Action<Aspect>>() ; set { tager = value ; tags?.Clear() ; if( value==null ) tags = null ; propertyChanged.On(this,"Tager,Tags") ; } } Action<Aspect> tager ;
+		public Action<Aspect> Tager { get => field ??= taglet.Compile<Action<Aspect>>() ; set { field = value ; tags?.Clear() ; if( value==null ) tags = null ; propertyChanged.On(this,"Tager,Tags") ; } }
 		public Tagger Tag => ( tags ?? Tager.Get(t=>System.Threading.Interlocked.CompareExchange(ref tags,new Tagger(p=>{tag=null;propertyChanged.On(this,p??"Tags");}),null)) ?? tags ).Set(t=>{if(t.Count<=0&&!notag)using(new Aid.Closure(()=>notag=true,()=>notag=false))Tager.On(this);}) ; Tagger tags ; bool notag ;
 		public string Tags { get => tag ??= Tag.Stringy() ; set { if( value==tag ) return ; tag = null ; Tag[value.ExtractTags()] = true ; Score = value ; } } string tag ;
 		public virtual Aspectable Source { get => source ; set { source = value ; this.Where(a=>a.Multi==false).Each(a=>a.Source=value) ; Spec += $" {value?.Spec}" ; } } Aspectable source ;

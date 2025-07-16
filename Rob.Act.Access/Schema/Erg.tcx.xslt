@@ -7,8 +7,10 @@
   <x:param name="Detail"/>
   <x:param name="Action"/>
   <x:param name="Drag"/>
+	<x:param name="Temp"/>
+	<x:param name="Pres"/>
 
-  <x:template match="@*|node()">
+	<x:template match="@*|node()">
 	<x:copy>
 	  <x:apply-templates select="@*|node()"/>
 	</x:copy>
@@ -22,12 +24,16 @@
   <x:template match="tcx:Action"><x:copy><x:value-of select="$Action"/></x:copy></x:template>
   <x:template match="tcx:Refine"><x:copy><x:value-of select="$Refine"/></x:copy></x:template>
   <x:template match="tcx:Detail"><x:copy><x:value-of select="$Detail"/></x:copy></x:template>
+  <x:template match="tcx:Temp"><x:copy><x:value-of select="$Temp"/></x:copy></x:template>
+  <x:template match="tcx:Pres"><x:copy><x:value-of select="$Pres"/></x:copy></x:template>
 
   <x:template match="tcx:Id">
 	<x:copy>
 	  <x:apply-templates select="@*|node()"/>
 	</x:copy>
 	<x:if test="not(../tcx:Drag)"><Drag><x:value-of select="$Drag"/></Drag></x:if>
+	<x:if test="not(../tcx:Temp)"><Temp><x:value-of select="$Temp"/></Temp></x:if>
+	<x:if test="not(../tcx:Pres)"><Pres><x:value-of select="$Pres"/></Pres></x:if>
 	<x:if test="not(../tcx:Action)"><Action><x:value-of select="$Action"/></Action></x:if>
 	<x:if test="not(../tcx:Subject)"><Subject>Rob</Subject></x:if>
 	<x:if test="not(../tcx:Locus)"><Locus>Home</Locus></x:if>

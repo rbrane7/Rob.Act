@@ -15,15 +15,15 @@ namespace Rob.Act
 		public class Csv
 		{
 			public static bool Interpolate = false ; public static Func<Quant,bool> Powerage ;
-			public static readonly string[] Axes = {"Number","Time (seconds)","Distance (meters)","Pace (seconds)","Watts","Cal/Hr","Stroke Rate","Heart Rate","Laps","Detail","Refine","Locus","Subject","Drag Factor","Date","Spec"} ;
+			public static readonly string[] Axes = {"Number","Time (seconds)","Distance (meters)","Pace (seconds)","Watts","Cal/Hr","Stroke Rate","Heart Rate","Pres","Temp","Laps","Detail","Refine","Locus","Subject","Drag Factor","Date","Spec"} ;
 			readonly IList<(TimeSpan Time,double Distance,double Beat,uint Bit,double Energy,double Drag,double Effort,Mark Mark)> Data = [] ;
-			readonly DateTime Date = DateTime.Now ; readonly string Spec , Subject , Locus , Refine , Detail ;
+			readonly DateTime Date = DateTime.Now ; readonly string Spec , Subject , Locus , Refine , Detail , Temp , Pres ;
 			public static bool Sign( string data ) => Axes.Take(8).All(a=>data.Consists(a)) ;
 			/// <summary>
-			/// Skierg data processing and clening . 
+			/// Skierg data processing and cleaning . 
 			/// </summary>
 			/// <remarks>
-			/// We can't valorize time according to pace/power , because we geto diskrepancy between results wioth Concept2 . 
+			/// We can't valorize time according to pace/power , because we go to discrepancy between results with Concept2 . 
 			/// We could valorize pace/power data according to pair (time,dist) to make them consistent with differential forms but it gives even more erratic data . 
 			/// </remarks>
 			public Csv( string data )
@@ -38,6 +38,8 @@ namespace Rob.Act
 					if( Sign(line) )
 					{
 						Data.Add(accu) ; var lapo = laps?.LastOrDefault() ;
+						if( line.RightFrom(Axes[^10]+'=').LeftFrom('"') is string pres && !Pres.Includes(pres) ) if( Pres.No() ) Pres = pres ; else Pres += $"+{pres}" ;
+						if( line.RightFrom(Axes[^9]+'=').LeftFrom('"') is string temp && !Temp.Includes(temp) ) if( Temp.No() ) Temp = temp ; else Temp += $"+{temp}" ;
 						laps = line.RightFrom(Axes[^8]+'=').LeftFrom('"').SeparateTrim(';',false)?.Select(e=>(e.LeftFrom(',').Parse<Quant>(0)+(lapo??default).time,e.RightFrom(',').Parse<Quant>(0)+(lapo??default).dist)).Get(s=>lapo.Get(s.Prepend)??s).ToArray() ;
 						if( line.RightFrom(Axes[^7]+'=').LeftFrom('"') is string detail && !Detail.Includes(detail) ) if( Detail.No() ) Detail = detail ; else Detail += $"+{detail}" ;
 						if( line.RightFrom(Axes[^6]+'=').LeftFrom('"') is string refine && !Refine.Includes(refine) ) if( Refine.No() ) Refine = refine ; else Refine += $"+{refine}" ;
@@ -90,7 +92,7 @@ namespace Rob.Act
 			}
 			public static implicit operator Path( Csv work ) =>
 				new Path(work.Date,work.Data.Select(p=>new Point(work.Date+p.Time){ Time = p.Time , Dist = p.Distance , Energy = p.Energy , Fuel = p.Effort , Beat = p.Beat , Bit = p.Bit , Drag = p.Drag.nil() , Mark = p.Mark }))
-				{ Initing = true , Action = work.Spec , Tags = $"{Basis.Device.Skierg.Code} {work.Subject} {work.Locus} {work.Refine}   {work.Data[^1].get(d=>d.Drag/d.Distance):0.00} {work.Detail}" }
+				{ Initing = true , Action = work.Spec , Tags = $"{Basis.Device.Skierg.Code} {work.Subject} {work.Locus} {work.Refine}   {work.Data[^1].get(d=>d.Drag/d.Distance):0.00} {work.Detail} {work.Temp} {work.Pres}" }
 				.Set(p=>{ var l = work.Data[^1] ; var f = work.Data[0] ; p.Dist = l.Distance-f.Distance ; p.Time = l.Time-f.Time ; p.Energy = l.Energy-f.Energy ; p.Fuel = l.Effort-f.Effort ; p.Beat = l.Beat-f.Beat ; p.Bit = l.Bit-f.Bit ; p.Drag = l.Drag-f.Drag ; p.Initing = false ; }) ;
 			public static explicit operator Csv( Path data ) => throw new NotImplementedException() ;
 			public static implicit operator string( Csv data ) => throw new NotImplementedException() ;

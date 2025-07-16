@@ -45,7 +45,7 @@ namespace Rob.Act
 		public bool Meany { get => delta||meany ; set { if( value==meany ) return ; meany = value ; /*Aspect = null ;*/ propertyChanged.On(this,"Meany") ; } } bool meany ;
 		public bool Regular => Multi==false || Selector!=null ;
 		public bool Asrex { get => rex ; set { if( value==rex ) return ; rex = value ; Selectlet = selectlet ; propertyChanged.On(this,"Asrex,Aspects") ; } } bool rex ;
-		Axe Deref( IEnumerable<Aspectable> aspects ) => IsRef ? Spec.RightFrom(Extern,all:true).Get(s=>(Spec.LeftFromLast(Extern)is string asp?aspects?.Where(a=>asp==a.Spec):aspects)?.SelectMany(a=>a).SingleOrNo(x=>x.Spec==s&&!x.IsRef)) : null ;
+		Axe Deref( IEnumerable<Aspectable> aspects ) => IsRef ? Spec.RightFrom(Extern,all:true).Get(s=>(Spec.LeftFromLast(Extern)is string asp?aspects?.Where(a=>asp==a.Spec):aspects)?.SelectMany(a=>a).One(x=>x.Spec==s&&!x.IsRef)) : null ;
 		public Axe DeRef => Deref(Act.Aspect.Set)??this ; public bool IsRef => (resolver==null||resolver==No.resolver) && resolvelet.No() ;
 		protected virtual Aspectable DefaultAspect => Multi!=false ? null : Selection?.SingleOrNo() ;
 		protected virtual Aspectable[] DefaultAspects => Multi!=false ? Selection?.ToArray() : null ;

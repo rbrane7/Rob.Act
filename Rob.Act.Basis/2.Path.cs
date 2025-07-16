@@ -15,8 +15,8 @@ namespace Rob.Act
 	using Quant = Double ;
 	public class Profile
 	{
-		public static string The { get => the ; set { the = value ; dflt = null ; } } static string the ;
-		public static Profile Default => dflt ??( dflt = Path.SubjectProfile.By(The)??Path.SubjectProfile.One().Value ) ; static Profile dflt ;
+		public static string The { get => field ; set { field = value ; Default = null ; } }
+		public static Profile Default { get => field ??= Path.SubjectProfile.By(The) ?? Path.SubjectProfile.One().Value ; private set => field = value ; }
 		public Quant Mass , Span , Tranq ;
 		public Quant Resi => Span*Basis.AirResistance ;
 		public DateTime Birth ;
