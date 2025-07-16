@@ -44,7 +44,7 @@ namespace Rob.Act
 			(
 				rest = cofile.ReadAllText(false).RightFromFirst("<Activity") , dart = Part(data) , dres = data.Sub(dart.Length) , data = null ;
 				!rest.No() ; rest = rest.RightFromFirst("<Activity") , dart = Part(dres) , dres = dres.Sub(dart?.Length??0)
-			) // Now cofile is always just heder , not point-to-point data .
+			) // Now cofile is always just header , not point-to-point data .
 			{
 				var text = rest.LeftFrom("<Track") ?? rest.LeftFrom("</Lap>") ;
 				var date = text.RightFromFirst("<Lap StartTime=\"").LeftFrom("\"")?.Trim() ; var spec = text.RightFromFirst("<Id>").LeftFrom("</Id>") ;
@@ -52,7 +52,7 @@ namespace Rob.Act
 				var drag = text.RightFromFirst("<DragFactor>").LeftFrom("</DragFactor>")?.TrimEnd('%') ?? text.RightFromFirst("<Drag>").LeftFrom("</Drag>")?.TrimEnd('%') ?? "100" ;
 				var action = text.RightFromFirst("<Action>").LeftFrom("</Action>") ; var subject = text.RightFromFirst("<Subject>").LeftFrom("</Subject>") ;
 				var locus = text.RightFromFirst("<Locus>").LeftFrom("</Locus>") ; var refine = text.RightFromFirst("<Refine>").LeftFrom("</Refine>") ;
-				var temp = text.RightFromFirst("<Temp>").LeftFrom("</Temp>") ; var pres = text.RightFromFirst("<Pres>").LeftFrom("</Pres>") ;
+				var temp = text.RightFromFirst("<Temp>").LeftFrom("</Temp>") ; var pres = text.RightFromFirst("<Pres>").LeftFrom("</Pres>") ;  var humi = text.RightFromFirst("<Humi>").LeftFrom("</Humi>") ;
 				var detail = text.RightFromFirst("<Detail>").LeftFrom("</Detail>") ; string laps = null ; if( (rest=rest[(text.Length+6)..]).Consists("<Lap") )
 				for( var (tacu,dacu) = (time.Parse(0D),dist.Parse(0D)) ; Intra(text=rest.Get(t=>t.LeftFrom("<Track")??t.LeftFrom("</Lap>"))) is not null ; rest = rest[(text.Length+6)..] )
 				{
@@ -66,7 +66,7 @@ namespace Rob.Act
 					var lavs = dart.Trim().RightFrom('\n').Separate(',') ; lavs[0] = (lavs[0].Trim('"').Parse<uint>()+1).Stringy() ?? lavs[0] ; lavs[1] = time ; lavs[2] = dist ;
 					dart += lavs.Stringy(',') ; dart += $",\"{drag}\"{Environment.NewLine}" ; /* append of final missing line */
 				}
-				data += dart.Replace(sign,sign+$",\"Pres={pres}\",\"Temp={temp}\",\"Detail={detail}\",\"Refine={refine}\",\"Locus={locus}\",\"Subject={subject}\",\"Drag Factor={drag}\",\"Date={date}\",\"Spec={action??spec}\"{laps.Get(l=>$",\"Laps={l}\"")}") ;
+				data += dart.Replace(sign,sign+$",\"Humi={humi}\",\"Pres={pres}\",\"Temp={temp}\",\"Detail={detail}\",\"Refine={refine}\",\"Locus={locus}\",\"Subject={subject}\",\"Drag Factor={drag}\",\"Date={date}\",\"Spec={action??spec}\"{laps.Get(l=>$",\"Laps={l}\"")}") ;
 			}
 			else if( file.EndsWith(Partitioner.Ext) ) data = $"{Partitioner.Sign}{file.LeftFromLast(Partitioner.Ext)}{Environment.NewLine}{data}" ;
 			else if( file.EndsWith(Csv.Bio.Ext) && file.LeftFrom(Csv.Bio.Ext).RightFrom('.') is string sbj ) data = data.LeftFrom(true,CrLf)+$",Subject={sbj}"+data.RightFromFirst(CrLf,with:true) ;

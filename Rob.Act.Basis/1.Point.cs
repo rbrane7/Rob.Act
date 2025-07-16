@@ -12,7 +12,7 @@ using System.Text.RegularExpressions;
 namespace Rob.Act
 {
 	using Quant = Double ;
-	public enum Taglet { Object , Subject , Locus , Refine , Grade , Flow , Drag , Detail , Temperature , Pressure }
+	public enum Taglet { Object , Subject , Locus , Refine , Grade , Flow , Drag , Detail , Temperature , Pressure , Humidity }
 	public interface Tagable : IEquatable<Tagable> , IEnumerable<string> { void Add( string item ) ; string this[ int key ] {get;set;} string this[ Taglet tag ] {get;set;} string this[ string key ] {get;set;} int Count {get;} void Clear() ; void Adopt( Tagable tags ) ; string Uri {get;} }
 	public class Tagger : List<string> , Tagable
 	{
@@ -27,8 +27,7 @@ namespace Rob.Act
 		public new string this[ int key ] { get => (uint)key<Count ? base[key] : null ; set { if( this[key]==value ) return ; if( value!=null ) InsureCapacity(key) ; if( (uint)key<Count );else return ; base[key] = value ; Notifier?.Invoke(null) ; } }
 		public string this[ Taglet key ] { get => this[(int)key] ; set { if( this[key]==value ) return ; this[(int)key] = value ; Notifier?.Invoke(key.ToString()) ; } }
 		public string this[ string key ] { get => key.Parse<Taglet>() is Taglet t ? this[t] : MatchIndex(key) is int i ? this[i] : null ; set { if( key.Parse<Taglet>() is Taglet t ) { this[t] = value ; return ; } if( MatchIndex(key) is int i ) this[i] = value ; else Add(value) ; Notifier?.Invoke(key) ; } }
-		internal bool this[ params string[] tag ] { set => this[ tag as IEnumerable<string> ] = value ; }
-		internal bool this[ IEnumerable<string> tag ] { set { if( value ) Clear() ; AddRange(tag) ; var drag = this[1] ; if( Serialization.IsDraglike(drag) || drag.No()&&Serialization.IsJectlike(this[0])&&Serialization.IsJectlike(this[2]) ) { RemoveAt(1) ; this[Taglet.Drag] = drag.Null() ; } Notifier?.Invoke(null) ; } }
+		internal bool this[ params IEnumerable<string> tag ] { set { if( value ) Clear() ; AddRange(tag) ; var drag = this[1] ; if( Serialization.IsDraglike(drag) || drag.No()&&Serialization.IsJectlike(this[0])&&Serialization.IsJectlike(this[2]) ) { RemoveAt(1) ; this[Taglet.Drag] = drag.Null() ; } Notifier?.Invoke(null) ; } }
 		public new void Add( string tag ) { if( tag==null ) return ; base.Add(tag) ; Notifier?.Invoke(null) ; }
 		public void Adopt( Tagable tags ) { Clear() ; tags.Set(AddRange) ; }
 		int? MatchIndex( string key ) => MatchIndexes(key).singleOrNil() ;
@@ -108,7 +107,7 @@ namespace Rob.Act
 		#region Tags
 		void TagChanged( string p ) { tag = null ; if( Spec==Despect ) Spec = null ; Changed(p??"Tags") ; }
 		public override Tagable Tag => tags ?? System.Threading.Interlocked.CompareExchange(ref tags,new Tagger(TagChanged),null) ?? tags ; Tagger tags ;
-		public string Tags { get => tag ??= tags?.ToString(IsLeaf) ; set { if( value==tag ) return ; tag = null ; (Tag as Tagger)[value.ExtractTags(IsLeaf)] = true ; Changed("Subject,Object,Locus,Refine,Condition,Condi,Pressure,Temperature") ; } } string tag ;
+		public string Tags { get => tag ??= tags?.ToString(IsLeaf) ; set { if( value==tag ) return ; tag = null ; (Tag as Tagger)[value.ExtractTags(IsLeaf)] = true ; Changed(Tagger.Names) ; } } string tag ;
 		public string Subject { get => tags?[Taglet.Subject].Null()??Owner?.Subject ; set { if( value?.Length>0 ) Tag[Taglet.Subject] = value ; else tags.Set(t=>t[Taglet.Subject]=value) ; } }
 		public string Object { get => tags?[Taglet.Object].Null()??Owner?.Object ; set { if( value?.Length>0 ) Tag[Taglet.Object] = value ; else tags.Set(t=>t[Taglet.Object]=value) ; } }
 		public string Locus { get => tags?[Taglet.Locus].Null()??Owner?.Locus ; set { if( value?.Length>0 ) Tag[Taglet.Locus] = value ; else tags.Set(t=>t[Taglet.Locus]=value) ; } }
@@ -119,6 +118,7 @@ namespace Rob.Act
 		public string Flowstr { get => tags?[Taglet.Flow].Null()??(Owner as Path)?.Flowstr ; set { if( value?.Length>0 ) Tag[Taglet.Flow] = value ; else tags.Set(t=>t[Taglet.Flow]=value) ; } }
 		public string Tempstr { get => tags?[Taglet.Temperature].Null()??(Owner as Path)?.Tempstr ; set { if( value?.Length>0 ) Tag[Taglet.Temperature] = value ; else tags.Set(t=>t[Taglet.Temperature]=value) ; } }
 		public string Prestr { get => tags?[Taglet.Pressure].Null()??(Owner as Path)?.Prestr ; set { if( value?.Length>0 ) Tag[Taglet.Pressure] = value ; else tags.Set(t=>t[Taglet.Pressure]=value) ; } }
+		public string Humistr { get => tags?[Taglet.Humidity].Null()??(Owner as Path)?.Humistr ; set { if( value?.Length>0 ) Tag[Taglet.Humidity] = value ; else tags.Set(t=>t[Taglet.Humidity]=value) ; } }
 		public string Condition => Prestr is var pres && Tempstr is var temp ? pres is not null && temp is not null ? $"{Prestr}/{Tempstr}" : pres??temp : null ;
 		public string Restr { get => $"{Gradstr} {Flowstr} {Dragstr}" ; set { value.Separate(' ').Set(v=>{ using(Incognite){ Gradstr = v.At(0) ; Flowstr = v.At(1) ; Dragstr = v.At(2) ; } Energize() ; }) ; } }
 		void Energize() { var dflt = Basis.Energing.On(Object) ; Reslet = (Gradstr.Gradlet(dflt?.Grade),Flowstr.Flowlet(dflt?.Flow),Dragstr.Draglet(dflt?.Drag)) ; }
@@ -140,13 +140,18 @@ namespace Rob.Act
 		public virtual Quant? Fage => (Owner as Path)?.Fage ;
 		/// <summary> Condition in kPa/K </summary>
 		public virtual Quant? Condi => (Pressure??Basis.Zero.Pressure).Quotient(Temperature)/Basis.Condi ;
+		public virtual Quant? Temper => Basis.Zero.Celsius.Quotient(Temperature).use(Math.Sqrt) ;
 		/// <summary> Pressure in kPa </summary>
-		public virtual Quant? Pressure => Prestr?.TrimEnd('㍱').Parse<Quant>()/10 ;
-		public virtual Quant? Temperature => Tempstr is {} temp ?
+		public virtual Quant? Humidity => Humistr.True?.Trim() is {} humi ? humi?.TrimEnd('%').Parse<Quant>()/(humi.EndsBy('%')?100:1) : null ;
+		/// <summary> Pressure in kPa </summary>
+		public virtual Quant? Pressure => Prestr.True?.Trim() is {} pres ? pres?.TrimEnd('㍱').Parse<Quant>()/(pres.EndsBy('㍱')?10:1) : null ;
+		public virtual Quant? Temperature => Tempstr.True?.Trim() is {} temp ?
 			temp.EndsBy('℃') ? temp.TrimEnd('℃').Parse<Quant>()+Basis.Zero.Celsius :
 			temp.EndsBy('R') ? temp.TrimEnd('R').Parse<Quant>()*5/4+Basis.Zero.Celsius :
 			temp.EndsBy('℉') ? temp.TrimEnd('℉').Parse<Quant>()*5/9+Basis.Zero.Farenheit :
 			temp.TrimEnd('K').Parse<Quant>() : null ;
+		/// <summary> Condition in % </summary>
+		public virtual Quant? Condin => Condi*Temper ;
 		/// <summary>
 		/// Position within owner .
 		/// </summary>
@@ -211,7 +216,16 @@ namespace Rob.Act
 
 		#region Handling
 		public event PropertyChangedEventHandler PropertyChanged { add => propertyChanged += value.DispatchResolve() ; remove => propertyChanged -= value.DispatchResolve() ; } protected PropertyChangedEventHandler propertyChanged ;
-		protected virtual void Changed( string property ) { propertyChanged.On(this,property) ; (this as Path).Null(p=>p.Initing)?.Edited() ; (Owner as Path).Null(p=>p.Initing)?.Edited() ; if( !Initing ) Path.Medium?.Interact(this) ; }
+		protected virtual void Changed( string property ) { if( property?.Contains(',')==true ) { Changed(property.SeparateTrim(',')) ; return ; } propertyChanged.On(this,property) ; Propagate(property) ; ChangePathIf() ; }
+		protected virtual void Changed( params IEnumerable<string> properties ) { Changing(properties) ; ChangePathIf() ; }
+		void Changing( params IEnumerable<string> properties ) { propertyChanged.On(this,properties) ; properties.Each(Propagate) ; }
+		void ChangePathIf() { (this as Path).Null(p=>p.Initing)?.Edited() ; (Owner as Path).Null(p=>p.Initing)?.Edited() ; if( !Initing ) Path.Medium?.Interact(this) ; }
+		void Propagate( string property ) => (Propagator??=Propagin).By(property).Set(Changing) ; static IDictionary<string,IEnumerable<string>> Propagator ;
+		static Dictionary<string,IEnumerable<string>> Propagin => new(){
+			["Tags"]=Tagger.Names ,
+			[Tagger.Names[8]]=["Condi","Condition","Temper"] , [Tagger.Names[9]]=["Condi","Condition"] , [Tagger.Names[10]]=["Condin"] ,
+			["Temper"]=["Condin"]
+		} ;
 		#endregion
 
 		#region Equalization
