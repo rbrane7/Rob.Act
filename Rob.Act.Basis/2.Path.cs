@@ -30,6 +30,8 @@ namespace Rob.Act
 		public static readonly Dictionary<string,(Quant Grade,Quant Devia,Quant Velo,byte Rad)> Tolerance = new(){ ["Polling"]=(.20,.25,20,5) , ["ROLLER_SKIING"]=(.20,3,25,5) , ["SKIING_CROSS_COUNTRY"]=(.20,3,20,5) } ;
 		public static readonly Dictionary<string,Profile> SubjectProfile = new(){ ["Rob"]=new(){Mass=76,Span=1.92,Tranq=4,Birth=new(1967,7,19),Fetus=.75} } ;
 		public static readonly Dictionary<string,Geom> LocusProfile = new(){ ["Home"]=new(15,51,200) } ;
+		public static readonly Gettable<Geom,Quant> Temperature ;
+		public static readonly Gettable<Geom,Quant> Pressure ;
 		public static IList<Altiplane> Altiplanes ;
 		public static Mediator Medium ;
 		Altiplane AltOf => Altiplanes.Get(ap=>Tolerance.On(Object).Get(m=>ap.FirstOrDefault(a=>a.Grade>=m.Grade)??new Altiplane(m.Grade){Radius=m.Rad}.Set(ap.Add))) ;

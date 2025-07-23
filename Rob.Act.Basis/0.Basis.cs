@@ -159,8 +159,8 @@ namespace Rob.Act
 		public static (Quant Pressure,Quant Temperature) Condition => (Zero.Pressure,Zero.Celsius) ;
 		public static readonly (Quant Pressure,Quant Celsius,Quant Farenheit,Quant Reamur) Zero = (101.325,273.15,255.37222222,273.15) ;
 		public static Quant Condi( Geom? loc = null ) => Pressure(loc) / Temperature(loc) ;
-		public static Quant Pressure( Geom? loc = null ) => Condition.Pressure ;
-		public static Quant Temperature( Geom? loc = null ) => Condition.Temperature ;
+		public static Quant Pressure( Geom? loc = null ) => loc.Get(l=>Path.Pressure?[l]) ?? Condition.Pressure ;
+		public static Quant Temperature( Geom? loc = null ) => loc.Get(l=>Path.Temperature?[l]) ?? Condition.Temperature ;
 		static Quant? Londeg( Quant? latdeg ) => latdeg.Rad().use(Math.Cos) * Degmet ;
 		static Quant? Rad( this Quant? deg ) => deg/180*Math.PI ;
 		static Quant? Polar( this Point vect , Point at ) => vect.Sqrm(Act.Axis.Lon,at)+vect.Sqrm(Act.Axis.Lat,at) ; // Polar 2D square of size of vector at point of sphere .

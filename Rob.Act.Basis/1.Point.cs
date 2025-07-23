@@ -139,7 +139,7 @@ namespace Rob.Act
 		public virtual Quant? Age => (Owner as Path)?.Age ;
 		public virtual Quant? Fage => (Owner as Path)?.Fage ;
 		/// <summary> Condition in kPa/K </summary>
-		public virtual Quant? Condi => Geom is var geo ? (Pressure??Basis.Pressure(geo).Quotient(Temperature)??Basis.Temperature(geo))/Basis.Condi(geo) : null ;
+		public virtual Quant? Condi => Geom is var geo && Pressure is var pres && Temperature is var temp && (temp??Pressure) is not null ? (pres??Basis.Pressure(geo)).Quotient(temp??Basis.Temperature(geo))/Basis.Condi(geo) : null ;
 		public virtual Quant? Temper => Basis.Temperature(Geom).Quotient(Temperature).use(Math.Sqrt) ;
 		/// <summary> Pressure in kPa </summary>
 		public virtual Quant? Humidity => Humistr.True?.Trim() is {} humi ? humi?.TrimEnd('%').Parse<Quant>()/(humi.EndsBy('%')?100:1) : null ;
