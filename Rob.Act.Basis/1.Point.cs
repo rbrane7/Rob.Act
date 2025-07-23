@@ -139,8 +139,8 @@ namespace Rob.Act
 		public virtual Quant? Age => (Owner as Path)?.Age ;
 		public virtual Quant? Fage => (Owner as Path)?.Fage ;
 		/// <summary> Condition in kPa/K </summary>
-		public virtual Quant? Condi => (Pressure??Basis.Zero.Pressure).Quotient(Temperature)/Basis.Condi ;
-		public virtual Quant? Temper => Basis.Zero.Celsius.Quotient(Temperature).use(Math.Sqrt) ;
+		public virtual Quant? Condi => Geom is var geo ? (Pressure??Basis.Pressure(geo).Quotient(Temperature)??Basis.Temperature(geo))/Basis.Condi(geo) : null ;
+		public virtual Quant? Temper => Basis.Temperature(Geom).Quotient(Temperature).use(Math.Sqrt) ;
 		/// <summary> Pressure in kPa </summary>
 		public virtual Quant? Humidity => Humistr.True?.Trim() is {} humi ? humi?.TrimEnd('%').Parse<Quant>()/(humi.EndsBy('%')?100:1) : null ;
 		/// <summary> Pressure in kPa </summary>
@@ -211,6 +211,7 @@ namespace Rob.Act
 		public static Point operator-( Point point , Point offset ) => new Point(new DateTime(point.Date.Ticks+offset.Date.Ticks>>1)){ Time = point.Date-offset.Date }.Set(p=>{ for( uint i=0 ; i<p.Dimension ; ++i ) p[i] = point[i]-offset[i] ; if( p.IsGeo ) p.Dist = p.Euclid(offset) ; }) ;
 		public static Point operator+( Point accu , Point diff ) => accu.Set( p => diff.Set( d => { p.Time += d.Time ; for( uint i=0 ; i<p.Dimension ; ++i ) p[i] += d[i] ; } ) ) ;
 		public Geos? Geo => this ;
+		public Geom? Geom => (Geom?)this ?? Path.LocusProfile.Of(Locus) ;
 		public Geos? Aim => No is int at ? (Owner?[at+1] as Point)?.Geo is Geos aif ? aif-Geo : (Owner?[at-1] as Point)?.Geo is Geos aib ? Geo-aib : null : null ;
 		#endregion
 

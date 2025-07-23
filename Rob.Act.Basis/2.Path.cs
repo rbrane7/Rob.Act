@@ -26,12 +26,13 @@ namespace Rob.Act
 	{
 		public static bool Dominancy , Corrects , Altismooths , Persistent , Primary ;
 		public static double Margin ; public static string Filext = "path" ;
-		public static readonly Dictionary<string,Quant?[]> Meta = new Dictionary<string,Quant?[]>{ ["Tabata"]=new Quant?[]{1,2} } ;
-		public static readonly Dictionary<string,(Quant Grade,Quant Devia,Quant Velo,byte Rad)> Tolerancy = new(){ ["Polling"]=(.20,.25,20,5) , ["ROLLER_SKIING"]=(.20,3,25,5) , ["SKIING_CROSS_COUNTRY"]=(.20,3,20,5) } ;
-		public static readonly IDictionary<string,Profile> SubjectProfile = new Dictionary<string,Profile>{ ["Rob"]=new Profile{Mass=76,Span=1.92,Tranq=4,Birth=new DateTime(1967,7,19),Fetus=.75} } ;
+		public static readonly Dictionary<string,Quant?[]> Meta = new(){ ["Tabata"]=[1,2] } ;
+		public static readonly Dictionary<string,(Quant Grade,Quant Devia,Quant Velo,byte Rad)> Tolerance = new(){ ["Polling"]=(.20,.25,20,5) , ["ROLLER_SKIING"]=(.20,3,25,5) , ["SKIING_CROSS_COUNTRY"]=(.20,3,20,5) } ;
+		public static readonly Dictionary<string,Profile> SubjectProfile = new(){ ["Rob"]=new(){Mass=76,Span=1.92,Tranq=4,Birth=new(1967,7,19),Fetus=.75} } ;
+		public static readonly Dictionary<string,Geom> LocusProfile = new(){ ["Home"]=new(15,51,200) } ;
 		public static IList<Altiplane> Altiplanes ;
 		public static Mediator Medium ;
-		Altiplane AltOf => Altiplanes.Get(ap=>Tolerancy.On(Object).Get(m=>ap.FirstOrDefault(a=>a.Grade>=m.Grade)??new Altiplane(m.Grade){Radius=m.Rad}.Set(ap.Add))) ;
+		Altiplane AltOf => Altiplanes.Get(ap=>Tolerance.On(Object).Get(m=>ap.FirstOrDefault(a=>a.Grade>=m.Grade)??new Altiplane(m.Grade){Radius=m.Rad}.Set(ap.Add))) ;
 
 		#region Construct
 		public Path( bool initing , DateTime date , IEnumerable<Point> points = null , Mark kind = Mark.No , params (Axis Ax,Quant Uni)[] measures ) : this(date,points,kind,measures) => Initing = initing ;
@@ -77,8 +78,8 @@ namespace Rob.Act
 					if( this[i].Dist==null ) this[i].Dist = this[i-1].Dist + (this[i]-this[i-1]).Euclid(this[i-1]) ;
 					if( Alti!=null )
 					{
-						if( this[i].Alti==null ) this[i].Alti = this[i-1].Alti + (((Count-i).Steps(i).FirstOrDefault(j=>this[j].Alti!=null).nil()??i-1).Get(j=>(this[j].Alti-this[i-1].Alti)/j).Nil(a=>Math.Abs(a)>(this[i].Dist-this[i-1].Dist)*Tolerancy.On(Object)?.Grade)??0) ;
-						if( this[i].Ascent==null ) this[i].Ascent = this[i-1].Ascent + ( this[i].Alti-this[i-1].Alti is Quant u && Math.Abs(u)<(this[i].Dist-this[i-1].Dist)*(Tolerancy.On(Object)?.Grade??.3) ? u : 0 ) ;
+						if( this[i].Alti==null ) this[i].Alti = this[i-1].Alti + (((Count-i).Steps(i).FirstOrDefault(j=>this[j].Alti!=null).nil()??i-1).Get(j=>(this[j].Alti-this[i-1].Alti)/j).Nil(a=>Math.Abs(a)>(this[i].Dist-this[i-1].Dist)*Tolerance.On(Object)?.Grade)??0) ;
+						if( this[i].Ascent==null ) this[i].Ascent = this[i-1].Ascent + ( this[i].Alti-this[i-1].Alti is Quant u && Math.Abs(u)<(this[i].Dist-this[i-1].Dist)*(Tolerance.On(Object)?.Grade??.3) ? u : 0 ) ;
 					}
 					if( this[i].Deviation==null ) this[i].Deviation = this[i-1].Deviation + ( i<Count-1 && !this[i].Mark.HasFlag( Mark.Stop ) && (this[i].Geo-this[i-1].Geo).Devia(this[i+1].Geo-this[i].Geo) is Quant v ? v : 0 ) ;
 				}
@@ -133,12 +134,12 @@ namespace Rob.Act
 			if( !Corrects ) return this ;
 			Quant cord = 0 , cora = 0 ;
 			Quant? Dif( int i , int? at=null ) => this[i]?.Dist-this[at??i-1]?.Dist ;
-			bool DifKo( int i ) => Dif(i)>(this[i].Time-this[i-1].Time).TotalSeconds*Tolerancy.On(Object)?.Velo ;
-			Quant? DifOk( int i ) => Dif(i) is Quant d && !(d>(this[i].Time-this[i-1].Time).TotalSeconds*Tolerancy.On(Object)?.Velo) ? d : null as Quant? ;
+			bool DifKo( int i ) => Dif(i)>(this[i].Time-this[i-1].Time).TotalSeconds*Tolerance.On(Object)?.Velo ;
+			Quant? DifOk( int i ) => Dif(i) is Quant d && !(d>(this[i].Time-this[i-1].Time).TotalSeconds*Tolerance.On(Object)?.Velo) ? d : null as Quant? ;
 			Quant? OkDif( int i ) { for( var j=i+1 ; j<Count ; ++j ) if( DifOk(j) is Quant d ) return d ; else if( this[j-1]?.Mark.HasFlag(Mark.Stop)!=false ) break ; return null ; }
 			Quant? Ald( int i , int? at=null ) => this[i]?.Alti-this[at??i-1]?.Alti ;
-			bool AldKo( int i ) => Ald(i).use(Math.Abs)>Dif(i)*Tolerancy.On(Object)?.Grade ;
-			Quant? AldOk( int i , int at ) => Ald(i) is Quant d && !(Math.Abs(d)>Dif(i)*Tolerancy.On(Object)?.Grade) && !(Ald(i,at).use(Math.Abs)>Dif(i,at)*Tolerancy.On(Object)?.Grade) ? d : null as Quant? ;
+			bool AldKo( int i ) => Ald(i).use(Math.Abs)>Dif(i)*Tolerance.On(Object)?.Grade ;
+			Quant? AldOk( int i , int at ) => Ald(i) is Quant d && !(Math.Abs(d)>Dif(i)*Tolerance.On(Object)?.Grade) && !(Ald(i,at).use(Math.Abs)>Dif(i,at)*Tolerance.On(Object)?.Grade) ? d : null as Quant? ;
 			Quant? OkAld( int i ) { for( var j=i+1 ; j<Count ; ++j ) if( AldOk(j,i-1) is Quant d ) return d ; /*else if( this[j-1]?.Mark.HasFlag(Mark.Stop)!=false ) break ;*/ return null ; }
 			using var _=Incognit ;
 			for( var i=1 ; i<Count ; ++i )
@@ -169,7 +170,7 @@ namespace Rob.Act
 					if( (((this[i+1].Alti-this[i].Alti)/(this[i+1].Dist-this[i].Dist)-(this[i].Alti-this[i-1].Alti)/(this[i].Dist-this[i-1].Dist))/(this[i+1].Dist-this[i-1].Dist)*2).use(Math.Abs) is Quant c && c>max.Alt ) max = (c,i) ;
 				return max ;
 			}
-			using var _=Incognit ; var count = Count ; for( (Quant Alt,int Idx) max ; count>0 && (max=MaxInd()).Alt>Tolerancy.On(Object)?.Grade ; --count ) this[max.Idx].Alti = (this[max.Idx-1].Alti+this[max.Idx+1].Alti)/2 ;
+			using var _=Incognit ; var count = Count ; for( (Quant Alt,int Idx) max ; count>0 && (max=MaxInd()).Alt>Tolerance.On(Object)?.Grade ; --count ) this[max.Idx].Alti = (this[max.Idx-1].Alti+this[max.Idx+1].Alti)/2 ;
 			return this ;
 		}
 		#endregion

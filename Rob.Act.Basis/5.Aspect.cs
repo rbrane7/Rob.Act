@@ -125,7 +125,7 @@ namespace Rob.Act
 		internal Quant Resistance( Quant? resi ) => Raw.Object==Basis.Device.Skierg.Code ? Basis.Device.Skierg.Draw : (Raw?.Resister).use(d=>resi??d) ?? Basis.Energing.On(Raw.Object)?.Drag ?? 0 ;
 		internal Quant Flowing( Quant? flow ) => Raw.Object==Basis.Device.Skierg.Code ? 0 : flow ?? Basis.Energing.On(Raw.Object)?.Flow ?? 0 ;
 		internal Quant Graning( Quant? gran ) => Raw.Object==Basis.Device.Skierg.Code ? 0 : gran ?? Basis.Energing.On(Raw.Object)?.Grade ?? 0 ;
-		internal Quant Gradient( Quant grad ) => Raw.Object==Basis.Device.Skierg.Code ? 0 : Path.Tolerancy.On(Raw?.Object)?.Grade is Quant v && v<Math.Abs(grad) ? -.01 : grad ;
+		internal Quant Gradient( Quant grad ) => Raw.Object==Basis.Device.Skierg.Code ? 0 : Path.Tolerance.On(Raw?.Object)?.Grade is Quant v && v<Math.Abs(grad) ? -.01 : grad ;
 		public override string ToString() => Score ;
 		#region De/Serialization
 		/// <summary>

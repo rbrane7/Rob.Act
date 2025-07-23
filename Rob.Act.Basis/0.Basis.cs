@@ -73,12 +73,11 @@ namespace Rob.Act
 		public static bool operator!=( Geos x , Geos y ) => !(x==y) ;
 		public override readonly string ToString() => $"({Lon:0.00000},{Lat:0.00000})" ;
 	}
-	public struct Geom
+	public struct Geom( Geos g , Quant? alt = null , DateTime? dat = null )
 	{
-		public Geos G ; public Quant? Alt ; public DateTime? Dat ;
+		public Geos G = g ; public Quant? Alt = alt ; public DateTime? Dat = dat ;
 		public Quant Lon { get => G.Lon ; set => G.Lon = value ; } public Quant Lat { get => G.Lat ; set => G.Lat = value ; }
 		public Geom( Quant lon , Quant lat , Quant? alt = null , DateTime? dat = null ) : this((lon,lat),alt,dat) {}
-		public Geom( Geos g , Quant? alt = null , DateTime? dat = null ) { G = g ; Alt = alt ; Dat = dat ; }
 		public static Geom operator~( Geom a ) => new() { G=~a.G,Alt=a.Alt,Dat=a.Dat} ;
 		public static Quant operator+( Geom a ) => Math.Sqrt(a|a) ;
 		public static Geom operator-( Geom a ) => (0,0,0,a.Dat)-a ;
@@ -91,8 +90,8 @@ namespace Rob.Act
 		public static Geom? operator-( Geom? a , Geom? b ) => a is Geom x && b is Geom y ? x-y : (Geom?)null ;
 		public static Quant operator|( Geom a , Geom b ) => (a.Alt*b.Alt??0)+(a.G|b.G) ;
 		public static Quant? operator|( Geom? a , Geom? b ) => a is Geom x && b is Geom y ? x|y : null as Quant? ;
-		public static implicit operator Geom?( Point point ) => point?.IsGeo==true ? new Geom{Lon=point[Axis.Lon].Value,Lat=point[Axis.Lat].Value,Alt=point[Axis.Lon],Dat=point.Date} : (Geom?)null ;
-		public static implicit operator Geom( (Quant lon,Quant lat,Quant? alt,DateTime? dat) point ) => new Geom(point.lon,point.lat,point.alt,point.dat) ;
+		public static implicit operator Geom?( Point point ) => point?.Geo is {} geo ? new Geom{Lon=geo.Lon,Lat=geo.Lat,Alt=point.Alti,Dat=point.Date} : null ;
+		public static implicit operator Geom( (Quant lon,Quant lat,Quant? alt,DateTime? dat) point ) => new(point.lon,point.lat,point.alt,point.dat) ;
 		public override readonly string ToString() => $"({G},{Alt:0.0m},{Dat:yyyy-MM-dd.hh:mm:ss ddd})" ;
 	}
 	public interface Quantable : Aid.Gettable<uint,Quant?> , Aid.Gettable<Quant?> {}
@@ -159,7 +158,9 @@ namespace Rob.Act
 		public static readonly (Quant Force,Quant Power) Gravity = (9.823,6) ;
 		public static (Quant Pressure,Quant Temperature) Condition => (Zero.Pressure,Zero.Celsius) ;
 		public static readonly (Quant Pressure,Quant Celsius,Quant Farenheit,Quant Reamur) Zero = (101.325,273.15,255.37222222,273.15) ;
-		public static Quant Condi => Condition.Pressure / Condition.Temperature ;
+		public static Quant Condi( Geom? loc = null ) => Pressure(loc) / Temperature(loc) ;
+		public static Quant Pressure( Geom? loc = null ) => Condition.Pressure ;
+		public static Quant Temperature( Geom? loc = null ) => Condition.Temperature ;
 		static Quant? Londeg( Quant? latdeg ) => latdeg.Rad().use(Math.Cos) * Degmet ;
 		static Quant? Rad( this Quant? deg ) => deg/180*Math.PI ;
 		static Quant? Polar( this Point vect , Point at ) => vect.Sqrm(Act.Axis.Lon,at)+vect.Sqrm(Act.Axis.Lat,at) ; // Polar 2D square of size of vector at point of sphere .
