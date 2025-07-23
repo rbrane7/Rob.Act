@@ -147,7 +147,7 @@ namespace Rob.Act
 		public virtual Quant? Pressure => Prestr.True?.Trim() is {} pres ? pres?.TrimEnd('㍱').Parse<Quant>()/(pres.EndsBy('㍱')?10:1) : null ;
 		public virtual Quant? Temperature => Tempstr.True?.Trim() is {} temp ?
 			temp.EndsBy('℃') ? temp.TrimEnd('℃').Parse<Quant>()+Basis.Zero.Celsius :
-			temp.EndsBy('R') ? temp.TrimEnd('R').Parse<Quant>()*5/4+Basis.Zero.Celsius :
+			temp.EndsBy('R','ℜ','ℛ') ? temp.TrimEnd(['R','ℜ','ℛ']).Parse<Quant>()*5/4+Basis.Zero.Celsius :
 			temp.EndsBy('℉') ? temp.TrimEnd('℉').Parse<Quant>()*5/9+Basis.Zero.Farenheit :
 			temp.TrimEnd('K').Parse<Quant>() : null ;
 		/// <summary> Condition in % </summary>
