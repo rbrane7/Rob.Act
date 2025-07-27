@@ -256,7 +256,7 @@ namespace Rob.Act.Analyze
 		void AggregationFunction( object sender )
 		{
 			if( sender is DataGrid grid && Actras.Count>0 ) foreach( var col in grid.Columns ) if( Actras.at(col.DisplayIndex) is Filter.Entry.Binding tr )
-			col.Header = col.Header is string name && tr.Name==name && Aggregation.Opt(tr.Name) is Func<IEnumerable<(object,Pathable)>,object> ag ? tr.View(ag(Book.Select(p=>(tr.On(p),p)))).Null() ?? tr.Name : tr.Name ;
+			col.Header = col.Header is string name && tr.Name==name && Aggregation.Opt(tr.Name) is Func<IEnumerable<(object,Pathable)>,object> ag ? tr.View(ag((grid.SelectedItems.Count>1?grid.SelectedItems.Cast<Pathable>():Book).Select(p=>(tr.On(p),p)))).Null() ?? tr.Name : tr.Name ;
 		}
 		readonly List<Filter.Entry.Binding> Actras = [] ;
 		public readonly Aggregator Aggregation = [] ;
@@ -264,7 +264,7 @@ namespace Rob.Act.Analyze
 		{
 			public Regexes( IEnumerable<Regex> regexes = null ) => regexes.Set(AddRange) ;
 			/// <summary>
-			/// Resilient getter setter accepting index of even exceding size 
+			/// Resilient getter setter accepting index of even exceeding size 
 			/// </summary>
 			/// <param name="at"> Index to get|set element at </param>
 			/// <returns> Element at <paramref name="at"/> position </returns>
@@ -673,7 +673,7 @@ namespace Rob.Act.Analyze
 			var success = true ; if( sender is not DataGrid grid ) return success ; var gen = grid.ItemContainerGenerator ; var sel = grid.SelectedItem ; int ix = 0 ; var sels = grid.SelectedItems.OfType<Axe>().ToArray() ;
 			foreach( var item in sels )
 			{
-				/*grid.ScrollIntoView(item) ;*//*Incomfortable*/ if( gen.ContainerFromItem(item) is not DataGridRow row ) continue ;
+				/*grid.ScrollIntoView(item) ;*//*Uncomfortable*/ if( gen.ContainerFromItem(item) is not DataGridRow row ) continue ;
 				if( row.Cell(0) is DataGridCell cell )
 				{
 					cell.FontStyle = sel==item?FontStyles.Normal:FontStyles.Italic ; cell.FontStretch = item==sel?FontStretches.Normal:Fostres[ix%Fostres.Length] ; cell.FontWeight = item==sel?FontWeights.Bold:Foweis[ix%Foweis.Length] ; if( item!=sel ) ++ix ;
@@ -682,7 +682,7 @@ namespace Rob.Act.Analyze
 			}
 			foreach( var item in grid.Items.OfType<Axe>().Except(sels) )
 			{
-				/*grid.ScrollIntoView(item) ;*//*Incomfotable*/ if( gen.ContainerFromItem(item) is not DataGridRow row ) continue ;
+				/*grid.ScrollIntoView(item) ;*//*Uncomfortable*/ if( gen.ContainerFromItem(item) is not DataGridRow row ) continue ;
 				if( row.Cell(0) is DataGridCell cell && row.Cell(1) is DataGridCell coll ) { cell.FontStyle = coll.FontStyle ; cell.FontStretch = coll.FontStretch ; cell.FontWeight = coll.FontWeight ; } else success = false ;
 			}
 			return success ;
