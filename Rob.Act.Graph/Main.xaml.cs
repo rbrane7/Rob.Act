@@ -111,8 +111,8 @@ namespace Rob.Act.Analyze
 		#region Reselections
 		internal (bool Book,bool Sources,bool Aspect) BlockUpdate ; System.Collections.Concurrent.ConcurrentMap<object,List<SelectionChangedEventArgs>> Reselection = new() ;
 		void ActionFilterFilterGrid_SelectionChanged( object sender , SelectionChangedEventArgs e ) { BlockUpdate.Book = true ; try { FilterGrid_SelectionChanged<Filter.Entry>(sender,f=>{ActionFilter.Refinement=f;}) ; } finally { BlockUpdate.Book = false ; } }
-		async void BookGrid_SelectionChanged( object sender , SelectionChangedEventArgs e ) { if( BlockUpdate.Sources ) return ; if( KeyLevel==default ) { await Task.Factory.StartNew(()=>Resources_Update(e.AddedItems,e.RemovedItems)) ; Grid_Coloring(sender) ; } else (Reselection[sender]??=new()).Add(e) ; }
-		void BookGrid_SelectionChanged( object sender , IList<SelectionChangedEventArgs> e ) { var(add,rem) = e.SelectionsItems() ; Resources_Update(add,rem) ; Dispatcher.Invoke(()=>Grid_Coloring(sender)) ; }
+		async void BookGrid_SelectionChanged( object sender , SelectionChangedEventArgs e ) { if( BlockUpdate.Sources ) return ; if( KeyLevel==default ) { await Task.Factory.StartNew(()=>Resources_Update(e.AddedItems,e.RemovedItems)) ; Grid_Coloring(sender) ; } else (Reselection[sender]??=new()).Add(e) ; AggregationFunction(sender,true) ; }
+		void BookGrid_SelectionChanged( object sender , IList<SelectionChangedEventArgs> e ) { var(add,rem) = e.SelectionsItems() ; Resources_Update(add,rem) ; Dispatcher.Invoke(()=>Grid_Coloring(sender)) ; AggregationFunction(sender,true) ; }
 		void ActionFilterGrid_SelectionChanged( object sender , SelectionChangedEventArgs e = null )
 		{
 			if( BlockUpdate.Book ) return ; Presources.Snapshot() ; BookGrid.Items.SortDescriptions.Clear() ; using( new Closure(()=>BlockUpdate.Sources=true,()=>BlockUpdate.Sources=false) )
@@ -253,11 +253,12 @@ namespace Rob.Act.Analyze
 			else return false ;
 			return true ;
 		}
-		void AggregationFunction( object sender )
+		void AggregationFunction( object sender , bool go = false )
 		{
 			if( sender is DataGrid grid && Actras.Count>0 ) foreach( var col in grid.Columns ) if( Actras.at(col.DisplayIndex) is Filter.Entry.Binding tr )
-			col.Header = col.Header is string name && tr.Name==name && Aggregation.Opt(tr.Name) is Func<IEnumerable<(object,Pathable)>,object> ag ? tr.View(ag((grid.SelectedItems.Count>1?grid.SelectedItems.Cast<Pathable>():Book).Select(p=>(tr.On(p),p)))).Null() ?? tr.Name : tr.Name ;
+			col.Header = go!=(col.Header is string name&&tr.Name==name) && Aggregation.Opt(tr.Name) is Func<IEnumerable<(object,Pathable)>,object> ag ? tr.View(ag((grid.SelectedItems.Count>1?grid.SelectedItems.Cast<Pathable>():Book).Select(p=>(tr.On(p),p)))).Null() ?? tr.Name : tr.Name ;
 		}
+		bool AggregAct ; // is aggregation of values in header active ?
 		readonly List<Filter.Entry.Binding> Actras = [] ;
 		public readonly Aggregator Aggregation = [] ;
 		public class Regexes : List<Regex>
