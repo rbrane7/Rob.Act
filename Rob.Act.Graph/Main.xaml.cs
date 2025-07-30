@@ -277,7 +277,7 @@ namespace Rob.Act.Analyze
 			[
 				( [new("Dist|∫[^♀]")] , v=>v.Sum(e=>e.value as double?) , "Sum" ) ,
 				( [new("Time|∫♀")] , v=>v.Aggregate(TimeSpan.Zero,(a,t)=>a+((t.value as TimeSpan?)??TimeSpan.Zero)) , "SumTime" ) ,
-				( [new("Date")] , v=>(v.Max(e=>e.value as DateTime?)-v.Min(e=>e.value as DateTime?)).use(t=>DateTime.MinValue+t) , "CenterDate" ) ,
+				( [new("Date")] , v=>(v.Max(e=>e.value as DateTime?)-v.Min(e=>e.value as DateTime?)).use(t=>new Time(t)) , "CenterDate" ) ,
 				( [new("Speed|♂|☼|♥")] , v=>v.Average(e=>e.value as double?) , "Average" ) ,
 				( [] , v=>v.Average(e=>(e.value as TimeSpan?)?.TotalSeconds).use(TimeSpan.FromSeconds) , "AverageTime" ) ,
 				( [null,new("Speed|♂|☼|♥")] , v=>v.Centre(e=>e.value as double?,e=>e.path.Time.TotalSeconds) , "CentreTimely" ) ,
@@ -292,6 +292,14 @@ namespace Rob.Act.Analyze
 			}
 			public Regexes this[ string code ] => Content.at(one=>one.Code==code)?.Tags ;
 			public (Regexes Tags,Func<IEnumerable<(object,Pathable)>,object> Join,string Code)[] this[ Regex rex ] => Content.Where(one=>rex.IsMatch(one.Code)).ToArray() ;
+			public struct Time( TimeSpan inner )
+			{
+				int Years => (int)(inner.TotalDays/365.25) ;
+				int Months => (int)((inner.TotalDays-Years*365.25)/(365.24/12)) ;
+				int Days => (int)(inner.TotalDays-Years*365.25-Months*365.24/12) ;
+				TimeSpan Rest => inner - TimeSpan.FromDays(Years*365.25+Months*30.44+Days) ;
+				public override string ToString() => $"{Years:0}-{Months:00}-{Days:00}.{Rest}" ;
+			}
 		}
 		#endregion
 
