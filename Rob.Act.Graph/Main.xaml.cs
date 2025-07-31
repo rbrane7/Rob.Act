@@ -294,10 +294,12 @@ namespace Rob.Act.Analyze
 			public (Regexes Tags,Func<IEnumerable<(object,Pathable)>,object> Join,string Code)[] this[ Regex rex ] => Content.Where(one=>rex.IsMatch(one.Code)).ToArray() ;
 			public struct Time( TimeSpan inner )
 			{
-				int Years => (int)(inner.TotalDays/365.25) ;
-				int Months => (int)((inner.TotalDays-Years*365.25)/(365.24/12)) ;
-				int Days => (int)(inner.TotalDays-Years*365.25-Months*365.24/12) ;
-				TimeSpan Rest => inner - TimeSpan.FromDays(Years*365.25+Months*30.44+Days) ;
+				const double Asy = 365.25 ; // average days in year , used for years and months calculation
+				const double Asm = Asy/12 ; // average days in month , used for days calculation
+				int Years => (int)(inner.TotalDays/Asy) ;
+				int Months => (int)((inner.TotalDays-Years*Asy)/Asm) ;
+				int Days => (int)(inner.TotalDays-Years*Asy-Months*Asm) ;
+				TimeSpan Rest => inner - TimeSpan.FromDays(Years*Asy+Months*Asm+Days) ;
 				public override string ToString() => $"{Years:0}-{Months:00}-{Days:00}.{Rest}" ;
 			}
 		}
