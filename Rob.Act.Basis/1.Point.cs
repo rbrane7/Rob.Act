@@ -243,11 +243,14 @@ namespace Rob.Act
 	public static class PointExtension
 	{
 		public static Quant? Gradlet( this string value , Quant? dflt = null ) { var lev = value.RightFrom('^').Null(_=>dflt==null) ; return (lev??value).Parse<Quant>().Get(v=>lev==null||dflt==null?v:Math.Exp(v/10)*dflt) ; }
-		public static string Gradstr( this Quant? value , Quant? dflt = null ) => value.Nil(v=>v.Equal(dflt)).use(v=>dflt.use(d=>Math.Log(v/d)*10)??v).Get(v=>dflt!=null?$"^{v:0.###}":v.ToString()) ;
 		public static Quant? Flowlet( this string value , Quant? dflt = null ) { var lev = value.RightFrom('^').Null(_=>dflt==null) ; return (lev??value).Parse<Quant>().Get(v=>lev==null||dflt==null?v:Math.Exp(v)*dflt) ; }
-		public static string Flowstr( this Quant? value , Quant? dflt = null ) => value.Nil(v=>v.Equal(dflt)).use(v=>dflt.use(d=>Math.Log(v/d))??v).Get(v=>dflt!=null?$"^{v:0.###}":v.ToString()) ;
 		public static Quant? Draglet( this string value , Quant? dflt = null ) { var lev = value.RightFrom('^').Null(_=>dflt==null) ; return (lev??value).Parse<Quant>().Get(v=>lev==null||dflt==null?v:Math.Exp(v/3)*dflt) ; }
-		public static string Dragstr( this Quant? value , Quant? dflt = null ) => value.Nil(v=>v.Equal(dflt)).use(v=>dflt.use(d=>Math.Log(v/d)*3)??v).Get(v=>dflt!=null?$"^{v:0.###}":v.ToString()) ;
+		extension( Quant? value )
+		{
+			public string Gradstr( Quant? dflt = null ) => value.Nil(v=>v.Equal(dflt)).use(v=>dflt.use(d=>Math.Log(v/d)*10)??v).Get(v=>dflt!=null?$"^{v:0.###}":v.ToString()) ;
+			public string Flowstr( Quant? dflt = null ) => value.Nil(v=>v.Equal(dflt)).use(v=>dflt.use(d=>Math.Log(v/d))??v).Get(v=>dflt!=null?$"^{v:0.###}":v.ToString()) ;
+			public string Dragstr( Quant? dflt = null ) => value.Nil(v=>v.Equal(dflt)).use(v=>dflt.use(d=>Math.Log(v/d)*3)??v).Get(v=>dflt!=null?$"^{v:0.###}":v.ToString()) ;
+		}
 		static bool Equal( this Quant x , Quant? y ) => x==y || y.use(v=>Math.Abs(x-v))<=0.001*(Math.Abs(x)+y.use(Math.Abs)) ;
 		extension( Taglet pro )
 		{
