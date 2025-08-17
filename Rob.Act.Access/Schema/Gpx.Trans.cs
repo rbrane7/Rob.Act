@@ -22,25 +22,30 @@ namespace Rob.Act.Gpx
 		public static implicit operator Path( gpxType way ) => way.Get(w=>
 		{
 			var obj = w.trk?.Select(t=>t.type).Distinct().Stringy(',') ; var dflt = Basis.Energing.On(obj) ; bool lev = false ;
-			return new Path(w.Date(),w.Iterator,Translation.Kind,(Axis.Beat,60),(Axis.Bit,60),(Axis.Energy,1))
+			return new Path(w.Date,w.Iterator,Translation.Kind,(Axis.Beat,60),(Axis.Bit,60),(Axis.Energy,1))
 			{
-				Initing = true , Object = obj , Action = w.trk?.Select(t=>t.name.Action()).Stringy(',') , Subject = w.trk?.Select(t=>t.link.At(0)?.href.Subject()).Distinct().Stringy(',') ,
-				Locus = w.trk?.Select(t=>t.name.Locus()).Distinct().Stringy(',') , Refine = w.trk?.Select(t=>t.name.Refine()).Distinct().Stringy(',') , Detail = w.trk?.Select(t=>t.name.Detail()).Distinct().Stringy(',') ,
-				Dragstr = w.trk?.Select(t=>t.name.Dragstr().Set(v=>lev=v.Contains('^')).Draglet(dflt?.Drag)).Average().Dragstr(dflt?.Drag.nil(_=>!lev)) ,
-				Gradstr = w.trk?.Select(t=>t.name.Gradstr().Set(v=>lev=v.Contains('^')).Gradlet(dflt?.Grade)).Average().Gradstr(dflt?.Grade.nil(_=>!lev)) ,
-				Flowstr = w.trk?.Select(t=>t.name.Flowstr().Set(v=>lev=v.Contains('^')).Flowlet(dflt?.Flow)).Average().Flowstr(dflt?.Flow.nil(_=>!lev)) ,
+				Initing = true , Object = obj , Action = w.trk?.Select(t=>t.name.Action).Stringy(',') , Subject = w.trk?.Select(t=>t.link.At(0)?.href.Subject).Distinct().Stringy(',') ,
+				Locus = w.trk?.Select(t=>t.name.Locus).Distinct().Stringy(',') , Refine = w.trk?.Select(t=>t.name.Refine).Distinct().Stringy(',') , Detail = w.trk?.Select(t=>t.name.Detail).Distinct().Stringy(',') ,
+				Dragstr = w.trk?.Select(t=>t.name.Dragstr.Set(v=>lev=v.Contains('^')).Draglet(dflt?.Drag)).Average().Dragstr(dflt?.Drag.nil(_=>!lev)) ,
+				Gradstr = w.trk?.Select(t=>t.name.Gradstr.Set(v=>lev=v.Contains('^')).Gradlet(dflt?.Grade)).Average().Gradstr(dflt?.Grade.nil(_=>!lev)) ,
+				Flowstr = w.trk?.Select(t=>t.name.Flowstr.Set(v=>lev=v.Contains('^')).Flowlet(dflt?.Flow)).Average().Flowstr(dflt?.Flow.nil(_=>!lev)) ,
+				Tempstr = w.trk?.Select(t=>t.name.Tempstr).Distinct().Stringy(',') , Prestr = w.trk?.Select(t=>t.name.Prestr).Distinct().Stringy(',') , Humistr = w.trk?.Select(t=>t.name.Moistr).Distinct().Stringy(',') ,
 			} ;
 		}
 		).Set(w=>w[0].Set(p=>{w.Date=p.Date;w.Initing=false;})).Correct().Altify().Altismooth().Energize() ;
-		public static implicit operator gpxType( Path path ) => path.Get( p => new gpxType { creator = "Rob" , metadata = new metadataType { name = p.Name() , time = p.Date , timeSpecified = p.Date!=null } , trk = (p/Mark.Act).Select(l=>(trkType)p).ToArray() } ) ;
+		public static implicit operator gpxType( Path path ) => path.Get( p => new gpxType { creator = "Rob" , metadata = new metadataType { name = p.Name , time = p.Date , timeSpecified = p.Date!=null } , trk = (p/Mark.Act).Select(l=>(trkType)p).ToArray() } ) ;
 	}
 	public partial class trkType
 	{
 		[XmlIgnore] public bool Close ;
 		[XmlIgnore] public trksegType First => trkseg.At(0) ; [XmlIgnore] public trksegType Last => trkseg.At(trkseg.Length-1) ;
 		internal IEnumerable<Point> Iterator { get { if( trkseg==null ) yield break ; foreach( var segment in trkseg ) foreach( var point in segment.Iterator ) yield return point.Set(p=>p.Mark|=Close&&Last==segment&&p.Mark.HasFlag(Mark.Stop)?Mark.Act:Mark.No) ; } }
-		public static implicit operator Path( trkType track ) => track.Get( t => new Path(true,t.First.First.time,t.Iterator,Translation.Kind,(Axis.Beat,60),(Axis.Bit,60)){ Object = t.type , Action = t.name.Action() , Subject = t.link.At(0)?.href.Subject() , Locus = t.name.Locus() , Refine = t.name.Refine() , Detail = t.name.Detail() , Dragstr = t.name.Dragstr() , Gradstr = t.name.Gradstr() , Flowstr = t.name.Flowstr() , Initing = false } ).Correct().Altify().Altismooth().Energize() ;
-		public static implicit operator trkType( Path path ) => path.Get( p => new trkType { type = p.Object , name = p.Name() , trkseg = (p/Mark.Stop).Where(s=>s.Count>1).Select(s=>(trksegType)s).ToArray() } ) ;
+		public static implicit operator Path( trkType track ) => track.Get( t => new Path(true,t.First.First.time,t.Iterator,Translation.Kind,(Axis.Beat,60),(Axis.Bit,60)){
+			Object = t.type , Action = t.name.Action , Subject = t.link.At(0)?.href.Subject , Locus = t.name.Locus , Refine = t.name.Refine , Detail = t.name.Detail ,
+			Dragstr = t.name.Dragstr , Gradstr = t.name.Gradstr , Flowstr = t.name.Flowstr , Tempstr = t.name.Tempstr , Prestr = t.name.Prestr , Humistr = t.name.Moistr ,
+			Initing = false
+		}).Correct().Altify().Altismooth().Energize() ;
+		public static implicit operator trkType( Path path ) => path.Get( p => new trkType { type = p.Object , name = p.Name , trkseg = (p/Mark.Stop).Where(s=>s.Count>1).Select(s=>(trksegType)s).ToArray() } ) ;
 	}
 	public partial class trksegType
 	{
@@ -53,7 +58,7 @@ namespace Rob.Act.Gpx
 	{
 		public static implicit operator Point( wptType point ) => point.Get( p => new Point(p.time){ Spec = p.name , [Axis.Lon] = p[Axis.Lon] , [Axis.Lat] = p[Axis.Lat] , [Axis.Alt] = p[Axis.Alt] , [Axis.Beat] = p[Axis.Beat] , [Axis.Bit] = p[Axis.Bit] , [Axis.Energy] = p[Axis.Energy] } ) ;
 		public static implicit operator wptType( Point point ) => point.Get( p => new wptType{ time = p.Date , timeSpecified = p.Date!=null , [Axis.Lat] = p[Axis.Lat] , [Axis.Lon] = p[Axis.Lon] , [Axis.Alt] = p[Axis.Alt] , [Axis.Beat] = p[Axis.Beat] , [Axis.Bit] = p[Axis.Bit], [Axis.Energy] = p[Axis.Energy] } ) ;
-		XmlElement Extension => ( extensions ??= new extensionsType{ Any = new[]{ "<gpxtpx:TrackPointExtension xmlns:gpxtpx=\"http://www.garmin.com/xmlschemas/TrackPointExtension/v1\"/>".ToXmlElement() } }).Any.At(0) ;
+		XmlElement Extension => ( extensions ??= new extensionsType{ Any = ["<gpxtpx:TrackPointExtension xmlns:gpxtpx=\"http://www.garmin.com/xmlschemas/TrackPointExtension/v1\"/>".ToXmlElement()] }).Any.At(0) ;
 		XmlElement Element( string name ) => extensions?.Any?.SelectMany(a=>a.ChildNodes.OfType<XmlElement>()).FirstOrDefault(e=>e.LocalName==name) ;
 		public Quant? this[ string quant ]
 		{
@@ -67,37 +72,45 @@ namespace Rob.Act.Gpx
 		}
 		public Quant? this[ Axis axis ]
 		{
-			get => axis switch { Axis.Lon => (Quant)lonField , Axis.Lat => (Quant)latField , Axis.Alt => eleFieldSpecified ? (Quant)eleField : null , _ => this[axis.Axis()] } ;
-			set { switch( axis ) { case Axis.Lon : value.Use(v=>lonField=(decimal)v) ; break ; case Axis.Lat : value.Use(v=>latField=(decimal)v) ; break ; case Axis.Alt : eleFieldSpecified = null!=value.Use(v=>eleField=(decimal)v) ; break ; default : this[axis.Axis()] = value ; break ; } }
+			get => axis switch { Axis.Lon => (Quant)lonField , Axis.Lat => (Quant)latField , Axis.Alt => eleFieldSpecified ? (Quant)eleField : null , _ => this[axis.Name] } ;
+			set { switch( axis ) { case Axis.Lon : value.Use(v=>lonField=(decimal)v) ; break ; case Axis.Lat : value.Use(v=>latField=(decimal)v) ; break ; case Axis.Alt : eleFieldSpecified = null!=value.Use(v=>eleField=(decimal)v) ; break ; default : this[axis.Name] = value ; break ; } }
 		}
 	}
 	public static class Extension
 	{
 		public static readonly IDictionary<string,string> Subjecter = new Dictionary<string,string>{ ["https://www.endomondo.com/users/913640"]="Rob" } ;
-		public const string Sign = "<gpx" , File = ".gpx" ;
-		public static bool Primary ;
-		static readonly string[] Axes = new[] { "lon" , "lat" , "alt" , "dist" , "drag" , "flow" , "hr" , "cad" , "pow" , "top" } ;
-		internal static string Axis( this Axis axe ) => Axes.At((int)axe) ;
-		internal static string Subject( this string uri ) => uri.LeftFrom("/workouts",all:true).Get(i=>Subjecter.By(i)??i) ;
-		internal static string Action( this string value ) => value.LeftFrom('?',all:true)?.Trim() ;
-		internal static string Locus( this string value ) => value.RightFromFirst('?').Separate('&',';').Arg(Tagger.Names[(int)Taglet.Locus]) ;
-		internal static string Refine( this string value ) => value.RightFromFirst('?').Separate('&',';').Arg(Tagger.Names[(int)Taglet.Refine]) ;
-		internal static string Detail( this string value ) => value.RightFromFirst('?').Separate('&',';').Arg(Tagger.Names[(int)Taglet.Detail]) ;
-		internal static string Dragstr( this string value ) => value.RightFromFirst('?').Separate('&',';').Arg(Tagger.Names[(int)Taglet.Drag]) ;
-		internal static string Gradstr( this string value ) => value.RightFromFirst('?').Separate('&',';').Arg(Tagger.Names[(int)Taglet.Grade]) ;
-		internal static string Flowstr( this string value ) => value.RightFromFirst('?').Separate('&',';').Arg(Tagger.Names[(int)Taglet.Flow]) ;
-		internal static string Name( this Path path ) => path.Get(p=>$"{p.Action}{p.Tags.Get(t=>p.Tag.Uri)}") ;
-		internal static DateTime Date( this gpxType way ) => way?.metadata?.time ?? way?.First?.First?.First?.time ?? DateTime.Now ;
-		internal static gpxType Enhance( this gpxType gpx ) => gpx.creator.Contains(".fit.") ? gpx.Join(gpx.creator.LeftFromLast(".fit",with:true)) : gpx ;
-		internal static gpxType Join( this gpxType gpx , string fit )
+		static readonly string[] Axes = ["lon","lat","alt","dist","drag","flow","hr","cad","pow","top"] ;
+		public const string Sign = "<gpx" , File = ".gpx" ; public static bool Primary ;
+		extension( Axis axe ) { internal string Name => Axes.At((int)axe) ; }
+		extension( string value )
 		{
-			if( fit is null || gpx is null ) return gpx ;
-			for( (var fiter,var gpxer) = (new Aid.Fit.File(fit).Points.GetEnumerator(),gpx.Flat.GetEnumerator()) ; fiter.MoveNext() && gpxer.MoveNext() ; )
+			internal string Subject => value.LeftFrom("/workouts",all:true).Get(i=>Subjecter.By(i)??i) ;
+			internal string Action => value.LeftFrom('?',all:true)?.Trim() ;
+			internal string Locus => value.RightFromFirst('?').Separate('&',';').Arg(Taglet.Locus.Name) ;
+			internal string Refine => value.RightFromFirst('?').Separate('&',';').Arg(Taglet.Refine.Name) ;
+			internal string Detail => value.RightFromFirst('?').Separate('&',';').Arg(Taglet.Detail.Name) ;
+			internal string Dragstr => value.RightFromFirst('?').Separate('&',';').Arg(Taglet.Drag.Name) ;
+			internal string Gradstr => value.RightFromFirst('?').Separate('&',';').Arg(Taglet.Grade.Name) ;
+			internal string Flowstr => value.RightFromFirst('?').Separate('&',';').Arg(Taglet.Flow.Name) ;
+			internal string Tempstr => value.RightFromFirst('?').Separate('&',';').Arg(Taglet.Temper.Name) ;
+			internal string Prestr => value.RightFromFirst('?').Separate('&',';').Arg(Taglet.Press.Name) ;
+			internal string Moistr => value.RightFromFirst('?').Separate('&',';').Arg(Taglet.Moist.Name) ;
+		}
+		extension( Path the ) { internal string Name => the.Get(p=>$"{p.Action}{p.Tags.Get(t=>p.Tag.Uri)}") ; }
+		extension( gpxType way )
+		{
+			internal DateTime Date => way?.metadata?.time ?? way?.First?.First?.First?.time ?? DateTime.Now ;
+			internal gpxType Enhance() => way.creator.Contains(".fit.") ? way.Join(way.creator.LeftFromLast(".fit",with:true)) : way ;
+			internal gpxType Join( string fit )
 			{
-				while( fiter.Current.Date!=gpxer.Current.time ) if( fiter.Current.Date<gpxer.Current.time ? fiter.MoveNext() : gpxer.MoveNext() ); else break ;
-				if( fiter.Current.Date==gpxer.Current?.time ) gpxer.Current[Act.Axis.Energy] = fiter.Current.Pow ;
+				if( fit is null || way is null ) return way ;
+				for( (var fiter,var gpxer) = (new Aid.Fit.File(fit).Points.GetEnumerator(),way.Flat.GetEnumerator()) ; fiter.MoveNext() && gpxer.MoveNext() ; )
+				{
+					while( fiter.Current.Date!=gpxer.Current.time ) if( fiter.Current.Date<gpxer.Current.time ? fiter.MoveNext() : gpxer.MoveNext() ); else break ;
+					if( fiter.Current.Date==gpxer.Current?.time ) gpxer.Current[Act.Axis.Energy] = fiter.Current.Pow ;
+				}
+				return way ;
 			}
-			return gpx ;
 		}
 	}
 }

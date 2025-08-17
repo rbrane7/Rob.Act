@@ -12,7 +12,7 @@ using System.Text.RegularExpressions;
 namespace Rob.Act
 {
 	using Quant = Double ;
-	public enum Taglet { Object , Subject , Locus , Refine , Grade , Flow , Drag , Detail , Temperature , Pressure , Humidity }
+	public enum Taglet { Object , Subject , Locus , Refine , Grade , Flow , Drag , Detail , Temper , Press , Moist }
 	public interface Tagable : IEquatable<Tagable> , IEnumerable<string> { void Add( string item ) ; string this[ int key ] {get;set;} string this[ Taglet tag ] {get;set;} string this[ string key ] {get;set;} int Count {get;} void Clear() ; void Adopt( Tagable tags ) ; string Uri {get;} }
 	public class Tagger : List<string> , Tagable
 	{
@@ -63,11 +63,11 @@ namespace Rob.Act
 
 		#region State
 		/// <summary>
-		/// During init faze property chnges are not persisted .
+		/// During init faze property changes are not persisted .
 		/// </summary>
 		protected override Closure Incognit => new(()=>++initing,()=>--initing) ; byte initing ;
 		/// <summary>
-		/// During init faze property chnges are not persisted .
+		/// During init faze property changes are not persisted .
 		/// </summary>
 		protected Closure Incognite => new(()=>{(Owner as Path).Set(p=>p.Initing=true);Initing=true;},()=>{(Owner as Path).Set(p=>p.Initing=false);Initing=false;}) ;
 		/// <summary>
@@ -75,7 +75,7 @@ namespace Rob.Act
 		/// </summary>
 		public bool Initing { get => initing>0 ; set { if( value ) ++initing ; else --initing ; } }
 		/// <summary>
-		/// Assotiative text .
+		/// Associative text .
 		/// </summary>
 		public override string Spec { set { if( value!=Spec ) SpecChanged( base.Spec = value ) ; } }
 		public override string Action { get => base.Action ; set { if( value==Action ) return ; base.Action = value ; Changed("Action") ; } }
@@ -116,9 +116,9 @@ namespace Rob.Act
 		public string Dragstr { get => tags?[Taglet.Drag].Null()??(Owner as Path)?.Dragstr ; set { if( value?.Length>0 ) Tag[Taglet.Drag] = value ; else tags.Set(t=>t[Taglet.Drag]=value) ; } }
 		public string Gradstr { get => tags?[Taglet.Grade].Null()??(Owner as Path)?.Gradstr ; set { if( value?.Length>0 ) Tag[Taglet.Grade] = value ; else tags.Set(t=>t[Taglet.Grade]=value) ; } }
 		public string Flowstr { get => tags?[Taglet.Flow].Null()??(Owner as Path)?.Flowstr ; set { if( value?.Length>0 ) Tag[Taglet.Flow] = value ; else tags.Set(t=>t[Taglet.Flow]=value) ; } }
-		public string Tempstr { get => tags?[Taglet.Temperature].Null()??(Owner as Path)?.Tempstr ; set { if( value?.Length>0 ) Tag[Taglet.Temperature] = value ; else tags.Set(t=>t[Taglet.Temperature]=value) ; } }
-		public string Prestr { get => tags?[Taglet.Pressure].Null()??(Owner as Path)?.Prestr ; set { if( value?.Length>0 ) Tag[Taglet.Pressure] = value ; else tags.Set(t=>t[Taglet.Pressure]=value) ; } }
-		public string Humistr { get => tags?[Taglet.Humidity].Null()??(Owner as Path)?.Humistr ; set { if( value?.Length>0 ) Tag[Taglet.Humidity] = value ; else tags.Set(t=>t[Taglet.Humidity]=value) ; } }
+		public string Tempstr { get => tags?[Taglet.Temper].Null()??(Owner as Path)?.Tempstr ; set { if( value?.Length>0 ) Tag[Taglet.Temper] = value ; else tags.Set(t=>t[Taglet.Temper]=value) ; } }
+		public string Prestr { get => tags?[Taglet.Press].Null()??(Owner as Path)?.Prestr ; set { if( value?.Length>0 ) Tag[Taglet.Press] = value ; else tags.Set(t=>t[Taglet.Press]=value) ; } }
+		public string Humistr { get => tags?[Taglet.Moist].Null()??(Owner as Path)?.Humistr ; set { if( value?.Length>0 ) Tag[Taglet.Moist] = value ; else tags.Set(t=>t[Taglet.Moist]=value) ; } }
 		public string Condition => Prestr is var pres && Tempstr is var temp ? pres is not null && temp is not null ? $"{Prestr}/{Tempstr}" : pres??temp : null ;
 		public string Restr { get => $"{Gradstr} {Flowstr} {Dragstr}" ; set { value.Separate(' ').Set(v=>{ using(Incognite){ Gradstr = v.At(0) ; Flowstr = v.At(1) ; Dragstr = v.At(2) ; } Energize() ; }) ; } }
 		void Energize() { var dflt = Basis.Energing.On(Object) ; Reslet = (Gradstr.Gradlet(dflt?.Grade),Flowstr.Flowlet(dflt?.Flow),Dragstr.Draglet(dflt?.Drag)) ; }
@@ -249,5 +249,12 @@ namespace Rob.Act
 		public static Quant? Draglet( this string value , Quant? dflt = null ) { var lev = value.RightFrom('^').Null(_=>dflt==null) ; return (lev??value).Parse<Quant>().Get(v=>lev==null||dflt==null?v:Math.Exp(v/3)*dflt) ; }
 		public static string Dragstr( this Quant? value , Quant? dflt = null ) => value.Nil(v=>v.Equal(dflt)).use(v=>dflt.use(d=>Math.Log(v/d)*3)??v).Get(v=>dflt!=null?$"^{v:0.###}":v.ToString()) ;
 		static bool Equal( this Quant x , Quant? y ) => x==y || y.use(v=>Math.Abs(x-v))<=0.001*(Math.Abs(x)+y.use(Math.Abs)) ;
+		extension( Taglet pro )
+		{
+			/// <summary> Name of the taglet </summary>
+			/// <param name="pro"> Taglet to get name of </param>
+			/// <returns> Name of the taglet </returns>
+			public string Name => Tagger.Names[(int)pro] ;
+		}
 	}
 }
