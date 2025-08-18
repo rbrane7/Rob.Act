@@ -224,8 +224,7 @@ namespace Rob.Act
 		void Propagate( string property ) => (Propagator??=Propagin).By(property).Set(Changing) ; static IDictionary<string,IEnumerable<string>> Propagator ;
 		static Dictionary<string,IEnumerable<string>> Propagin => new(){
 			["Tags"]=Tagger.Names ,
-			[Tagger.Names[8]]=["Condi","Condition","Temper"] , [Tagger.Names[9]]=["Condi","Condition"] , [Tagger.Names[10]]=["Condin"] ,
-			["Temper"]=["Condin"]
+			[Taglet.Temper.Name]=["Condi","Condition","Condin"] , [Taglet.Press.Name]=["Condi","Condition"] , [Taglet.Moist.Name]=["Condin"] ,
 		} ;
 		#endregion
 
