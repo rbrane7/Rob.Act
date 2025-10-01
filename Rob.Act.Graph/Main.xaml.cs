@@ -66,7 +66,7 @@ namespace Rob.Act.Analyze
 		{
 			InitializeComponent() ; Presources = new(BookGrid,this) ; AppDomain.CurrentDomain.Load(typeof(AxeOperations).Assembly.FullName) ; ViewPanel = GraphPanel ; DataContext = this ;
 			Doct += (this,"Main") ; Aspectables.The = (()=>Book.Entries.Select(p=>p.Spectrum).Union(Aspects.Entries),()=>Aspects.Entries) ; SourcesGrid.ItemContainerGenerator.ItemsChanged += SourcesGrid_ItemsChanged ; Task.Factory.StartNew(Load) ;
-			Title = $"{Aid.The.Run.Appi} {System.Reflection.Assembly.GetEntryAssembly().GetName().Version} {Setup.Doctee} {setup.Config}" ;
+			Title = $"{setup.Config.RightFrom('\\',all:true)}/{setup.Config.LeftFromLast('\\')} {Setup.Doctee} {Aid.The.Run.Appi} {System.Reflection.Assembly.GetEntryAssembly().GetName().Version}" ;
 			LevelKeyUp += async ()=>{ var resel = Reselection.ToArray() ; Reselection.Clear() ; await Task.Run(()=>Main_LevelKeyUp(resel)) ; } ;
 		}
 		void Main_LevelKeyUp( IEnumerable<KeyValuePair<object,List<SelectionChangedEventArgs>>> reselection )
