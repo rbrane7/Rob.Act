@@ -4,7 +4,7 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net6.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
-    <ApplicationIcon>C:\Base\Studio\Project\Rob\App\Rob.Act\Rob.Act.Graph\Anico.ico</ApplicationIcon>
+    <ApplicationIcon>C:\Base\Studio\Project\Rob\App\Activity\Rob.Act.Graph\Anico.ico</ApplicationIcon>
 	<LangVersion>preview</LangVersion>
   </PropertyGroup>
 
@@ -17,6 +17,10 @@
 
   <ItemGroup>
     <Content Include="..\Rob.Act.Graph\Anico.ico" Link="Anico.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="IndexRange" Version="1.1.0" />
   </ItemGroup>
 
   <ItemGroup>

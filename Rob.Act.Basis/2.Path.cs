@@ -34,6 +34,7 @@ namespace Rob.Act
 		public static readonly Gettable<Geom,Quant> Pressure ;
 		public static IList<Altiplane> Altiplanes ;
 		public static Mediator Medium ;
+		public static int BeatInt = 1 ;
 		Altiplane AltOf => Altiplanes.Get(ap=>Tolerance.On(Object).Get(m=>ap.FirstOrDefault(a=>a.Grade>=m.Grade)??new Altiplane(m.Grade){Radius=m.Rad}.Set(ap.Add))) ;
 
 		#region Construct
@@ -288,7 +289,7 @@ namespace Rob.Act
 
 		#region State
 		int Depth = 1 ; // Defines the size of vicinity of points .
-		readonly List<Point> Content = new() ;
+		readonly List<Point> Content = [] ;
 		/// <summary>
 		/// Derivancy causes this path to be drived from it's point sub-pathes and is used as base of <see cref="Metax"/> of points in case of top-down construction . 
 		/// In this case points inherit path's <see cref="Metax"/> if they doesn't have own . 
@@ -339,8 +340,10 @@ namespace Rob.Act
 		public Quant? MinMaxEffort => MinMaxPower(9) ;
 		public Quant? MinMaxPower( int ext , int refine = 1 , int from = 1 ) => (Count-1).Steps().Select(i=>(Content[i+1].Energy-Content[i].Energy).Quotient(Content[i+1].Time.TotalSeconds-Content[i].Time.TotalSeconds)).Skip(5).ToArray().Get(a=>(a.Length-1-refine).Steps(from).Min(i=>ext.Steps(1).All(j=>(a.At(i-j)??Quant.MinValue)<=a[i]&&a[i]>=(a.At(i+j)??Quant.MinValue))?a[i]:null)) ;
 		public Quant? AeroEffort { get { var min = MinEffort ; var max = MinMaxEffort ; var mav = (Count-1).Steps().Count(i=>(Content[i+1].Energy-Content[i].Energy).Quotient(Content[i+1].Time.TotalSeconds-Content[i].Time.TotalSeconds)>=max*0.9) ; var miv = (Count-1).Steps().Count(i=>(Content[i+1].Energy-Content[i].Energy).Quotient(Content[i+1].Time.TotalSeconds-Content[i].Time.TotalSeconds)<=min*1.2) ; return (min*miv+max*mav)/(miv+mav)*Durability ; } } // => (Meta.By(Action).At(0)*MinEffort+Meta.By(Action).At(1)*MinMaxEffort)/(Meta.By(Action).At(0)+Meta.By(Action).At(1)) ;
-		public Quant? MaxBeat => (Count-1).Steps().Max(i=>(Content[i+1].Beat-Content[i].Beat).Quotient((Content[i+1].Time-Content[i].Time).TotalSeconds)) ;
-		public Quant? MinBeat => (Count-1).Steps().Min(i=>(Content[i+1].Beat-Content[i].Beat).Quotient((Content[i+1].Time-Content[i].Time).TotalSeconds)) ;
+		public Quant? MaxBeat => (Count-BeatInt).Steps().Max(i=>(Content[i+BeatInt].Beat-Content[i].Beat).Quotient((Content[i+BeatInt].Time-Content[i].Time).TotalSeconds)) ;
+		public Quant? MinBeat => (Count-BeatInt).Steps().Min(i=>(Content[i+BeatInt].Beat-Content[i].Beat).Quotient((Content[i+BeatInt].Time-Content[i].Time).TotalSeconds)) ;
+		public Quant? BeatSup => (Count-BeatInt).Steps().Max(i=>(Content[i+BeatInt].Beat-Content[i].Beat).Quotient((Content[i+BeatInt].Time-Content[i].Time).TotalSeconds)) ;
+		public Quant? BeatInf => (Count-BeatInt).Steps().Min(i=>(Content[i+BeatInt].Beat-Content[i].Beat).Quotient((Content[i+BeatInt].Time-Content[i].Time).TotalSeconds)) ;
 		public Quant? O2Rate => MaxBeat/MinBeat*15.3 ;
 		public Quant? MaxExposure => MaxEffort/MaxBeat ;
 		public string MaxExposion => "{0}={1}".Comb("{0}/{1}".Comb(MaxEffort.Get(e=>$"{e:0}W"),MaxBeat.Get(v=>$"{Math.Round(v*60)}′♥")),MaxExposure.Get(e=>$"{Math.Round(e)}♥W")) ;

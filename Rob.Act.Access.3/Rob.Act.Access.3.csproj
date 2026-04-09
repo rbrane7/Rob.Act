@@ -37,7 +37,7 @@
       <HintPath>..\..\..\..\Aid\Bin\Release\Aid.Core.3.dll</HintPath>
     </Reference>
     <Reference Include="Fit.Decode.Net6">
-      <HintPath>..\..\..\..\Ext\Fit.Protocol\FitSDKRelease_20.96.00\cs\Fit.Decode.Net6\bin\Release\net6.0\Fit.Decode.Net6.dll</HintPath>
+      <HintPath>..\..\..\..\Ext\Fit.Protocol\Bin\Fit.Decode.Net6.dll</HintPath>
     </Reference>
   </ItemGroup>
 
